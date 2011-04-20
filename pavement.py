@@ -47,6 +47,7 @@ def github_docs(options):
     call_task("docs")
     sh("git checkout gh-pages && \
         cp -r superfastmatch/docs/ . && \
+        git add . && \
         git commit . -m 'Rendered documentation for Github Pages.' && \
         git push origin gh-pages && \
         git checkout master" % options)
