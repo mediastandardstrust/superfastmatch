@@ -3,11 +3,12 @@ import urllib
 import httplib
 import cStringIO
 from  base64 import b64encode
-from lib.counter import Counter
-from django.conf import settings #TODO work without Django present
+from counter import Counter
 
 class KyotoTycoon:
-    def __init__(self,host=settings.INDEX_HOST, port = settings.INDEX_PORT, timeout = 30):
+    """Interface to Kyoto Tycoon"""
+    
+    def __init__(self,host='127.0.0.1', port = 1977, timeout = 30):
         self.host=host
         self.port=port
         self.timeout=timeout

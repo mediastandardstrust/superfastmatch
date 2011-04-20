@@ -38,12 +38,12 @@ def docs(options):
     path(options.docs_env.dest_dir).makedirs()
     options.virtualenv=options.docs_env
     call_task("paver.virtual.bootstrap")
+    call_task("paver.doctools.doc_clean")
     sh("python %s && source %s/bin/activate && paver html" % (options.docs_env.script_name,options.docs_env.dest_dir))
 
 @task
 def github_docs(options):
-    """Build the docs and upload to GitHub
-    You'll need to be a committer!"""
+    """Build the docs and upload to GitHub - You'll need to be a committer!"""
     call_task("docs")
     sh("git checkout gh-pages && \
         cp -r superfastmatch/docs/ . && \
