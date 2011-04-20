@@ -14,10 +14,14 @@ setup(
 options(
     sphinx=Bunch(
         builddir=".build"
+    ),
+    docs_env=Bunch(
+        dest_dir=".env/docs_env",
+        script_name='.env/docs_env.py',
+        packages_to_install=["sphinx"],
+        no_site_packages=True
     )
 )
-
-@task
 
 @task
 @needs('paver.doctools.html')
@@ -27,3 +31,19 @@ def html(options):
     destdir.rmtree()
     builtdocs = path("docs") / options.builddir / "html"
     builtdocs.move(destdir)
+
+@task
+def docs(options):
+    """Build environment for creating docs and then build the docs"""
+    path(options.docs_env.dest_dir).makedirs()
+    options.virtualenv=options.docs_env
+    call_task("paver.virtual.bootstrap")
+    sh("python %s && source %s/bin/activate && paver html" % (options.docs_env.script_name,options.docs_env.dest_dir))
+
+@task
+def github_docs(options):
+    sh("git checkout gh-pages && \
+        cp -r superfastmatch/docs/* .    && \
+        git commit . -m 'Rendered documentation for Github Pages.' && \
+        git push origin gh-pages && \
+        git checkout master" % options)
