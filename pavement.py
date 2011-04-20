@@ -45,7 +45,7 @@ def github_docs(options):
     """Build the docs and upload to GitHub
     You'll need to be a committer!"""
     call_task("docs")
-    sh("cp -r superfastmatch/docs/* temp/ && \
+    sh("cp -r superfastmatch/docs/ temp/ && \
         git checkout gh-pages && \
         mv temp/* . && \
         git commit . -m 'Rendered documentation for Github Pages.' && \
