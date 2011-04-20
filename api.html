@@ -1,0 +1,176 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>SuperFastMatch API &mdash; SuperFastMatch v0.2.1 documentation</title>
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.2.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="SuperFastMatch v0.2.1 documentation" href="index.html" />
+    <link rel="prev" title="Architecture" href="architecture.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="architecture.html" title="Architecture"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">SuperFastMatch v0.2.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-superfastmatch.kyototycoon">
+<span id="superfastmatch-api"></span><h1>SuperFastMatch API<a class="headerlink" href="#module-superfastmatch.kyototycoon" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="superfastmatch.kyototycoon.KyotoTycoon">
+<em class="property">class </em><tt class="descclassname">superfastmatch.kyototycoon.</tt><tt class="descname">KyotoTycoon</tt><big>(</big><em>host='127.0.0.1'</em>, <em>port=1977</em>, <em>timeout=30</em><big>)</big><a class="headerlink" href="#superfastmatch.kyototycoon.KyotoTycoon" title="Permalink to this definition">¶</a></dt>
+<dd><p>Interface to Kyoto Tycoon</p>
+<dl class="method">
+<dt id="superfastmatch.kyototycoon.KyotoTycoon.add">
+<tt class="descname">add</tt><big>(</big><em>docid</em>, <em>text</em>, <em>window_size=15</em>, <em>hash_width=15</em><big>)</big><a class="headerlink" href="#superfastmatch.kyototycoon.KyotoTycoon.add" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="superfastmatch.kyototycoon.KyotoTycoon.close">
+<tt class="descname">close</tt><big>(</big><big>)</big><a class="headerlink" href="#superfastmatch.kyototycoon.KyotoTycoon.close" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="superfastmatch.kyototycoon.KyotoTycoon.open">
+<tt class="descname">open</tt><big>(</big><big>)</big><a class="headerlink" href="#superfastmatch.kyototycoon.KyotoTycoon.open" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="superfastmatch.kyototycoon.KyotoTycoon.parse">
+<tt class="descname">parse</tt><big>(</big><em>body</em><big>)</big><a class="headerlink" href="#superfastmatch.kyototycoon.KyotoTycoon.parse" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="superfastmatch.kyototycoon.KyotoTycoon.search">
+<tt class="descname">search</tt><big>(</big><em>text</em>, <em>window_size=15</em>, <em>hash_width=15</em>, <em>min_threshold=1</em>, <em>max_threshold=50000</em>, <em>num_results=20</em><big>)</big><a class="headerlink" href="#superfastmatch.kyototycoon.KyotoTycoon.search" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="superfastmatch.kyototycoon.KyotoTycoon.write">
+<tt class="descname">write</tt><big>(</big><em>body</em>, <em>key</em>, <em>value</em><big>)</big><a class="headerlink" href="#superfastmatch.kyototycoon.KyotoTycoon.write" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<span class="target" id="module-superfastmatch.matcher"></span><dl class="function">
+<dt id="superfastmatch.matcher.debug">
+<tt class="descclassname">superfastmatch.matcher.</tt><tt class="descname">debug</tt><big>(</big><em>a</em>, <em>b</em>, <em>first</em>, <em>second</em>, <em>limit</em>, <em>counter</em>, <em>length</em>, <em>left</em>, <em>right</em>, <em>matches</em>, <em>results</em><big>)</big><a class="headerlink" href="#superfastmatch.matcher.debug" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="superfastmatch.matcher.dump">
+<tt class="descclassname">superfastmatch.matcher.</tt><tt class="descname">dump</tt><big>(</big><em>matches</em><big>)</big><a class="headerlink" href="#superfastmatch.matcher.dump" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="superfastmatch.matcher.gen_hash">
+<tt class="descclassname">superfastmatch.matcher.</tt><tt class="descname">gen_hash</tt><big>(</big><em>string</em>, <em>window_size</em><big>)</big><a class="headerlink" href="#superfastmatch.matcher.gen_hash" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="superfastmatch.matcher.gen_hash_enumerator">
+<tt class="descclassname">superfastmatch.matcher.</tt><tt class="descname">gen_hash_enumerator</tt><big>(</big><em>string</em>, <em>window_size</em><big>)</big><a class="headerlink" href="#superfastmatch.matcher.gen_hash_enumerator" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="superfastmatch.matcher.getFile">
+<tt class="descclassname">superfastmatch.matcher.</tt><tt class="descname">getFile</tt><big>(</big><em>path</em>, <em>url</em>, <em>encoding</em><big>)</big><a class="headerlink" href="#superfastmatch.matcher.getFile" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="superfastmatch.matcher.match">
+<tt class="descclassname">superfastmatch.matcher.</tt><tt class="descname">match</tt><big>(</big><em>a</em>, <em>b</em>, <em>window_size=15</em><big>)</big><a class="headerlink" href="#superfastmatch.matcher.match" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="superfastmatch.matcher.printresults">
+<tt class="descclassname">superfastmatch.matcher.</tt><tt class="descname">printresults</tt><big>(</big><em>matches</em>, <em>s1</em>, <em>s2</em><big>)</big><a class="headerlink" href="#superfastmatch.matcher.printresults" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="architecture.html"
+                        title="previous chapter">Architecture</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/api.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="architecture.html" title="Architecture"
+             >previous</a> |</li>
+        <li><a href="index.html">SuperFastMatch v0.2.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2011, Media Standards Trust.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
+    </div>
+  </body>
+</html>
