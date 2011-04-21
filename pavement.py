@@ -20,6 +20,12 @@ options(
         script_name='.env/docs_env.py',
         packages_to_install=["sphinx"],
         no_site_packages=True
+    ),
+    examples_env=Bunch(
+        dest_dir=".env/examples_env",
+        script_name='.env/examples_env.py',
+        packages_to_install=["django"],
+        no_site_packages=True
     )
 )
 
@@ -51,3 +57,12 @@ def github_docs(options):
         git commit . -m 'Rendered documentation for Github Pages.' && \
         git push origin gh-pages && \
         git checkout master" % options)
+
+@task 
+def examples(options):
+    """Build examples environment"""
+    path(options.examples_env.dest_dir).makedirs()
+    options.virtualenv=options.examples_env
+    call_task("paver.virtual.bootstrap")
+    sh("python %s && source %s/bin/activate" % (options.examples_env.script_name))
+    
