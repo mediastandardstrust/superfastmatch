@@ -11,3 +11,5 @@ Commands
 .. autofunction:: pavement.docs
 
 .. autofunction:: pavement.github_docs
+
+.. autofunction:: pavement.examples
