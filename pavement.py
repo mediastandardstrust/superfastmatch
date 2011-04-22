@@ -2,10 +2,12 @@ from paver.easy import *
 import paver.doctools
 from paver.setuputils import setup
 
+CURRENT_VERSION="0.2"
+
 setup(
     name="superfastmatch",
     packages=['superfastmatch','superfastmatch.django'],
-    version="0.2",
+    version=CURRENT_VERSION,
     url="http://mediastandardstrust.github.com/superfastmatch",
     author="Media Standards Trust",
     author_email="donovanhide@gmail.com"
@@ -27,15 +29,15 @@ options(
     examples_env=Bunch(
         dest_dir=".env/examples_env",
         script_name='.env/examples_env.py',
-        packages_to_install=["django","lxml","superfastmatch"],
+        packages_to_install=["django","lxml","dist/superfastmatch-%s.tar.gz"%CURRENT_VERSION],
         no_site_packages=True
     )
 )
 
 @task
-@needs('generate_setup', 'minilib', 'setuptools.command.sdist')
+@needs('docs','generate_setup', 'minilib', 'setuptools.command.sdist')
 def sdist():
-    """Overrides sdist to make sure that our setup.py is generated."""
+    """Overrides sdist to make sure that our docs and setup.py are generated."""
     pass
 
 @task
@@ -68,6 +70,7 @@ def github_docs(options):
         git checkout master" % options)
 
 @task 
+@needs('sdist')
 def examples(options):
     """Build examples environment"""
     path(options.examples_env.dest_dir).makedirs()
@@ -75,4 +78,12 @@ def examples(options):
     call_task("paver.virtual.bootstrap")
     sh("python %s && source %s/bin/activate" % (options.examples_env.script_name,options.docs_env.dest_dir))
 
+@task
+@needs('examples')
+def legislation(options):
+    """Runs legislation example"""
+    sh("source %s/bin/activate && \
+        cd examples/legislation && \
+        ./manage.py syncdb && \
+        ./manage.py runserver" % options.examples_env.dest_dir)
 

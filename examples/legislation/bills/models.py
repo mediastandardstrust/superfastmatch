@@ -1,4 +1,5 @@
 from django.db import models
+from superfastmatch.django import Document
 
 ORIGINS = (
     ('s','Senate'),
