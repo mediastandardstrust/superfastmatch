@@ -3,8 +3,8 @@ import paver.doctools
 from paver.setuputils import setup
 
 setup(
-    name="SuperFastMatch",
-    packages=['superfastmatch'],
+    name="superfastmatch",
+    packages=['superfastmatch','superfastmatch.django'],
     version="0.2",
     url="http://mediastandardstrust.github.com/superfastmatch",
     author="Media Standards Trust",
@@ -12,6 +12,9 @@ setup(
 )
 
 options(
+    minilib=Bunch( 
+          extra_files=['doctools', 'virtual'] 
+    ),
     sphinx=Bunch(
         builddir=".build"
     ),
@@ -24,10 +27,16 @@ options(
     examples_env=Bunch(
         dest_dir=".env/examples_env",
         script_name='.env/examples_env.py',
-        packages_to_install=["django"],
+        packages_to_install=["django","lxml","superfastmatch"],
         no_site_packages=True
     )
 )
+
+@task
+@needs('generate_setup', 'minilib', 'setuptools.command.sdist')
+def sdist():
+    """Overrides sdist to make sure that our setup.py is generated."""
+    pass
 
 @task
 @needs('paver.doctools.html')
@@ -64,5 +73,6 @@ def examples(options):
     path(options.examples_env.dest_dir).makedirs()
     options.virtualenv=options.examples_env
     call_task("paver.virtual.bootstrap")
-    sh("python %s && source %s/bin/activate" % (options.examples_env.script_name))
-    
+    sh("python %s && source %s/bin/activate" % (options.examples_env.script_name,options.docs_env.dest_dir))
+
+

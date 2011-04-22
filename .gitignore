@@ -1,7 +1,8 @@
 .DS_Store
 *.pyc
+*.db
+*.egg-info
 .build
 .env
+dist
 superfastmatch/docs
-
-examples/legislation/legislation.db
