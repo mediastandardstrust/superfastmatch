@@ -1,7 +1,7 @@
 README
 ======
 
-SuperFastMatch depends on `Paver <http://paver.github.com/paver/>`_ to get bootstrapped. Install instructions `here <http://paver.github.com/paver/#installation>`_.
+SuperFastMatch depends on `Paver <http://paver.github.com/paver/#installation>`_ and `VirtualEnv <http://pypi.python.org/pypi/virtualenv>`_  to get bootstrapped. 
 
 After install:
 

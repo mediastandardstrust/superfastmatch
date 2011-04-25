@@ -1,5 +1,5 @@
 from django.db import models
-from superfastmatch.django import Document
+from superfastmatch.django.models import Document
 
 ORIGINS = (
     ('s','Senate'),
@@ -18,11 +18,11 @@ STAGES = (
     ('ih','Introduced in House '),
     ('rh','Reported in House'),
     ('eh','Engrossed in House'),
+    ('rfh','Referred in House'),
+    ('enr','Enrolled Bill'),
     ('pcs','Placed on Calendar Senate'),
     ('eas','Engrossed Amendment Senate'),
-    ('enr','Enrolled Bill'),
     ('rfs','Referred in Senate'),
-    ('rfh','Referred in House'),
     ('is','Introduced in Senate'),
     ('ats','Agreed to Senate'),
 )

@@ -15,7 +15,7 @@ setup(
 
 options(
     minilib=Bunch( 
-          extra_files=['doctools', 'virtual'] 
+        extra_files=['doctools', 'virtual'] 
     ),
     sphinx=Bunch(
         builddir=".build"
@@ -23,16 +23,25 @@ options(
     docs_env=Bunch(
         dest_dir=".env/docs_env",
         script_name='.env/docs_env.py',
-        packages_to_install=["sphinx"],
+        requirements="requirements/docs.txt",
         no_site_packages=True
     ),
     examples_env=Bunch(
         dest_dir=".env/examples_env",
         script_name='.env/examples_env.py',
-        packages_to_install=["django","lxml","dist/superfastmatch-%s.tar.gz"%CURRENT_VERSION],
+        requirements="requirements/examples.txt",
         no_site_packages=True
     )
 )
+
+def bash(command):
+    sh("bash -c '%s'"%command)
+    
+def pip_install(env_dir,requirements):
+    bash("source %s/bin/activate && pip install -r %s"%(env_dir,requirements))
+
+def pip_upgrade(env_dir, package):
+    bash("source %s/bin/activate && pip install --upgrade %s"%(env_dir,package))
 
 @task
 @needs('docs','generate_setup', 'minilib', 'setuptools.command.sdist')
@@ -55,14 +64,15 @@ def docs(options):
     path(options.docs_env.dest_dir).makedirs()
     options.virtualenv=options.docs_env
     call_task("paver.virtual.bootstrap")
+    pip_install(options.virtualenv.dest_dir,options.virtualenv.requirements)
     call_task("paver.doctools.doc_clean")
-    sh("python %s && source %s/bin/activate && paver html" % (options.docs_env.script_name,options.docs_env.dest_dir))
+    bash("python %s && source %s/bin/activate && paver html" % (options.docs_env.script_name,options.docs_env.dest_dir))
 
 @task
 def github_docs(options):
     """Build the docs and upload to GitHub - You'll need to be a committer!"""
     call_task("docs")
-    sh("git checkout gh-pages && \
+    bash("git checkout gh-pages && \
         cp -r superfastmatch/docs/ . && \
         git add . && \
         git commit . -m 'Rendered documentation for Github Pages.' && \
@@ -76,13 +86,14 @@ def examples(options):
     path(options.examples_env.dest_dir).makedirs()
     options.virtualenv=options.examples_env
     call_task("paver.virtual.bootstrap")
-    sh("python %s && source %s/bin/activate" % (options.examples_env.script_name,options.docs_env.dest_dir))
+    pip_install(options.virtualenv.dest_dir,options.virtualenv.requirements)
+    pip_upgrade(options.virtualenv.dest_dir,'dist/superfastmatch-%s.tar.gz'%CURRENT_VERSION)
 
 @task
 @needs('examples')
 def legislation(options):
     """Runs legislation example"""
-    sh("source %s/bin/activate && \
+    bash("source %s/bin/activate && \
         cd examples/legislation && \
         ./manage.py syncdb && \
         ./manage.py runserver" % options.examples_env.dest_dir)
