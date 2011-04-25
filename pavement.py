@@ -2,7 +2,7 @@ from paver.easy import *
 import paver.doctools
 from paver.setuputils import setup
 
-CURRENT_VERSION="0.2"
+CURRENT_VERSION="0.2.1"
 
 setup(
     name="superfastmatch",

@@ -10,3 +10,6 @@ SuperFastMatch API
    :undoc-members:
    
 
+.. automodule:: superfastmatch.django.models
+  :members:
+  :undoc-members:
