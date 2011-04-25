@@ -8,8 +8,12 @@ The intention is to make sure that all the development workflows, such as buildi
 Commands
 --------
 
+.. autofunction:: pavement.sdist
+
 .. autofunction:: pavement.docs
 
 .. autofunction:: pavement.github_docs
 
 .. autofunction:: pavement.examples
+
+.. autofunction:: pavement.legislation
