@@ -7,7 +7,7 @@ SuperFastMatch API
 
 .. automodule:: superfastmatch.kyototycoon
    :members:
-   :undoc-members:
+   :undoc-members: 
 
 :mod:`superfastmatch.matcher`
 -----------------------------
