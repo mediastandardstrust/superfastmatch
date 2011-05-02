@@ -2,12 +2,20 @@
 import sys, os
 
 sys.path.insert(0, os.path.abspath('..'))
-# sys.path.insert(0, os.path.abspath('../superfastmatch'))
+
+# Allows Django docs to work 
+# TODO change to test case settings when they exist!
+sys.path.insert(0,os.path.abspath('../examples/legislation/'))
+from django.core.management import setup_environ
+import settings
+setup_environ(settings)
 
 # -- General configuration -----------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
 #needs_sphinx = '1.0'
+
+autodoc_member_order = 'bysource'
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
