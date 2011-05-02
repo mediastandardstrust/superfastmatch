@@ -1,0 +1,10 @@
+<ol>
+{% for bill,stages in bills.items %} 
+    <li>{{ bill.title }}</li> 
+    <ol>
+        {% for stage in stages%}
+            <li><a href="{{stage.get_absolute_url}}">{{ stage }}</a></li>
+        {% endfor %}
+    </ol>
+{% endfor %}
+</ol>
