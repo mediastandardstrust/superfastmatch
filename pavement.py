@@ -31,6 +31,12 @@ options(
         script_name='.env/examples_env.py',
         requirements="requirements/examples.txt",
         no_site_packages=True
+    ),
+    tests_env=Bunch(
+        dest_dir=".env/tests_env",
+        script_name='.env/tests_env.py',
+        requirements="requirements/tests.txt",
+        no_site_packages=True
     )
 )
 
@@ -44,10 +50,18 @@ def pip_upgrade(env_dir, package):
     bash("source %s/bin/activate && pip install --upgrade %s"%(env_dir,package))
 
 @task
-@needs('docs','generate_setup', 'minilib', 'setuptools.command.sdist')
-def sdist():
-    """Overrides sdist to make sure that our docs and setup.py are generated."""
-    pass
+def build_environment(options):
+    path(options.virtualenv.dest_dir).makedirs()
+    call_task("paver.virtual.bootstrap")
+    bash('python %s' % options.virtualenv.script_name)
+    pip_install(options.virtualenv.dest_dir,options.virtualenv.requirements)
+
+@task
+def test(options):
+    """Build test enviroment and run tests"""
+    options.virtualenv=options.tests_env
+    call_task('build_environment')
+    bash('source %s/bin/activate && django-admin.py test --settings=superfastmatch.django.settings --pythonpath=. django' % options.virtualenv.dest_dir)
 
 @task
 @needs('paver.doctools.html')
@@ -61,10 +75,8 @@ def html(options):
 @task
 def docs(options):
     """Build environment for creating docs and then build the docs"""
-    path(options.docs_env.dest_dir).makedirs()
     options.virtualenv=options.docs_env
-    call_task("paver.virtual.bootstrap")
-    pip_install(options.virtualenv.dest_dir,options.virtualenv.requirements)
+    call_task('build_environment')
     call_task("paver.doctools.doc_clean")
     bash("python %s && source %s/bin/activate && paver html" % (options.docs_env.script_name,options.docs_env.dest_dir))
 
@@ -79,14 +91,19 @@ def github_docs(options):
         git push origin gh-pages && \
         git checkout master" % options)
 
+@task
+@needs('docs','generate_setup', 'minilib', 'setuptools.command.sdist')
+def sdist():
+    """Overrides sdist to make sure that our docs and setup.py are generated."""
+    pass
+
+
 @task 
 @needs('sdist')
 def examples(options):
     """Build examples environment"""
-    path(options.examples_env.dest_dir).makedirs()
     options.virtualenv=options.examples_env
-    call_task("paver.virtual.bootstrap")
-    pip_install(options.virtualenv.dest_dir,options.virtualenv.requirements)
+    call_task('build_environment')
     pip_upgrade(options.virtualenv.dest_dir,'dist/superfastmatch-%s.tar.gz'%CURRENT_VERSION)
 
 @task
