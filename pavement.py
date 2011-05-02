@@ -41,7 +41,7 @@ options(
 )
 
 def bash(command):
-    sh("""bash -c "%s"""""%command)
+    sh("bash -c \"%s\""%command)
     
 def pip_install(env_dir,requirements):
     bash("source %s/bin/activate && pip install -r %s"%(env_dir,requirements))
