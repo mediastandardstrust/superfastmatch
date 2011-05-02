@@ -1,0 +1,159 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Developer Diary &mdash; SuperFastMatch v0.2.1 documentation</title>
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.2.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="SuperFastMatch v0.2.1 documentation" href="index.html" />
+    <link rel="next" title="License" href="license.html" />
+    <link rel="prev" title="Changelog" href="changelog.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="license.html" title="License"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="changelog.html" title="Changelog"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">SuperFastMatch v0.2.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="developer-diary">
+<h1>Developer Diary<a class="headerlink" href="#developer-diary" title="Permalink to this headline">¶</a></h1>
+<p>The open-souring of SuperFastMatch has been generously funded by the <a class="reference external" href="http://sunlightfoundation.com/">Sunlight Foundation</a> and as part of the agreement I will keep a diary of the project&#8217;s progress here:</p>
+<div class="section" id="week-1">
+<h2>Week 1<a class="headerlink" href="#week-1" title="Permalink to this headline">¶</a></h2>
+<p>This is my first attempt at a truly open-source project so I&#8217;ve had a lot to learn about making software accessible by more than just the development team I am working with. SuperFastMatch originally started as the algorithm, developed over many sleepless nights, for comparing press releases with newspaper articles used by <a class="reference external" href="http://churnalism.com">Churnalism.com</a>. This was a single use-case, but as the site became known to the public, other use-cases became apparent. One is to track legislation for lobbyist influence. Others might include tracking plagiarism in fiction or making sure academic texts have correct citations.</p>
+<p>The point is that when more than one use-case comes up, a piece of code needs to develop into a framework which is easy to understand, is well documented and is easily integrated and installable in concert with other software. Seeing as the majority of the existing code is written in <a class="reference external" href="http://python.org">Python</a> it made sense to look at how some other Python projects made use of existing infrastructure to meet these ends. I examined <a class="reference external" href="http://github.com/ask/django-celery">Celery</a>, a distributed job engine and tracker, as I was familiar with it from previous work, and saw how it made use of tools to assist its open source development. Below are some ideas and tools that I borrowed from it:</p>
+<ul class="simple">
+<li><a class="reference external" href="http://github.com">Github</a> has become the de facto platform for sharing and distributing code. It&#8217;s free for open source projects and is built on top of <a class="reference external" href="http://git-scm.com/">git</a>, which has many advantages over previous generations of source code control software. It also offers static file hosting, from where you are probably reading this documentation!</li>
+<li><a class="reference external" href="http://pypi.python.org/pypi">Pypi</a> is a centralised index of Python packages that allows for the versioning and sharing of Python software without the need to remember lots of urls and is reliable enough to be referred to in bootstrap scripts.</li>
+<li><a class="reference external" href="http://sphinx.pocoo.org/">Sphinx</a> is a documentation generator that works well with Python packages as well as C++ (and hopefully Lua!). This page and the rest of the docs are written in <a class="reference external" href="http://docutils.sourceforge.net/rst.html">reStructured Text</a> and then passed throught a batch process which converts them into HTML, after which they are uploaded to the static Github hosting.</li>
+<li><a class="reference external" href="http://paver.github.com/paver/">Paver</a> is a combination of tools which allows for the scripting in Python of many development workflows such as bootstrapping, documentation generation, packaging and test execution. I&#8217;m used to using <a class="reference external" href="http://fabfile.org/">Fabric</a> for deployment, and Paver seems to offer a similar experience for development. It will be interesting to see if I integrate some of the C++ build process into the <a class="reference external" href="https://github.com/mediastandardstrust/superfastmatch/blob/master/pavement.py">pavement.py</a> file.</li>
+<li><a class="reference external" href="http://pypi.python.org/pypi/virtualenv">VirtualEnv</a> is an essential tool for isolating Python packages into an application-specific environment. This ensures you always know which versions of software are present and can accurately recreate this when you deploy to either a production or staging server. It comes with <a class="reference external" href="http://www.pip-installer.org/">Pip</a> installed in the created environment for easy integration with Pypi.</li>
+<li><a class="reference external" href="http://www.djangoproject.com/">Django</a> is the platform on which <a class="reference external" href="http://churnalism.com">Churnalism.com</a> is built and is widely used so it seemed like the natural choice for building an example usage of SuperFastMatch.</li>
+</ul>
+</div>
+<div class="section" id="week-2">
+<h2>Week 2<a class="headerlink" href="#week-2" title="Permalink to this headline">¶</a></h2>
+<p>Now that all the open source infrastructure is in place it&#8217;s time to start learning a bit more about the use-case in hand, US Congress and state legislation. Being based in the UK, it is also interesting to contrast the US system with that of the Houses of Parliament. I am no expert of systems of government, so there is a good chance I might make false assertions!</p>
+<div class="section" id="legislature">
+<h3>Legislature<a class="headerlink" href="#legislature" title="Permalink to this headline">¶</a></h3>
+<p>The US Congress has two chambers, both elected, the House of Representatives and the Senate. Both chambers can introduce bills and the bill can take one of many paths through both chambers. The House represents individual states with elected members in proportion to their population, while two senators are allocated to each state. This contrasts with the House of Lords, which is unelected and unrepresentative of the population, while the House of Commons is larger in number than the House of Representatives and is elected by relatively equally populated constituencies.</p>
+<p>The passage of a bill through Congress appears to be quite undefined with a whole series of possible routes and referrals being possible before an Act is signed by the President. In the UK, the system is a configured list of readings and stages before Royal Assent is given.</p>
+<p>The end result of acts of Congress is the <a class="reference external" href="http://www.gpo.gov/fdsys/browse/collectionUScode.action?collectionCode=USCODE">US Code</a> which is an up to date record of all enrolled bills. In the UK, there is a lack of an easily digestible final law, as evidenced <a class="reference external" href="http://www.legislation.gov.uk/ukpga/1998/29">here</a>. The amount of cross-referencing and amending means that to the average member of the public the result is incomprehensible!</p>
+<p>States in the US are capable of passing their own local laws. In the UK there is devolution in Scotland, Wales, Northern Ireland and Greater London which permits regional legislation, but leaves the remainder of England with an exceptional democratic deficit. Every part of the UK has representatives in the European Parliament</p>
+</div>
+<div class="section" id="data-access">
+<h3>Data Access<a class="headerlink" href="#data-access" title="Permalink to this headline">¶</a></h3>
+<p>The US has a well maintained <a class="reference external" href="http://www.gpo.gov/fdsys/browse/collection.action?collectionCode=BILLS">digital archive</a> of all House of Representative Bills from 2004, and a more recent archive of Senate Bills. The data is accessible in XML form which allows for metadata extraction of Bill information and easy manipulation of the Bill text itself, ideal for the purposes of this project. Text-only bills are available from 1993 onwards.</p>
+<p>UK bills are <a class="reference external" href="http://www.legislation.gov.uk/">accessible</a> in text and HTML form only, which makes them less amenable to analysis without some serious text extraction work. Versions of the bill at various stages are not available and thus it is impossible to track revisions and differences as progress through parliament is made.</p>
+<p>What is available in the UK, is effectively a <a class="reference external" href="http://services.parliament.uk/bills/">transcript</a> of what is said in Parliament, including the reading aloud of the bills. This mixture of debate and legislative text is the data source which drives <a class="reference external" href="http://www.theyworkforyou.com/">TheyWorkForYou.com</a>, the result of some tenacious scraping! Unfortunately, this means that public is forced to focus more on the opinions and personalities of the MP&#8217;s rather than the substance and progress of the legislation itself.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Developer Diary</a><ul>
+<li><a class="reference internal" href="#week-1">Week 1</a></li>
+<li><a class="reference internal" href="#week-2">Week 2</a><ul>
+<li><a class="reference internal" href="#legislature">Legislature</a></li>
+<li><a class="reference internal" href="#data-access">Data Access</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="changelog.html"
+                        title="previous chapter">Changelog</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="license.html"
+                        title="next chapter">License</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/diary.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="license.html" title="License"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="changelog.html" title="Changelog"
+             >previous</a> |</li>
+        <li><a href="index.html">SuperFastMatch v0.2.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2011, Media Standards Trust.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
+    </div>
+  </body>
+</html>

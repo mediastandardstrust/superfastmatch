@@ -16,7 +16,9 @@ Contents:
     developing.rst
     architecture.rst
     api.rst
+    examples.rst
     changelog.rst
+    diary.rst
     license.rst
 
 Indices and tables
