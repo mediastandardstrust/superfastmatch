@@ -25,27 +25,40 @@ The point is that when more than one use-case comes up, a piece of code needs to
 Week 2
 ------
 
-Now that all the open source infrastructure is in place it's time to start learning a bit more about the use-case in hand, US Congress and state legislation. Being based in the UK, it is also interesting to contrast the US system with that of the Houses of Parliament. I am no expert of systems of government, so there is a good chance I might make false assertions!
+Now that all the open source infrastructure is in place it's time to start learning a bit more about the use-case in hand, US Congress and state legislation. 
 
 Legislature
 '''''''''''
 
-The US Congress has two chambers, both elected, the House of Representatives and the Senate. Both chambers can introduce bills and the bill can take one of many paths through both chambers. The House represents individual states with elected members in proportion to their population, while two senators are allocated to each state. This contrasts with the House of Lords, which is unelected and unrepresentative of the population, while the House of Commons is larger in number than the House of Representatives and is elected by relatively equally populated constituencies.
+The US Congress has two chambers, both elected, the House of Representatives and the Senate. Both chambers can introduce bills and the bill can take one of many paths through both chambers. The passage of a bill through Congress appears to be quite undefined with a whole series of possible routes and referrals being possible before an Act is signed by the President. 
 
-The passage of a bill through Congress appears to be quite undefined with a whole series of possible routes and referrals being possible before an Act is signed by the President. In the UK, the system is a configured list of readings and stages before Royal Assent is given.
-
-The end result of acts of Congress is the `US Code <http://www.gpo.gov/fdsys/browse/collectionUScode.action?collectionCode=USCODE>`_ which is an up to date record of all enrolled bills. In the UK, there is a lack of an easily digestible final law, as evidenced `here <http://www.legislation.gov.uk/ukpga/1998/29>`_. The amount of cross-referencing and amending means that to the average member of the public the result is incomprehensible!
-
-States in the US are capable of passing their own local laws. In the UK there is devolution in Scotland, Wales, Northern Ireland and Greater London which permits regional legislation, but leaves the remainder of England with an exceptional democratic deficit. Every part of the UK has representatives in the European Parliament
+The end result of acts of Congress is the `US Code <http://www.gpo.gov/fdsys/browse/collectionUScode.action?collectionCode=USCODE>`_ which is an up to date record of all enrolled bills. States in the US are also capable of passing their own local laws.
 
 Data Access
 '''''''''''
 
 The US has a well maintained `digital archive <http://www.gpo.gov/fdsys/browse/collection.action?collectionCode=BILLS>`_ of all House of Representative Bills from 2004, and a more recent archive of Senate Bills. The data is accessible in XML form which allows for metadata extraction of Bill information and easy manipulation of the Bill text itself, ideal for the purposes of this project. Text-only bills are available from 1993 onwards.
 
-UK bills are `accessible <http://www.legislation.gov.uk/>`_ in text and HTML form only, which makes them less amenable to analysis without some serious text extraction work. Versions of the bill at various stages are not available and thus it is impossible to track revisions and differences as progress through parliament is made.
+Week 3
+------
 
-What is available in the UK, is effectively a `transcript <http://services.parliament.uk/bills/>`_ of what is said in Parliament, including the reading aloud of the bills. This mixture of debate and legislative text is the data source which drives `TheyWorkForYou.com <http://www.theyworkforyou.com/>`_, the result of some tenacious scraping! Unfortunately, this means that public is forced to focus more on the opinions and personalities of the MP's rather than the substance and progress of the legislation itself.
+Framework design
+''''''''''''''''
+
+The aim of the project is to design a reusable tool for bulk text comparison and analysis. To succeed in becoming reusable, at least two use-cases have to be considered and a clean, easy to understand interface for the user has to be designed. `Django <http://www.djangoproject.com/>`_ offers many ways of designing models for data storage, and this flexibility is useful - but there can be a number of caveats that can obstruct progress further down the line.
+
+`Model Inheritance <http://docs.djangoproject.com/en/dev/topics/db/models/#model-inheritance>`_ allows for the subclassing of a Model which itsef permits further extension. This is an ideal pattern for different types of Document. Say that you have Press Releases and News Articles, or State Law and Congress Law, all with potentially similar content. When you search, you might not know what to expect as results and would like to search all Document types simultaneously. By defining a Document base model, this is possible because it can be assumed that the necessary content in it's indexable form is present. 
+
+With Django, there is a choice of either abstract or multi-table inheritance (and also proxy...). Multi-table inheritance results in an extra table, while abstract inheritance just adds fields to the subclasses' tables. The simplest choice is abstract inheritance and I went for this. However, the disadvantage is that you cannot define a ForeignKey to the abstract base class itself but the related clean indexed content needs to be stored somewhere as a cache so that updates can be detected. To solve this issue I turned to `content types <http://docs.djangoproject.com/en/dev/ref/contrib/contenttypes/>`_, which makes it possible to relate any model instance to any other model instance, regardless of type. This means that the cleaned Content can be related to any of Document's subclasses. At this point it's  probably worth looking at the `model definition <https://github.com/mediastandardstrust/superfastmatch/blob/master/superfastmatch/django/models.py>`_.
+
+Faceting
+''''''''
+
+One of the limitations of the original Churnalism code is the inability to search for news articles, only press releases. However, both document types have very similar features, such as date published, an author, a publisher and of course the content itself. Therefore it makes sense to also be able to search for news articles with either a news article, press release or other text as the input text. This would be useful for journalists to check for plagiarism and is useful in lots of other contexts.
+
+The challenge is that the script that builds the search results needs a limit on the number of results to return to make the data and server load manageable. However, imagine searching for both news articles and press releases with a limit of 20 results. It might be the case that 20 news articles have higher ranking than matching press releases. The press releases might be a more interesting result though, so excluding them could omit valuable data. The solution to this is `faceted search <http://en.wikipedia.org/wiki/Faceted_search>`_ where extra data, in this case the document type is stored along with the document id in the index. The number of results returned is per document type, and therefore useful data should not be missed. This has implications for total index disk space usage, but is a truly useful addition to the capabilities of SuperFastMatch.
+
+Other fields, such as published date, could be used as filter, but then we are entering the territory of advanced search engines like `Xapian <http://xapian.org/>`_ and `Solr <http://lucene.apache.org/solr/>`_ which are already good at that type of thing! 
 
 
 

@@ -8,7 +8,7 @@ The following `settings <http://docs.djangoproject.com/en/dev/ref/settings>`_ ca
 
 and you must remember to include both :mod:`superfastmatch.django` and 
 `django.contrib.contenttypes <http://docs.djangoproject.com/en/dev/ref/contrib/contenttypes/>`_ 
-in `INSTALLED_APPS <http://docs.djangoproject.com/en/dev/ref/settings/#installed-apps>`_. For Example::
+in `INSTALLED_APPS <http://docs.djangoproject.com/en/dev/ref/settings/#installed-apps>`_. For example::
 
     INSTALLED_APPS=(
                         'superfastmatch.django',
@@ -100,6 +100,7 @@ class Content(models.Model):
         super(Content,self).save(*args, **kwargs)
         tycoon = KyotoTycoon(host=getattr(settings,'SUPERFASTMATCH_HOST','127.0.0.1'),port=getattr(settings,'SUPERFASTMATCH_PORT',1977))
         tycoon.open()
+        
 
     class Meta:
         db_table = 'superfastmatch_content'

@@ -25,9 +25,14 @@ class KyotoTycoon:
 
     def search(self,text,window_size=15,hash_width=15,min_threshold=1,max_threshold=50000,num_results=20):
         """
-        Search for specified text in the document index
+        Search for specified text in the document index.
         
-        
+        :param text: Text to search the index for.
+        :param window_size: The length of the window of text from which hashes are created from.
+        :param hash_width: The number of bits to use for the hash.
+        :param min_threshold: The minimum number of identical hashes for a document to be considered a positive result.
+        :param max_threshold: The maximum number of documents to process for a single hash. A hash with a higher number of documents will be ignored.  
+        :param num_results: The number of results required.
         """
         url="/rpc/play_script"
         body=cStringIO.StringIO()
@@ -46,6 +51,15 @@ class KyotoTycoon:
         return result.most_common(num_results)
 
     def add(self,docid,text,window_size=15,hash_width=15):
+        """
+        Add a document to the index
+        
+        :param docid: The document id which must be an integer between 0 and 4,294,967,295
+        :param text: The text of the document
+        :param window_size: The length of the window of text from which hashes are created from.
+        :param hash_width: The number of bits to use for the hash.
+        
+        """
         url="/rpc/play_script"
         body=cStringIO.StringIO()
         self._write(body,"name","add")
