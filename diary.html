@@ -69,19 +69,30 @@
 </div>
 <div class="section" id="week-2">
 <h2>Week 2<a class="headerlink" href="#week-2" title="Permalink to this headline">¶</a></h2>
-<p>Now that all the open source infrastructure is in place it&#8217;s time to start learning a bit more about the use-case in hand, US Congress and state legislation. Being based in the UK, it is also interesting to contrast the US system with that of the Houses of Parliament. I am no expert of systems of government, so there is a good chance I might make false assertions!</p>
+<p>Now that all the open source infrastructure is in place it&#8217;s time to start learning a bit more about the use-case in hand, US Congress and state legislation.</p>
 <div class="section" id="legislature">
 <h3>Legislature<a class="headerlink" href="#legislature" title="Permalink to this headline">¶</a></h3>
-<p>The US Congress has two chambers, both elected, the House of Representatives and the Senate. Both chambers can introduce bills and the bill can take one of many paths through both chambers. The House represents individual states with elected members in proportion to their population, while two senators are allocated to each state. This contrasts with the House of Lords, which is unelected and unrepresentative of the population, while the House of Commons is larger in number than the House of Representatives and is elected by relatively equally populated constituencies.</p>
-<p>The passage of a bill through Congress appears to be quite undefined with a whole series of possible routes and referrals being possible before an Act is signed by the President. In the UK, the system is a configured list of readings and stages before Royal Assent is given.</p>
-<p>The end result of acts of Congress is the <a class="reference external" href="http://www.gpo.gov/fdsys/browse/collectionUScode.action?collectionCode=USCODE">US Code</a> which is an up to date record of all enrolled bills. In the UK, there is a lack of an easily digestible final law, as evidenced <a class="reference external" href="http://www.legislation.gov.uk/ukpga/1998/29">here</a>. The amount of cross-referencing and amending means that to the average member of the public the result is incomprehensible!</p>
-<p>States in the US are capable of passing their own local laws. In the UK there is devolution in Scotland, Wales, Northern Ireland and Greater London which permits regional legislation, but leaves the remainder of England with an exceptional democratic deficit. Every part of the UK has representatives in the European Parliament</p>
+<p>The US Congress has two chambers, both elected, the House of Representatives and the Senate. Both chambers can introduce bills and the bill can take one of many paths through both chambers. The passage of a bill through Congress appears to be quite undefined with a whole series of possible routes and referrals being possible before an Act is signed by the President.</p>
+<p>The end result of acts of Congress is the <a class="reference external" href="http://www.gpo.gov/fdsys/browse/collectionUScode.action?collectionCode=USCODE">US Code</a> which is an up to date record of all enrolled bills. States in the US are also capable of passing their own local laws.</p>
 </div>
 <div class="section" id="data-access">
 <h3>Data Access<a class="headerlink" href="#data-access" title="Permalink to this headline">¶</a></h3>
 <p>The US has a well maintained <a class="reference external" href="http://www.gpo.gov/fdsys/browse/collection.action?collectionCode=BILLS">digital archive</a> of all House of Representative Bills from 2004, and a more recent archive of Senate Bills. The data is accessible in XML form which allows for metadata extraction of Bill information and easy manipulation of the Bill text itself, ideal for the purposes of this project. Text-only bills are available from 1993 onwards.</p>
-<p>UK bills are <a class="reference external" href="http://www.legislation.gov.uk/">accessible</a> in text and HTML form only, which makes them less amenable to analysis without some serious text extraction work. Versions of the bill at various stages are not available and thus it is impossible to track revisions and differences as progress through parliament is made.</p>
-<p>What is available in the UK, is effectively a <a class="reference external" href="http://services.parliament.uk/bills/">transcript</a> of what is said in Parliament, including the reading aloud of the bills. This mixture of debate and legislative text is the data source which drives <a class="reference external" href="http://www.theyworkforyou.com/">TheyWorkForYou.com</a>, the result of some tenacious scraping! Unfortunately, this means that public is forced to focus more on the opinions and personalities of the MP&#8217;s rather than the substance and progress of the legislation itself.</p>
+</div>
+</div>
+<div class="section" id="week-3">
+<h2>Week 3<a class="headerlink" href="#week-3" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="framework-design">
+<h3>Framework design<a class="headerlink" href="#framework-design" title="Permalink to this headline">¶</a></h3>
+<p>The aim of the project is to design a reusable tool for bulk text comparison and analysis. To succeed in becoming reusable, at least two use-cases have to be considered and a clean, easy to understand interface for the user has to be designed. <a class="reference external" href="http://www.djangoproject.com/">Django</a> offers many ways of designing models for data storage, and this flexibility is useful - but there can be a number of caveats that can obstruct progress further down the line.</p>
+<p><a class="reference external" href="http://docs.djangoproject.com/en/dev/topics/db/models/#model-inheritance">Model Inheritance</a> allows for the subclassing of a Model which itsef permits further extension. This is an ideal pattern for different types of Document. Say that you have Press Releases and News Articles, or State Law and Congress Law, all with potentially similar content. When you search, you might not know what to expect as results and would like to search all Document types simultaneously. By defining a Document base model, this is possible because it can be assumed that the necessary content in it&#8217;s indexable form is present.</p>
+<p>With Django, there is a choice of either abstract or multi-table inheritance (and also proxy...). Multi-table inheritance results in an extra table, while abstract inheritance just adds fields to the subclasses&#8217; tables. The simplest choice is abstract inheritance and I went for this. However, the disadvantage is that you cannot define a ForeignKey to the abstract base class itself but the related clean indexed content needs to be stored somewhere as a cache so that updates can be detected. To solve this issue I turned to <a class="reference external" href="http://docs.djangoproject.com/en/dev/ref/contrib/contenttypes/">content types</a>, which makes it possible to relate any model instance to any other model instance, regardless of type. This means that the cleaned Content can be related to any of Document&#8217;s subclasses. At this point it&#8217;s  probably worth looking at the <a class="reference external" href="https://github.com/mediastandardstrust/superfastmatch/blob/master/superfastmatch/django/models.py">model definition</a>.</p>
+</div>
+<div class="section" id="faceting">
+<h3>Faceting<a class="headerlink" href="#faceting" title="Permalink to this headline">¶</a></h3>
+<p>One of the limitations of the original Churnalism code is the inability to search for news articles, only press releases. However, both document types have very similar features, such as date published, an author, a publisher and of course the content itself. Therefore it makes sense to also be able to search for news articles with either a news article, press release or other text as the input text. This would be useful for journalists to check for plagiarism and is useful in lots of other contexts.</p>
+<p>The challenge is that the script that builds the search results needs a limit on the number of results to return to make the data and server load manageable. However, imagine searching for both news articles and press releases with a limit of 20 results. It might be the case that 20 news articles have higher ranking than matching press releases. The press releases might be a more interesting result though, so excluding them could omit valuable data. The solution to this is <a class="reference external" href="http://en.wikipedia.org/wiki/Faceted_search">faceted search</a> where extra data, in this case the document type is stored along with the document id in the index. The number of results returned is per document type, and therefore useful data should not be missed. This has implications for total index disk space usage, but is a truly useful addition to the capabilities of SuperFastMatch.</p>
+<p>Other fields, such as published date, could be used as filter, but then we are entering the territory of advanced search engines like <a class="reference external" href="http://xapian.org/">Xapian</a> and <a class="reference external" href="http://lucene.apache.org/solr/">Solr</a> which are already good at that type of thing!</p>
 </div>
 </div>
 </div>
@@ -99,6 +110,11 @@
 <li><a class="reference internal" href="#week-2">Week 2</a><ul>
 <li><a class="reference internal" href="#legislature">Legislature</a></li>
 <li><a class="reference internal" href="#data-access">Data Access</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#week-3">Week 3</a><ul>
+<li><a class="reference internal" href="#framework-design">Framework design</a></li>
+<li><a class="reference internal" href="#faceting">Faceting</a></li>
 </ul>
 </li>
 </ul>

@@ -75,13 +75,44 @@
 <dl class="method">
 <dt id="superfastmatch.kyototycoon.KyotoTycoon.search">
 <tt class="descname">search</tt><big>(</big><em>text</em>, <em>window_size=15</em>, <em>hash_width=15</em>, <em>min_threshold=1</em>, <em>max_threshold=50000</em>, <em>num_results=20</em><big>)</big><a class="headerlink" href="#superfastmatch.kyototycoon.KyotoTycoon.search" title="Permalink to this definition">¶</a></dt>
-<dd><p>Search for specified text in the document index</p>
+<dd><p>Search for specified text in the document index.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>text</strong> &#8211; Text to search the index for.</li>
+<li><strong>window_size</strong> &#8211; The length of the window of text from which hashes are created from.</li>
+<li><strong>hash_width</strong> &#8211; The number of bits to use for the hash.</li>
+<li><strong>min_threshold</strong> &#8211; The minimum number of identical hashes for a document to be considered a positive result.</li>
+<li><strong>max_threshold</strong> &#8211; The maximum number of documents to process for a single hash. A hash with a higher number of documents will be ignored.</li>
+<li><strong>num_results</strong> &#8211; The number of results required.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="superfastmatch.kyototycoon.KyotoTycoon.add">
 <tt class="descname">add</tt><big>(</big><em>docid</em>, <em>text</em>, <em>window_size=15</em>, <em>hash_width=15</em><big>)</big><a class="headerlink" href="#superfastmatch.kyototycoon.KyotoTycoon.add" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Add a document to the index</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>docid</strong> &#8211; The document id which must be an integer between 0 and 4,294,967,295</li>
+<li><strong>text</strong> &#8211; The text of the document</li>
+<li><strong>window_size</strong> &#8211; The length of the window of text from which hashes are created from.</li>
+<li><strong>hash_width</strong> &#8211; The number of bits to use for the hash.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
 
 </dd></dl>
 
@@ -134,7 +165,7 @@
 </div>
 <p>and you must remember to include both <tt class="xref py py-mod docutils literal"><span class="pre">superfastmatch.django</span></tt> and 
 <a class="reference external" href="http://docs.djangoproject.com/en/dev/ref/contrib/contenttypes/">django.contrib.contenttypes</a> 
-in <a class="reference external" href="http://docs.djangoproject.com/en/dev/ref/settings/#installed-apps">INSTALLED_APPS</a>. For Example:</p>
+in <a class="reference external" href="http://docs.djangoproject.com/en/dev/ref/settings/#installed-apps">INSTALLED_APPS</a>. For example:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="n">INSTALLED_APPS</span><span class="o">=</span><span class="p">(</span>
                     <span class="s">&#39;superfastmatch.django&#39;</span><span class="p">,</span>
                     <span class="s">&#39;django.contrib.contenttypes&#39;</span>
