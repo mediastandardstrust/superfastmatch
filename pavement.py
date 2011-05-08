@@ -37,7 +37,7 @@ options(
         script_name='.env/tests_env.py',
         requirements="requirements/tests.txt",
         no_site_packages=True
-    )
+    ),
 )
 
 def bash(command):
@@ -55,6 +55,11 @@ def build_environment(options):
     call_task("paver.virtual.bootstrap")
     bash('python %s' % options.virtualenv.script_name)
     pip_install(options.virtualenv.dest_dir,options.virtualenv.requirements)
+
+@task
+def kyototycoon(options):
+    """Run Kyoto Tycoon server"""
+    bash("ktserver -onr -scr superfastmatch/scripts/search.lua index.kct#ktopts=p")
 
 @task
 def test(options):

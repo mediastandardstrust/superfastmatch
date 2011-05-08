@@ -60,6 +60,13 @@ The challenge is that the script that builds the search results needs a limit on
 
 Other fields, such as published date, could be used as filter, but then we are entering the territory of advanced search engines like `Xapian <http://xapian.org/>`_ and `Solr <http://lucene.apache.org/solr/>`_ which are already good at that type of thing! 
 
+Week 4
+------
+
+Kyoto Cabinet
+'''''''''''''
+
+
 
 
 
