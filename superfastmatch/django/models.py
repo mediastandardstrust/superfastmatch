@@ -25,13 +25,15 @@ Example model definition:
 ...     return re.sub('<[^<]+?>', '', self.content)
 
 Example usage:
-# 
-# >>> article_one = NewsArticle(content="An example news article")
-# >>> article_one.save()
-# >>> article_two = NewsArticle(content="Another example news article with a bit more content")
-# >>> article_two.save()
-# >>> NewsArticle.objects.search('example news article')
-# defaultdict(<class 'superfastmatch.ordereddict.OrderedDict'>, {<class 'superfastmatch.django.tests.NewsArticle'>: OrderedDict([(<NewsArticle: NewsArticle object>, 6), (<NewsArticle: NewsArticle object>, 6)])})
+
+>>> article_one = NewsArticle(content="An example news article")
+>>> article_one.save()
+>>> article_two = NewsArticle(content="Another example news article with a bit more content")
+>>> article_two.save()
+>>> NewsArticle.objects.search('example news article')
+defaultdict(<class 'superfastmatch.ordereddict.OrderedDict'>, {<class 'superfastmatch.django.tests.NewsArticle'>: OrderedDict([(<NewsArticle: NewsArticle object>, 6), (<NewsArticle: NewsArticle object>, 6)])})
+>>> article_one.delete()
+>>> article_two.delete()
 """
 
 from django.db import models
@@ -51,14 +53,25 @@ class DocumentManager(models.Manager):
 
     def associate(self):
         """Method for updating associations between all documents"""
-        pass
+        for content in Content.objects.all():
+            content.similar.all().delete()
+            for result in self.search(content.content).values():
+                for document,score in result.items():
+                    to_content=document.cleaned_content.get()
+                    if content!=to_content:
+                        association=Association(from_content=content,
+                                                to_content=to_content,
+                                                common_characters=score,
+                                                common_percentage=score/len(content.content)
+                                            )
+                        association.save()
 
     def search(self,text,document_types=[]):
         """
         Method for searching for text in all or specified documents
         
-        :param:text The text to search for.
-        :param:document_types A list or tuple of the document subclasses to include in the results. If not specified, all document types are returned.
+        :param text: The text to search for.
+        :param document_types: A list or tuple of the document subclasses to include in the results. If not specified, all document types are returned.
         """
         
         doc_types=[ContentType.objects.get_for_model(m).id for m in document_types]
@@ -91,6 +104,11 @@ class Document(models.Model):
     objects = DocumentManager()
     """Returns the :class:`DocumentManager`"""
     
+    @property
+    def similar(self):
+        """Returns a list of similar documents"""
+        return [c.content_object for c in self.cleaned_content.get().similar.all()]
+    
     @property    
     def clean(self):
         """Override this property to provide custom cleaning of content"""
@@ -99,17 +117,21 @@ class Document(models.Model):
     def save(self, *args, **kwargs):
         """Overridden save makes sure document index is kept up to date"""
         super(Document, self).save(*args, **kwargs)
-        cleaned,created = self.cleaned_content.get_or_create(defaults={
-                                                                        'content_object' : self,
-                                                                        'content'        : self.clean
-                                                            })
-        if not created and cleaned.content != self.clean:
-            cleaned.content = self.clean
+        create=False
+        try:
+            cleaned = self.cleaned_content.get()
+            if cleaned.content != self.clean:
+                cleaned.delete() 
+                create=True
+        except Content.DoesNotExist:
+            create=True
+        if create:
+            cleaned = Content(content_object=self,content=self.clean)
             cleaned.save()
     
     def delete(self,*args,**kwargs):
         """Overridden delete makes sure document index is kept up to date"""
-        self.cleaned_content.all()[0].delete()
+        self.cleaned_content.get().delete()
         super(Document, self).delete(*args, **kwargs)
     
     class Meta:
@@ -160,3 +182,5 @@ class Association(models.Model):
     
     class Meta:
         db_table = 'superfastmatch_association'
+        unique_together = ('from_content', 'to_content')
+        
