@@ -11,14 +11,15 @@ from superfastmatch.ordereddict import OrderedDict
 class KyotoTycoon:
     """Interface to Kyoto Tycoon"""
     
-    def __init__(self,host='127.0.0.1', port = 1978, timeout = 30):
+    def __init__(self,host='127.0.0.1', port = 1978, timeout = 2000, debug=False):
         self.host=host
         self.port=port
         self.timeout=timeout
+        self.debug=1 if debug else 0
         
     def open(self):
         """Opens HTTP connection"""
-        self.ua = httplib.HTTPConnection(self.host, self.port, False, self.timeout)
+        self.ua = httplib.HTTPConnection(host=self.host, port=self.port, strict=False, timeout=self.timeout)
 
     def close(self):
         """Closes HTTP connection"""
@@ -39,6 +40,7 @@ class KyotoTycoon:
         url="/rpc/play_script"
         body=cStringIO.StringIO()
         self._write(body,"name","search")
+        self._write(body,"_debug", self.debug)
         self._write(body,"_window_size",window_size)
         self._write(body,"_hash_width",hash_width)
         self._write(body,"_min_threshold",min_threshold)
@@ -57,7 +59,7 @@ class KyotoTycoon:
             return None
         return result
 
-    def add(self,doc_type,doc_id,text,window_size=15,hash_width=32):
+    def add(self,doc_type,doc_id,text,window_size=15,hash_width=32,verify_exists=True):
         """
         Add a document to the index
 
@@ -67,7 +69,7 @@ class KyotoTycoon:
         :param window_size: The length of the window of text from which hashes are created from.
         :param hash_width: The number of bits to use for the hash.        
         """
-        return self._update("add",doc_type,doc_id,text,window_size=15,hash_width=32)
+        return self._update("add",doc_type,doc_id,text,window_size=15,hash_width=32,verify_exists=verify_exists)
 
     def delete(self,doc_type,doc_id,text,window_size=15,hash_width=32):
         """
@@ -81,13 +83,15 @@ class KyotoTycoon:
         """
         return self._update("delete",doc_type,doc_id,text,window_size=15,hash_width=32)
         
-    def _update(self,action,doc_type,doc_id,text,window_size=15,hash_width=32):
+    def _update(self,action,doc_type,doc_id,text,window_size=15,hash_width=32,verify_exists=True):
         url="/rpc/play_script"
         body=cStringIO.StringIO()
         self._write(body,"name","update")
+        self._write(body,"_debug", self.debug)
         self._write(body,"_action",action)
         self._write(body,"_window_size",window_size)
         self._write(body,"_hash_width",hash_width)
+        self._write(body,"_verify_exists",1 if verify_exists else 0)
         self._write(body,"_doc_id",doc_id)
         self._write(body,"_doc_type",doc_type)
         self._write(body,"_text",text)

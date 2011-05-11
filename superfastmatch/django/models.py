@@ -151,10 +151,11 @@ class Content(models.Model):
 
     def save(self,*args,**kwargs):
         """Updates document index every time a Content instance is saved"""
+        verify_exists = False if not self.id else True
         super(Content,self).save(*args, **kwargs)
         tycoon = get_tycoon()
         tycoon.open()
-        tycoon.add(self.content_type_id,self.object_id,self.content)
+        tycoon.add(self.content_type_id,self.object_id,self.content,verify_exists=verify_exists)
         tycoon.close()
     
     def delete(self,*args,**kwargs):

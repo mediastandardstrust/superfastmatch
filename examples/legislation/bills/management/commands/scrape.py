@@ -1,5 +1,6 @@
 import re
 import urllib
+import time
 from lxml.html import fromstring as fromhtmlstring
 from lxml.etree import XMLParser,parse,tostring
 from django.core.management.base import BaseCommand
@@ -22,7 +23,7 @@ class Command(BaseCommand):
                 if content.getroot() is None:
                     print "Skipping %s - no content" %source
                     break
-                print "%s %s"%(doc.get('href'),details.groups())
+                print " %s %s %s"%(time.ctime(),doc.get('href'),details.groups())
                 number = int(details.group('number'))
                 origin = details.group('origin').lower()
                 form = details.group('form').lower() if details.group('form') else 'b'

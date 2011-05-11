@@ -2,6 +2,8 @@ from django.test import TestCase
 
 #An example NewsArticle Document with a clean property to strip html tags
 import re
+import os
+import codecs
 from superfastmatch.django.models import *
 
 class NewsArticle(Document):
@@ -17,6 +19,8 @@ class PressRelease(Document):
 CONTENT1 = '<html><body><h1>Princess reveals beautiful wedding dress</h1><p>Today we saw the princess...</p></body>'
 CONTENT2 = '<html><body><h1>Princess reveals Karen Burton beautiful wedding dress</h1><p>Today we saw the beautiful princess...</p></body>'
 SEARCH1 = 'Karen Burton beautiful Wedding Dress'
+BOOK1 = codecs.open(os.path.join(os.path.split(__file__)[0],'fixtures/great_expectations.txt'),"r","utf-8").read()
+BOOK2 = codecs.open(os.path.join(os.path.split(__file__)[0],'fixtures/oliver_twist.txt'),"r","utf-8").read()
 
 class DocumentTest(TestCase):
     def tearDown(self):
@@ -29,6 +33,12 @@ class DocumentTest(TestCase):
         article = NewsArticle(content=CONTENT1)
         article.save()
         self.assertEqual(Content.objects.count(),1)
+        
+    def test_load_big_documents(self):
+        book1 = NewsArticle(content=BOOK1)
+        book1.save()
+        book2 = NewsArticle(content=BOOK2)
+        book2.save()
     
     def test_change_document(self):
         article = NewsArticle(content=CONTENT1)
@@ -114,3 +124,4 @@ class DocumentTest(TestCase):
         self.assertEqual(len(press_release.similar),1)
         self.assertEqual(press_release.similar[0],article)
         self.assertEqual(article.similar[0],press_release)
+        

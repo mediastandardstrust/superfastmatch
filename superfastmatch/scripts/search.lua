@@ -41,16 +41,23 @@ function get_doc_types(dt)
 end
 
 function hash(inmap)
-   local text=inmap.text 
+   local text=string.lower(inmap.text)
    local window_size=inmap.window_size and tonumber(inmap.window_size) or 15
    local hash_width=inmap.hash_width and tonumber(inmap.hash_width) or 32
+   local debug=inmap.debug and tonumber(inmap.debug) or 0
    local sections={}
    local keys={}
+   local flags={}
    for i=1,(string.len(text)-window_size+1) do
-      local part=string.sub(string.lower(text),i,i+window_size-1)
+      local part=string.sub(text,i,i+window_size-1)
       local hash=kt.bit("and",kt.hash_murmur(part), 0xFFFFFFFF)
-      table.insert(sections,part)
-      table.insert(keys,kt.pack('N',{hash}))
+      if not flags[hash] then
+         flags[hash]=true
+         table.insert(keys,kt.pack('N',{hash}))
+         if debug==1 then
+            table.insert(sections,part)
+         end
+      end
    end
    return keys,sections,#text
 end
@@ -60,6 +67,8 @@ function update(inmap,outmap)
    local start_time=kt.time()
    local doc_id=tonumber(inmap.doc_id)
    local doc_type=tonumber(inmap.doc_type)
+   local debug=inmap.debug and tonumber(inmap.debug) or 0
+   local verify_exists=inmap.verify_exists or 1
    local keys,sections,length=hash(inmap)   
    local hash_time=kt.time()
    local new=0
@@ -69,17 +78,23 @@ function update(inmap,outmap)
       local docs=unpack(value)
       if action=="add" then
          local exists=false
-         for j=1,#docs,2 do
-            if docs[j]==doc_id and docs[j+1]==doc_type then
-               exists=true
+         if verify_exists==1 then
+            for j=1,#docs,2 do
+               if docs[j]==doc_id and docs[j+1]==doc_type then
+                  exists=true
+               end
             end
          end
-         kt.log("debug","Adding: "..sections[i]..":"..(value and #value or 0))
-         new=new+1
-         table.insert(docs,doc_id)
-         table.insert(docs,doc_type)
-         if not db:set(key,pack(docs)) then
-             kt.log("debug","Insert fail")
+         if not exists then
+            if debug==1 then
+               kt.log("debug","Adding: "..sections[i]..":"..(value and #value or 0))
+            end
+            new=new+1
+            table.insert(docs,doc_id)
+            table.insert(docs,doc_type)
+            if not db:set(key,pack(docs)) then
+                kt.log("debug","Insert fail")
+            end
          end
       elseif action=="delete" then
          local new_docs={}
@@ -90,7 +105,9 @@ function update(inmap,outmap)
             end
          end
          if #docs~=#new_docs then
-            kt.log("debug","Deleting: "..sections[i]..":"..(value and #value or 0))
+            if debug==1 then
+               kt.log("debug","Deleting: "..sections[i]..":"..(value and #value or 0))
+            end
             deleted=deleted+1
             if not db:set(key,pack(new_docs)) then
                 kt.log("debug","Delete fail")
@@ -101,7 +118,7 @@ function update(inmap,outmap)
    outmap['new']=new
    outmap['deleted']=deleted
    outmap['existing']=(#keys-new)
-   kt.log("info",string.format("Update Response Time: %.8f secs Hash Time: %.8f secs Text Length: %d Document Id: %d Document Type: %d Added: %d Deleted: %d",kt.time()-start_time,hash_time-start_time,length,doc_id,doc_type,new,deleted))
+   kt.log("info",string.format("Update Response Time: %.3f secs Hash Time: %.3f secs Text Length: %d Document Id: %d Document Type: %d Added: %d Deleted: %d Verify Exists: %d",kt.time()-start_time,hash_time-start_time,length,doc_id,doc_type,new,deleted,verify_exists))
    return kt.RVSUCCESS
 end
 
@@ -111,12 +128,15 @@ function search(inmap,outmap)
    local min_threshold=inmap.min_threshold and tonumber(inmap.min_threshold) or 1
    local max_threshold=inmap.max_threshold and tonumber(inmap.max_threshold) or 999999999
    local num_results=inmap.num_results and tonumber(inmap.num_results) or 20
+   local debug=inmap.debug and tonumber(inmap.debug) or 0
    local keys,sections,length=hash(inmap)
    local hash_time=kt.time()
    local results={}
    for i,key in ipairs(keys) do 
       local value = db:get(key)
-      kt.log("debug","Searching for: "..sections[i]..":"..(value and #value or 0))
+      if debug==1 then
+         kt.log("debug","Searching for: "..sections[i]..":"..(value and #value or 0))
+      end
       if value and (#value<max_threshold) then -- TODO Need to realise 5 bytes per document
          table.insert(results,value) 
       end
@@ -160,10 +180,9 @@ function search(inmap,outmap)
          counter=counter+1
       end
    end
-   for k,v in pairs(outmap) do
-      kt.log("debug",k..":"..v)
+   if debug==1 then
+      kt.log("debug",string.format("Hash Time: %.8f Query Time: %.8f Concat Time: %.8f Unpack Time: %.8f Threshold Time: %.8f Build Time: %.8f",hash_time-start_time,query_time-hash_time,concat_time-query_time,unpack_time-concat_time,threshold_time-unpack_time,kt.time()-threshold_time))
    end
-   kt.log("debug",string.format("Hash Time: %.8f Query Time: %.8f Concat Time: %.8f Unpack Time: %.8f Threshold Time: %.8f Build Time: %.8f",hash_time-start_time,query_time-hash_time,concat_time-query_time,unpack_time-concat_time,threshold_time-unpack_time,kt.time()-threshold_time))
    kt.log("info",string.format("Search Response Time: %.8f secs Text Length: %d Results: %d Values: %d",kt.time()-start_time,length,counter,#values))
    return kt.RVSUCCESS
 end
