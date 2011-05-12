@@ -128,6 +128,7 @@ function search(inmap,outmap)
    local min_threshold=inmap.min_threshold and tonumber(inmap.min_threshold) or 1
    local max_threshold=inmap.max_threshold and tonumber(inmap.max_threshold) or 999999999
    local num_results=inmap.num_results and tonumber(inmap.num_results) or 20
+   local window_size=inmap.window_size and tonumber(inmap.window_size) or 15
    local debug=inmap.debug and tonumber(inmap.debug) or 0
    local keys,sections,length=hash(inmap)
    local hash_time=kt.time()
@@ -154,7 +155,7 @@ function search(inmap,outmap)
       if scores[doc_type]==nil then
          scores[doc_type]={}
       end
-      scores[doc_type][doc_id]=(scores[doc_type][doc_id] or 0)+1
+      scores[doc_type][doc_id]=(scores[doc_type][doc_id] or window_size-1)+1
    end
    -- Filter out below min_threshold docs and ignored doc_types
    local threshold_time=kt.time()
@@ -168,8 +169,8 @@ function search(inmap,outmap)
          end
       end
    end
-   -- Sort docs by score
-   table.sort(high_scores,function(a,b) return a.score < b.score end)
+   -- Sort docs by descending score
+   table.sort(high_scores,function(a,b) return a.score > b.score end)
    -- Build results respecting num_results 
    local result_count={}
    local counter=0
@@ -180,10 +181,7 @@ function search(inmap,outmap)
          counter=counter+1
       end
    end
-   if debug==1 then
-      kt.log("debug",string.format("Hash Time: %.8f Query Time: %.8f Concat Time: %.8f Unpack Time: %.8f Threshold Time: %.8f Build Time: %.8f",hash_time-start_time,query_time-hash_time,concat_time-query_time,unpack_time-concat_time,threshold_time-unpack_time,kt.time()-threshold_time))
-   end
-   kt.log("info",string.format("Search Response Time: %.8f secs Text Length: %d Results: %d Values: %d",kt.time()-start_time,length,counter,#values))
+   kt.log("info",string.format("Search Response Time: %.3f secs Hash Time: %.3f secs Query Time: %.3f secs Concat Time: %.3f secs Unpack Time: %.3f secs Threshold Time: %.3f secs Build Time: %.3f secs Text Length: %d Results: %d Values: %d Min Threshold: %d Max Threshold: %d",kt.time()-start_time,hash_time-start_time,query_time-hash_time,concat_time-query_time,unpack_time-concat_time,threshold_time-unpack_time,kt.time()-threshold_time,length,counter,#values,min_threshold,max_threshold))
    return kt.RVSUCCESS
 end
 

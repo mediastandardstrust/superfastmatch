@@ -5,6 +5,10 @@ The following `settings <http://docs.djangoproject.com/en/dev/ref/settings>`_ ca
     
     SUPERFASTMATCH_HOST = '127.0.0.1'
     SUPERFASTMATCH_PORT = 1977
+    
+as well as a minimum percentage of the document required to be copied for an association to be created:
+
+    SUPERFASTMATCH_MIN_THRESHOLD = 0.02
 
 and you must remember to include both :mod:`superfastmatch.django` and 
 `django.contrib.contenttypes <http://docs.djangoproject.com/en/dev/ref/contrib/contenttypes/>`_ 
@@ -31,7 +35,7 @@ Example usage:
 >>> article_two = NewsArticle(content="Another example news article with a bit more content")
 >>> article_two.save()
 >>> NewsArticle.objects.search('example news article')
-defaultdict(<class 'superfastmatch.ordereddict.OrderedDict'>, {<class 'superfastmatch.django.tests.NewsArticle'>: OrderedDict([(<NewsArticle: NewsArticle object>, 6), (<NewsArticle: NewsArticle object>, 6)])})
+defaultdict(<type 'dict'>, {<class 'superfastmatch.django.tests.NewsArticle'>: OrderedDict([(<NewsArticle: NewsArticle object>, 21), (<NewsArticle: NewsArticle object>, 21)])})
 >>> article_one.delete()
 >>> article_two.delete()
 """
@@ -55,18 +59,19 @@ class DocumentManager(models.Manager):
         """Method for updating associations between all documents"""
         for content in Content.objects.all():
             content.similar.all().delete()
-            for result in self.search(content.content).values():
+            min_threshold = int(round(getattr(settings,'SUPERFASTMATCH_MIN_THRESHOLD',0.02)*len(content.content)))
+            for result in self.search(content.content,min_threshold=min_threshold).values():
                 for document,score in result.items():
                     to_content=document.cleaned_content.get()
                     if content!=to_content:
                         association=Association(from_content=content,
                                                 to_content=to_content,
                                                 common_characters=score,
-                                                common_percentage=score/len(content.content)
+                                                common_percentage=float(score)/len(content.content)
                                             )
                         association.save()
 
-    def search(self,text,document_types=[]):
+    def search(self,text,document_types=[],min_threshold=1):
         """
         Method for searching for text in all or specified documents
         
@@ -77,9 +82,9 @@ class DocumentManager(models.Manager):
         doc_types=[ContentType.objects.get_for_model(m).id for m in document_types]
         tycoon = get_tycoon()
         tycoon.open()
-        results = tycoon.search(text,doc_types)
+        results = tycoon.search(text,doc_types,min_threshold=min_threshold)
         tycoon.close()
-        documents = defaultdict(OrderedDict)
+        documents = defaultdict(dict)
         for content_type_id,object_ids in results.items():
             contents = Content.objects.filter(content_type=content_type_id)\
                                       .filter(object_id__in=object_ids.keys())\
@@ -87,6 +92,7 @@ class DocumentManager(models.Manager):
             document_type = contents[0].content_object.__class__
             for content in contents:
                 documents[document_type][content.content_object]=results[content_type_id][content.content_object.id]
+            documents[document_type]=OrderedDict(sorted(documents[document_type].items(), key=lambda t: t[1], reverse=True))
         return documents
 
 class Document(models.Model):
@@ -107,7 +113,8 @@ class Document(models.Model):
     @property
     def similar(self):
         """Returns a list of similar documents"""
-        return [c.content_object for c in self.cleaned_content.get().similar.all()]
+        associations=Association.objects.filter(from_content=self.cleaned_content.get()).order_by('-common_percentage')
+        return [a.to_content.content_object for a in associations]
     
     @property    
     def clean(self):
@@ -178,8 +185,8 @@ class Association(models.Model):
     
     from_content = models.ForeignKey('Content',related_name='from_document')
     to_content = models.ForeignKey('Content',related_name='to_document')
-    common_characters = models.PositiveIntegerField(blank=False,null=False)
-    common_percentage = models.FloatField(blank=False,null=False)
+    common_characters = models.PositiveIntegerField(blank=False,null=False,db_index=True)
+    common_percentage = models.FloatField(blank=False,null=False,db_index=True)
     
     class Meta:
         db_table = 'superfastmatch_association'

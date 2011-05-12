@@ -34,11 +34,11 @@ class DocumentTest(TestCase):
         article.save()
         self.assertEqual(Content.objects.count(),1)
         
-    def test_load_big_documents(self):
-        book1 = NewsArticle(content=BOOK1)
-        book1.save()
-        book2 = NewsArticle(content=BOOK2)
-        book2.save()
+    # def test_load_big_documents(self):
+    #     book1 = NewsArticle(content=BOOK1)
+    #     book1.save()
+    #     book2 = NewsArticle(content=BOOK2)
+    #     book2.save()
     
     def test_change_document(self):
         article = NewsArticle(content=CONTENT1)
@@ -113,6 +113,19 @@ class DocumentTest(TestCase):
         results3 = NewsArticle.objects.search(SEARCH1)
         self.assertEqual(results1,results2)
         self.assertEqual(results2,results3)
+    
+    def test_search_correct_order(self):
+        for i in range(0,15):
+            article2 = NewsArticle(content=CONTENT2)
+            article2.save()
+            article1 = NewsArticle(content=CONTENT1)
+            article1.save()
+        results = NewsArticle.objects.search(SEARCH1)
+        scores = results[NewsArticle].values()
+        for i in range(0,15):
+            self.assertEqual(scores[i],37)
+        for i in range(15,20):
+            self.assertEqual(scores[i],25)
 
     def test_associate_documents(self):
         article = NewsArticle(content=CONTENT1)

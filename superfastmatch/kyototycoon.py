@@ -50,13 +50,16 @@ class KyotoTycoon:
         headers={"Content-Type": "text/tab-separated-values; colenc=B"}
         self.ua.request("POST",url,body.getvalue(),headers)
         res=self.ua.getresponse()
-        result = defaultdict(OrderedDict)
+        if res.status != 200:
+            return None
+        result = defaultdict(dict)
         raw_results = self._parse(res.read()).items()
         for key,value in raw_results:
             doc_type,doc_id = (int(k) for k in key.split(":"))
             result[doc_type][doc_id]=value        
-        if res.status != 200:
-            return None
+        # Sort results by scores
+        for key in result.keys():
+            result[key]=OrderedDict(sorted(result[key].items(), key=lambda t: t[1], reverse=True))
         return result
 
     def add(self,doc_type,doc_id,text,window_size=15,hash_width=32,verify_exists=True):
@@ -109,9 +112,9 @@ class KyotoTycoon:
         body.write("%s\t%s\n"%(b64encode(key.encode('utf8')),b64encode(value.encode('utf8'))))
 
     def _parse(self,body):
-            result={}
-            for line in body.split('\n')[:-1]:
-                key,value=line.split('\t')
-                if key.startswith("_"):
-                    result[key[1:]]=value.isdigit() and int(value) or value
-            return result
+        result={}
+        for line in body.split('\n')[:-1]:
+            key,value=line.split('\t')
+            if key.startswith("_"):
+                result[key[1:]]=value.isdigit() and int(value) or value
+        return result
