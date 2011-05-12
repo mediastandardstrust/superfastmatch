@@ -43,12 +43,39 @@ STAGES = (
     ('ats','Agreed to Senate'),
 )
 
+class BillManager(models.Manager):
+    def add_bill(self,congress,session,number,origin,form,source,stage,content):
+        bill,created = Bill.objects.get_or_create(congress = congress,
+                                                  session  = session,
+                                                  number   = number,
+                                                  origin   = origin,
+                                                  form     = form,
+                                                  defaults={
+                                                    'congress'  : congress,
+                                                    'session'   : session,
+                                                    'number'    : number,
+                                                    'origin'    : origin,
+                                                    'form'      : form
+                                                  })
+        bill_stage,created = BillStage.objects.get_or_create(bill    = bill,
+                                                             stage   = stage,
+                                                             source  = source,
+                                                             defaults ={
+                                                                'bill'      : bill,
+                                                                'stage'     : stage,
+                                                                'source'    : source,
+                                                                'content'   : content
+                                                            })
+        return (bill,bill_stage)
+
 class Bill(models.Model):    
     congress = models.PositiveIntegerField(choices=CONGRESSES,blank=False, null=False)
     session = models.PositiveIntegerField(choices=SESSIONS,blank=False, null=False)
     number = models.PositiveIntegerField(blank=False, null=False)
     origin = models.CharField(max_length=1,choices=ORIGINS,blank=False,null=False)
     form = models.CharField(max_length=1,choices=FORMS,blank=False,null=False)
+    
+    objects = BillManager()
     
     @property
     def title(self):
@@ -74,7 +101,7 @@ class BillStage(Document):
         
     @property
     def clean(self):
-        texts = fromstring(self.content).xpath('//legis-body//header|//legis-body//text')
+        texts = fromstring(self.content).xpath('//header|//text')
         cleaned=""
         for text in texts:
             if text.text is not None:
