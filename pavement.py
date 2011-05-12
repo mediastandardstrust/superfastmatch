@@ -59,7 +59,7 @@ def build_environment(options):
 @task
 def kyototycoon(options):
     """Run Kyoto Tycoon server"""
-    bash("ktserver -tout 2000 -onr -scr  superfastmatch/scripts/search.lua index.kct#ktopts=p")
+    bash("ktserver -tout 2000 -onr -scr  superfastmatch/scripts/search.lua index.kct#ktopts=p#msiz=1g#pccap=1g")
 
 @task
 def test(options):
