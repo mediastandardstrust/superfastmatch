@@ -3,7 +3,7 @@ from django.core.paginator import Paginator, InvalidPage, EmptyPage
 from models import *
 
 def all(request):
-    stages = BillStage.objects.select_related().defer('content','source').order_by('bill__number')
+    stages = BillStage.objects.select_related().defer('content','source').order_by('bill__congress','bill__session','bill__number')
     paginator = Paginator(stages, 1000) 
     page = request.GET.get('page')
     try:
