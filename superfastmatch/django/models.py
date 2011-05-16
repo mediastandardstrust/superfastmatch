@@ -124,11 +124,13 @@ class DocumentManager(models.Manager):
                     association.save()
                     for m in match(content.content,to_content.content,get_window_size()):
                         fragment_count+=1
+                        text=content.content[m[0]:m[0]+m[2]]
                         Fragment.objects.create(association=association,
                                                 from_start=m[0],
                                                 to_start=m[1],
                                                 length=m[2],
-                                                hash=content.content[m[0]:m[0]+m[2]].__hash__()
+                                                text=text,
+                                                hash=text.__hash__()
                                                 )
         logger.info("Associations: %d Fragments:%d Length: %d Content: %s"% (association_count,fragment_count,len(content.content),truncate_words(content.content,10)))
         
@@ -166,17 +168,19 @@ class DocumentManager(models.Manager):
         """
         Returns a dictionary with each source Document as a key and an ordered dictionary as value
         The ordered dictionary has a similar Document as a key and a list of fragments as a value.
-        """
+        """        
         results={}
         docs = dict([v.id,k] for k,v in self.get_contents(documents).iteritems())
         fragments=Fragment.objects.filter(association__from_content__in=docs.keys())\
                                   .order_by('association__from_content','-length')\
-                                  .select_related(depth=2)
+                                  .select_related(depth=2)\
+                                  .defer('association__from_content__content','association__to_content__content')
         self._fill_content_objects([f.association.to_content for f in fragments],select_related=select_related)
         for content,g in groupby(fragments,lambda f:f.association.from_content):
               results[docs[content.id]]=OrderedDict()
-              for c,f in groupby(g,lambda f:f.association.to_content):
-                  results[docs[content.id]][c.content_object]=list(f)
+              frags=sorted(g,key=lambda f:f.association.to_content_id)
+              for to_content,f in groupby(frags,key=lambda f:f.association.to_content):
+                  results[docs[content.id]][to_content.content_object]=list(f)
         return results
 
     def get_similar_documents(self,documents,select_related=True,defer=True):
@@ -298,11 +302,8 @@ class Fragment(models.Model):
     from_start = models.PositiveIntegerField(blank=False,null=False)
     to_start = models.PositiveIntegerField(blank=False,null=False)    
     length = models.PositiveIntegerField(blank=False,null=False)
+    text = models.TextField(blank=False,null=False)
     hash = models.BigIntegerField(blank=False,null=False,db_index=True)
-    
-    @property
-    def text(self):
-        return self.association.from_content.content[self.from_start:self.from_start+self.length]
     
     def __unicode__(self):
         return self.text
