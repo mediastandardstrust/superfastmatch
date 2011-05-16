@@ -50,6 +50,7 @@ from django.utils.text import truncate_words
 from collections import defaultdict
 from itertools import groupby
 import logging
+import multiprocessing
 from superfastmatch.ordereddict import OrderedDict
 from superfastmatch.kyototycoon import KyotoTycoon
 from superfastmatch.matcher import match
@@ -67,6 +68,37 @@ def get_min_threshold():
 
 def get_tycoon():
     return KyotoTycoon(host=HOST,port=PORT)
+
+def do_associate(content_id):
+    content = Content.objects.get(id=content_id)
+    Association.objects.filter(from_content=content).delete()
+    results = Document.objects.search(content.content)
+    association_count = 0
+    fragment_count = 0
+    for result in results.values():
+        contents=Document.objects.get_contents([doc for doc,_ in result.items()],defer=False)
+        for document,score in result.items():
+            to_content=contents[document]
+            if content!=to_content:
+                association_count+=1
+                association=Association(from_content=content,
+                                        to_content=to_content,
+                                        common_characters=score,
+                                        common_percentage=float(score)/len(content.content)
+                                    )
+                association.save()
+                for m in match(content.content,to_content.content,get_window_size()):
+                    fragment_count+=1
+                    text=content.content[m[0]:m[0]+m[2]]
+                    Fragment.objects.create(association=association,
+                                            from_start=m[0],
+                                            to_start=m[1],
+                                            length=m[2],
+                                            text=text,
+                                            hash=text.__hash__()
+                                            )
+    logger.info("Associations: %d Fragments:%d Length: %d Content: %s"% (association_count,fragment_count,len(content.content),truncate_words(content.content,10)))
+
 
 class DocumentManager(models.Manager):
     """Manager for running bulk operations on Documents"""
@@ -104,39 +136,10 @@ class DocumentManager(models.Manager):
                 results[docs[content.object_id]] = content
         return results
 
-    def _do_associate(self,content_id):
-        content = Content.objects.get(id=content_id)
-        Association.objects.filter(from_content=content).delete()
-        results = self.search(content.content)
-        association_count = 0
-        fragment_count = 0
-        for result in results.values():
-            contents=self.get_contents([doc for doc,_ in result.items()],defer=False)
-            for document,score in result.items():
-                to_content=contents[document]
-                if content!=to_content:
-                    association_count+=1
-                    association=Association(from_content=content,
-                                            to_content=to_content,
-                                            common_characters=score,
-                                            common_percentage=float(score)/len(content.content)
-                                        )
-                    association.save()
-                    for m in match(content.content,to_content.content,get_window_size()):
-                        fragment_count+=1
-                        text=content.content[m[0]:m[0]+m[2]]
-                        Fragment.objects.create(association=association,
-                                                from_start=m[0],
-                                                to_start=m[1],
-                                                length=m[2],
-                                                text=text,
-                                                hash=text.__hash__()
-                                                )
-        logger.info("Associations: %d Fragments:%d Length: %d Content: %s"% (association_count,fragment_count,len(content.content),truncate_words(content.content,10)))
-        
     def associate(self):
         """Method for updating associations between all documents"""
-        map(self._do_associate,Content.objects.values_list('id',flat=True))
+        pool = multiprocessing.Pool(processes=multiprocessing.cpu_count()*2)
+        pool.map(do_associate,Content.objects.values_list('id',flat=True))
 
     def search(self,text,document_types=[]):
         """
