@@ -1,8 +1,16 @@
+{% extends "base.html" %}
+
+{% block content %}
 <h1><a href="{{stage.source}}">{{stage.bill.title}}</a></h2>
 
 {{stage.clean|linebreaks}}
 
-{% for similar in stage.similar %}
+{% for similar,fragments in stage.fragments.items %}
 <h2><a href="{{ similar.source }}">{{ similar.bill.title }}</a></h2>
-    {{similar.clean|linebreaks}}
+   <ol>
+   {% for fragment in fragments %}
+    <li>{{fragment.text|linebreaks}}</li>
+    {% endfor %}
+   </ol>
 {% endfor %}
+{% endblock %}

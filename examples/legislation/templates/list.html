@@ -1,10 +1,15 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% regroup stages by bill as bills %}
 <ol>
-{% for bill,stages in bills.items %} 
-    <li>{{ bill.title }}</li> 
-    <ol>
-        {% for stage in stages%}
-            <li><a href="{{stage.get_absolute_url}}">{{ stage }}</a></li>
+    {% for bill in bills %}
+        <li> {{ bill.grouper.title }}</li>
+        <ol>
+        {% for stage in bill.list %}
+            <li><a href="{{stage.get_absolute_url}}">{{ stage.get_stage_display }}</a></li>
         {% endfor %}
-    </ol>
-{% endfor %}
+        </ol>
+    {% endfor  %}
 </ol>
+{% endblock %}

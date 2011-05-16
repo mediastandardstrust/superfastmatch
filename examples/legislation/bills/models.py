@@ -97,7 +97,7 @@ class BillStage(Document):
         return ('bills.views.show',(self.id,))
     
     def __unicode__(self):
-        return self.get_stage_display()
+        return "%s %s"%(self.bill,self.get_stage_display())
         
     @property
     def clean(self):
