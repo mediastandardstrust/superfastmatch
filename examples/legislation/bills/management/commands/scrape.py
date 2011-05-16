@@ -46,12 +46,11 @@ class Command(BaseCommand):
         
     def handle(self, *args, **options):
         #TODO add reset flag
-        Bill.objects.all().delete()
-        for c in Content.objects.all():
-            c.delete()
+        for bill in Bill.objects.all():
+            bill.delete()
         pool = multiprocessing.Pool(processes=multiprocessing.cpu_count()*2)
         links=[]
-        for congress in range(108,109):
+        for congress in range(108,113):
             docs_url = 'http://thomas.loc.gov/home/gpoxmlc%s/' % congress
             logger.info("Downloading %s" %docs_url)
             docs = fromhtmlstring(urllib.urlopen(docs_url).read())
@@ -59,5 +58,5 @@ class Command(BaseCommand):
             for doc in docs.cssselect('a[href$="xml"]'):
                 links.append({'link':doc.get('href'),'text':doc.text,'congress':congress})
         map(do_scrape,links)
-        # pool.map(do_scrape,links,chunksize=10)
+        #pool.map(do_scrape,links,chunksize=10)
                 

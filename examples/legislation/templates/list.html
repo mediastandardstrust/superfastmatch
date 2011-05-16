@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-{% regroup stages by bill as bills %}
+{% regroup stages.object_list by bill as bills %}
 <ol>
     {% for bill in bills %}
         <li> {{ bill.grouper.title }}</li>
@@ -12,4 +12,20 @@
         </ol>
     {% endfor  %}
 </ol>
+
+<div class="pagination">
+    <span class="step-links">
+        {% if stages.has_previous %}
+            <a href="?page={{ stages.previous_page_number }}">previous</a>
+        {% endif %}
+
+        <span class="current">
+            Page {{ stages.number }} of {{ stages.paginator.num_pages }}.
+        </span>
+
+        {% if stages.has_next %}
+            <a href="?page={{ stages.next_page_number }}">next</a>
+        {% endif %}
+    </span>
+</div>
 {% endblock %}
