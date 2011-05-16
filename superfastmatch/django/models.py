@@ -6,9 +6,10 @@ The following `settings <http://docs.djangoproject.com/en/dev/ref/settings>`_ ca
     SUPERFASTMATCH_HOST = '127.0.0.1'
     SUPERFASTMATCH_PORT = 1977
     
-as well as a minimum percentage of the document required to be copied for an association to be created:
+as well as a minimum percentage of the document required to be copied for an association to be created and the window size for matching:
 
     SUPERFASTMATCH_MIN_THRESHOLD = 0.02
+    SUPERFASTMATCH_WINDOW_SIZE = 15
 
 and you must remember to include both :mod:`superfastmatch.django` and 
 `django.contrib.contenttypes <http://docs.djangoproject.com/en/dev/ref/contrib/contenttypes/>`_ 
@@ -45,33 +46,97 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
 from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings
+from django.utils.text import truncate_words
 from collections import defaultdict
+from itertools import groupby
+import logging
 from superfastmatch.ordereddict import OrderedDict
 from superfastmatch.kyototycoon import KyotoTycoon
+from superfastmatch.matcher import match
+
+logger = logging.getLogger('superfastmatch')
+
+HOST=getattr(settings,'SUPERFASTMATCH_HOST','127.0.0.1')
+PORT=getattr(settings,'SUPERFASTMATCH_PORT',1978)
+
+def get_window_size():
+    return getattr(settings,'SUPERFASTMATCH_WINDOW_SIZE',15)
+
+def get_min_threshold():
+    return getattr(settings,'SUPERFASTMATCH_MIN_THRESHOLD',0.02)
 
 def get_tycoon():
-    return KyotoTycoon(host=getattr(settings,'SUPERFASTMATCH_HOST','127.0.0.1'),port=getattr(settings,'SUPERFASTMATCH_PORT',1978))
+    return KyotoTycoon(host=HOST,port=PORT)
 
 class DocumentManager(models.Manager):
     """Manager for running bulk operations on Documents"""
 
+    # Slightly modified from    
+    # http://blog.roseman.org.uk/2010/02/22/django-patterns-part-4-forwards-generic-relations/
+    def _fill_content_objects(self,queryset,select_related=False):
+        generics = {}
+        for item in queryset:
+            generics.setdefault(item.content_type_id, set()).add(item.object_id)
+        content_types = ContentType.objects.in_bulk(generics.keys())
+        relations = {}
+        for ct, fk_list in generics.items():
+            ct_model = content_types[ct].model_class()
+            if select_related:
+                relations[ct] = ct_model.objects.select_related().in_bulk(list(fk_list))
+            else:
+                relations[ct] = ct_model.objects.in_bulk(list(fk_list))
+        for item in queryset:
+            setattr(item, '_content_object_cache',relations[item.content_type_id][item.object_id])
+
+    def get_contents(self,documents,defer=True):
+        """
+        Returns a dictionary with each Document as a key and each respective Content as a value
+        """
+        results = {}
+        documents=sorted(documents,key=lambda d:d.__class__)
+        for c,g in groupby(documents,key=lambda d:d.__class__):
+            docs = dict((d.id,d) for d in g)
+            contents = Content.objects.filter(content_type = ContentType.objects.get_for_model(c) )\
+                                      .filter(object_id__in = docs.keys())
+            if defer:
+                contents = contents.defer('content')
+            for content in contents:
+                results[docs[content.object_id]] = content
+        return results
+
+    def _do_associate(self,content_id):
+        content = Content.objects.get(id=content_id)
+        Association.objects.filter(from_content=content).delete()
+        results = self.search(content.content)
+        association_count = 0
+        fragment_count = 0
+        for result in results.values():
+            contents=self.get_contents([doc for doc,_ in result.items()],defer=False)
+            for document,score in result.items():
+                to_content=contents[document]
+                if content!=to_content:
+                    association_count+=1
+                    association=Association(from_content=content,
+                                            to_content=to_content,
+                                            common_characters=score,
+                                            common_percentage=float(score)/len(content.content)
+                                        )
+                    association.save()
+                    for m in match(content.content,to_content.content,get_window_size()):
+                        fragment_count+=1
+                        Fragment.objects.create(association=association,
+                                                from_start=m[0],
+                                                to_start=m[1],
+                                                length=m[2],
+                                                hash=content.content[m[0]:m[0]+m[2]].__hash__()
+                                                )
+        logger.info("Associations: %d Fragments:%d Length: %d Content: %s"% (association_count,fragment_count,len(content.content),truncate_words(content.content,10)))
+        
     def associate(self):
         """Method for updating associations between all documents"""
-        for content in Content.objects.all():
-            content.similar.all().delete()
-            min_threshold = int(round(getattr(settings,'SUPERFASTMATCH_MIN_THRESHOLD',0.02)*len(content.content)))
-            for result in self.search(content.content,min_threshold=min_threshold).values():
-                for document,score in result.items():
-                    to_content=document.cleaned_content.get()
-                    if content!=to_content:
-                        association=Association(from_content=content,
-                                                to_content=to_content,
-                                                common_characters=score,
-                                                common_percentage=float(score)/len(content.content)
-                                            )
-                        association.save()
+        map(self._do_associate,Content.objects.values_list('id',flat=True))
 
-    def search(self,text,document_types=[],min_threshold=1):
+    def search(self,text,document_types=[]):
         """
         Method for searching for text in all or specified documents
         
@@ -80,20 +145,57 @@ class DocumentManager(models.Manager):
         """
         
         doc_types=[ContentType.objects.get_for_model(m).id for m in document_types]
+        min_threshold = int(round(int(get_min_threshold())*len(text)))
         tycoon = get_tycoon()
         tycoon.open()
-        results = tycoon.search(text,doc_types,min_threshold=min_threshold)
+        results = tycoon.search(text,doc_types,min_threshold=min_threshold,window_size=get_window_size())
         tycoon.close()
         documents = defaultdict(dict)
         for content_type_id,object_ids in results.items():
             contents = Content.objects.filter(content_type=content_type_id)\
                                       .filter(object_id__in=object_ids.keys())\
                                       .select_related()
+            self._fill_content_objects(contents,select_related=True)
             document_type = contents[0].content_object.__class__
             for content in contents:
                 documents[document_type][content.content_object]=results[content_type_id][content.content_object.id]
             documents[document_type]=OrderedDict(sorted(documents[document_type].items(), key=lambda t: t[1], reverse=True))
         return documents
+                
+    def get_fragments(self,documents,select_related=True):
+        """
+        Returns a dictionary with each source Document as a key and an ordered dictionary as value
+        The ordered dictionary has a similar Document as a key and a list of fragments as a value.
+        """
+        results={}
+        docs = dict([v.id,k] for k,v in self.get_contents(documents).iteritems())
+        fragments=Fragment.objects.filter(association__from_content__in=docs.keys())\
+                                  .order_by('association__from_content','-length')\
+                                  .select_related(depth=2)
+        self._fill_content_objects([f.association.to_content for f in fragments],select_related=select_related)
+        for content,g in groupby(fragments,lambda f:f.association.from_content):
+              results[docs[content.id]]=OrderedDict()
+              for c,f in groupby(g,lambda f:f.association.to_content):
+                  results[docs[content.id]][c.content_object]=list(f)
+        return results
+
+    def get_similar_documents(self,documents,select_related=True,defer=True):
+        """
+        Returns a dictionary with each source Document as a key and an ordered dictionary as a value.
+        The ordered dictionary has a similar Document as a key and the common percentage as a value.
+        """
+        results={}
+        docs = dict([v.id,k] for k,v in self.get_contents(documents).iteritems())
+        associations = Association.objects.filter(from_content__in=docs.keys())\
+                                  .order_by('from_content','-common_percentage')\
+                                  .select_related(depth=1)
+        if defer:
+            associations=associations.defer('from_content__content','to_content__content')
+        self._fill_content_objects([a.to_content for a in associations],select_related=select_related)
+        for content,g in groupby(associations,lambda a:a.from_content):
+            results[docs[content.id]]=OrderedDict((a.to_content.content_object,a.common_percentage) for a in g)
+        return results
+    
 
 class Document(models.Model):
     """
@@ -112,10 +214,20 @@ class Document(models.Model):
     
     @property
     def similar(self):
-        """Returns a list of similar documents"""
-        associations=Association.objects.filter(from_content=self.cleaned_content.get()).order_by('-common_percentage')
-        return [a.to_content.content_object for a in associations]
-    
+        """Returns an ordered dictionary with a Document as a key and the common percentage as a value."""
+        try:
+            return self.__class__.objects.get_similar_documents([self],defer=False)[self]
+        except KeyError:
+            return None
+            
+    @property
+    def fragments(self):
+        """Returns an ordered dictionary with a Document as a key and a list of Fragments as the value"""
+        try:
+            return self.__class__.objects.get_fragments([self])[self]
+        except KeyError:
+            return None
+            
     @property    
     def clean(self):
         """Override this property to provide custom cleaning of content"""
@@ -162,7 +274,7 @@ class Content(models.Model):
         super(Content,self).save(*args, **kwargs)
         tycoon = get_tycoon()
         tycoon.open()
-        tycoon.add(self.content_type_id,self.object_id,self.content,verify_exists=verify_exists)
+        tycoon.add(self.content_type_id,self.object_id,self.content,window_size=get_window_size(),verify_exists=verify_exists)
         tycoon.close()
     
     def delete(self,*args,**kwargs):
@@ -177,10 +289,31 @@ class Content(models.Model):
         db_table = 'superfastmatch_content'
         unique_together = ('content_type', 'object_id')
 
+class Fragment(models.Model):
+    """
+    A fragment of text that is reused between Documents.
+    """
+    
+    association = models.ForeignKey('Association')
+    from_start = models.PositiveIntegerField(blank=False,null=False)
+    to_start = models.PositiveIntegerField(blank=False,null=False)    
+    length = models.PositiveIntegerField(blank=False,null=False)
+    hash = models.BigIntegerField(blank=False,null=False,db_index=True)
+    
+    @property
+    def text(self):
+        return self.association.from_content.content[self.from_start:self.from_start+self.length]
+    
+    def __unicode__(self):
+        return self.text
+    
+    class Meta:
+        db_table = 'superfastmatch_fragment'
+
 class Association(models.Model):
     """
     Many to Many relation between :class:`Content` instances. 
-    There is no need to access this class directly
+    There is no need to access this class directly.
     """
     
     from_content = models.ForeignKey('Content',related_name='from_document')

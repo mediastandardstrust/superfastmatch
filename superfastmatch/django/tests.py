@@ -1,4 +1,6 @@
 from django.test import TestCase
+from django.conf import settings
+
 
 #An example NewsArticle Document with a clean property to strip html tags
 import re
@@ -23,11 +25,16 @@ BOOK1 = codecs.open(os.path.join(os.path.split(__file__)[0],'fixtures/great_expe
 BOOK2 = codecs.open(os.path.join(os.path.split(__file__)[0],'fixtures/oliver_twist.txt'),"r","utf-8").read()
 
 class DocumentTest(TestCase):
+    def setUp(self):
+        settings.SUPERFASTMATCH_WINDOW_SIZE=15
+        
     def tearDown(self):
         # Need to trigger the index deletes after each test
         # TODO: Make Doument Manager support bulk deletes
         for c in Content.objects.all():
             c.delete()
+        settings.SUPERFASTMATCH_WINDOW_SIZE=15
+
 
     def test_creation(self):
         article = NewsArticle(content=CONTENT1)
@@ -135,6 +142,36 @@ class DocumentTest(TestCase):
         NewsArticle.objects.associate()
         self.assertEqual(len(article.similar),1)
         self.assertEqual(len(press_release.similar),1)
-        self.assertEqual(press_release.similar[0],article)
-        self.assertEqual(article.similar[0],press_release)
+        self.assertLess(0.0,press_release.similar[article])
+        self.assertLess(0.0,article.similar[press_release])
+        try:
+            press_release.similar[press_release]
+            self.assertTrue(False)
+        except KeyError:
+            pass
+            
+    def test_fragments(self):
+        article = NewsArticle(content=CONTENT1)
+        article.save()
+        press_release = PressRelease(content=CONTENT2)
+        press_release.save()
+        NewsArticle.objects.associate()
+        self.assertEqual(article.fragments[press_release][0].text," beautiful wedding dressToday we saw the ")
+
+    def test_window_size_15(self):
+        article = NewsArticle(content=CONTENT1)
+        article.save()
+        press_release = PressRelease(content=CONTENT2)
+        press_release.save()
+        NewsArticle.objects.associate()
+        self.assertEqual(len(article.fragments[press_release]),2)
+    
+    def test_window_size_25(self):
+        settings.SUPERFASTMATCH_WINDOW_SIZE=25
+        article = NewsArticle(content=CONTENT1)
+        article.save()
+        press_release = PressRelease(content=CONTENT2)
+        press_release.save()
+        NewsArticle.objects.associate()
+        self.assertEqual(len(article.fragments[press_release]),1)
         

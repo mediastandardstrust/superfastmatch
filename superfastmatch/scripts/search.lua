@@ -155,7 +155,7 @@ function search(inmap,outmap)
       if scores[doc_type]==nil then
          scores[doc_type]={}
       end
-      scores[doc_type][doc_id]=(scores[doc_type][doc_id] or window_size-1)+1
+      scores[doc_type][doc_id]=(scores[doc_type][doc_id] or window_size)+1
    end
    -- Filter out below min_threshold docs and ignored doc_types
    local threshold_time=kt.time()

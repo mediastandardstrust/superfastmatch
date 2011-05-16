@@ -72,7 +72,7 @@ class KyotoTycoon:
         :param window_size: The length of the window of text from which hashes are created from.
         :param hash_width: The number of bits to use for the hash.        
         """
-        return self._update("add",doc_type,doc_id,text,window_size=15,hash_width=32,verify_exists=verify_exists)
+        return self._update("add",doc_type,doc_id,text,window_size=window_size,hash_width=hash_width,verify_exists=verify_exists)
 
     def delete(self,doc_type,doc_id,text,window_size=15,hash_width=32):
         """
@@ -84,7 +84,7 @@ class KyotoTycoon:
         :param window_size: The length of the window of text from which hashes are created from.
         :param hash_width: The number of bits to use for the hash. 
         """
-        return self._update("delete",doc_type,doc_id,text,window_size=15,hash_width=32)
+        return self._update("delete",doc_type,doc_id,text,window_size=window_size,hash_width=hash_width)
         
     def _update(self,action,doc_type,doc_id,text,window_size=15,hash_width=32,verify_exists=True):
         url="/rpc/play_script"
@@ -107,8 +107,8 @@ class KyotoTycoon:
         return result
 
     def _write(self,body,key,value):
-        if isinstance(key,int):key=str(key)
-        if isinstance(value,int):value=str(value)
+        if isinstance(key,int) or isinstance(key,long):key=str(key)
+        if isinstance(value,int) or isinstance(value,long):value=str(value)
         body.write("%s\t%s\n"%(b64encode(key.encode('utf8')),b64encode(value.encode('utf8'))))
 
     def _parse(self,body):

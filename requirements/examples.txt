@@ -1,2 +1,5 @@
 django
 lxml
+beautifulsoup
+django-debug-toolbar
+psycopg2
