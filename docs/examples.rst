@@ -4,7 +4,9 @@ Examples
 Legislation
 -----------
 
-This is an exampe Django application that scrapes US Congress Bills puts them in a local sqlite database.
+This is an exampe Django application that scrapes US Congress Bills puts them in a local postgres database. The scraper depends on lxml which requires the libxml and libxslt dev libraries to build. On Ubuntu this can be achieved by:
+
+``sudo apt-get install libxml2-dev libxslt1-dev``
 
 The simplest way to use is:
 
