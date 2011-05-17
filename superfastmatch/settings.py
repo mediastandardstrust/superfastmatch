@@ -5,6 +5,6 @@ DATABASES = {
 }
 
 INSTALLED_APPS=(
-                    'superfastmatch.django',
+                    'superfastmatch',
                     'django.contrib.contenttypes'
                 )

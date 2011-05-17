@@ -6,25 +6,25 @@ The following `settings <http://docs.djangoproject.com/en/dev/ref/settings>`_ ca
     SUPERFASTMATCH_HOST() = '127.0.0.1'
     SUPERFASTMATCH_PORT() = 1977
     
-as well as a minimum percentage of the document required to be copied for an association to be created and the window size for matching:
+as well as a minimum percentage of the document required to be copied for an association to be created and the window size for matching::
 
     SUPERFASTMATCH_MIN_THRESHOLD = 0.02
     SUPERFASTMATCH_WINDOW_SIZE = 15
     SUPERFASTMATCH_HASH_WIDTH = 32
 
-and you must remember to include both :mod:`superfastmatch.django` and 
+and you must remember to include both :mod:`superfastmatch` and 
 `django.contrib.contenttypes <http://docs.djangoproject.com/en/dev/ref/contrib/contenttypes/>`_ 
 in `INSTALLED_APPS <http://docs.djangoproject.com/en/dev/ref/settings/#installed-apps>`_. For example::
 
     INSTALLED_APPS=(
-                        'superfastmatch.django',
+                        'superfastmatch',
                         'django.contrib.contenttypes'
                     )
 
 Example model definition:
 
 >>> import re
->>> from superfastmatch.django.models import Document
+>>> from superfastmatch.models import Document
 >>> class NewsArticle(Document):
 ...   @property
 ...   def clean(self):
@@ -37,7 +37,7 @@ Example usage:
 >>> article_two = NewsArticle(content="Another example news article with a bit more content")
 >>> article_two.save()
 >>> NewsArticle.objects.search('example news article')
-defaultdict(<type 'dict'>, {<class 'superfastmatch.django.tests.NewsArticle'>: OrderedDict([(<NewsArticle: NewsArticle object>, 21), (<NewsArticle: NewsArticle object>, 21)])})
+defaultdict(<type 'dict'>, {<class 'superfastmatch.tests.NewsArticle'>: OrderedDict([(<NewsArticle: NewsArticle object>, 21), (<NewsArticle: NewsArticle object>, 21)])})
 >>> article_one.delete()
 >>> article_two.delete()
 """
@@ -96,7 +96,8 @@ def do_associate(content_id):
                                             to_start=m[1],
                                             length=m[2],
                                             text=text,
-                                            hash=text.__hash__()
+                                            hash=text.__hash__(),
+                                            score=0 # TODO implement average hash count algorithm
                                             )
     logger.info("Associations: %d Fragments:%d Length: %d Content: %s"% (association_count,fragment_count,len(content.content),truncate_words(content.content,10)))
 
@@ -298,7 +299,6 @@ class Content(models.Model):
         super(Content,self).delete(*args,**kwargs)
 
     class Meta:
-        db_table = 'superfastmatch_content'
         unique_together = ('content_type', 'object_id')
 
 class Fragment(models.Model):
@@ -312,12 +312,10 @@ class Fragment(models.Model):
     length = models.PositiveIntegerField(blank=False,null=False)
     text = models.TextField(blank=False,null=False)
     hash = models.BigIntegerField(blank=False,null=False,db_index=True)
+    score = models.PositiveIntegerField(blank=False,null=False,db_index=True)
     
     def __unicode__(self):
         return self.text
-    
-    class Meta:
-        db_table = 'superfastmatch_fragment'
 
 class Association(models.Model):
     """
@@ -331,6 +329,5 @@ class Association(models.Model):
     common_percentage = models.FloatField(blank=False,null=False,db_index=True)
     
     class Meta:
-        db_table = 'superfastmatch_association'
         unique_together = ('from_content', 'to_content')
         

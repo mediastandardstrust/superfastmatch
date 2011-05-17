@@ -6,7 +6,7 @@ from django.conf import settings
 import re
 import os
 import codecs
-from superfastmatch.django.models import *
+from superfastmatch.models import *
 
 class NewsArticle(Document):
     @property
