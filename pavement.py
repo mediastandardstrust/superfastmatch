@@ -6,7 +6,7 @@ CURRENT_VERSION="0.3.0"
 
 setup(
     name="superfastmatch",
-    packages=['superfastmatch','superfastmatch.django'],
+    packages=['superfastmatch'],
     version=CURRENT_VERSION,
     url="http://mediastandardstrust.github.com/superfastmatch",
     author="Media Standards Trust",
@@ -71,7 +71,7 @@ def test(options):
     """Build test enviroment and run tests"""
     options.virtualenv=options.tests_env
     call_task('build_environment')
-    bash('source %s/bin/activate && django-admin.py test --settings=superfastmatch.django.settings --pythonpath=. django' % options.virtualenv.dest_dir)
+    bash('source %s/bin/activate && django-admin.py test --settings=superfastmatch.settings --pythonpath=. superfastmatch' % options.virtualenv.dest_dir)
 
 @task
 @needs('paver.doctools.html')
