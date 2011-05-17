@@ -4,6 +4,7 @@ import urllib2
 import time
 import multiprocessing
 import logging
+import os
 from lxml.html import fromstring as fromhtmlstring
 from lxml.etree import tostring,fromstring,XMLParser,parse
 from django.core.management.base import BaseCommand
@@ -12,13 +13,15 @@ from bills.lib.urllib2helpers import CacheHandler
 
 logger = logging.getLogger('superfastmatch')
 
-def do_scrape(doc):
+CACHE_DIR=".cache"
+
+def load_bill(doc):
     try:
         regex = re.compile(r"^(?P<origin>\w)(?P<form>\D)?(?P<number>\d+)_?(?P<stage>\w+)")
         source = doc['link']
         details = re.match(regex,doc['text'])
         parser = XMLParser(recover=True)
-        content = parse(source,parser)
+        content = parse(os.path.join(CACHE_DIR,source),parser)
         logger.info("%s %s"%(doc['link'],details.groups()))
         number = int(details.group('number'))
         origin = details.group('origin').lower()
@@ -41,13 +44,22 @@ def do_scrape(doc):
     except Exception,ex:
         logger.exception("Oops")
 
+def get_bill(link):
+    url=link['link']
+    filename = os.path.join(CACHE_DIR,url)
+    path = os.path.dirname(filename)
+    if not os.path.exists(path):
+        os.makedirs(path)
+    if not os.path.exists(filename):
+        logger.info('Downloading %s'%url)
+        urllib.urlretrieve (url,filename)
+    else:
+        logger.info('%s is in the cache'%url)
+
 class Command(BaseCommand):
     help = 'scrapes US Congress Bills'
         
     def handle(self, *args, **options):
-        #TODO add reset flag
-        for bill in Bill.objects.all():
-            bill.delete()
         pool = multiprocessing.Pool(processes=multiprocessing.cpu_count()*2)
         links=[]
         for congress in range(108,113):
@@ -57,6 +69,6 @@ class Command(BaseCommand):
             docs.make_links_absolute(docs_url)
             for doc in docs.cssselect('a[href$="xml"]'):
                 links.append({'link':doc.get('href'),'text':doc.text,'congress':congress})
-        map(do_scrape,links)
-        #pool.map(do_scrape,links,chunksize=10)
+        pool.map(get_bill,links,chunksize=10)
+        pool.map(load_bill,links,chunksize=10)
                 
