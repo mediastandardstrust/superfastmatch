@@ -27,6 +27,8 @@ BOOK2 = codecs.open(os.path.join(os.path.split(__file__)[0],'fixtures/oliver_twi
 class DocumentTest(TestCase):
     def setUp(self):
         settings.SUPERFASTMATCH_WINDOW_SIZE=15
+        settings.SUPERFASTMATCH_HASH_WIDTH=32
+        settings.SUPERFASTMATCH_PORT=1977
         
     def tearDown(self):
         # Need to trigger the index deletes after each test
@@ -34,7 +36,8 @@ class DocumentTest(TestCase):
         for c in Content.objects.all():
             c.delete()
         settings.SUPERFASTMATCH_WINDOW_SIZE=15
-
+        settings.SUPERFASTMATCH_HASH_WIDTH=32
+        settings.SUPERFASTMATCH_PORT=1977
 
     def test_creation(self):
         article = NewsArticle(content=CONTENT1)
@@ -139,7 +142,7 @@ class DocumentTest(TestCase):
         article.save()
         press_release = PressRelease(content=CONTENT2)
         press_release.save()
-        NewsArticle.objects.associate()
+        NewsArticle.objects.associate(multiprocess=False)
         self.assertEqual(len(article.similar),1)
         self.assertEqual(len(press_release.similar),1)
         self.assertLess(0.0,press_release.similar[article])
@@ -155,7 +158,7 @@ class DocumentTest(TestCase):
         article.save()
         press_release = PressRelease(content=CONTENT2)
         press_release.save()
-        NewsArticle.objects.associate()
+        NewsArticle.objects.associate(multiprocess=False)
         self.assertEqual(article.fragments[press_release][0].text," beautiful wedding dressToday we saw the ")
 
     def test_window_size_15(self):
@@ -163,7 +166,7 @@ class DocumentTest(TestCase):
         article.save()
         press_release = PressRelease(content=CONTENT2)
         press_release.save()
-        NewsArticle.objects.associate()
+        NewsArticle.objects.associate(multiprocess=False)
         self.assertEqual(len(article.fragments[press_release]),2)
     
     def test_window_size_25(self):
@@ -172,6 +175,16 @@ class DocumentTest(TestCase):
         article.save()
         press_release = PressRelease(content=CONTENT2)
         press_release.save()
-        NewsArticle.objects.associate()
+        NewsArticle.objects.associate(multiprocess=False)
         self.assertEqual(len(article.fragments[press_release]),1)
+        
+    def test_hash_width_24(self):
+        settings.SUPERFASTMATCH_HASH_WIDTH=24
+        article = NewsArticle(content=CONTENT1)
+        article.save()
+        press_release = PressRelease(content=CONTENT2)
+        press_release.save()
+        NewsArticle.objects.associate(multiprocess=False)
+        self.assertEqual(len(article.fragments[press_release]),2)
+        
         

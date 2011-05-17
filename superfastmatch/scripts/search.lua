@@ -48,9 +48,13 @@ function hash(inmap)
    local sections={}
    local keys={}
    local flags={}
+   local mask=0xFFFFFFFF      
+   if hash_width==24 then 
+      mask=0xFFFFFF
+   end
    for i=1,(string.len(text)-window_size+1) do
       local part=string.sub(text,i,i+window_size-1)
-      local hash=kt.bit("and",kt.hash_murmur(part), 0xFFFFFFFF)
+      local hash=kt.bit("and",kt.hash_murmur(part), mask)
       if not flags[hash] then
          flags[hash]=true
          table.insert(keys,kt.pack('N',{hash}))

@@ -3,13 +3,14 @@ This set of models is a Django interface to the SuperFastMatch algorithm and the
 
 The following `settings <http://docs.djangoproject.com/en/dev/ref/settings>`_ can be used to configure how to communicate with Kyoto Tycoon::
     
-    SUPERFASTMATCH_HOST = '127.0.0.1'
-    SUPERFASTMATCH_PORT = 1977
+    SUPERFASTMATCH_HOST() = '127.0.0.1'
+    SUPERFASTMATCH_PORT() = 1977
     
 as well as a minimum percentage of the document required to be copied for an association to be created and the window size for matching:
 
     SUPERFASTMATCH_MIN_THRESHOLD = 0.02
     SUPERFASTMATCH_WINDOW_SIZE = 15
+    SUPERFASTMATCH_HASH_WIDTH = 32
 
 and you must remember to include both :mod:`superfastmatch.django` and 
 `django.contrib.contenttypes <http://docs.djangoproject.com/en/dev/ref/contrib/contenttypes/>`_ 
@@ -57,17 +58,17 @@ from superfastmatch.matcher import match
 
 logger = logging.getLogger('superfastmatch')
 
-HOST=getattr(settings,'SUPERFASTMATCH_HOST','127.0.0.1')
-PORT=getattr(settings,'SUPERFASTMATCH_PORT',1978)
-
 def get_window_size():
     return getattr(settings,'SUPERFASTMATCH_WINDOW_SIZE',15)
 
 def get_min_threshold():
     return getattr(settings,'SUPERFASTMATCH_MIN_THRESHOLD',0.02)
 
+def get_hash_width():
+    return getattr(settings,'SUPERFASTMATCH_HASH_WIDTH',32)
+
 def get_tycoon():
-    return KyotoTycoon(host=HOST,port=PORT)
+    return KyotoTycoon(host=getattr(settings,'SUPERFASTMATCH_HOST','127.0.0.1'),port=getattr(settings,'SUPERFASTMATCH_PORT',1978))
 
 def do_associate(content_id):
     content = Content.objects.get(id=content_id)
@@ -136,10 +137,14 @@ class DocumentManager(models.Manager):
                 results[docs[content.object_id]] = content
         return results
 
-    def associate(self):
+    def associate(self,multiprocess=True):
         """Method for updating associations between all documents"""
-        pool = multiprocessing.Pool(processes=multiprocessing.cpu_count()*2)
-        pool.map(do_associate,Content.objects.values_list('id',flat=True))
+        content_ids = Content.objects.values_list('id',flat=True)
+        if multiprocess:
+            pool = multiprocessing.Pool(processes=multiprocessing.cpu_count()*2)
+            pool.map(do_associate,content_ids)
+        else:
+            map(do_associate,content_ids)
 
     def search(self,text,document_types=[]):
         """
@@ -153,7 +158,7 @@ class DocumentManager(models.Manager):
         min_threshold = int(round(int(get_min_threshold())*len(text)))
         tycoon = get_tycoon()
         tycoon.open()
-        results = tycoon.search(text,doc_types,min_threshold=min_threshold,window_size=get_window_size())
+        results = tycoon.search(text,doc_types,hash_width=get_hash_width(),min_threshold=min_threshold,window_size=get_window_size())
         tycoon.close()
         documents = defaultdict(dict)
         for content_type_id,object_ids in results.items():
@@ -281,14 +286,14 @@ class Content(models.Model):
         super(Content,self).save(*args, **kwargs)
         tycoon = get_tycoon()
         tycoon.open()
-        tycoon.add(self.content_type_id,self.object_id,self.content,window_size=get_window_size(),verify_exists=verify_exists)
+        tycoon.add(self.content_type_id,self.object_id,self.content,hash_width=get_hash_width(),window_size=get_window_size(),verify_exists=verify_exists)
         tycoon.close()
     
     def delete(self,*args,**kwargs):
         """Deletes item from document index before Content instance is deleted"""
         tycoon = get_tycoon()
         tycoon.open()
-        tycoon.delete(self.content_type_id,self.object_id,self.content)
+        tycoon.delete(self.content_type_id,self.object_id,self.content,hash_width=get_hash_width(),window_size=get_window_size())
         tycoon.close()
         super(Content,self).delete(*args,**kwargs)
 
