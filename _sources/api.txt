@@ -17,9 +17,9 @@ SuperFastMatch API
    :undoc-members:
    
 
-:mod:`superfastmatch.django.models`
+:mod:`superfastmatch.models`
 -----------------------------------
 
-.. automodule:: superfastmatch.django.models
+.. automodule:: superfastmatch.models
   :members:
   :exclude-members: content_object

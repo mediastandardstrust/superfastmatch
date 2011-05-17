@@ -33,4 +33,4 @@ and in another terminal window:
     # Wait until finished
     ./manage.py associate
     
-The scraper process takes about 3 hours to cache all the legislation files and then about n hours to index them. 
+The scraper process takes about 3 hours to cache the 1.1GB of legislation files and then about n hours to index them. 

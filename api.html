@@ -178,8 +178,8 @@
 <dd></dd></dl>
 
 </div>
-<div class="section" id="module-superfastmatch.django.models">
-<span id="superfastmatch-django-models"></span><h2><a class="reference internal" href="#module-superfastmatch.django.models" title="superfastmatch.django.models"><tt class="xref py py-mod docutils literal"><span class="pre">superfastmatch.django.models</span></tt></a><a class="headerlink" href="#module-superfastmatch.django.models" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="module-superfastmatch.models">
+<span id="superfastmatch-models"></span><h2><a class="reference internal" href="#module-superfastmatch.models" title="superfastmatch.models"><tt class="xref py py-mod docutils literal"><span class="pre">superfastmatch.models</span></tt></a><a class="headerlink" href="#module-superfastmatch.models" title="Permalink to this headline">¶</a></h2>
 <p>This set of models is a Django interface to the SuperFastMatch algorithm and the Kyoto Cabinet/Tycoon document index.</p>
 <p>The following <a class="reference external" href="http://docs.djangoproject.com/en/dev/ref/settings">settings</a> can be used to configure how to communicate with Kyoto Tycoon:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="n">SUPERFASTMATCH_HOST</span><span class="p">()</span> <span class="o">=</span> <span class="s">&#39;127.0.0.1&#39;</span>
@@ -187,22 +187,23 @@
 </pre></div>
 </div>
 <p>as well as a minimum percentage of the document required to be copied for an association to be created and the window size for matching:</p>
-<blockquote>
-<div>SUPERFASTMATCH_MIN_THRESHOLD = 0.02
-SUPERFASTMATCH_WINDOW_SIZE = 15
-SUPERFASTMATCH_HASH_WIDTH = 32</div></blockquote>
-<p>and you must remember to include both <tt class="xref py py-mod docutils literal"><span class="pre">superfastmatch.django</span></tt> and 
+<div class="highlight-python"><div class="highlight"><pre><span class="n">SUPERFASTMATCH_MIN_THRESHOLD</span> <span class="o">=</span> <span class="mf">0.02</span>
+<span class="n">SUPERFASTMATCH_WINDOW_SIZE</span> <span class="o">=</span> <span class="mi">15</span>
+<span class="n">SUPERFASTMATCH_HASH_WIDTH</span> <span class="o">=</span> <span class="mi">32</span>
+</pre></div>
+</div>
+<p>and you must remember to include both <tt class="xref py py-mod docutils literal"><span class="pre">superfastmatch</span></tt> and 
 <a class="reference external" href="http://docs.djangoproject.com/en/dev/ref/contrib/contenttypes/">django.contrib.contenttypes</a> 
 in <a class="reference external" href="http://docs.djangoproject.com/en/dev/ref/settings/#installed-apps">INSTALLED_APPS</a>. For example:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="n">INSTALLED_APPS</span><span class="o">=</span><span class="p">(</span>
-                    <span class="s">&#39;superfastmatch.django&#39;</span><span class="p">,</span>
+                    <span class="s">&#39;superfastmatch&#39;</span><span class="p">,</span>
                     <span class="s">&#39;django.contrib.contenttypes&#39;</span>
                 <span class="p">)</span>
 </pre></div>
 </div>
 <p>Example model definition:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">re</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">superfastmatch.django.models</span> <span class="kn">import</span> <span class="n">Document</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">superfastmatch.models</span> <span class="kn">import</span> <span class="n">Document</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="k">class</span> <span class="nc">NewsArticle</span><span class="p">(</span><span class="n">Document</span><span class="p">):</span>
 <span class="gp">... </span>  <span class="nd">@property</span>
 <span class="gp">... </span>  <span class="k">def</span> <span class="nf">clean</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -215,30 +216,30 @@ in <a class="reference external" href="http://docs.djangoproject.com/en/dev/ref/
 <span class="gp">&gt;&gt;&gt; </span><span class="n">article_two</span> <span class="o">=</span> <span class="n">NewsArticle</span><span class="p">(</span><span class="n">content</span><span class="o">=</span><span class="s">&quot;Another example news article with a bit more content&quot;</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">article_two</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">NewsArticle</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s">&#39;example news article&#39;</span><span class="p">)</span>
-<span class="go">defaultdict(&lt;type &#39;dict&#39;&gt;, {&lt;class &#39;superfastmatch.django.tests.NewsArticle&#39;&gt;: OrderedDict([(&lt;NewsArticle: NewsArticle object&gt;, 21), (&lt;NewsArticle: NewsArticle object&gt;, 21)])})</span>
+<span class="go">defaultdict(&lt;type &#39;dict&#39;&gt;, {&lt;class &#39;superfastmatch.tests.NewsArticle&#39;&gt;: OrderedDict([(&lt;NewsArticle: NewsArticle object&gt;, 21), (&lt;NewsArticle: NewsArticle object&gt;, 21)])})</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">article_one</span><span class="o">.</span><span class="n">delete</span><span class="p">()</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">article_two</span><span class="o">.</span><span class="n">delete</span><span class="p">()</span>
 </pre></div>
 </div>
 <dl class="class">
-<dt id="superfastmatch.django.models.DocumentManager">
-<em class="property">class </em><tt class="descclassname">superfastmatch.django.models.</tt><tt class="descname">DocumentManager</tt><a class="headerlink" href="#superfastmatch.django.models.DocumentManager" title="Permalink to this definition">¶</a></dt>
+<dt id="superfastmatch.models.DocumentManager">
+<em class="property">class </em><tt class="descclassname">superfastmatch.models.</tt><tt class="descname">DocumentManager</tt><a class="headerlink" href="#superfastmatch.models.DocumentManager" title="Permalink to this definition">¶</a></dt>
 <dd><p>Manager for running bulk operations on Documents</p>
 <dl class="method">
-<dt id="superfastmatch.django.models.DocumentManager.get_contents">
-<tt class="descname">get_contents</tt><big>(</big><em>documents</em>, <em>defer=True</em><big>)</big><a class="headerlink" href="#superfastmatch.django.models.DocumentManager.get_contents" title="Permalink to this definition">¶</a></dt>
+<dt id="superfastmatch.models.DocumentManager.get_contents">
+<tt class="descname">get_contents</tt><big>(</big><em>documents</em>, <em>defer=True</em><big>)</big><a class="headerlink" href="#superfastmatch.models.DocumentManager.get_contents" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a dictionary with each Document as a key and each respective Content as a value</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="superfastmatch.django.models.DocumentManager.associate">
-<tt class="descname">associate</tt><big>(</big><em>multiprocess=True</em><big>)</big><a class="headerlink" href="#superfastmatch.django.models.DocumentManager.associate" title="Permalink to this definition">¶</a></dt>
+<dt id="superfastmatch.models.DocumentManager.associate">
+<tt class="descname">associate</tt><big>(</big><em>multiprocess=True</em><big>)</big><a class="headerlink" href="#superfastmatch.models.DocumentManager.associate" title="Permalink to this definition">¶</a></dt>
 <dd><p>Method for updating associations between all documents</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="superfastmatch.django.models.DocumentManager.search">
-<tt class="descname">search</tt><big>(</big><em>text</em>, <em>document_types=</em><span class="optional">[</span><span class="optional">]</span><big>)</big><a class="headerlink" href="#superfastmatch.django.models.DocumentManager.search" title="Permalink to this definition">¶</a></dt>
+<dt id="superfastmatch.models.DocumentManager.search">
+<tt class="descname">search</tt><big>(</big><em>text</em>, <em>document_types=</em><span class="optional">[</span><span class="optional">]</span><big>)</big><a class="headerlink" href="#superfastmatch.models.DocumentManager.search" title="Permalink to this definition">¶</a></dt>
 <dd><p>Method for searching for text in all or specified documents</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -255,15 +256,15 @@ in <a class="reference external" href="http://docs.djangoproject.com/en/dev/ref/
 </dd></dl>
 
 <dl class="method">
-<dt id="superfastmatch.django.models.DocumentManager.get_fragments">
-<tt class="descname">get_fragments</tt><big>(</big><em>documents</em>, <em>select_related=True</em><big>)</big><a class="headerlink" href="#superfastmatch.django.models.DocumentManager.get_fragments" title="Permalink to this definition">¶</a></dt>
+<dt id="superfastmatch.models.DocumentManager.get_fragments">
+<tt class="descname">get_fragments</tt><big>(</big><em>documents</em>, <em>select_related=True</em><big>)</big><a class="headerlink" href="#superfastmatch.models.DocumentManager.get_fragments" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a dictionary with each source Document as a key and an ordered dictionary as value
 The ordered dictionary has a similar Document as a key and a list of fragments as a value.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="superfastmatch.django.models.DocumentManager.get_similar_documents">
-<tt class="descname">get_similar_documents</tt><big>(</big><em>documents</em>, <em>select_related=True</em>, <em>defer=True</em><big>)</big><a class="headerlink" href="#superfastmatch.django.models.DocumentManager.get_similar_documents" title="Permalink to this definition">¶</a></dt>
+<dt id="superfastmatch.models.DocumentManager.get_similar_documents">
+<tt class="descname">get_similar_documents</tt><big>(</big><em>documents</em>, <em>select_related=True</em>, <em>defer=True</em><big>)</big><a class="headerlink" href="#superfastmatch.models.DocumentManager.get_similar_documents" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a dictionary with each source Document as a key and an ordered dictionary as a value.
 The ordered dictionary has a similar Document as a key and the common percentage as a value.</p>
 </dd></dl>
@@ -271,89 +272,89 @@ The ordered dictionary has a similar Document as a key and the common percentage
 </dd></dl>
 
 <dl class="class">
-<dt id="superfastmatch.django.models.Document">
-<em class="property">class </em><tt class="descclassname">superfastmatch.django.models.</tt><tt class="descname">Document</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#superfastmatch.django.models.Document" title="Permalink to this definition">¶</a></dt>
+<dt id="superfastmatch.models.Document">
+<em class="property">class </em><tt class="descclassname">superfastmatch.models.</tt><tt class="descname">Document</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#superfastmatch.models.Document" title="Permalink to this definition">¶</a></dt>
 <dd><p>Abstract base class for SuperFastMatch documents. 
-Derive from this class and provide a suitable override of the <a class="reference internal" href="#superfastmatch.django.models.Document.clean" title="superfastmatch.django.models.Document.clean"><tt class="xref py py-attr docutils literal"><span class="pre">clean</span></tt></a> property</p>
+Derive from this class and provide a suitable override of the <a class="reference internal" href="#superfastmatch.models.Document.clean" title="superfastmatch.models.Document.clean"><tt class="xref py py-attr docutils literal"><span class="pre">clean</span></tt></a> property</p>
 <dl class="attribute">
-<dt id="superfastmatch.django.models.Document.content">
-<tt class="descname">content</tt><a class="headerlink" href="#superfastmatch.django.models.Document.content" title="Permalink to this definition">¶</a></dt>
+<dt id="superfastmatch.models.Document.content">
+<tt class="descname">content</tt><a class="headerlink" href="#superfastmatch.models.Document.content" title="Permalink to this definition">¶</a></dt>
 <dd><p>Contains the uncleaned text content</p>
 </dd></dl>
 
 <dl class="attribute">
-<dt id="superfastmatch.django.models.Document.cleaned_content">
-<tt class="descname">cleaned_content</tt><a class="headerlink" href="#superfastmatch.django.models.Document.cleaned_content" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns the cleaned <a class="reference internal" href="#superfastmatch.django.models.Content" title="superfastmatch.django.models.Content"><tt class="xref py py-class docutils literal"><span class="pre">Content</span></tt></a> instance for the document</p>
+<dt id="superfastmatch.models.Document.cleaned_content">
+<tt class="descname">cleaned_content</tt><a class="headerlink" href="#superfastmatch.models.Document.cleaned_content" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the cleaned <a class="reference internal" href="#superfastmatch.models.Content" title="superfastmatch.models.Content"><tt class="xref py py-class docutils literal"><span class="pre">Content</span></tt></a> instance for the document</p>
 </dd></dl>
 
 <dl class="attribute">
-<dt id="superfastmatch.django.models.Document.objects">
-<tt class="descname">objects</tt><a class="headerlink" href="#superfastmatch.django.models.Document.objects" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns the <a class="reference internal" href="#superfastmatch.django.models.DocumentManager" title="superfastmatch.django.models.DocumentManager"><tt class="xref py py-class docutils literal"><span class="pre">DocumentManager</span></tt></a></p>
+<dt id="superfastmatch.models.Document.objects">
+<tt class="descname">objects</tt><a class="headerlink" href="#superfastmatch.models.Document.objects" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the <a class="reference internal" href="#superfastmatch.models.DocumentManager" title="superfastmatch.models.DocumentManager"><tt class="xref py py-class docutils literal"><span class="pre">DocumentManager</span></tt></a></p>
 </dd></dl>
 
 <dl class="attribute">
-<dt id="superfastmatch.django.models.Document.similar">
-<tt class="descname">similar</tt><a class="headerlink" href="#superfastmatch.django.models.Document.similar" title="Permalink to this definition">¶</a></dt>
+<dt id="superfastmatch.models.Document.similar">
+<tt class="descname">similar</tt><a class="headerlink" href="#superfastmatch.models.Document.similar" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns an ordered dictionary with a Document as a key and the common percentage as a value.</p>
 </dd></dl>
 
 <dl class="attribute">
-<dt id="superfastmatch.django.models.Document.fragments">
-<tt class="descname">fragments</tt><a class="headerlink" href="#superfastmatch.django.models.Document.fragments" title="Permalink to this definition">¶</a></dt>
+<dt id="superfastmatch.models.Document.fragments">
+<tt class="descname">fragments</tt><a class="headerlink" href="#superfastmatch.models.Document.fragments" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns an ordered dictionary with a Document as a key and a list of Fragments as the value</p>
 </dd></dl>
 
 <dl class="attribute">
-<dt id="superfastmatch.django.models.Document.clean">
-<tt class="descname">clean</tt><a class="headerlink" href="#superfastmatch.django.models.Document.clean" title="Permalink to this definition">¶</a></dt>
+<dt id="superfastmatch.models.Document.clean">
+<tt class="descname">clean</tt><a class="headerlink" href="#superfastmatch.models.Document.clean" title="Permalink to this definition">¶</a></dt>
 <dd><p>Override this property to provide custom cleaning of content</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="superfastmatch.django.models.Document.save">
-<tt class="descname">save</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#superfastmatch.django.models.Document.save" title="Permalink to this definition">¶</a></dt>
+<dt id="superfastmatch.models.Document.save">
+<tt class="descname">save</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#superfastmatch.models.Document.save" title="Permalink to this definition">¶</a></dt>
 <dd><p>Overridden save makes sure document index is kept up to date</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="superfastmatch.django.models.Document.delete">
-<tt class="descname">delete</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#superfastmatch.django.models.Document.delete" title="Permalink to this definition">¶</a></dt>
+<dt id="superfastmatch.models.Document.delete">
+<tt class="descname">delete</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#superfastmatch.models.Document.delete" title="Permalink to this definition">¶</a></dt>
 <dd><p>Overridden delete makes sure document index is kept up to date</p>
 </dd></dl>
 
 </dd></dl>
 
 <dl class="class">
-<dt id="superfastmatch.django.models.Content">
-<em class="property">class </em><tt class="descclassname">superfastmatch.django.models.</tt><tt class="descname">Content</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#superfastmatch.django.models.Content" title="Permalink to this definition">¶</a></dt>
-<dd><p>Model for storing cleaned <a class="reference internal" href="#superfastmatch.django.models.Document" title="superfastmatch.django.models.Document"><tt class="xref py py-class docutils literal"><span class="pre">Document</span></tt></a> content. 
+<dt id="superfastmatch.models.Content">
+<em class="property">class </em><tt class="descclassname">superfastmatch.models.</tt><tt class="descname">Content</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#superfastmatch.models.Content" title="Permalink to this definition">¶</a></dt>
+<dd><p>Model for storing cleaned <a class="reference internal" href="#superfastmatch.models.Document" title="superfastmatch.models.Document"><tt class="xref py py-class docutils literal"><span class="pre">Document</span></tt></a> content. 
 There is no need to access this class directly</p>
 <dl class="method">
-<dt id="superfastmatch.django.models.Content.save">
-<tt class="descname">save</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#superfastmatch.django.models.Content.save" title="Permalink to this definition">¶</a></dt>
+<dt id="superfastmatch.models.Content.save">
+<tt class="descname">save</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#superfastmatch.models.Content.save" title="Permalink to this definition">¶</a></dt>
 <dd><p>Updates document index every time a Content instance is saved</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="superfastmatch.django.models.Content.delete">
-<tt class="descname">delete</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#superfastmatch.django.models.Content.delete" title="Permalink to this definition">¶</a></dt>
+<dt id="superfastmatch.models.Content.delete">
+<tt class="descname">delete</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#superfastmatch.models.Content.delete" title="Permalink to this definition">¶</a></dt>
 <dd><p>Deletes item from document index before Content instance is deleted</p>
 </dd></dl>
 
 </dd></dl>
 
 <dl class="class">
-<dt id="superfastmatch.django.models.Fragment">
-<em class="property">class </em><tt class="descclassname">superfastmatch.django.models.</tt><tt class="descname">Fragment</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#superfastmatch.django.models.Fragment" title="Permalink to this definition">¶</a></dt>
+<dt id="superfastmatch.models.Fragment">
+<em class="property">class </em><tt class="descclassname">superfastmatch.models.</tt><tt class="descname">Fragment</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#superfastmatch.models.Fragment" title="Permalink to this definition">¶</a></dt>
 <dd><p>A fragment of text that is reused between Documents.</p>
 </dd></dl>
 
 <dl class="class">
-<dt id="superfastmatch.django.models.Association">
-<em class="property">class </em><tt class="descclassname">superfastmatch.django.models.</tt><tt class="descname">Association</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#superfastmatch.django.models.Association" title="Permalink to this definition">¶</a></dt>
-<dd><p>Many to Many relation between <a class="reference internal" href="#superfastmatch.django.models.Content" title="superfastmatch.django.models.Content"><tt class="xref py py-class docutils literal"><span class="pre">Content</span></tt></a> instances. 
+<dt id="superfastmatch.models.Association">
+<em class="property">class </em><tt class="descclassname">superfastmatch.models.</tt><tt class="descname">Association</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#superfastmatch.models.Association" title="Permalink to this definition">¶</a></dt>
+<dd><p>Many to Many relation between <a class="reference internal" href="#superfastmatch.models.Content" title="superfastmatch.models.Content"><tt class="xref py py-class docutils literal"><span class="pre">Content</span></tt></a> instances. 
 There is no need to access this class directly.</p>
 </dd></dl>
 
@@ -371,7 +372,7 @@ There is no need to access this class directly.</p>
 <li><a class="reference internal" href="#">SuperFastMatch API</a><ul>
 <li><a class="reference internal" href="#module-superfastmatch.kyototycoon"><tt class="docutils literal"><span class="pre">superfastmatch.kyototycoon</span></tt></a></li>
 <li><a class="reference internal" href="#module-superfastmatch.matcher"><tt class="docutils literal"><span class="pre">superfastmatch.matcher</span></tt></a></li>
-<li><a class="reference internal" href="#module-superfastmatch.django.models"><tt class="docutils literal"><span class="pre">superfastmatch.django.models</span></tt></a></li>
+<li><a class="reference internal" href="#module-superfastmatch.models"><tt class="docutils literal"><span class="pre">superfastmatch.models</span></tt></a></li>
 </ul>
 </li>
 </ul>
