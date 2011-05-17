@@ -1,6 +1,6 @@
 from django.db import models
 from lxml.etree import fromstring
-from superfastmatch.django.models import *
+from superfastmatch.models import *
 
 CONGRESSES = (
     (108,'108th'),

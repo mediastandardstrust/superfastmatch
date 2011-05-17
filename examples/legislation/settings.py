@@ -130,7 +130,7 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     'debug_toolbar',
     'bills',
-    'superfastmatch.django'
+    'superfastmatch'
 )
 
 LOGGING = {

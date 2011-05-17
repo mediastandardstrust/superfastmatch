@@ -53,8 +53,6 @@ def get_bill(link):
     if not os.path.exists(filename):
         logger.info('Downloading %s'%url)
         urllib.urlretrieve (url,filename)
-    else:
-        logger.info('%s is in the cache'%url)
 
 class Command(BaseCommand):
     help = 'scrapes US Congress Bills'
