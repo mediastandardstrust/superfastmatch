@@ -38,7 +38,7 @@ After install:
 
 ``paver help``
 
-will display options with the custom commands visible last. After that it might be worth having a look at the `Developing <http://mediastandardstrust.github.com/superfastmatch/developing.html>`_ page.
+will display options with the custom commands visible last. After that it might be worth having a look at the `Developing <developing.html>`_ page.
 
 After all that, to run the legislation example:
 
