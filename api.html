@@ -7,13 +7,13 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>SuperFastMatch API &mdash; SuperFastMatch v0.2.1 documentation</title>
+    <title>SuperFastMatch API &mdash; SuperFastMatch v0.3.0 documentation</title>
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '',
-        VERSION:     '0.2.1',
+        VERSION:     '0.3.0',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -22,7 +22,7 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="SuperFastMatch v0.2.1 documentation" href="index.html" />
+    <link rel="top" title="SuperFastMatch v0.3.0 documentation" href="index.html" />
     <link rel="next" title="Examples" href="examples.html" />
     <link rel="prev" title="Architecture" href="architecture.html" /> 
   </head>
@@ -42,7 +42,7 @@
         <li class="right" >
           <a href="architecture.html" title="Architecture"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">SuperFastMatch v0.2.1 documentation</a> &raquo;</li> 
+        <li><a href="index.html">SuperFastMatch v0.3.0 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -58,7 +58,7 @@
 <p>This module provides a class to aid communication with a Kyoto Tycoon instance over HTTP and provides an interface for running the simple Lua scripts remotely.</p>
 <dl class="class">
 <dt id="superfastmatch.kyototycoon.KyotoTycoon">
-<em class="property">class </em><tt class="descclassname">superfastmatch.kyototycoon.</tt><tt class="descname">KyotoTycoon</tt><big>(</big><em>host='127.0.0.1'</em>, <em>port=1977</em>, <em>timeout=30</em><big>)</big><a class="headerlink" href="#superfastmatch.kyototycoon.KyotoTycoon" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">superfastmatch.kyototycoon.</tt><tt class="descname">KyotoTycoon</tt><big>(</big><em>host='127.0.0.1'</em>, <em>port=1978</em>, <em>timeout=2000</em>, <em>debug=False</em><big>)</big><a class="headerlink" href="#superfastmatch.kyototycoon.KyotoTycoon" title="Permalink to this definition">¶</a></dt>
 <dd><p>Interface to Kyoto Tycoon</p>
 <dl class="method">
 <dt id="superfastmatch.kyototycoon.KyotoTycoon.open">
@@ -74,7 +74,7 @@
 
 <dl class="method">
 <dt id="superfastmatch.kyototycoon.KyotoTycoon.search">
-<tt class="descname">search</tt><big>(</big><em>text</em>, <em>window_size=15</em>, <em>hash_width=15</em>, <em>min_threshold=1</em>, <em>max_threshold=50000</em>, <em>num_results=20</em><big>)</big><a class="headerlink" href="#superfastmatch.kyototycoon.KyotoTycoon.search" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">search</tt><big>(</big><em>text</em>, <em>doc_types=</em><span class="optional">[</span><span class="optional">]</span>, <em>window_size=15</em>, <em>hash_width=32</em>, <em>min_threshold=1</em>, <em>max_threshold=50000</em>, <em>num_results=20</em><big>)</big><a class="headerlink" href="#superfastmatch.kyototycoon.KyotoTycoon.search" title="Permalink to this definition">¶</a></dt>
 <dd><p>Search for specified text in the document index.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -82,11 +82,12 @@
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>text</strong> &#8211; Text to search the index for.</li>
+<li><strong>doc_types</strong> &#8211; Doc types to search for. Specified as a tuple of integers within a range of 0 and 255. If not specified, all doc types are searched for.</li>
 <li><strong>window_size</strong> &#8211; The length of the window of text from which hashes are created from.</li>
 <li><strong>hash_width</strong> &#8211; The number of bits to use for the hash.</li>
 <li><strong>min_threshold</strong> &#8211; The minimum number of identical hashes for a document to be considered a positive result.</li>
 <li><strong>max_threshold</strong> &#8211; The maximum number of documents to process for a single hash. A hash with a higher number of documents will be ignored.</li>
-<li><strong>num_results</strong> &#8211; The number of results required.</li>
+<li><strong>num_results</strong> &#8211; The number of results required for each doc type.</li>
 </ul>
 </td>
 </tr>
@@ -96,13 +97,35 @@
 
 <dl class="method">
 <dt id="superfastmatch.kyototycoon.KyotoTycoon.add">
-<tt class="descname">add</tt><big>(</big><em>docid</em>, <em>text</em>, <em>window_size=15</em>, <em>hash_width=15</em><big>)</big><a class="headerlink" href="#superfastmatch.kyototycoon.KyotoTycoon.add" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">add</tt><big>(</big><em>doc_type</em>, <em>doc_id</em>, <em>text</em>, <em>window_size=15</em>, <em>hash_width=32</em>, <em>verify_exists=True</em><big>)</big><a class="headerlink" href="#superfastmatch.kyototycoon.KyotoTycoon.add" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add a document to the index</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>doctype</strong> &#8211; The document type which must be an integer between 0 and 255</li>
+<li><strong>docid</strong> &#8211; The document id which must be an integer between 0 and 4,294,967,295</li>
+<li><strong>text</strong> &#8211; The text of the document</li>
+<li><strong>window_size</strong> &#8211; The length of the window of text from which hashes are created from.</li>
+<li><strong>hash_width</strong> &#8211; The number of bits to use for the hash.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="superfastmatch.kyototycoon.KyotoTycoon.delete">
+<tt class="descname">delete</tt><big>(</big><em>doc_type</em>, <em>doc_id</em>, <em>text</em>, <em>window_size=15</em>, <em>hash_width=32</em><big>)</big><a class="headerlink" href="#superfastmatch.kyototycoon.KyotoTycoon.delete" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delete a document from the index</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>doctype</strong> &#8211; The document type which must be an integer between 0 and 255</li>
 <li><strong>docid</strong> &#8211; The document id which must be an integer between 0 and 4,294,967,295</li>
 <li><strong>text</strong> &#8211; The text of the document</li>
 <li><strong>window_size</strong> &#8211; The length of the window of text from which hashes are created from.</li>
@@ -159,10 +182,15 @@
 <span id="superfastmatch-django-models"></span><h2><a class="reference internal" href="#module-superfastmatch.django.models" title="superfastmatch.django.models"><tt class="xref py py-mod docutils literal"><span class="pre">superfastmatch.django.models</span></tt></a><a class="headerlink" href="#module-superfastmatch.django.models" title="Permalink to this headline">¶</a></h2>
 <p>This set of models is a Django interface to the SuperFastMatch algorithm and the Kyoto Cabinet/Tycoon document index.</p>
 <p>The following <a class="reference external" href="http://docs.djangoproject.com/en/dev/ref/settings">settings</a> can be used to configure how to communicate with Kyoto Tycoon:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">SUPERFASTMATCH_HOST</span> <span class="o">=</span> <span class="s">&#39;127.0.0.1&#39;</span>
-<span class="n">SUPERFASTMATCH_PORT</span> <span class="o">=</span> <span class="mi">1977</span>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">SUPERFASTMATCH_HOST</span><span class="p">()</span> <span class="o">=</span> <span class="s">&#39;127.0.0.1&#39;</span>
+<span class="n">SUPERFASTMATCH_PORT</span><span class="p">()</span> <span class="o">=</span> <span class="mi">1977</span>
 </pre></div>
 </div>
+<p>as well as a minimum percentage of the document required to be copied for an association to be created and the window size for matching:</p>
+<blockquote>
+<div>SUPERFASTMATCH_MIN_THRESHOLD = 0.02
+SUPERFASTMATCH_WINDOW_SIZE = 15
+SUPERFASTMATCH_HASH_WIDTH = 32</div></blockquote>
 <p>and you must remember to include both <tt class="xref py py-mod docutils literal"><span class="pre">superfastmatch.django</span></tt> and 
 <a class="reference external" href="http://docs.djangoproject.com/en/dev/ref/contrib/contenttypes/">django.contrib.contenttypes</a> 
 in <a class="reference external" href="http://docs.djangoproject.com/en/dev/ref/settings/#installed-apps">INSTALLED_APPS</a>. For example:</p>
@@ -187,6 +215,9 @@ in <a class="reference external" href="http://docs.djangoproject.com/en/dev/ref/
 <span class="gp">&gt;&gt;&gt; </span><span class="n">article_two</span> <span class="o">=</span> <span class="n">NewsArticle</span><span class="p">(</span><span class="n">content</span><span class="o">=</span><span class="s">&quot;Another example news article with a bit more content&quot;</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">article_two</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">NewsArticle</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s">&#39;example news article&#39;</span><span class="p">)</span>
+<span class="go">defaultdict(&lt;type &#39;dict&#39;&gt;, {&lt;class &#39;superfastmatch.django.tests.NewsArticle&#39;&gt;: OrderedDict([(&lt;NewsArticle: NewsArticle object&gt;, 21), (&lt;NewsArticle: NewsArticle object&gt;, 21)])})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">article_one</span><span class="o">.</span><span class="n">delete</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">article_two</span><span class="o">.</span><span class="n">delete</span><span class="p">()</span>
 </pre></div>
 </div>
 <dl class="class">
@@ -194,15 +225,47 @@ in <a class="reference external" href="http://docs.djangoproject.com/en/dev/ref/
 <em class="property">class </em><tt class="descclassname">superfastmatch.django.models.</tt><tt class="descname">DocumentManager</tt><a class="headerlink" href="#superfastmatch.django.models.DocumentManager" title="Permalink to this definition">¶</a></dt>
 <dd><p>Manager for running bulk operations on Documents</p>
 <dl class="method">
+<dt id="superfastmatch.django.models.DocumentManager.get_contents">
+<tt class="descname">get_contents</tt><big>(</big><em>documents</em>, <em>defer=True</em><big>)</big><a class="headerlink" href="#superfastmatch.django.models.DocumentManager.get_contents" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a dictionary with each Document as a key and each respective Content as a value</p>
+</dd></dl>
+
+<dl class="method">
 <dt id="superfastmatch.django.models.DocumentManager.associate">
-<tt class="descname">associate</tt><big>(</big><big>)</big><a class="headerlink" href="#superfastmatch.django.models.DocumentManager.associate" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">associate</tt><big>(</big><em>multiprocess=True</em><big>)</big><a class="headerlink" href="#superfastmatch.django.models.DocumentManager.associate" title="Permalink to this definition">¶</a></dt>
 <dd><p>Method for updating associations between all documents</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="superfastmatch.django.models.DocumentManager.search">
-<tt class="descname">search</tt><big>(</big><em>text</em><big>)</big><a class="headerlink" href="#superfastmatch.django.models.DocumentManager.search" title="Permalink to this definition">¶</a></dt>
-<dd><p>Method for searching for text in all documents</p>
+<tt class="descname">search</tt><big>(</big><em>text</em>, <em>document_types=</em><span class="optional">[</span><span class="optional">]</span><big>)</big><a class="headerlink" href="#superfastmatch.django.models.DocumentManager.search" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method for searching for text in all or specified documents</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>text</strong> &#8211; The text to search for.</li>
+<li><strong>document_types</strong> &#8211; A list or tuple of the document subclasses to include in the results. If not specified, all document types are returned.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="superfastmatch.django.models.DocumentManager.get_fragments">
+<tt class="descname">get_fragments</tt><big>(</big><em>documents</em>, <em>select_related=True</em><big>)</big><a class="headerlink" href="#superfastmatch.django.models.DocumentManager.get_fragments" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a dictionary with each source Document as a key and an ordered dictionary as value
+The ordered dictionary has a similar Document as a key and a list of fragments as a value.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="superfastmatch.django.models.DocumentManager.get_similar_documents">
+<tt class="descname">get_similar_documents</tt><big>(</big><em>documents</em>, <em>select_related=True</em>, <em>defer=True</em><big>)</big><a class="headerlink" href="#superfastmatch.django.models.DocumentManager.get_similar_documents" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a dictionary with each source Document as a key and an ordered dictionary as a value.
+The ordered dictionary has a similar Document as a key and the common percentage as a value.</p>
 </dd></dl>
 
 </dd></dl>
@@ -231,6 +294,18 @@ Derive from this class and provide a suitable override of the <a class="referenc
 </dd></dl>
 
 <dl class="attribute">
+<dt id="superfastmatch.django.models.Document.similar">
+<tt class="descname">similar</tt><a class="headerlink" href="#superfastmatch.django.models.Document.similar" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns an ordered dictionary with a Document as a key and the common percentage as a value.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="superfastmatch.django.models.Document.fragments">
+<tt class="descname">fragments</tt><a class="headerlink" href="#superfastmatch.django.models.Document.fragments" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns an ordered dictionary with a Document as a key and a list of Fragments as the value</p>
+</dd></dl>
+
+<dl class="attribute">
 <dt id="superfastmatch.django.models.Document.clean">
 <tt class="descname">clean</tt><a class="headerlink" href="#superfastmatch.django.models.Document.clean" title="Permalink to this definition">¶</a></dt>
 <dd><p>Override this property to provide custom cleaning of content</p>
@@ -240,6 +315,12 @@ Derive from this class and provide a suitable override of the <a class="referenc
 <dt id="superfastmatch.django.models.Document.save">
 <tt class="descname">save</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#superfastmatch.django.models.Document.save" title="Permalink to this definition">¶</a></dt>
 <dd><p>Overridden save makes sure document index is kept up to date</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="superfastmatch.django.models.Document.delete">
+<tt class="descname">delete</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#superfastmatch.django.models.Document.delete" title="Permalink to this definition">¶</a></dt>
+<dd><p>Overridden delete makes sure document index is kept up to date</p>
 </dd></dl>
 
 </dd></dl>
@@ -252,16 +333,28 @@ There is no need to access this class directly</p>
 <dl class="method">
 <dt id="superfastmatch.django.models.Content.save">
 <tt class="descname">save</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#superfastmatch.django.models.Content.save" title="Permalink to this definition">¶</a></dt>
-<dd><p>Updates document index</p>
+<dd><p>Updates document index every time a Content instance is saved</p>
 </dd></dl>
 
+<dl class="method">
+<dt id="superfastmatch.django.models.Content.delete">
+<tt class="descname">delete</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#superfastmatch.django.models.Content.delete" title="Permalink to this definition">¶</a></dt>
+<dd><p>Deletes item from document index before Content instance is deleted</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="superfastmatch.django.models.Fragment">
+<em class="property">class </em><tt class="descclassname">superfastmatch.django.models.</tt><tt class="descname">Fragment</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#superfastmatch.django.models.Fragment" title="Permalink to this definition">¶</a></dt>
+<dd><p>A fragment of text that is reused between Documents.</p>
 </dd></dl>
 
 <dl class="class">
 <dt id="superfastmatch.django.models.Association">
 <em class="property">class </em><tt class="descclassname">superfastmatch.django.models.</tt><tt class="descname">Association</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#superfastmatch.django.models.Association" title="Permalink to this definition">¶</a></dt>
 <dd><p>Many to Many relation between <a class="reference internal" href="#superfastmatch.django.models.Content" title="superfastmatch.django.models.Content"><tt class="xref py py-class docutils literal"><span class="pre">Content</span></tt></a> instances. 
-There is no need to access this class directly</p>
+There is no need to access this class directly.</p>
 </dd></dl>
 
 </div>
@@ -326,7 +419,7 @@ There is no need to access this class directly</p>
         <li class="right" >
           <a href="architecture.html" title="Architecture"
              >previous</a> |</li>
-        <li><a href="index.html">SuperFastMatch v0.2.1 documentation</a> &raquo;</li> 
+        <li><a href="index.html">SuperFastMatch v0.3.0 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

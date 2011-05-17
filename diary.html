@@ -7,13 +7,13 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Developer Diary &mdash; SuperFastMatch v0.2.1 documentation</title>
+    <title>Developer Diary &mdash; SuperFastMatch v0.3.0 documentation</title>
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '',
-        VERSION:     '0.2.1',
+        VERSION:     '0.3.0',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -22,7 +22,7 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="SuperFastMatch v0.2.1 documentation" href="index.html" />
+    <link rel="top" title="SuperFastMatch v0.3.0 documentation" href="index.html" />
     <link rel="next" title="License" href="license.html" />
     <link rel="prev" title="Changelog" href="changelog.html" /> 
   </head>
@@ -42,7 +42,7 @@
         <li class="right" >
           <a href="changelog.html" title="Changelog"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">SuperFastMatch v0.2.1 documentation</a> &raquo;</li> 
+        <li><a href="index.html">SuperFastMatch v0.3.0 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -95,6 +95,35 @@
 <p>Other fields, such as published date, could be used as filter, but then we are entering the territory of advanced search engines like <a class="reference external" href="http://xapian.org/">Xapian</a> and <a class="reference external" href="http://lucene.apache.org/solr/">Solr</a> which are already good at that type of thing!</p>
 </div>
 </div>
+<div class="section" id="week-4">
+<h2>Week 4<a class="headerlink" href="#week-4" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="kyoto-cabinet">
+<h3>Kyoto Cabinet<a class="headerlink" href="#kyoto-cabinet" title="Permalink to this headline">¶</a></h3>
+<p>Storing and processing data is a challenging task with many, many options! Often the performance characteristics and ceilings of a platform only become apparent after a large amount of implementation for that platform has occurred. These evaluations can take a lot of time and definitely help form an opinion on which platform is good at a particular task. SuperFastMatch works on the simple concept of storing every hash of every window of text in a document with the associated document id (and now document type). This is done for every document and yields an inverted index of hashes to documents. Thus, for a search document or text, hashing its windows allows for a fast search of matching documents.</p>
+<p>The storage requirement for this is very high - typically 5x the original document size. Access speed is very important, given that a search of a document n characters long requires (n-window_size) lookups. Also index creation speed is vital. If it takes 2 days to index 1 days worth of news, Churnalism.com would be behind the current affairs very quickly!</p>
+<p>The obvious starting candidate for a platform is SQL, and I experimented with Postgres, testing out such features as the <a class="reference external" href="http://www.postgresql.org/docs/current/static/intarray.html">intarray</a> data type for storing document ids and <a class="reference external" href="http://www.postgresql.org/docs/current/static/ddl-partitioning.html">partitioned tables</a> as a means for bulk loading daily data whilst maintaining insert speed. However, even with 24-bit hashing (ie. 16,777,216 possible hashes), lookup and insert speeds proved to be poor.</p>
+<p>The next candidate was the sexy new key value store on the block! <a class="reference external" href="https://github.com/antirez/redis">Redis</a> has lots of nice features ideal for storing the index. High speed inserts and the <a class="reference external" href="http://redis.io/commands#set">sets</a> command set, great for ensuring no duplicate id is saved for a hash. However, again a performance ceiling reared its skull-damaging surface! Redis operates great when the data set fits totally in memory, but as soon as that limit is surpassed, the paging virtual memory kicks in - but very slowly. The release notes and commit history showed that this was a known issue, but it made Redis impractical for use.</p>
+<p>A lateral solution was to consider using <a class="reference external" href="http://hadoop.apache.org/">Hadoop</a> in the form of <a class="reference external" href="http://aws.amazon.com/elasticmapreduce/">Elastic Map Reduce</a> as a way of solving the daily index creation problem. It was interesting to stray into the realms of Java land (with its verbosity quite overwhelming at times!). Issues found included the need to code a simple CSVReader - not included in the vanilla distribution. The difficulty of getting something out of Hadoop in binary rather than text file form. The misleading and, in the end, very expensive pricing of both the EC2 service and the S3 costs for downloading the processed data to an external server. I can see that if you are Yahoo and have 1000&#8217;s of servers, Hadoop is a great way to distribute jobs across many machines. However, if you have a continuous data processing task that could be run on one very powerful machine the economics of it don&#8217;t quite make sense.</p>
+<p>At this point, despair was near! A final gambit seemed to be the service offered by the <a class="reference external" href="http://www.google.com">search giant</a> themselves. <a class="reference external" href="http://code.google.com/appengine/">App Engine</a> had a lot of ticks in it&#8217;s favour. The datastore is capable of massive scaling with no configuration required. API calls to the datastore are very performant (and now can run in <a class="reference external" href="http://code.google.com/appengine/docs/python/datastore/async.html">parallel</a>). The <a class="reference external" href="http://code.google.com/appengine/docs/python/taskqueue/">task queue</a> is fantastic at allowing extra instances to be pulled up as and when needed for processing the index. All in all, Appengine was the preferred choice and I had a great working prototype. The one major headache was the billing cost for Datastore API writes. Because the data was incoming in unsorted form, each hash for each document required an API write, which added up to about £6,000 just to index 3.5 million news articles! This meant any mistakes in indexing would surely kill the project&#8217;s budget. A postscript to this might be that the recent addition of the shuffle and reduce phases of the <a class="reference external" href="http://code.google.com/p/appengine-mapreduce/">map-reduce project</a> might make the insertion costs considerably less. Also the recently <a class="reference external" href="http://www.youtube.com/watch?v=7B7FyU9wW8Y">announced</a> full-text search API has a numeric data type that could be <em>misused</em> to simulate the inverted index.</p>
+<p>So after a very large amount of time spent evaluating performance, cost and practical implementation it became clear that was a definite advantage to investing in some serious hardware to negate the higher than expected cost of high performance cloud infrastructure. A server configured by Pete at <a class="reference external" href="http://www.mythic-beasts.com/">Mythic Beasts</a> with 64GB of RAM and an <a class="reference external" href="http://www.intel.com/design/flash/nand/mainstream/index.htm">Intel X25-M</a> faciliated the speedy operation of the final solution that we decided upon.</p>
+<p>And that final solution was to use a combination of <a class="reference external" href="http://fallabs.com/kyotocabinet/">Kyoto Cabinet</a>  and <a class="reference external" href="http://fallabs.com/kyototycoon/">Kyoto Tycoon</a> written by  the talented <a class="reference external" href="http://fallabs.com/mikio/profile.html">Mikio Hirabayashi</a> (now gainfully employed by Google) who kindly incorporated some feature requests to do with the bit length of <a class="reference external" href="http://code.google.com/p/smhasher/">Murmur hashing</a> exposed to Lua and gave very useful implementation advice. The pros of Kyoto Cabinet are numerous and include:</p>
+<ul class="simple">
+<li>Very fast insertion and lookup speed, whether accessing from disk or memory.</li>
+<li>High tunability of indexes in terms of memory usage and algorithms employed in sorting of keys.</li>
+<li>Embedded Lua scripts can be run in multithreaded HTTP aware server.</li>
+<li>Designed to be used both as a toolkit and a framework for development allowing tighter integration as bottlenecks are encountered, ie.e the library and header files allow for everything to be used in a custom C++ project if desired.</li>
+<li>Great documentation.</li>
+</ul>
+</div>
+<div class="section" id="filtering-junk">
+<h3>Filtering Junk<a class="headerlink" href="#filtering-junk" title="Permalink to this headline">¶</a></h3>
+<p>After examining the data for US Congress bills it has become clear that this a far less heterogenous data set than that found with Churnalism.com. For instance phrases like &#8220;is amended by adding at the end the following&#8221; and &#8220;Notwithstanding any other provision of&#8221; appear in nearly every bill. These phrases in themselves do not indicate similarity with another bill, but they might if they are part of a longer chunk. So how to ignore the stock phrases when they they are just stock phrases, but include them when they are part of something more unique?</p>
+<p>A natural by-product of the index creation, especially as the corpora becomes larger, is that for every window, or in fact hash, there is a sequence of document ids and document types, which are themselves vital for search, but when accumulated together the count per hash gives an indication of the originality or cliché of that window. Say that this sentence is present in both search text and a match candidate:</p>
+<p>&#8220;The Tobacco Smoker&#8217;s compensation bill is amended by adding at the end the following&#8221;</p>
+<p>The last half of the sentence consists of very frequently occurring windows, whilst the start is very likely less common. We want the whole sentence to be given prominence in the fragment results. We can do this by averaging the counts of each hash, perhaps with a high cut-off, say 100, for the high counts. This would allow us to filter out the very common phrases, which would tend to score around 100. This is yet to be implemented, but should be easy to achieve and is scheduled for version 0.4.</p>
+<p>Another possible use of this sort of &#8220;heatmap&#8221; might be to visualise the originality of texts, with common phrases coloured red perhaps and more original phrases in a cooler tone!</p>
+</div>
+</div>
 </div>
 
 
@@ -115,6 +144,11 @@
 <li><a class="reference internal" href="#week-3">Week 3</a><ul>
 <li><a class="reference internal" href="#framework-design">Framework design</a></li>
 <li><a class="reference internal" href="#faceting">Faceting</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#week-4">Week 4</a><ul>
+<li><a class="reference internal" href="#kyoto-cabinet">Kyoto Cabinet</a></li>
+<li><a class="reference internal" href="#filtering-junk">Filtering Junk</a></li>
 </ul>
 </li>
 </ul>
@@ -164,7 +198,7 @@
         <li class="right" >
           <a href="changelog.html" title="Changelog"
              >previous</a> |</li>
-        <li><a href="index.html">SuperFastMatch v0.2.1 documentation</a> &raquo;</li> 
+        <li><a href="index.html">SuperFastMatch v0.3.0 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

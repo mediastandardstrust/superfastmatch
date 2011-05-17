@@ -7,13 +7,13 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Developing &mdash; SuperFastMatch v0.2.1 documentation</title>
+    <title>Developing &mdash; SuperFastMatch v0.3.0 documentation</title>
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '',
-        VERSION:     '0.2.1',
+        VERSION:     '0.3.0',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -22,7 +22,7 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="SuperFastMatch v0.2.1 documentation" href="index.html" />
+    <link rel="top" title="SuperFastMatch v0.3.0 documentation" href="index.html" />
     <link rel="next" title="Architecture" href="architecture.html" />
     <link rel="prev" title="Installation" href="install.html" /> 
   </head>
@@ -42,7 +42,7 @@
         <li class="right" >
           <a href="install.html" title="Installation"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">SuperFastMatch v0.2.1 documentation</a> &raquo;</li> 
+        <li><a href="index.html">SuperFastMatch v0.3.0 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -55,8 +55,24 @@
 <h1>Developing<a class="headerlink" href="#developing" title="Permalink to this headline">¶</a></h1>
 <p>The intention is to make sure that all the development workflows, such as building the docs, running the tests and creating the distribution are covered by <a class="reference external" href="http://paver.github.com/paver/">Paver</a>. The commands are detailed below and can be executed by, for example, typing:</p>
 <p><tt class="docutils literal"><span class="pre">paver</span> <span class="pre">docs</span></tt></p>
+<p>To run the tests, first start up a Kyoto Tycoon instance on port 1977 with an index name like test.kct:</p>
+<p><tt class="docutils literal"><span class="pre">paver</span> <span class="pre">kyototycoon</span> <span class="pre">-p</span> <span class="pre">1977</span> <span class="pre">-f</span> <span class="pre">test.kct</span></tt></p>
+<p>and then in another terminal window run:</p>
+<p><tt class="docutils literal"><span class="pre">paver</span> <span class="pre">test</span></tt></p>
 <div class="section" id="commands">
 <h2>Commands<a class="headerlink" href="#commands" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="pavement.test">
+<tt class="descclassname">pavement.</tt><tt class="descname">test</tt><big>(</big><em>func</em><big>)</big><a class="headerlink" href="#pavement.test" title="Permalink to this definition">¶</a></dt>
+<dd><p>Build test enviroment and run tests</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pavement.kyototycoon">
+<tt class="descclassname">pavement.</tt><tt class="descname">kyototycoon</tt><big>(</big><em>func</em><big>)</big><a class="headerlink" href="#pavement.kyototycoon" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run Kyoto Tycoon server</p>
+</dd></dl>
+
 <dl class="function">
 <dt id="pavement.sdist">
 <tt class="descclassname">pavement.</tt><tt class="descname">sdist</tt><big>(</big><em>func</em><big>)</big><a class="headerlink" href="#pavement.sdist" title="Permalink to this definition">¶</a></dt>
@@ -147,7 +163,7 @@
         <li class="right" >
           <a href="install.html" title="Installation"
              >previous</a> |</li>
-        <li><a href="index.html">SuperFastMatch v0.2.1 documentation</a> &raquo;</li> 
+        <li><a href="index.html">SuperFastMatch v0.3.0 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

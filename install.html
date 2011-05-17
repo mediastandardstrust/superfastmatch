@@ -7,13 +7,13 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Installation &mdash; SuperFastMatch v0.2.1 documentation</title>
+    <title>Installation &mdash; SuperFastMatch v0.3.0 documentation</title>
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '',
-        VERSION:     '0.2.1',
+        VERSION:     '0.3.0',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -22,7 +22,7 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="SuperFastMatch v0.2.1 documentation" href="index.html" />
+    <link rel="top" title="SuperFastMatch v0.3.0 documentation" href="index.html" />
     <link rel="next" title="Developing" href="developing.html" />
     <link rel="prev" title="Introduction" href="index.html" /> 
   </head>
@@ -42,7 +42,7 @@
         <li class="right" >
           <a href="index.html" title="Introduction"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">SuperFastMatch v0.2.1 documentation</a> &raquo;</li> 
+        <li><a href="index.html">SuperFastMatch v0.3.0 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -53,10 +53,44 @@
             
   <div class="section" id="installation">
 <h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
-<p>SuperFastMatch depends on <a class="reference external" href="http://paver.github.com/paver/#installation">Paver</a> and <a class="reference external" href="http://pypi.python.org/pypi/virtualenv">VirtualEnv</a>  to get bootstrapped.</p>
+<p>SuperFastMatch depends on <a class="reference external" href="http://paver.github.com/paver/#installation">Paver</a> and <a class="reference external" href="http://pypi.python.org/pypi/virtualenv">VirtualEnv</a>  to get bootstrapped. The machine that will serve as the index host also requires <a class="reference external" href="http://fallabs.com/kyotocabinet">Kyoto Cabinet</a>, <a class="reference external" href="http://fallabs.com/kyototycoon">Kyoto Tycoon</a>. and <a class="reference external" href="http://www.lua.org/">Lua</a>.</p>
+<p>Example install commands:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span class="c"># Install Lua</span>
+wget http://www.lua.org/ftp/lua-5.1.4.tar.gz
+tar -xvf lua-5.1.4.tar.gz
+<span class="nb">cd </span>lua-5.1.4
+make macosx <span class="o">&amp;&amp;</span> sudo make install <span class="c"># Change macosx for correct platform</span>
+<span class="nb">cd</span> ..
+
+<span class="c"># Install Kyoto Cabinet</span>
+wget http://fallabs.com/kyotocabinet/pkg/kyotocabinet-1.2.52.tar.gz <span class="c"># Version might be updated</span>
+tar -xvf kyotocabinet-1.2.52.tar.gz
+<span class="nb">cd </span>kyotocabinet-1.2.52
+./configure <span class="o">&amp;&amp;</span> make <span class="o">&amp;&amp;</span> sudo make install
+<span class="nb">cd</span> ..
+
+<span class="c"># Install Kyoto Tycoon</span>
+wget http://fallabs.com/kyototycoon/pkg/kyototycoon-0.9.40.tar.gz <span class="c"># Version might be updated</span>
+tar -xvf kyototycoon-0.9.40.tar.gz
+<span class="nb">cd </span>kyototycoon-0.9.40
+./configure --enable-lua <span class="o">&amp;&amp;</span> make <span class="o">&amp;&amp;</span> sudo make install
+<span class="nb">cd</span> ..
+
+<span class="c"># Install SuperFastMatch</span>
+sudo easy_install paver
+sudo easy_install virtualenv
+git clone git://github.com/mediastandardstrust/superfastmatch.git
+<span class="nb">cd </span>superfastmatch
+</pre></div>
+</div>
 <p>After install:</p>
 <p><tt class="docutils literal"><span class="pre">paver</span> <span class="pre">help</span></tt></p>
 <p>will display options with the custom commands visible last. After that it might be worth having a look at the <a class="reference external" href="http://mediastandardstrust.github.com/superfastmatch/developing.html">Developing</a> page.</p>
+<p>After all that, to run the legislation example:</p>
+<p><tt class="docutils literal"><span class="pre">paver</span> <span class="pre">kyototycoon</span></tt></p>
+<p>in one terminal window and</p>
+<p><tt class="docutils literal"><span class="pre">paver</span> <span class="pre">legislation</span></tt></p>
+<p>in another.</p>
 </div>
 
 
@@ -108,7 +142,7 @@
         <li class="right" >
           <a href="index.html" title="Introduction"
              >previous</a> |</li>
-        <li><a href="index.html">SuperFastMatch v0.2.1 documentation</a> &raquo;</li> 
+        <li><a href="index.html">SuperFastMatch v0.3.0 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

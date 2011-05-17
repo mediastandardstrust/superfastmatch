@@ -7,13 +7,13 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Examples &mdash; SuperFastMatch v0.2.1 documentation</title>
+    <title>Examples &mdash; SuperFastMatch v0.3.0 documentation</title>
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '',
-        VERSION:     '0.2.1',
+        VERSION:     '0.3.0',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -22,7 +22,7 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="SuperFastMatch v0.2.1 documentation" href="index.html" />
+    <link rel="top" title="SuperFastMatch v0.3.0 documentation" href="index.html" />
     <link rel="next" title="Changelog" href="changelog.html" />
     <link rel="prev" title="SuperFastMatch API" href="api.html" /> 
   </head>
@@ -42,7 +42,7 @@
         <li class="right" >
           <a href="api.html" title="SuperFastMatch API"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">SuperFastMatch v0.2.1 documentation</a> &raquo;</li> 
+        <li><a href="index.html">SuperFastMatch v0.3.0 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -55,12 +55,25 @@
 <h1>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="legislation">
 <h2>Legislation<a class="headerlink" href="#legislation" title="Permalink to this headline">¶</a></h2>
-<p>This is an exampe Django application that scrapes US Congress Bills puts them in a local sqlite database.</p>
+<p>This is an exampe Django application that scrapes US Congress Bills puts them in a local postgres database. The scraper depends on lxml which requires the libxml and libxslt dev libraries to build. On Ubuntu this can be achieved by:</p>
+<p><tt class="docutils literal"><span class="pre">sudo</span> <span class="pre">apt-get</span> <span class="pre">install</span> <span class="pre">libxml2-dev</span> <span class="pre">libxslt1-dev</span></tt></p>
 <p>The simplest way to use is:</p>
 <p><tt class="docutils literal"><span class="pre">paver</span> <span class="pre">legislation</span></tt></p>
 <p>which will build everything and start running the webserver. If you need to run some django commands then you might be better off with something like this:</p>
 <p><tt class="docutils literal"><span class="pre">cd</span> <span class="pre">examples/legislation</span> <span class="pre">&amp;&amp;</span> <span class="pre">source</span> <span class="pre">../../.env/examples_env/bin/activate</span></tt></p>
 <p>in order to activate the examples virtual environment.</p>
+<p>To run the scraper and association management commands first start Kyoto Tycoon in a terminal:</p>
+<p><tt class="docutils literal"><span class="pre">paver</span> <span class="pre">kyototycoon</span></tt></p>
+<p>and in another terminal window:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span class="nb">cd </span>examples/legislation
+<span class="nb">source</span> ../../.env/examples_env/bin/activate
+./manage.py scrape
+
+<span class="c"># Wait until finished</span>
+./manage.py associate
+</pre></div>
+</div>
+<p>The scraper process takes about 3 hours to cache all the legislation files and then about n hours to index them.</p>
 </div>
 </div>
 
@@ -121,7 +134,7 @@
         <li class="right" >
           <a href="api.html" title="SuperFastMatch API"
              >previous</a> |</li>
-        <li><a href="index.html">SuperFastMatch v0.2.1 documentation</a> &raquo;</li> 
+        <li><a href="index.html">SuperFastMatch v0.3.0 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
