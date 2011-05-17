@@ -2,6 +2,7 @@
 *.pyc
 *.db
 *.egg-info
+superfastmatch.egg-info/PKG-INFO
 .build
 .env
 .cache
