@@ -4,7 +4,9 @@ Examples
 Legislation
 -----------
 
-This is an exampe Django application that scrapes US Congress Bills puts them in a local postgres database.
+This is an exampe Django application that scrapes US Congress Bills puts them in a local postgres database. The scraper depends on lxml which requires the libxml and libxslt dev libraries to build. On Ubuntu this can be achieved by:
+
+``sudo apt-get install libxml2-dev libxslt1-dev``
 
 The simplest way to use is:
 
@@ -31,4 +33,4 @@ and in another terminal window:
     # Wait until finished
     ./manage.py associate
     
-The scraper process takes about 2 hours to cache all the legislation files and then about n hours to index them. 
+The scraper process takes about 3 hours to cache all the legislation files and then about n hours to index them. 
