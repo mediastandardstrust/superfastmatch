@@ -2,7 +2,7 @@ from paver.easy import *
 import paver.doctools
 from paver.setuputils import setup
 
-CURRENT_VERSION="0.2.1"
+CURRENT_VERSION="0.3.0"
 
 setup(
     name="superfastmatch",
@@ -57,9 +57,14 @@ def build_environment(options):
     pip_install(options.virtualenv.dest_dir,options.virtualenv.requirements)
 
 @task
+@cmdopts([('port=', 'p', 'Port for Kyoto Tycoon to listen on (defaults to 1978)'),
+          ('file=', 'f', 'Filename of index (defaults to "index.kct")')])
+
 def kyototycoon(options):
     """Run Kyoto Tycoon server"""
-    bash("ktserver -tout 2000 -onr -scr  superfastmatch/scripts/search.lua index.kct#ktopts=p#msiz=1g#pccap=1g")
+    port=getattr(options.kyototycoon,"port",1978)
+    filename=getattr(options.kyototycoon,"file","index.kct")
+    bash("ktserver -port %s -tout 2000 -onr -scr  superfastmatch/scripts/search.lua %s#ktopts=p#bnum=40000000#msiz=1g#pccap=1g" % (port,filename))
 
 @task
 def test(options):
