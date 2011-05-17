@@ -4,6 +4,7 @@
 *.egg-info
 .build
 .env
+.cache
 dist
 superfastmatch/docs
-index.kct
+*.kct
