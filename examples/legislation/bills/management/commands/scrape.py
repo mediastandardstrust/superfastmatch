@@ -62,7 +62,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         pool = multiprocessing.Pool(processes=multiprocessing.cpu_count()*2)
         links=[]
-        for congress in range(110,113):
+        for congress in range(108,113):
             docs_url = 'http://thomas.loc.gov/home/gpoxmlc%s/' % congress
             logger.info("Downloading %s" %docs_url)
             docs = fromhtmlstring(urllib.urlopen(docs_url).read())
