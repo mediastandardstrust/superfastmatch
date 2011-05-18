@@ -44,7 +44,7 @@ def load_bill(doc):
     except AssertionError,ex:
         logger.exception("%s has bad XML"%(source,))
     except Exception,ex:
-        logger.exception("%s has bad XML"%(source,))
+        logger.exception("%s has error %s"%(source,ex.message))
 
 def get_bill(link):
     url=link['link']
