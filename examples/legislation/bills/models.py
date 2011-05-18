@@ -89,7 +89,7 @@ class Bill(models.Model):
 
 class BillStage(Document):
     bill = models.ForeignKey(Bill,related_name='stages')
-    stage = models.CharField(max_length=3,choices=STAGES,blank=False,null=False)
+    stage = models.CharField(max_length=4,choices=STAGES,blank=False,null=False)
     source = models.URLField(verify_exists=False,blank=True,null=True)
     
     @models.permalink

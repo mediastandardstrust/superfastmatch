@@ -22,15 +22,15 @@ def load_bill(doc):
         details = re.match(regex,doc['text'])
         parser = XMLParser(recover=True)
         content = parse(os.path.join(CACHE_DIR,source),parser)
-        logger.info("%s %s"%(doc['link'],details.groups()))
+        logger.info("%s %s"%(source,details.groups()))
         number = int(details.group('number'))
         origin = details.group('origin').lower()
         form = details.group('form').lower() if details.group('form') else 'b'
         stage = details.group('stage').lower()
-        if stage == 'enr':
-            session = 1 if content.xpath('//session')[0].text.lower().strip().find('first')!=-1 else 2
-        else:
+        try:
             session = int(content.xpath('//session')[0].text.strip()[0])
+        except ValueError:
+            session = 1 if content.xpath('//session')[0].text.lower().strip().find('first')!=-1 else 2
         Bill.objects.add_bill(
                     congress=doc['congress'],
                     session=session,
@@ -41,8 +41,10 @@ def load_bill(doc):
                     source=source,
                     content=tostring(content)
                )
+    except AssertionError,ex:
+        logger.exception("%s has bad XML"%(source,))
     except Exception,ex:
-        logger.exception("Oops")
+        logger.exception("%s has bad XML"%(source,))
 
 def get_bill(link):
     url=link['link']
@@ -60,7 +62,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         pool = multiprocessing.Pool(processes=multiprocessing.cpu_count()*2)
         links=[]
-        for congress in range(108,113):
+        for congress in range(110,113):
             docs_url = 'http://thomas.loc.gov/home/gpoxmlc%s/' % congress
             logger.info("Downloading %s" %docs_url)
             docs = fromhtmlstring(urllib.urlopen(docs_url).read())
@@ -69,4 +71,4 @@ class Command(BaseCommand):
                 links.append({'link':doc.get('href'),'text':doc.text,'congress':congress})
         pool.map(get_bill,links,chunksize=10)
         pool.map(load_bill,links,chunksize=10)
-                
+        # map(load_bill,links)
