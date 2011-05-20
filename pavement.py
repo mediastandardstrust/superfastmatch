@@ -64,7 +64,7 @@ def kyototycoon(options):
     """Run Kyoto Tycoon server"""
     port=getattr(options.kyototycoon,"port",1978)
     filename=getattr(options.kyototycoon,"file","index.kct")
-    bash("ktserver -port %s -tout 2000 -onr -scr  superfastmatch/scripts/search.lua %s#ktopts=p#bnum=40000000#msiz=1g#pccap=1g" % (port,filename))
+    bash("ktserver -port %s -tout 2000 -onr -scr  superfastmatch/scripts/search.lua %s#ktopts=p#bnum=16777216#msiz=0.5g#pccap=2g" % (port,filename))
 
 @task
 def test(options):

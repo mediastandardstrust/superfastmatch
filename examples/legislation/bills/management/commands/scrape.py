@@ -8,6 +8,7 @@ import os
 from lxml.html import fromstring as fromhtmlstring
 from lxml.etree import tostring,fromstring,XMLParser,parse
 from django.core.management.base import BaseCommand
+from django import db
 from bills.models import *
 from bills.lib.urllib2helpers import CacheHandler
 
@@ -16,6 +17,8 @@ logger = logging.getLogger('superfastmatch')
 CACHE_DIR=".cache"
 
 def load_bill(doc):
+    #If running in debug mode, will prevent memory-leak effect of logging SQL queries
+    db.reset_queries()
     try:
         regex = re.compile(r"^(?P<origin>\w)(?P<form>\D)?(?P<number>\d+)_?(?P<stage>\w+)")
         source = doc['link']

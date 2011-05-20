@@ -42,7 +42,7 @@ defaultdict(<type 'dict'>, {<class 'superfastmatch.tests.NewsArticle'>: OrderedD
 >>> article_two.delete()
 """
 
-from django.db import models
+from django.db import models,transaction
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
 from django.core.exceptions import ObjectDoesNotExist
@@ -281,23 +281,37 @@ class Content(models.Model):
     content = models.TextField(blank=False,null=False)
     similar = models.ManyToManyField('self',through='Association',symmetrical=False,related_name='similar_content')
 
+    @transaction.commit_manually
     def save(self,*args,**kwargs):
         """Updates document index every time a Content instance is saved"""
-        verify_exists = False if not self.id else True
-        super(Content,self).save(*args, **kwargs)
-        tycoon = get_tycoon()
-        tycoon.open()
-        tycoon.add(self.content_type_id,self.object_id,self.content,hash_width=get_hash_width(),window_size=get_window_size(),verify_exists=verify_exists)
-        tycoon.close()
+        try:
+            verify_exists = False if not self.id else True
+            super(Content,self).save(*args, **kwargs)
+            tycoon = get_tycoon()
+            tycoon.open()
+            tycoon.add(self.content_type_id,self.object_id,self.content,hash_width=get_hash_width(),window_size=get_window_size(),verify_exists=verify_exists)
+            tycoon.close()
+        except Exception,ex:
+            print ex.message
+            transaction.rollback()
+        else:
+            transaction.commit()
     
+    @transaction.commit_manually
     def delete(self,*args,**kwargs):
         """Deletes item from document index before Content instance is deleted"""
-        tycoon = get_tycoon()
-        tycoon.open()
-        tycoon.delete(self.content_type_id,self.object_id,self.content,hash_width=get_hash_width(),window_size=get_window_size())
-        tycoon.close()
-        super(Content,self).delete(*args,**kwargs)
-
+        try:
+            tycoon = get_tycoon()
+            tycoon.open()
+            tycoon.delete(self.content_type_id,self.object_id,self.content,hash_width=get_hash_width(),window_size=get_window_size())
+            tycoon.close()
+            super(Content,self).delete(*args,**kwargs)
+        except Exception,ex:
+            print ex.message
+            transaction.rollback()
+        else:
+            transaction.commit()
+            
     class Meta:
         unique_together = ('content_type', 'object_id')
 
