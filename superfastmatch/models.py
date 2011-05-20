@@ -42,7 +42,7 @@ defaultdict(<type 'dict'>, {<class 'superfastmatch.tests.NewsArticle'>: OrderedD
 >>> article_two.delete()
 """
 
-from django.db import models,transaction
+from django.db import models,transaction,reset_queries
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
 from django.core.exceptions import ObjectDoesNotExist
@@ -71,6 +71,8 @@ def get_tycoon():
     return KyotoTycoon(host=getattr(settings,'SUPERFASTMATCH_HOST','127.0.0.1'),port=getattr(settings,'SUPERFASTMATCH_PORT',1978))
 
 def do_associate(content_id):
+    # Prevent debug mode SQL logging memory leak
+    reset_queries()
     content = Content.objects.get(id=content_id)
     Association.objects.filter(from_content=content).delete()
     results = Document.objects.search(content.content)
