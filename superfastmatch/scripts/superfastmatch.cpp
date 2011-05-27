@@ -8,8 +8,10 @@ extern "C" {
 #include <iostream>
 #include <deque>
 #include <string>
+#include <bitset>
 #include <vector>
 #include <algorithm>
+#include <iterator>
 #include <tr1/unordered_set>
 #include <tr1/unordered_map>
 #include <utility>
@@ -26,12 +28,22 @@ typedef unsigned __int64 uint64_t;
 #include <stdint.h>
 #endif
 
+typedef uint64_t hash_t;
+typedef uint32_t position_t;
+typedef unordered_set<position_t> positions_set;
+typedef vector<hash_t> hashes_vector;
+typedef unordered_set<hash_t> hashes_set;   
+typedef unordered_map<hash_t,unordered_set<position_t> > matches_map;
+
+const uint32_t BLOOM_SIZE=(1<<24);
+typedef bitset<BLOOM_SIZE> bloom_bitset;
+
 struct Result{
-   uint32_t left;
-   uint32_t right;
-   uint32_t length;
-   Result(uint32_t left,uint32_t right,uint32_t length) : left(left), right(right), length(length){}
-   friend std::ostream& operator<< (std::ostream &o, const Result &r)
+   position_t left;
+   position_t right;
+   position_t length;
+   Result(position_t left,position_t right,position_t length) : left(left), right(right), length(length){}
+   friend ostream& operator<< (ostream &o, const Result &r)
    {
       return o << "left: " << r.left << " right: " << r.right << " length: " << r.length <<'\n';
    }
@@ -45,92 +57,141 @@ bool result_sorter(Result const& lhs,Result const& rhs ){
    return lhs.right < rhs.right;
 }
 
-typedef pair<uint32_t,uint32_t> match;
+struct Match{
+   position_t left;
+   positions_set right;
+   Match(position_t left,positions_set right) :left(left), right(right){}
+   friend ostream& operator<< (ostream &o, const Match &m)
+   {
+      o << "left: " << m.left;
+      if (m.right.size()==0)
+         o<<"\n";
+      for (positions_set::const_iterator it=m.right.begin();it!=m.right.end();++it){
+         o  << "\tright: " << *it << endl;
+      }
+      return o;
+   }
+};
 
-void do_hash(const string& src, vector<uint64_t>& dest,uint32_t window_size){
-   for (uint32_t i=0;i<src.length()-window_size+1;i++){
-      dest[i]=hashmurmur(src.substr(i,window_size).c_str(),window_size);
+void do_hash(const string src, hashes_vector& dest, bloom_bitset& bloom,const uint32_t window_size){
+   const char* text = src.c_str();
+   const uint32_t length = src.length()-window_size+1;
+   for (uint32_t i=0;i<length;i++){
+      dest[i]=hash_t(hashmurmur(text+i,window_size+1)); //TODO murmurhash3
+      bloom.set(dest[i]%BLOOM_SIZE);
    }
 }
 
-void process_matches(deque<match>& matches, deque<Result>& results,uint32_t window_size){
-   while(matches.size()>1){
-      match first = matches.front();
-      matches.pop_front();
-      uint32_t counter = 0;
-      uint32_t length = window_size;
+void dump(const deque<Match>& matches,const deque<Result>& results, const string& text, const string& other){
+   cout << "Matches" <<endl;
+   for (uint32_t i=0;i<matches.size();i++){
+      cout << matches[i];
+   }
+   cout << "Results" <<endl;
+   for (uint32_t i=0;i<results.size();i++){
+      cout << results[i] << "\"" << text.substr(results[i].left,results[i].length) << "\"\t\"" << other.substr(results[i].right,results[i].length) << "\"" << endl;
+   }
+}
+
+void process_matches(deque<Match>& matches, deque<Result>& results,uint32_t window_size){
+   while(matches.size()>0){
+      Match* first = &matches.front();
+      if (first->right.size()==0){
+         matches.pop_front();
+         continue; //Skip loop and progress forwards!
+      }
+      uint32_t first_right=*first->right.begin();
+      first->right.erase(first->right.begin());
+      uint32_t counter=1;
       while(counter<matches.size()){
-         uint32_t second_pos = counter;
-         match second = matches[second_pos];
-         uint32_t limit = length-window_size+1;
-         uint32_t left = second.first-first.first;
-         uint32_t right = second.second-first.second;
-         if (left!=right and left<=limit){
-            counter++;
+         Match* next = &matches[counter];
+         if ((next->left-first->left)==counter){
+            unordered_set<uint32_t>::iterator next_right=next->right.find(first_right+counter);
+            if (next_right!=next->right.end()){
+               next->right.erase(*next_right);     
+               counter++;
+            }
+            else{
+               break;
+            }
          }
-         else if (left>limit){
+         else{
             break;
          }
-         else{    //left==right
-            matches.erase(matches.begin()+second_pos);
-            length++;
-         }
       }
-      results.push_back(Result(first.first,first.second,length));
+      results.push_back(Result(first->left,first_right,counter+window_size));
    }
-   if (matches.size()==1)
-      results.push_back(Result(matches.front().first,matches.front().second,window_size));
    sort(results.begin(),results.end(),result_sorter);
 }
 
 // Pass two strings to be compared and a integer for the windows_size
 static int superfastmatch_match(lua_State *L)
-{
+{   
    //Get parameters
+   double init_start = time();
    const string a = string(luaL_checkstring(L, 1));
    const string b = string(luaL_checkstring(L, 2));   
    uint32_t window_size = luaL_checkint(L, 3);
+   double init_end = time();
    
    //Initialise hashes   
-   vector<uint64_t> a_hashes(a.length()-window_size+1,0);
-   vector<uint64_t> b_hashes(b.length()-window_size+1,0);
-   do_hash(a,a_hashes,window_size);
-   do_hash(b,b_hashes,window_size);
+   double hash_start = time();
+   hashes_vector a_hashes(a.length()-window_size+1,0);
+   hashes_vector b_hashes(b.length()-window_size+1,0);
+   bloom_bitset& a_bloom = *(new bloom_bitset());
+   bloom_bitset& b_bloom = *(new bloom_bitset());
+   do_hash(a,a_hashes,a_bloom,window_size);
+   do_hash(b,b_hashes,b_bloom,window_size);
+   bloom_bitset a_b_bloom = a_bloom & b_bloom;
+   double hash_end = time();
    
-   //Find common hashes
-   unordered_set<uint64_t> a_hashes_set (a_hashes.begin(),a_hashes.end());
-   unordered_set<uint64_t> common;
-   unordered_map<uint64_t,deque<uint32_t> > b_matches; //TODO Try swapping for vector
-   for (uint32_t i=0;i<b_hashes.size();i++){
-      if (a_hashes_set.find(b_hashes[i])!=a_hashes_set.end()){
-         b_matches[b_hashes[i]].push_back(i);
-         common.insert(b_hashes[i]);
+   //Find a hashes set
+   double a_hashes_start = time();
+   hashes_set a_hashes_set;
+   for (hashes_vector::iterator it=a_hashes.begin();it<a_hashes.end();++it){
+      if (a_b_bloom[*it%BLOOM_SIZE]){
+         a_hashes_set.insert(*it);
       }
    }
+   double a_hashes_end = time();  
+   
+   //Find b hashes set
+   double b_hashes_start = time();
+   matches_map b_matches;
+   hashes_set::iterator a_hashes_set_end=a_hashes_set.end();
+   for (uint32_t i=0;i<b_hashes.size();i++){
+      if (a_b_bloom[b_hashes[i]%BLOOM_SIZE] && a_hashes_set.find(b_hashes[i])!=a_hashes_set_end){
+         b_matches[b_hashes[i]].insert(i);
+      }
+   }
+   double b_hashes_end = time();   
    
    //Build matches
-   deque<match> matches;
+   double build_start = time();
+   deque<Match> matches;
+   matches_map::iterator b_matches_end=b_matches.end();
    for (uint32_t i=0;i<a_hashes.size();i++){
-      if (common.find(a_hashes[i])!=common.end()){
-         for (uint32_t j=0;j<b_matches[a_hashes[i]].size();j++){
-            matches.push_back(match(i,b_matches[a_hashes[i]][j]));  
-         }
+      if (a_b_bloom[a_hashes[i]%BLOOM_SIZE]){
+         matches_map::iterator b_match=b_matches.find(a_hashes[i]);
+         if (b_match!=b_matches_end){
+            matches.push_back(Match(i,b_match->second));
+         }  
       }
    }
+   double build_end = time();
    
    //Process matches and build results
+   double process_start = time();
    deque<Result> results;
    process_matches(matches,results,window_size);
+   double process_end = time();
 
-
-   cout << "intersection has " << common.size() << " elements.\n";
-   cout << "b_matches has " << b_matches.size() << " elements.\n";
+   cout << "a_hashes: " << a_hashes.size() << " a_bloom: " << a_bloom.count() << " b_hashes: " << b_hashes.size() << " b_bloom: " << b_bloom.count() << " a_b_bloom: " << a_b_bloom.count() << endl; 
+   cout << "a_hashes_set: " << a_hashes_set.size() << " b_matches: " << b_matches.size() << " matches: " << matches.size() << " results: " << results.size() << endl;
+   cout << "init: " << init_end-init_start << " hash: " << hash_end-hash_start << " a_hashes: " << a_hashes_end-a_hashes_start;
+   cout << " b_hashes: " <<  b_hashes_end-b_hashes_start << " build: "<< build_end-build_start << " process: " << process_end-process_start << endl;   
+   dump(matches,results,a,b);
    
-   // for(uint32_t i=0;i<results.size();i++){
-   //    cout << results[i];
-   //    cout << a.substr(results[i].left,results[i].length) << endl;
-   // }
-
    return 1;
 }
 

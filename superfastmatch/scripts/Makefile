@@ -11,9 +11,9 @@ DEFINES=
 LUA= lua
 
 CC= g++
-SOCFLAGS= -fPIC 
+SOCFLAGS= -fPIC  -lkyotocabinet
 SOCC= $(CC) -shared $(SOCFLAGS)
-CFLAGS= -Wall -O2 -fomit-frame-pointer $(SOCFLAGS) $(DEFINES) $(INCLUDES)
+CFLAGS= -march=core2 -m64 -msse4 -Wall -O2 -fomit-frame-pointer  $(SOCFLAGS) $(DEFINES) $(INCLUDES)
 RM= rm -f
 INSTALL= install -p
 INSTALLPATH= $(LUA) installpath.lua
@@ -25,7 +25,10 @@ all: $(MODSO)
 
 # Alternative target for compiling on Mac OS X:
 macosx:
-	$(MAKE) all "SOCC=MACOSX_DEPLOYMENT_TARGET=10.3 $(CC) -dynamiclib -single_module -undefined dynamic_lookup $(SOCFLAGS)"
+	$(MAKE) all "SOCC=MACOSX_DEPLOYMENT_TARGET=10.3 $(CC) -dynamiclib -single_module -undefined dynamic_lookup  $(SOCFLAGS)"
+
+debug: 
+	$(MAKE) all "SOCC=MACOSX_DEPLOYMENT_TARGET=10.3 $(CC) -dynamiclib -single_module -undefined dynamic_lookup $(SOCFLAGS) -g "
 
 $(MODSO): $(MODNAME).o
 	$(SOCC) -o $@ $<
