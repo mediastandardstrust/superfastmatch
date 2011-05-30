@@ -11,9 +11,9 @@ DEFINES=
 LUA= lua
 
 CC= g++
-SOCFLAGS= -fPIC  -lkyotocabinet
+SOCFLAGS= -fPIC -lkyotocabinet -m64 -march=core2
 SOCC= $(CC) -shared $(SOCFLAGS)
-CFLAGS= -march=core2 -m64 -msse4 -Wall -O2 -fomit-frame-pointer  $(SOCFLAGS) $(DEFINES) $(INCLUDES)
+CFLAGS= -Wall -O3 -fomit-frame-pointer  $(SOCFLAGS) $(DEFINES) $(INCLUDES)
 RM= rm -f
 INSTALL= install -p
 INSTALLPATH= $(LUA) installpath.lua
@@ -21,7 +21,7 @@ INSTALLPATH= $(LUA) installpath.lua
 MODNAME= superfastmatch
 MODSO= $(MODNAME).so
 
-all: $(MODSO)
+all: $(MODSO) 
 
 # Alternative target for compiling on Mac OS X:
 macosx:
@@ -30,8 +30,8 @@ macosx:
 debug: 
 	$(MAKE) all "SOCC=MACOSX_DEPLOYMENT_TARGET=10.3 $(CC) -dynamiclib -single_module -undefined dynamic_lookup $(SOCFLAGS) -g "
 
-$(MODSO): $(MODNAME).o
-	$(SOCC) -o $@ $<
+$(MODSO): $(MODNAME).o MurmurHash3.o
+	$(SOCC) -o $@ $< MurmurHash3.o
 
 install: $(MODSO)
 	$(INSTALL) $< `$(INSTALLPATH) $(MODNAME)`
