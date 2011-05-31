@@ -15,13 +15,13 @@ local great_expectations = load("../fixtures/great_expectations.txt")
 local bible = load("../fixtures/bible.txt")
 local koran = load("../fixtures/koran.txt")
 
--- start = os.clock()
--- print(superfastmatch.match(oliver_twist,great_expectations,20))
--- print(string.format("elapsed time: %.2f\n", os.clock() - start))
--- 
--- start = os.clock()
--- print(superfastmatch.match(oliver_twist,bible,25))
--- print(string.format("elapsed time: %.2f\n", os.clock() - start))
+start = os.clock()
+print(superfastmatch.match(oliver_twist,great_expectations,20))
+print(string.format("elapsed time: %.2f\n", os.clock() - start))
+
+start = os.clock()
+print(superfastmatch.match(oliver_twist,bible,25))
+print(string.format("elapsed time: %.2f\n", os.clock() - start))
 
 start = os.clock()
 print(superfastmatch.match(koran,bible,20))
