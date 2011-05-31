@@ -3,7 +3,7 @@
 # To compile with MinGW please run: mingw32-make -f Makefile.mingw
 
 # Include path where lua.h, luaconf.h and lauxlib.h reside:
-INCLUDES= -I/usr/local/include
+INCLUDES= -I/usr/include/lua5.1 -I/usr/local/include
 
 DEFINES=
 
@@ -13,7 +13,7 @@ LUA= lua
 CC= g++
 SOCFLAGS= -fPIC -lkyotocabinet -m64 -march=core2
 SOCC= $(CC) -shared $(SOCFLAGS)
-CFLAGS= -Wall -O3 -fomit-frame-pointer  $(SOCFLAGS) $(DEFINES) $(INCLUDES)
+CXXFLAGS= -Wall -O3 -fomit-frame-pointer  $(SOCFLAGS) $(DEFINES) $(INCLUDES)
 RM= rm -f
 INSTALL= install -p
 INSTALLPATH= $(LUA) installpath.lua
@@ -30,8 +30,8 @@ macosx:
 debug: 
 	$(MAKE) all "SOCC=MACOSX_DEPLOYMENT_TARGET=10.3 $(CC) -dynamiclib -single_module -undefined dynamic_lookup $(SOCFLAGS) -g "
 
-$(MODSO): $(MODNAME).o MurmurHash3.o
-	$(SOCC) -o $@ $< MurmurHash3.o
+$(MODSO): $(MODNAME).o 
+	$(SOCC) -o $@ $< 
 
 install: $(MODSO)
 	$(INSTALL) $< `$(INSTALLPATH) $(MODNAME)`
