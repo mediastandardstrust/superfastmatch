@@ -8,8 +8,6 @@ end
 -- print(superfastmatch.match("This string is identical","This string is identical",15))
 -- print(superfastmatch.match("10 Downing Street","10 Downing Street Gordon Brown,10 Downing Street",10))
 
-
-
 local oliver_twist = load("../fixtures/oliver_twist.txt")
 local great_expectations = load("../fixtures/great_expectations.txt")
 local bible = load("../fixtures/bible.txt")
@@ -17,12 +15,12 @@ local koran = load("../fixtures/koran.txt")
 
 start = os.clock()
 print(superfastmatch.match(oliver_twist,great_expectations,20))
-print(string.format("elapsed time: %.2f\n", os.clock() - start))
+print(string.format("Oliver Twist compared with Great Expectations in %.2f secs\n", os.clock() - start))
 
 start = os.clock()
-print(superfastmatch.match(oliver_twist,bible,25))
-print(string.format("elapsed time: %.2f\n", os.clock() - start))
+print(superfastmatch.match(oliver_twist,bible,20))
+print(string.format("Oliver Twist compared with the Bible in %.2f secs\n", os.clock() - start))
 
 start = os.clock()
 print(superfastmatch.match(koran,bible,20))
-print(string.format("elapsed time: %.2f\n", os.clock() - start))
+print(string.format("The Koran compared with the Bible in %.2f secs\n", os.clock() - start))

@@ -1,4 +1,6 @@
 .DS_Store
+*.o
+*.so
 *.pyc
 *.db
 *.egg-info
