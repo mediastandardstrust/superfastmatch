@@ -21,7 +21,7 @@ INSTALLPATH= $(LUA) installpath.lua
 MODNAME= superfastmatch
 MODSO= $(MODNAME).so
 
-all: document.o $(MODSO)  
+all: document.o matcher.o $(MODSO)  
 
 debug:
 	$(MAKE) all " $(CC) $(SOCFLAGS) -g -pg"
