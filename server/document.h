@@ -13,7 +13,7 @@ namespace Superfastmatch
 	class Document
 	{
 	public:
-		typedef std::vector<uint32_t> hashes_vector;
+		typedef std::vector<hash_t> hashes_vector;
 		typedef std::bitset<(1<<24)> hashes_bloom;
 		
 	private:
@@ -31,7 +31,7 @@ namespace Superfastmatch
 				uint32_t length = m_text->length()-m_windowsize;
 				m_hashes->resize(length);
 				const char* data = m_text->data();
-				uint32_t hash;
+				hash_t hash;
 				for (uint32_t i=0;i<length;i++){
 					hash = hashmurmur(data+i,m_windowsize+1);
 					(*m_hashes)[i]=hash;

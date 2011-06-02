@@ -11,7 +11,7 @@ DEFINES=
 LUA= lua
 
 CC= g++
-SOCFLAGS= -fno-omit-frame-pointer -fPIC -m64 -march=core2
+SOCFLAGS= -fno-omit-frame-pointer -fPIC -m64 -march=core2 -ltcmalloc
 SOCC= $(CC) -shared $(SOCFLAGS)
 CXXFLAGS= -Wall -O3 $(SOCFLAGS) $(DEFINES) $(INCLUDES)
 RM= rm -f
@@ -31,7 +31,7 @@ macosx:
 	$(MAKE) all "SOCC=MACOSX_DEPLOYMENT_TARGET=10.3 $(CC) -dynamiclib -single_module -undefined dynamic_lookup  $(SOCFLAGS)"
 
 macosxdebug: 
-	$(MAKE) all "SOCC=MACOSX_DEPLOYMENT_TARGET=10.3 $(CC) -dynamiclib -single_module -undefined dynamic_lookup $(SOCFLAGS) -ggdb -pg "
+	$(MAKE) all "SOCC=MACOSX_DEPLOYMENT_TARGET=10.3 $(CC) -dynamiclib -single_module -undefined dynamic_lookup $(SOCFLAGS)"
 
 $(MODSO): $(MODNAME).o 
 	$(SOCC) -o $@ $< 

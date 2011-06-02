@@ -15,9 +15,9 @@ namespace Superfastmatch
 	struct Match;
 	struct Result;
 	
-	typedef std::tr1::unordered_set<uint32_t> hashes_set;
+	typedef std::tr1::unordered_set<hash_t> hashes_set;
 	typedef std::tr1::unordered_set<uint32_t> positions_set;
-	typedef std::tr1::unordered_map<uint32_t,positions_set> matches_map;	
+	typedef std::tr1::unordered_map<hash_t,positions_set> matches_map;
 	typedef std::pair<uint32_t,positions_set> match_pair;
 	typedef std::deque<Match> matches_deque;
 	typedef std::deque<Result> results_deque;
@@ -81,11 +81,13 @@ namespace Superfastmatch
 			
 			//Find to_document hashes map
 		   	matches_map to_matches;
+			// to_matches.set_empty_key(NULL);
 			hashes_set::iterator from_hashes_set_end=from_hashes_set.end();
-			uint32_t hash;
+			hash_t hash;
 			for (uint32_t i=0;i<to_hashes_count;i++){
 				hash=to_hashes[i];
 				if (bloom.test(hash&0xFFFFFF)){
+				// if (bloom.test(hash&0xFFFFFF)){
 					if (from_hashes_set.find(hash)!=from_hashes_set_end){
 						to_matches[hash].insert(i);		
 					}
@@ -160,7 +162,13 @@ namespace Superfastmatch
 		int match(lua_State *L){
 			Document* from_document = Lunar<Document>::check(L, 1);
 			Document* to_document = Lunar<Document>::check(L, 2);
-			match(from_document,to_document,from_document->windowsize());
+			// match(from_document,to_document,from_document->windowsize());				
+			if (from_document->text().length()<to_document->text().length()){
+				match(from_document,to_document,from_document->windowsize());				
+			}
+			else{
+				match(to_document,from_document,from_document->windowsize());				
+			}
 			return 0;
 		}		
 		

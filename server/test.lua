@@ -4,8 +4,8 @@ function load(filename)
    return assert(io.open(filename, "r")):read("*all"):lower():gsub('\n',' ')
 end
 
-windowsize=15
-subject=2
+windowsize=20
+subject=3
 
 docs = {	
 			Document(1,1,load("../superfastmatch/fixtures/oliver_twist.txt"),windowsize),
