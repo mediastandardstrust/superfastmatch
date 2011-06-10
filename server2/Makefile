@@ -17,7 +17,8 @@ MYBINS = superfastmatch
 CC = gcc
 CXX = g++
 CFLAGS = -I. -I.. -Wall -ansi -pedantic -fsigned-char -O2
-CXXFLAGS = -I. -I.. -Wall -fsigned-char -O2
+CXXFLAGS = -I. -I.. -Wall -fsigned-char -O2 -g -ltcmalloc -m64 -march=core2
+# CXXFLAGS = -I. -I.. -Wall -fsigned-char -g 
 LDFLAGS =
 LIBS = -L. -L.. -lkyototycoon -lkyotocabinet -lstdc++ -lz -lpthread -lm -lc
 LDENV = LD_RUN_PATH=/lib:/usr/lib:$(HOME)/lib:/usr/local/lib:.:..
@@ -47,7 +48,6 @@ RUNENV = LD_LIBRARY_PATH=/lib:/usr/lib:$(HOME)/lib:/usr/local/lib:.:..
 
 
 all : $(MYBINS)
-
 
 clean :
 	rm -rf $(MYBINS) *.exe *.o a.out check.out gmon.out leak.log *.kch *.kct *~

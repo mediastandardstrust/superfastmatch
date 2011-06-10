@@ -6,6 +6,7 @@
 #include <string>
 #include <logger.h>
 #include <worker.h>
+#include <registry.h>
 
 using namespace std;
 using namespace kyototycoon;
@@ -22,30 +23,19 @@ static void stopserver(int signum) {
 
 // main routine
 int main(int argc, char** argv) {
-	// need to parse these parameters
-	int32_t thnum = 8;
-	double timeout = 10;
-	
   	// set the signal handler to stop the server
   	setkillsignalhandler(stopserver);
 
-	// set up the DBS
-	map<string,TimedDB*> dbs;
-	dbs["document"] = new TimedDB();
-	dbs["document"]->open("document.kct#bnum=100000#ktopts=p#zcomp=zlib");
-	dbs["index"] = new TimedDB();
-	dbs["index"]->open("index.kct#bnum=100000#ktopts=p");
-	dbs["association"] = new TimedDB();
-	dbs["association"]->open("association.kct#bnum=100000#ktopts=p");
-	
+	// set up the registry
+	Registry registry("superfastmatch.cfg");
 	
   	// prepare the worker
-  	Worker worker(thnum,dbs,15);
+  	Worker worker(registry);
 
 	// prepare the server
 	HTTPServer serv;
-	serv.set_network("127.0.0.1:1978", timeout);
-	serv.set_worker(&worker, thnum);
+	serv.set_network("127.0.0.1:1978", registry.timeout);
+	serv.set_worker(&worker, registry.thread_count);
 
 	// set up the logger
 	Logger logger;
@@ -60,11 +50,6 @@ int main(int argc, char** argv) {
 
 	// clean up connections and other resources
 	serv.finish();
-
-	// close and delete dbs
-	for (map<string,TimedDB*>::iterator it=dbs.begin();it!=dbs.end();it++){
-		(*it).second->close();	
-	}
 
 	serv.log(Logger::SYSTEM, "================ [FINISH]: pid=%d", getpid());
 	return 0;

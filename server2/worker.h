@@ -2,12 +2,16 @@
 #define _SFMWORKER_H
 
 #include <map>
+#include <iomanip>
+#include <iostream>
 #include <sstream>
 #include <kcutil.h>
 #include <kthttp.h>
 #include <kttimeddb.h>
 #include <logger.h>
 #include <document.h>
+#include <index.h>
+#include <registry.h>
 
 using namespace std;
 using namespace kyototycoon;
@@ -15,40 +19,27 @@ using namespace kyototycoon;
 namespace superfastmatch{
 	class Worker : public HTTPServer::Worker {
 	private:
-		int32_t thnum_;
-	  	std::map<std::string,TimedDB*> dbs_;	
-		uint32_t windowsize_;
+		Registry& registry_;
 	public:	
-		explicit Worker(int32_t thnum,const map<std::string,TimedDB*>& dbs,uint32_t windowsize){
-			thnum_ = thnum;
-			dbs_ = dbs;
-			windowsize_ = windowsize;
+		explicit Worker(Registry& registry):registry_(registry){
 		}
 	private:
-		struct RESTDirective{
-			HTTPServer& serv;
-			HTTPServer::Session& sess;
-			HTTPClient::Method& verb;
+		struct RESTRequest{
+			const HTTPClient::Method& verb;
 			const string& path;
 			const map<string, string>& reqheads;
 			const string& reqbody;
-			map<string, string>& resheads;
-			string& resbody;
 			string resource;
 			string first_id;
 			string second_id;
 			string cursor;
 			
-			RESTDirective(HTTPServer& serv, 
-						  HTTPServer::Session& sess,
-	                  	  HTTPClient::Method& method,
+			RESTRequest(  const HTTPClient::Method& method,
 						  const string& path,
 						  const map<string, string>& reqheads,
 						  const string& reqbody,
-						  map<string, string>& resheads,
-						  string& resbody,
 						  const map<string, string>& misc
-						):serv(serv),sess(sess),verb(method),path(path),reqheads(reqheads),reqbody(reqbody),resheads(resheads),resbody(resbody)
+						):verb(method),path(path),reqheads(reqheads),reqbody(reqbody)
 			{
 				vector<string> sections,queries,parts;
 							    kc::strsplit(path, '/', &sections);
@@ -74,6 +65,16 @@ namespace superfastmatch{
 				}
 			}
 		};
+		
+		struct RESTResponse{
+			map<string, string>& resheads;
+			stringstream body;
+			int32_t code;
+			stringstream message;
+			
+			RESTResponse(map<string,string>& resheads):
+			resheads(resheads){}
+		};
 
   		int32_t process(HTTPServer* serv, HTTPServer::Session* sess,
                   		const string& path, HTTPClient::Method method,
@@ -83,87 +84,123 @@ namespace superfastmatch{
                   		string& resbody,
                   		const map<string, string>& misc) 
 		{
-			RESTDirective rest(*serv,*sess,method,path,reqheads,reqbody,resheads,resbody,misc);
+			double start = kyotocabinet::time();
+			RESTRequest req(method,path,reqheads,reqbody,misc);
+			RESTResponse res(resheads);
 			
-			int32_t code;
-			if (rest.resource=="echo"){
-				code = echo(rest);
+			if(req.resource=="document"){
+				document(req,res);	
 			}
-			else if(rest.resource=="document"){
-				code = document(rest);	
+			else if(req.resource=="index"){
+				index(req,res);
+			}
+			else if(req.resource=="echo"){
+				echo(req,res);
 			}
 			else{
-				code = status(rest);
+				status(req,res);
 			}
-			return code;
+		
+			res.message << " Response Time: " << setiosflags(ios::fixed) << setprecision(4) << kyotocabinet::time()-start << " secs";
+			if (res.code==500 || res.code==404){
+				serv->log(Logger::ERROR,res.message.str().c_str());
+			}else{
+				serv->log(Logger::INFO,res.message.str().c_str());
+			}
+			resbody.append(res.body.str());
+			return res.code;
   		}
 
-		int32_t document(RESTDirective& rest){
-			stringstream message; 
-			int32_t code;
-			uint32_t doctype = kc::atoi(rest.first_id.data());
-			uint32_t docid = kc::atoi(rest.second_id.data());
-			Document document(doctype,docid,rest.reqbody.c_str(),windowsize_);
-			switch(rest.verb){
+		void document(const RESTRequest& req,RESTResponse& res){
+			uint32_t doctype = kc::atoi(req.first_id.data());
+			uint32_t docid = kc::atoi(req.second_id.data());
+			Document document(doctype,docid,req.reqbody.c_str(),registry_);
+			Index index(registry_);
+			switch(req.verb){
 				case HTTPClient::MGET:
 			    case HTTPClient::MHEAD:
-					if (document.load(dbs_["document"])){
-						message << "Getting document: " << document;
-						if(rest.verb==HTTPClient::MGET){
-							rest.resbody.append(document.text());
+					if (document.load()){
+						res.message << "Getting document: " << document;
+						if(req.verb==HTTPClient::MGET){
+							document.serialize(res.body);
 						}
-						rest.serv.log(Logger::INFO,message.str().c_str());	
-						code=200;
+						res.code=200;
 					}else{
-						message << "Error getting document: " << document;
-						rest.serv.log(Logger::ERROR,message.str().c_str());	
-						code=404;
+						res.message << "Error getting document: " << document;
+						res.code=404;
 					}
 					break;					
-				case HTTPClient::MPOST:
 				case HTTPClient::MPUT:
-					if (document.save(dbs_["document"])){ //Implement MapReduce on POST!!
-						message << "Saving document: " << document;
-						rest.serv.log(Logger::INFO,message.str().c_str());	
-						code=200;
+					if (document.save()){
+						if(index.create(document)){
+							res.message << "Saved and Added document: " << document << " to index";
+							res.code=200;
+						}
+						else{
+							res.message << "Error adding document: "<< document <<" to index";
+							res.code=500;
+						}
 					}else{
-						message << "Error saving document << document";
-						rest.serv.log(Logger::ERROR,message.str().c_str());	
-						code=500;
+						res.message << "Error saving document: " << document;
+						res.code=500;
+					}
+					break;
+				case HTTPClient::MPOST:
+					if (document.save()){
+						if(index.batch(document)){
+							res.message << "Saved and Added document: " << document << " to index";
+							res.code=200;
+						}
+						else{
+							res.message << "Error adding document: "<< document <<" to index";
+							res.code=500;
+						}
+						res.code=200;
+					}else{
+						res.message << "Error saving document << document";
+						res.code=500;
 					}
 					break;
 				case HTTPClient::MDELETE:
-					if (document.remove(dbs_["document"])){ 
-						message << "Deleting document: " << document;
-						rest.serv.log(Logger::INFO,message.str().c_str());	
-						code=204;
+					if (document.remove()){ 
+						res.message << "Deleting document: " << document;
+						res.code=204;
 					}else{
-						message << "Error deleting document << document";
-						rest.serv.log(Logger::ERROR,message.str().c_str());	
-						code=404;
+						res.message << "Error deleting document << document";
+						res.code=404;
 					}
 					break;
 				default:
-					message << "Unknown command on: " << document;
-					rest.serv.log(Logger::ERROR,message.str().c_str());
-					code=500;
+					res.message << "Unknown command on: " << document;
+					res.code=500;
 					break;
 			}
-			return code;
 		}
 		
-		int32_t echo(RESTDirective& rest){
-	      	for (map<string, string>::const_iterator it = rest.reqheads.begin();it != rest.reqheads.end(); it++) {
-	        	if (!it->first.empty()) rest.resbody.append(it->first + ": ");
-	        	rest.resbody.append(it->second + "\n");
+		void index(const RESTRequest& req,RESTResponse& res){
+			switch(req.verb){
+				case HTTPClient::MPOST:
+					res.code=200;
+					break;
+				default:
+					res.message << "Unknown command";
+					res.code=500;
+					break;
+			}
+		}
+		
+		void echo(const RESTRequest& req,RESTResponse& res){
+	      	for (map<string, string>::const_iterator it = req.reqheads.begin();it != req.reqheads.end(); it++) {
+	        	if (!it->first.empty()) res.body << it->first  << ": ";
+				res.body << it->second << endl;;
 	      	}
-	      	rest.resbody.append(rest.reqbody);
-	      	return 200;
+	      	res.body << req.reqbody;
+	      	res.code=200;
 		}
 		
-		int32_t status(RESTDirective& rest){
-	      	rest.resbody.append("<h1>Status</h1");
-	      	return 200;
+		void status(const RESTRequest& req,RESTResponse& res){
+	      	res.body << "<h1>Status</h1";
+			res.code=200;
 		}
 
 	};
