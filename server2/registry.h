@@ -29,7 +29,7 @@ namespace superfastmatch{
 			documentDB = new TimedDB();
 			documentDB->open("document.kct#bnum=100000#ktopts=p#zcomp=zlib");
 			indexDB = new TimedDB();
-			indexDB->open("index.kct#bnum=10000000#msiz=1g#pccap=1g#ktopts=p");
+			indexDB->open("index.kct#bnum=1000000#psiz=32768#ktopts=p#msiz=4g#pccap=4g");
 			associationDB = new TimedDB();
 			associationDB->open("association.kct#bnum=100000#ktopts=p");
 			jobDB = new TimedDB();
