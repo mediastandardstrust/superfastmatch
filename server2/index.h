@@ -13,66 +13,122 @@
 #include <common.h>
 #include <algorithm>
 #include <tr1/unordered_map>
+#include <cstring>
 
 typedef vector<uint32_t> docids_vector;
 typedef std::tr1::unordered_map<uint32_t,docids_vector> docs_map;
 
-inline void read_docs(const char* docs_buf,const size_t docs_size,docs_map& docs) {
-	uint32_t offset=0;
-	uint64_t doc_type;
-	uint64_t doc_id;
-	uint64_t doc_count;
-	while (offset<docs_size) {
-		offset+=kyotocabinet::readvarnum(docs_buf+offset,docs_size-offset,&doc_type);
-		offset+=kyotocabinet::readvarnum(docs_buf+offset,docs_size-offset,&doc_count);
-		docids_vector doc_ids;
-		for (uint32_t i=0;i<doc_count;i++){
-			offset+=kyotocabinet::readvarnum(docs_buf+offset,docs_size-offset,&doc_id);
-			doc_ids.push_back(doc_id);
-		}
-		docs[doc_type]=doc_ids;
-	};
-}
-
-inline void write_docs(const docs_map& docs, string& out){
-	uint32_t doc_count=0;
-	for(docs_map::const_iterator it=docs.begin();it!=docs.end();++it){
-		doc_count+=(*it).second.size();
-	}
-	//Allocate maximum possible memory required
-	char op[10*((docs.size()*2)+doc_count)];
-	size_t ol=0;
-	for(docs_map::const_iterator it=docs.begin();it!=docs.end();++it){
-		ol+=kyotocabinet::writevarnum(op+ol,(*it).first);
-		ol+=kyotocabinet::writevarnum(op+ol,(*it).second.size());
-		for (docids_vector::const_iterator it2=(*it).second.begin();it2!=(*it).second.end();it2++){
-			ol+=kyotocabinet::writevarnum(op+ol,(*it2));
-		}
-	}
-	out = string(op,ol);
-}
-
-inline void merge_docs(const docs_map& new_docs,const string& existing_docs,string& out){
-	docs_map docs;
-	docids_vector::const_iterator it2;
-	docids_vector merged_docs;
-	read_docs(existing_docs.data(),existing_docs.size(),docs);
-	for (docs_map::const_iterator it = new_docs.begin();it!=new_docs.end();++it){
-		merged_docs.resize(it->second.size()+docs[it->first].size());
-		it2=set_union(it->second.begin(),it->second.end(),docs[it->first].begin(),docs[it->first].end(),merged_docs.begin());
-		merged_docs.resize(it2-merged_docs.begin());
-		docs[it->first].swap(merged_docs);
-	}
-	write_docs(docs,out);
-}
-
-inline void delete_docs(){
-	
-}
 
 
 namespace superfastmatch
 {
+	// Optimised to be reusable for the whole merge and prevent any new-ing or delete-ing
+	// Stopped using unordered_map as it was heavier than merging vectors
+	class IndexLine{
+	private:
+		vector<uint32_t> existing_docs_; // Stackoverflow?
+		vector<uint32_t> merged_docs_; // Stackoverflow?
+ 	public:
+		uint32_t in_length;
+		uint32_t out_length;
+		uint32_t max_length;
+		char* in;
+		char* out;
+
+
+		IndexLine(const uint32_t max_line_length):
+		max_length(max_line_length*10),in(new char[max_line_length*10]),out(new char[max_line_length*10]){
+			existing_docs_.reserve(max_line_length);
+			merged_docs_.reserve(max_line_length);
+		}
+		
+		~IndexLine(){
+			delete[] in;
+			delete[] out;
+		}
+
+	private:
+		void read_existing(){
+			uint32_t offset=0;
+			uint64_t item;
+			existing_docs_.resize(0); //slow?
+			while (offset<in_length){
+				offset+=kyotocabinet::readvarnum(in+offset,in_length-offset,&item);
+				existing_docs_.push_back(item);
+			};
+		}
+		
+		bool write_merged(){
+			out_length=0;
+			for(vector<uint32_t>::iterator it=merged_docs_.begin(),ite=merged_docs_.end();it!=ite;++it){
+				out_length+=kyotocabinet::writevarnum(out+out_length,*it);
+			}
+			if (in_length!=out_length){
+				return true;
+			}
+			return (strncmp(in,out,in_length)!=0);
+		}
+
+	public:
+		//Returns true if merge results in a change
+		bool merge(const vector<uint32_t>& new_docs){
+			read_existing();
+			cout << "Start In Length: " << in_length << " Out Length: " << out_length <<" Existing size: " << existing_docs_.size() << " New size: " << new_docs.size() << " Merged size: " << merged_docs_.size() <<endl;
+			merged_docs_.resize(0);
+			vector<uint32_t>::const_iterator new_it=new_docs.begin();
+			vector<uint32_t>::const_iterator new_ite=new_docs.end();
+			vector<uint32_t>::const_iterator existing_it=existing_docs_.begin();
+			vector<uint32_t>::const_iterator existing_ite=existing_docs_.end();
+			vector<uint32_t>::iterator merged_docs_back;
+			while(true){
+				//If new_docs is exhausted
+				if (new_it==new_ite){
+					cout << "new docs exhausted"<<endl;
+					copy(existing_it,existing_ite,back_inserter(merged_docs_));
+					break;
+				}
+				//If existing_docs is exhausted
+				if (existing_it==existing_ite){
+					cout << "existing docs exhausted"<<endl;
+					copy(new_it,new_ite,back_inserter(merged_docs_));
+					break;
+				}
+				//If doctypes are different merge lower doctype else merge contents
+				uint32_t new_length=(*(new_it+1)+2);
+				uint32_t existing_length=(*(existing_it+1)+2);
+				cout << "New Doctype: " << *new_it << " Existing Doctype: " << *existing_it <<endl;
+				if (*new_it<*existing_it){
+					cout << "new is before existing"<<endl;
+					copy(new_it,new_it+new_length,back_inserter(merged_docs_));
+					new_it+=new_length;
+				}else if(*new_it>*existing_it){
+					cout << "existing is before new"<<endl;
+					copy(existing_it,existing_it+existing_length,back_inserter(merged_docs_));
+					existing_it+=existing_length;
+				}else{
+					cout << "merging"<<endl;
+					merged_docs_.push_back(*new_it);
+					merged_docs_.push_back(0); //temporary length holder
+					merged_docs_back = merged_docs_.end()-1;
+					set_union(new_it+2,new_it+new_length,existing_it+2,existing_it+existing_length,back_inserter(merged_docs_));
+					*merged_docs_back=merged_docs_.end()-merged_docs_back;
+					new_it+=new_length;
+					existing_it+=existing_length;
+				}
+				
+			}
+			cout << "End In Length: " << in_length << " Out Length: " << out_length <<" Existing size: " << existing_docs_.size() << " New size: " << new_docs.size() << " 	Merged size: " << merged_docs_.size() <<endl;
+			return write_merged();
+		}
+		
+		bool remove(const vector<uint32_t>& old_docs){
+			read_existing();
+			
+			return write_merged();
+		}
+		
+	};
+	
 	class Indexer : public kyotocabinet::MapReduce 
 	{
 	private:
@@ -151,22 +207,20 @@ namespace superfastmatch
 		}
 		
 		bool create(Document& document){
-			uint32_t hash;
-			uint32_t hash_size = sizeof(hash);
-			string hash_string;
-			string existing_docs;
-			string merged_docs;
-			docs_map new_docs;
-			new_docs[document.doctype()].push_back(document.docid());
-			Document::hashes_vector::const_iterator ite=document.unique_sorted_hashes().end();
-			for (Document::hashes_vector::const_iterator it=document.unique_sorted_hashes().begin();it!=ite;++it){
-				hash=kc::hton32(*it);
-				hash_string=string((char*)&hash,hash_size);
-				registry_.indexDB->get(hash_string,&existing_docs);
-				merge_docs(new_docs,existing_docs,merged_docs);
-				if (existing_docs.compare(merged_docs)!=0){
-					registry_.indexDB->set(hash_string,merged_docs);				
-				}	
+			IndexLine line(registry_.max_line_length);
+			char hash[sizeof(hash_t)];
+			vector<uint32_t> new_docs;
+			new_docs.push_back(document.doctype());
+			new_docs.push_back(1);
+			new_docs.push_back(document.docid());
+			for (Document::hashes_vector::const_iterator it=document.unique_sorted_hashes().begin(),ite=document.unique_sorted_hashes().end();it!=ite;++it){
+				uint32_t hash_int = kc::hton32(*it);
+				memcpy(&hash,&hash_int,sizeof(hash_t));
+				int32_t size=registry_.indexDB->get(hash,sizeof(hash_t),line.in,line.max_length);
+				line.in_length=(size!=-1)?size:0;
+				if (line.merge(new_docs)){
+					registry_.indexDB->set(hash,sizeof(hash_t),line.out,line.out_length);				
+				}
 			}
 			return true;
 		}

@@ -13,6 +13,7 @@ namespace superfastmatch{
 	{
 		uint32_t window_size;
 		uint32_t thread_count;
+		uint32_t max_line_length; //Needs to be aware of max stack size for platform
 		double timeout;
 		string map_reduce_path;
 		TimedDB* documentDB;
@@ -24,6 +25,7 @@ namespace superfastmatch{
 			//Todo load config from file
 			window_size=15;
 			thread_count=8;
+			max_line_length=1<<16;
 			timeout=1.0;
 			map_reduce_path="";
 			documentDB = new TimedDB();
