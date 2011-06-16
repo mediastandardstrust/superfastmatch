@@ -17,10 +17,6 @@ namespace superfastmatch
 		const Registry& registry_;
 		string name_;
 	public:
-		Job(const Registry& registry,string& name):
-		registry_(registry),name_(name)
-		{}
-		
 		Job(const Registry& registry):
 		registry_(registry)
 		{
@@ -31,19 +27,7 @@ namespace superfastmatch
 			name_=s.str();
 		}
 		
-		~Job()
-		{
-			// delete name_;
-		}
-		
-		bool addItem(string& key){
-			if (hasStarted()){
-				return false;
-			}
-			stringstream s;
-			s << name_ << "___" << key;
-			return registry_.jobDB->add(s.str(),"");
-		}
+		~Job(){}
 		
 		bool log(const char* name, const char* message){
 			stringstream s;
@@ -56,15 +40,6 @@ namespace superfastmatch
 		}
 		
 		bool finish(){
-			stringstream prefix;
-			prefix << name_ << "___";
-			vector<string> items;
-			registry_.jobDB->match_prefix(prefix.str(),&items);
-			for (vector<string>::iterator it=items.begin();it<items.end();it++){
-				if (not registry_.jobDB->remove(*it)){
-					return false;
-				}
-			}
 			return registry_.jobDB->append(name_,"FINISHED\n");			
 		}
 		
@@ -79,16 +54,6 @@ namespace superfastmatch
 			string status;
 			registry_.jobDB->get(name_,&status);
 			return status.find("FINISHED\n")!=string::npos;
-		}
-		
-		bool isJobItem(const string& key,string& item){
-			size_t suffix_pos;
-			suffix_pos = key.find("___");
-			if((suffix_pos!=string::npos) && (key.substr(0,suffix_pos)==name_)){
-				item = key.substr(suffix_pos+3,string::npos);
-				return true;
-			}
-			return false;
 		}
 	};
 }

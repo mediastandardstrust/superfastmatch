@@ -11,7 +11,7 @@ SHELL = /bin/sh
 
 # Targets
 MYBINS = superfastmatch
-
+OBJS = 
 
 # Building binaries
 CC = gcc
@@ -19,6 +19,7 @@ CXX = g++
 CFLAGS = -I. -I.. -Wall -ansi -pedantic -fsigned-char -O2
 CXXFLAGS = -I. -I.. -Wall -fsigned-char -O2 -g -m64 -march=core2
 LDFLAGS =
+# LIBS = -L. -L.. -lkyototycoon -lkyotocabinet -lstdc++ -lz -lpthread -lm -lc
 LIBS = -L. -L.. -lkyototycoon -lkyotocabinet -lstdc++ -lz -lpthread -lm -lc -ltcmalloc
 LDENV = LD_RUN_PATH=/lib:/usr/lib:$(HOME)/lib:/usr/local/lib:.:..
 RUNENV = LD_LIBRARY_PATH=/lib:/usr/lib:$(HOME)/lib:/usr/local/lib:.:..
@@ -73,5 +74,5 @@ superfastmatch : superfastmatch.o
 	$(LDENV) $(CXX) $(CXXFLAGS) -o $@ $< $(LDFLAGS) $(LIBS)
 
 
-
 # END OF FILE
+# DO NOT DELETE

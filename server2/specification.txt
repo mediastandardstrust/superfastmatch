@@ -8,20 +8,27 @@ URL											METHOD		DESCRIPTION																		RESPONSE
 /document/?cursor=<cursor>					GET 		Returns the page of documents beginning with <cursor>							200
 /document/<doctype>/        				GET         Returns the first page of documents with <doctype>								200
 /document/<doctype>/?cursor=<cursor>		GET			Returns the page of documents with <doctype> beginning with <cursor>			200
-/document/<doctype>/<docid>/				GET			Returns the document with <doctype> and <docid> if exists						200/404
+/document/<doctype>/<docid>/				GET			Returns the document with <doctype> and <docid> if exists						200/404/304
 /document/<doctype>/<docid>/				PUT			Create or update the document with <doctype> and <docid> and index immediately	201 
-/document/<doctype>/<docid>/				POST		Create or update the document with <doctype> and <docid> and defer indexing 	202 (includes <mapreduceid>) 
+/document/<doctype>/<docid>/				POST		Create or update the document with <doctype> and <docid> and defer indexing 	202
 /document/<doctype>/<docid>/				DELETE		Delete the document with <doctype> and <docid> and related associations			204/404
 /index/										GET			Returns the first page of the index												200
 /index/?cursor=<cursor>						GET         Returns the page of the index beginning with <cursor>							200
-/index/										PUT			Update the whole index															202 (includes <mapreduceid>)
-/index/<mapreduceid>/						POST		Update the index by running <mapreduceid>										202 (includes <mapreduceid>)
-/index/<mapreduceid>/						GET			Returns the changes for <mapreduceid>											200
-/changes/									GET			Returns the first page of changes												200
-/changes/?cursor=<cursor> 					GET			Returns the page of changes beginning with cursor								200
+/index/										POST		Update the index with any unindexed documents									301 to job page (eg./job/976/)
+/association/								GET			Returns the first page of associations											200
+/association/								POST		Update the associations with any unindexed documents							301 to job page (eg./job/976/)
+/association/?cursor=<cursor>				GET			Returns the page of associations beginning with <cursor>						200
+/association/<doctype>/						GET 		Returns the the first page of associations for <doctype>						200
+/association/<doctype>/?cursor=<cursor>		GET 		Returns the the page of associations for <doctype> beginning with <cursor>		200
+/association/<doctype>/<docid>/  			GET 		Returns the associations for a specific document						 		200/304
 /search/									POST		Returns the results for a search of all documents								200
-/search/<doctype>							POST		Returns the results for a search against documents of <doctype>					200
+/search/<doctype>/							POST		Returns the results for a search against documents of <doctype>					200
 /status/									GET			Returns counts for each DB														200
+/job/										GET			Returns the first page of jobs													200
+/job/?cursor=<cursor>						GET			Returns the page of jobs beginning with <cursor>								200
+/job/<jobid>/								GET			Returns the details of <jobid>													200/404/304
+
+where <doctype>, <docid> and <jobid> are integers between 0 and 4294967295
 
 
 DB Specification

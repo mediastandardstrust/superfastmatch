@@ -8,12 +8,11 @@
 #include <map>
 #include <algorithm>
 #include <common.h>
-#include <kttimeddb.h>
 #include <ktutil.h>
 #include <registry.h>
 
 namespace superfastmatch
-{
+{	
 	class Document
 	{
 	public:
@@ -82,8 +81,17 @@ namespace superfastmatch
 			// printf("Destroyed Document (%p)\n", this);
 		}
 		
-		bool save(){
-			return registry_.documentDB->set(*key_,*content_);
+		bool save(bool& updated){
+			bool success;
+			string existing_content;
+			success = registry_.documentDB->get(*key_,&existing_content);
+			if (existing_content.compare(*content_)!=0){
+				success = registry_.documentDB->set(*key_,*content_) && \
+						  registry_.hash_queueDB->set(*key_,newUUID()) && \
+						  registry_.association_queueDB->set(*key_,newUUID());
+				updated=true;
+			}
+			return success;
 		}
 		
 		bool load(){
@@ -168,8 +176,8 @@ namespace superfastmatch
 			return docid_;
 		}	
 			
-		friend std::ostream& operator<< (std::ostream& stream, const Document& document) {
-			stream << "Document(" << document.doctype_ << "," << document.docid_ << "," << document.content_->size() << "," << document.unique_sorted_hashes_->size() << ")";
+		friend std::ostream& operator<< (std::ostream& stream, Document& document) {
+			stream << "Document(" << document.doctype() << "," << document.docid() << ")";
 			return stream;
 		}
 	};
