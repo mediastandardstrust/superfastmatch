@@ -9,6 +9,7 @@
 #include <kthttp.h>
 #include <kcthread.h>
 #include <logger.h>
+#include <queue.h>
 #include <document.h>
 #include <index.h>
 #include <registry.h>
@@ -97,8 +98,10 @@ namespace superfastmatch{
 	    }
 	    
 	    void process_timer(HTTPServer* serv) {
-			serv->log(Logger::INFO,"Processing command queue");
-			kyotocabinet::Thread::sleep(5.0);
+			Queue queue(registry_);
+			if (queue.process()){
+				serv->log(Logger::INFO,"Finished processing command queue");
+			};
 	    }
 
   		int32_t process(HTTPServer* serv, HTTPServer::Session* sess,
@@ -141,8 +144,7 @@ namespace superfastmatch{
 				uint32_t doctype = kc::atoi(req.first_id.data());
 				uint32_t docid = kc::atoi(req.second_id.data());
 				Document doc(doctype,docid,req.reqbody.c_str(),registry_);
-				Index index(registry_);
-				bool updated=false;
+				Queue queue(registry_);
 				switch(req.verb){
 					case HTTPClient::MGET:
 				    case HTTPClient::MHEAD:
@@ -158,37 +160,18 @@ namespace superfastmatch{
 						}
 						break;					
 					case HTTPClient::MPUT:
-					case HTTPClient::MPOST:
-						if (doc.save(updated)){
-							res.message << "Saved document: " << doc;
-							if (updated){
-								if (req.verb==HTTPClient::MPUT && index.create(doc)){
-									res.message << " and updated index ";
-									res.code=201;
-								}else if(req.verb==HTTPClient::MPOST){
-									res.message << " and deferred indexing";
-									res.code=202;
-								}
-								else{
-									res.message << " but failed to update index";
-									res.code=500;
-								}
-							}else{
-								res.message << " no change to index";
-								res.code=200;
-							}
-						}else{
-							res.message << "Error saving document: " << doc;
-							res.code=500;
+					case HTTPClient::MPOST:{
+							uint64_t queue_id = queue.add_document(doctype,docid,req.reqbody);
+							res.message << "Queued document: " <<  queue_id << " for indexing queue id:"<< queue_id;
+							res.body << queue_id;
+							res.code=202;
 						}
 						break;
-					case HTTPClient::MDELETE:
-						if (doc.remove()){ 
-							res.message << "Deleting document: " << doc;
-							res.code=204;
-						}else{
-							res.message << "Error deleting document << doc";
-							res.code=404;
+					case HTTPClient::MDELETE:{
+							uint64_t queue_id = queue.delete_document(doctype,docid);
+							res.message << "Queued document: " << doc << " for deleting with queue id:" << queue_id;
+							res.body << queue_id;
+							res.code=202;
 						}
 						break;
 					default:
@@ -210,20 +193,6 @@ namespace superfastmatch{
 		void process_index(const RESTRequest& req,RESTResponse& res){
 			Index index(registry_);
 			switch(req.verb){
-				case HTTPClient::MPOST:{
-						Job job(registry_);
-						if (!job.hasStarted() && !job.hasFinished()){
-							//This should be on a new thread
-							index.batch(job);
-							res.body << "Completed job: "<< req.first_id <<endl;
-							res.code=301;
-							res.resheads["Location"]="/";
-						}else{
-							res.body << "That job has previously started or completed"<<endl;
-							res.code=500;
-						}
-					}
-					break;
 				default:
 					res.message << "Unknown command";
 					res.code=500;

@@ -9,14 +9,11 @@ URL											METHOD		DESCRIPTION																		RESPONSE
 /document/<doctype>/        				GET         Returns the first page of documents with <doctype>								200
 /document/<doctype>/?cursor=<cursor>		GET			Returns the page of documents with <doctype> beginning with <cursor>			200
 /document/<doctype>/<docid>/				GET			Returns the document with <doctype> and <docid> if exists						200/404/304
-/document/<doctype>/<docid>/				PUT			Create or update the document with <doctype> and <docid> and index immediately	201 
 /document/<doctype>/<docid>/				POST		Create or update the document with <doctype> and <docid> and defer indexing 	202
 /document/<doctype>/<docid>/				DELETE		Delete the document with <doctype> and <docid> and related associations			204/404
 /index/										GET			Returns the first page of the index												200
 /index/?cursor=<cursor>						GET         Returns the page of the index beginning with <cursor>							200
-/index/										POST		Update the index with any unindexed documents									301 to job page (eg./job/976/)
 /association/								GET			Returns the first page of associations											200
-/association/								POST		Update the associations with any unindexed documents							301 to job page (eg./job/976/)
 /association/?cursor=<cursor>				GET			Returns the page of associations beginning with <cursor>						200
 /association/<doctype>/						GET 		Returns the the first page of associations for <doctype>						200
 /association/<doctype>/?cursor=<cursor>		GET 		Returns the the page of associations for <doctype> beginning with <cursor>		200

@@ -40,7 +40,7 @@ namespace superfastmatch{
 			jobDB = new kyotocabinet::PolyDB();
 			jobDB->open("job.kct#bnum=100000");
 			queueDB = new kyotocabinet::PolyDB();
-			queueDB->open("hashqueue.kct#bnum=1000000");
+			queueDB->open("queue.kct#bnum=1000000#zcomp=zlib");
 		}
 		
 		~Registry(){

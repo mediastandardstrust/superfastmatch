@@ -81,17 +81,8 @@ namespace superfastmatch
 			// printf("Destroyed Document (%p)\n", this);
 		}
 		
-		bool save(bool& updated){
-			bool success;
-			string existing_content;
-			success = registry_.documentDB->get(*key_,&existing_content);
-			if (existing_content.compare(*content_)!=0){
-				success = registry_.documentDB->set(*key_,*content_) && \
-						  registry_.hash_queueDB->set(*key_,newUUID()) && \
-						  registry_.association_queueDB->set(*key_,newUUID());
-				updated=true;
-			}
-			return success;
+		bool save(){
+			return registry_.documentDB->set(*key_,*content_);
 		}
 		
 		bool load(){

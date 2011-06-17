@@ -163,14 +163,6 @@ namespace superfastmatch
 			hash_count_=0;
 		}
 		
-		void cleanup(){
-			cout << "Cleaning up" << endl;
-			for (unordered_map<string,string>::iterator it=visited_.begin(),ite=visited_.end();it!=ite;++it){
-				registry_.hash_queueDB->cas(it->first.data(),it->first.size(),it->second.data(),it->second.size(),NULL,0);
-			}
-			cout << "Cleaned up" << endl;
-		}
-		
 	public:
 		IndexVisitor(const Registry& registry,Job& job):
 		registry_(registry),job_(job),line_(registry_.max_line_length),hash_count_(0)
@@ -178,7 +170,6 @@ namespace superfastmatch
 		
 		~IndexVisitor(){
 			dump();
-			cleanup();
 		}
 		
 	    const char* visit_full(const char* kbuf, size_t ksiz,const char* vbuf, size_t vsiz, size_t *sp) {
@@ -240,7 +231,7 @@ namespace superfastmatch
 			vector<pair<string,string> > doc_tasks;
 			string doc_key;
 			string timestamp;
-			kyotocabinet::PolyDB::Cursor* cur = registry_.hash_queueDB->cursor();
+			kyotocabinet::PolyDB::Cursor* cur = registry_.queueDB->cursor();
 			cur->jump();
 			while (cur->get(&doc_key,&timestamp,true)){
 				doc_tasks.push_back(pair<string,string>(doc_key,timestamp));

@@ -6,9 +6,14 @@ function send_doc {
 	
 	for file in $files
 	do
-		echo "$(date) Adding $file with doctype: $doctype docid: $docid"
-		# echo "curl -X $method -H \"Expect:\" -d \"filename=$file\" --data-urlencode \"text@$file\" 127.0.0.1:1978/document/$doctype/$docid/"
-		curl -X $method -H "Expect:" -d "filename=$file" --data-urlencode "text@$file" 127.0.0.1:1978/document/$doctype/$docid/ #&
+		if [[ "${method}" == "DELETE" ]] ; then
+			echo "curl -X $method -H \"Expect:\" 127.0.0.1:1978/document/$doctype/$docid/"
+			curl -X $method -H "Expect:" 127.0.0.1:1978/document/$doctype/$docid/ #&			
+		else
+			# echo "$(date) $method-ing $file with doctype: $doctype docid: $docid"
+			echo "curl -X $method -H \"Expect:\" -d \"filename=$file\" --data-urlencode \"text@$file\" 127.0.0.1:1978/document/$doctype/$docid/"
+			curl -X $method -H "Expect:" -d "filename=$file" --data-urlencode "text@$file" 127.0.0.1:1978/document/$doctype/$docid/ #&
+		fi
 		docid=$(($docid+1))
 	    NPROC=$(($NPROC+1))
 	    # if [ "$NPROC" -ge 8 ]; then
@@ -28,14 +33,17 @@ function send_doc {
 echo "Test POST-ing documents"
 send_doc POST 2 "../superfastmatch/fixtures/*.txt" 
 
-echo "Test batch indexing"
-curl -X POST -H "Expect:" 127.0.0.1:1978/index/ 
+echo "Test DELETE-ing documents"
+send_doc DELETE 2  "../superfastmatch/fixtures/*.txt" 
 
-echo "Test POST-ing documents"
-send_doc POST 3  "../superfastmatch/fixtures/pan11-external/source-documents/*.txt"
+# echo "Test batch indexing"
+# curl -X POST -H "Expect:" 127.0.0.1:1978/index/ 
 
-echo "Test batch indexing"
-curl -X POST -H "Expect:" 127.0.0.1:1978/index/
+# echo "Test POST-ing documents"
+# send_doc POST 3  "../superfastmatch/fixtures/pan11-external/source-documents/*.txt"
+# 
+# echo "Test batch indexing"
+# curl -X POST -H "Expect:" 127.0.0.1:1978/index/
 
 
 # echo "Test PUT-ing documents"
