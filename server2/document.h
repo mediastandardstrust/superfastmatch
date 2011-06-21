@@ -54,6 +54,7 @@ namespace superfastmatch
 		}
 		
 		~Document(){
+			clear();
 			if(key_!=0){
 				delete key_;
 				key_=0;
@@ -62,6 +63,10 @@ namespace superfastmatch
 				delete content_;				
 				content_=0;
 			}
+			// printf("Destroyed Document (%p)\n", this);
+		}
+		
+		void clear(){
 			if (content_map_!=0){
 				delete content_map_;
 				content_map_=0;
@@ -77,10 +82,10 @@ namespace superfastmatch
 			if (bloom_!=0){
 				delete bloom_;
 				bloom_=0;	
-			}
-			// printf("Destroyed Document (%p)\n", this);
+			}	
 		}
-		
+
+	public:
 		//Returns false if document already exists
 		bool save(){
 			return registry_.documentDB->cas(key_->data(),key_->size(),NULL,0,content_->data(),content_->size());
@@ -122,7 +127,15 @@ namespace superfastmatch
 		
 		hashes_vector& unique_sorted_hashes(){
 			if (unique_sorted_hashes_==0){
-				unique_sorted_hashes_=new hashes_vector(hashes());
+				unique_sorted_hashes_=new hashes_vector();
+				uint32_t length = text().length()-registry_.window_size;
+				unique_sorted_hashes_->resize(length);
+				const char* data = text().data();
+				hash_t hash;
+				for (uint32_t i=0;i<length;i++){
+					hash = hashmurmur(data+i,registry_.window_size+1);
+					(*unique_sorted_hashes_)[i]=hash;
+				}
 				std::sort(unique_sorted_hashes_->begin(),unique_sorted_hashes_->end());
 				hashes_vector::iterator it = unique (unique_sorted_hashes_->begin(), unique_sorted_hashes_->end());
 			  	unique_sorted_hashes_->resize(it-unique_sorted_hashes_->begin());

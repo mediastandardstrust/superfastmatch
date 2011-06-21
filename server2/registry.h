@@ -29,14 +29,15 @@ namespace superfastmatch{
 			window_size=15;
 			thread_count=8;
 			max_line_length=1<<16;
-			max_hash_count=1<<26;
+			max_hash_count=1<<24;
 			max_batch_count=100;
 			timeout=1.0;
 			map_reduce_path="";
 			documentDB = new kyotocabinet::PolyDB();
 			documentDB->open("document.kct#bnum=100000#zcomp=zlib");
 			indexDB = new kyotocabinet::PolyDB();
-			indexDB->open("index.kct#bnum=400000000#opts=l#msiz=6g#pccap=1g");
+			// indexDB->open("index.kct#bnum=400000000#opts=l#msiz=6g#pccap=1g");
+			indexDB->open("index.kct#bnum=1000000#opts=l#msiz=3g#pccap=1g");
 			associationDB = new kyotocabinet::PolyDB();
 			associationDB->open("association.kct#bnum=100000");
 			queueDB = new kyotocabinet::PolyDB();
