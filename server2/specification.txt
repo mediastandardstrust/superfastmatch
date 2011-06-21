@@ -9,7 +9,8 @@ URL											METHOD		DESCRIPTION																		RESPONSE
 /document/<doctype>/        				GET         Returns the first page of documents with <doctype>								200
 /document/<doctype>/?cursor=<cursor>		GET			Returns the page of documents with <doctype> beginning with <cursor>			200
 /document/<doctype>/<docid>/				GET			Returns the document with <doctype> and <docid> if exists						200/404/304
-/document/<doctype>/<docid>/				POST		Create or update the document with <doctype> and <docid> and defer indexing 	202
+/document/<doctype>/<docid>/				POST		Create or update the document with <doctype> and <docid> and defer association 	202
+/document/<doctype>/<docid>/				PUT 		Create or update the document with <doctype> and <docid> and associate		 	202
 /document/<doctype>/<docid>/				DELETE		Delete the document with <doctype> and <docid> and related associations			204/404
 /index/										GET			Returns the first page of the index												200
 /index/?cursor=<cursor>						GET         Returns the page of the index beginning with <cursor>							200
@@ -18,14 +19,17 @@ URL											METHOD		DESCRIPTION																		RESPONSE
 /association/<doctype>/						GET 		Returns the the first page of associations for <doctype>						200
 /association/<doctype>/?cursor=<cursor>		GET 		Returns the the page of associations for <doctype> beginning with <cursor>		200
 /association/<doctype>/<docid>/  			GET 		Returns the associations for a specific document						 		200/304
+/association/								POST		Updates associations for all documents											202
+/association/<doctype>/						POST		Updates associations for all documents with <doctype>							202
+/association/<doctype1>/<doctype2>/			POST		Updates associations for all documents with <doctype1> against <doctype2>		202
 /search/									POST		Returns the results for a search of all documents								200
 /search/<doctype>/							POST		Returns the results for a search against documents of <doctype>					200
 /status/									GET			Returns counts for each DB														200
-/job/										GET			Returns the first page of jobs													200
-/job/?cursor=<cursor>						GET			Returns the page of jobs beginning with <cursor>								200
-/job/<jobid>/								GET			Returns the details of <jobid>													200/404/304
+/queue/										GET			Returns the first page of jobs													200
+/queue/?cursor=<cursor>						GET			Returns the page of jobs beginning with <cursor>								200
+/queue/<jobid>/								GET			Returns the details of <queueid>												200/404/304
 
-where <doctype>, <docid> and <jobid> are integers between 0 and 4294967295
+where <doctype>, <docid> and <queueid> are integers between 1 and 4294967295
 
 
 DB Specification

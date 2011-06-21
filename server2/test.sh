@@ -30,17 +30,20 @@ function send_doc {
 # echo "Test PUT-ing documents as doctype 2"
 # send_doc PUT 2 "../superfastmatch/fixtures/*.txt"
 
-echo "Test POST-ing documents"
-send_doc POST 2 "../superfastmatch/fixtures/*.txt" 
+# echo "Test POST-ing documents"
+# send_doc POST 2 "../superfastmatch/fixtures/*.txt" 
 
-echo "Test DELETE-ing documents"
-send_doc DELETE 2  "../superfastmatch/fixtures/*.txt" 
+# echo "Test POST-ing documents"
+# send_doc POST 2 "../superfastmatch/fixtures/*.txt"
+# 
+# echo "Test DELETE-ing documents"
+# send_doc DELETE 2  "../superfastmatch/fixtures/*.txt" 
 
 # echo "Test batch indexing"
 # curl -X POST -H "Expect:" 127.0.0.1:1978/index/ 
 
-# echo "Test POST-ing documents"
-# send_doc POST 3  "../superfastmatch/fixtures/pan11-external/source-documents/*.txt"
+echo "Test POST-ing documents"
+send_doc POST 3  "../superfastmatch/fixtures/pan11-external/source-documents/*.txt"
 # 
 # echo "Test batch indexing"
 # curl -X POST -H "Expect:" 127.0.0.1:1978/index/

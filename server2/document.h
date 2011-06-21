@@ -81,8 +81,9 @@ namespace superfastmatch
 			// printf("Destroyed Document (%p)\n", this);
 		}
 		
+		//Returns false if document already exists
 		bool save(){
-			return registry_.documentDB->set(*key_,*content_);
+			return registry_.documentDB->cas(key_->data(),key_->size(),NULL,0,content_->data(),content_->size());
 		}
 		
 		bool load(){

@@ -15,44 +15,47 @@ namespace superfastmatch{
 		uint32_t thread_count;
 		uint32_t max_line_length; //Needs to be aware of max stack size for platform
 		uint32_t max_hash_count;
+		uint32_t max_batch_count;
 		double timeout;
 		string map_reduce_path;		
 		kyotocabinet::PolyDB* documentDB;
 		kyotocabinet::PolyDB* indexDB;
 		kyotocabinet::PolyDB* associationDB;
-		kyotocabinet::PolyDB* jobDB;
 		kyotocabinet::PolyDB* queueDB;
+		kyotocabinet::PolyDB* miscDB;
 		
 		Registry(const string& filename){
 			//Todo load config from file
 			window_size=15;
 			thread_count=8;
 			max_line_length=1<<16;
-			max_hash_count=1<<24;
+			max_hash_count=1<<26;
+			max_batch_count=100;
 			timeout=1.0;
 			map_reduce_path="";
 			documentDB = new kyotocabinet::PolyDB();
-			documentDB->open("document.kct#bnum=100000#zcomp=zlib#msiz=1g");
+			documentDB->open("document.kct#bnum=100000#zcomp=zlib");
 			indexDB = new kyotocabinet::PolyDB();
-			indexDB->open("index.kct#bnum=1000000#psiz=32768#msiz=4g#pccap=4g");
+			indexDB->open("index.kct#bnum=400000000#opts=l#msiz=6g#pccap=1g");
 			associationDB = new kyotocabinet::PolyDB();
 			associationDB->open("association.kct#bnum=100000");
-			jobDB = new kyotocabinet::PolyDB();
-			jobDB->open("job.kct#bnum=100000");
 			queueDB = new kyotocabinet::PolyDB();
 			queueDB->open("queue.kct#bnum=1000000#zcomp=zlib");
+			miscDB = new kyotocabinet::PolyDB();
+			miscDB->open("misc.kch");
 		}
 		
 		~Registry(){
 			documentDB->close();
 			indexDB->close();
 			associationDB->close();
-			jobDB->close();
+			queueDB->close();
+			miscDB->close();
 			delete documentDB;
 			delete indexDB;
 			delete associationDB;
-			delete jobDB;
 			delete queueDB;
+			delete miscDB;
 		}
 	};
 }

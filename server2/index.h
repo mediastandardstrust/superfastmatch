@@ -14,9 +14,6 @@
 #include <job.h>
 #include <document.h>
 
-typedef vector<uint32_t> docids_vector;
-typedef std::tr1::unordered_map<uint32_t,docids_vector> docs_map;
-
 namespace superfastmatch
 {
 	class Document;
@@ -129,74 +126,76 @@ namespace superfastmatch
 			return write_merged();
 		}
 		
-		bool remove(const vector<uint32_t>& old_docs){
+		bool remove(const vector<uint32_t>& new_docs){
 			read_existing();
+			// cout << "Start In Length: " << in_length << " Out Length: " << out_length <<" Existing size: " << existing_docs_.size() << " New size: " << new_docs.size() << " Merged size: " << merged_docs_.size() <<endl;
+			merged_docs_.resize(0);
+			vector<uint32_t>::const_iterator new_it=new_docs.begin();
+			vector<uint32_t>::const_iterator new_ite=new_docs.end();
+			vector<uint32_t>::const_iterator existing_it=existing_docs_.begin();
+			vector<uint32_t>::const_iterator existing_ite=existing_docs_.end();
+			vector<uint32_t>::iterator merged_docs_length;
 			
+			while(true){
+				//If both exhausted
+				if ((new_it==new_ite) && (existing_it==existing_ite)){
+					// cout << "both exhausted" << endl;
+					break;
+				}
+				
+				//If new_docs is exhausted
+				if (new_it==new_ite){
+					// cout << "new docs exhausted"<<endl;
+					copy(existing_it,existing_ite,back_inserter(merged_docs_));
+					break;
+				}
+				//If existing_docs is exhausted
+				if (existing_it==existing_ite){
+					// cout << "existing docs exhausted"<<endl;
+					break;
+				}
+				//If doctypes are different merge lower doctype else merge contents
+				uint32_t new_length=(*(new_it+1)+2);
+				uint32_t existing_length=(*(existing_it+1)+2);
+				// cout << "New Doctype: " << *new_it << " Existing Doctype: " << *existing_it <<endl;
+				if (*new_it<*existing_it){
+					// cout << "new is before existing"<<endl;
+					// copy(new_it,new_it+new_length,back_inserter(merged_docs_));
+					new_it+=new_length;
+				}else if(*new_it>*existing_it){
+					// cout << "existing is before new"<<endl;
+					copy(existing_it,existing_it+existing_length,back_inserter(merged_docs_));
+					existing_it+=existing_length;
+				}else{
+					//TODO consider deque instead
+					// cout << "removing"<<endl;
+					merged_docs_.push_back(*new_it);
+					merged_docs_.push_back(0); //temporary length holder
+					merged_docs_length = merged_docs_.end()-1;
+					uint32_t before_length=merged_docs_.size();
+					set_difference(existing_it+2,existing_it+existing_length,new_it+2,new_it+new_length,back_inserter(merged_docs_));
+					// set_union(new_it+2,new_it+new_length,existing_it+2,existing_it+existing_length,back_inserter(merged_docs_));
+					// cout << "Start: " << merged_docs_start << " End: " << merged_docs_end << endl;
+					*merged_docs_length=merged_docs_.size()-before_length;
+					new_it+=new_length;
+					existing_it+=existing_length;
+				}
+				
+			}
+			// cout << "End In Length: " << in_length << " Out Length: " << out_length <<" Existing size: " << existing_docs_.size() << " New size: " << new_docs.size() << " 	Merged size: " << merged_docs_.size() <<endl;
 			return write_merged();
 		}
 		
 	};
 	
-	class IndexVisitor: public kyotocabinet::DB::Visitor 
-	{
-	private:
-		const Registry& registry_;	
-		const Job& job_;
-		IndexLine line_;
-		unordered_map<string,string> visited_;
-		vector<uint32_t> new_docs_;
-		uint64_t hash_count_;
-		unordered_map<hash_t,vector<uint64_t> > new_docs_map_;			
-		
-		void dump(){
-			cout << "Hash count limit reached" << endl;
-			vector<hash_t> sorted_hashes;
-			sorted_hashes.reserve(new_docs_map_.size());
-			for (unordered_map<hash_t,vector<uint64_t> >::const_iterator it=new_docs_map_.begin(),ite=new_docs_map_.end(); it!=ite; ++it) {
-			    sorted_hashes.push_back(it->first);
-			}
-			std::sort(sorted_hashes.begin(),sorted_hashes.end());
-			for (vector<hash_t>::const_iterator it=sorted_hashes.begin(),ite=sorted_hashes.end(); it!=ite; ++it) {
-			
-			}
-			new_docs_map_.clear();
-			hash_count_=0;
-		}
-		
-	public:
-		IndexVisitor(const Registry& registry,Job& job):
-		registry_(registry),job_(job),line_(registry_.max_line_length),hash_count_(0)
-		{}
-		
-		~IndexVisitor(){
-			dump();
-		}
-		
-	    const char* visit_full(const char* kbuf, size_t ksiz,const char* vbuf, size_t vsiz, size_t *sp) {
-			string doc_key = string(kbuf, ksiz);
-			visited_[doc_key]=string(vbuf, vsiz);
-			Document document(doc_key,registry_);
-			cout << "Batching: " << document <<endl;
-			for (Document::hashes_vector::const_iterator it=document.unique_sorted_hashes().begin(),ite=document.unique_sorted_hashes().end();it!=ite;++it){
-				new_docs_map_[*it].push_back(document.doctype());
-				new_docs_map_[*it].push_back(document.docid());
-				hash_count_++;
-			}
-			if (hash_count_>registry_.max_hash_count){
-				dump();	
-			}
-			return NOP;
-	    }
-
-		void visit_after(){
-		}
-	
-	};
-	
 	class Index
 	{
 	private:
+		typedef vector<uint32_t> docids_vector;
+		typedef unordered_map<uint32_t,docids_vector> hashes_map;
+		
 		const Registry& registry_;
+		
 	public:
 		Index(const Registry& registry):
 		registry_(registry){}
@@ -204,45 +203,90 @@ namespace superfastmatch
 		~Index(){
 			// printf("Destroyed Indexer (%p)\n", this);
 		}
-
-		bool create(Document& document){
-			IndexLine line(registry_.max_line_length);
+		
+	private:
+		struct compareDocuments {
+		  	bool operator ()(Document* lhs, Document* rhs){
+			 	if (lhs->doctype() == rhs->doctype()){
+					return lhs->docid() < rhs->docid();
+				} 
+				return lhs->doctype() < rhs->doctype();
+			}
+		};
+		
+		void merge(hashes_map& hashes,bool remove){
+			if (remove){
+				cout << "Removing " << hashes.size() << " hashes"<<endl;
+			}else{
+				cout << "Merging " << hashes.size() << " hashes"<<endl;
+			}
 			char hash[sizeof(hash_t)];
+			IndexLine line(registry_.max_line_length);
 			vector<uint32_t> new_docs;
-			new_docs.push_back(document.doctype());
-			new_docs.push_back(1);
-			new_docs.push_back(document.docid());
-			for (Document::hashes_vector::const_iterator it=document.unique_sorted_hashes().begin(),ite=document.unique_sorted_hashes().end();it!=ite;++it){
-				uint32_t hash_int = kc::hton32(*it);
-				memcpy(&hash,&hash_int,sizeof(hash_t));
-				int32_t size=registry_.indexDB->get(hash,sizeof(hash_t),line.in,line.max_length);
-				line.in_length=(size!=-1)?size:0;
-				if (line.merge(new_docs)){
-					registry_.indexDB->set(hash,sizeof(hash_t),line.out,line.out_length);				
+			vector<hash_t> sorted_hashes;
+			sorted_hashes.reserve(hashes.size());
+			for (hashes_map::const_iterator it=hashes.begin(),ite=hashes.end(); it!=ite; ++it) {
+				if (it->second.size()>0){
+			    	sorted_hashes.push_back(it->first);
 				}
 			}
-			return true;
+			std::sort(sorted_hashes.begin(),sorted_hashes.end());
+			for (vector<hash_t>::const_iterator it=sorted_hashes.begin(),ite=sorted_hashes.end(); it!=ite; ++it) {
+				//Fold the doctype and docids into merge format
+				uint32_t doc_type_cursor=1;
+				uint32_t doc_type_count=1;
+				for (uint32_t i=0;i<hashes[*it].size();i+=2){
+					if(i==0){
+						new_docs.push_back(hashes[*it][0]);
+					}else if (hashes[*it][i]==new_docs[doc_type_cursor-1]){
+						doc_type_count++;
+					}else{
+						new_docs.push_back(doc_type_count);
+						new_docs.push_back(hashes[*it][i]);
+						doc_type_count=1;
+						doc_type_cursor++;
+					}
+				}
+				new_docs.push_back(doc_type_count);
+				for (uint32_t i=1;i<hashes[*it].size();i+=2){
+					new_docs.push_back(hashes[*it][i]);
+				}
+				uint32_t hash_int = kc::hton32(*it);
+				memcpy(hash,&hash_int,sizeof(hash_t));
+				int32_t size=registry_.indexDB->get(hash,sizeof(hash_t),line.in,line.max_length);
+				line.in_length=(size!=-1)?size:0;
+				if (remove && line.remove(new_docs)){
+					registry_.indexDB->set(hash,sizeof(hash_t),line.out,line.out_length);									
+				}
+				else if (line.merge(new_docs)){
+					registry_.indexDB->set(hash,sizeof(hash_t),line.out,line.out_length);				
+				}
+				new_docs.clear();
+				// http://www.gotw.ca/gotw/054.htm
+				docids_vector().swap(hashes[*it]);
+			}
 		}
-
-		bool batch(Job& job){
-			if(!job.start()){
-				return false;				
+		
+	public:
+		bool batch(deque<Document*>& docs,bool remove){
+			hashes_map hashes;
+			hashes.rehash(registry_.max_hash_count/hashes.max_load_factor());
+			std::sort(docs.begin(),docs.end(),compareDocuments());
+			while (!docs.empty()){
+				Document* doc = docs.front();
+				cout <<"Indexing: " << *doc << endl;
+				for (Document::hashes_vector::const_iterator it=doc->unique_sorted_hashes().begin(),ite=doc->unique_sorted_hashes().end();it!=ite;++it){
+					hashes[*it].push_back(doc->doctype());
+					hashes[*it].push_back(doc->docid());
+				}
+				if (hashes.size()>registry_.max_hash_count){
+					cout << "Hash count limit reached: " << hashes.size() << " > " << registry_.max_hash_count << endl;
+					merge(hashes,remove);
+				}
+				docs.pop_front();
 			}
-			vector<pair<string,string> > doc_tasks;
-			string doc_key;
-			string timestamp;
-			kyotocabinet::PolyDB::Cursor* cur = registry_.queueDB->cursor();
-			cur->jump();
-			while (cur->get(&doc_key,&timestamp,true)){
-				doc_tasks.push_back(pair<string,string>(doc_key,timestamp));
-				Document document(doc_key,registry_);
-				cout << document <<endl;
-			}
-			bool success;
-			// IndexVisitor* visitor = new IndexVisitor(registry_,job);
-			// bool success = registry_.hash_queueDB->iterate(visitor,false);
-			// delete visitor;
-			return success && job.finish();
+			merge(hashes,remove);
+			return true;
 		}
 	};
 }

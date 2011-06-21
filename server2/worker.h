@@ -12,6 +12,7 @@
 #include <queue.h>
 #include <document.h>
 #include <index.h>
+#include <queue.h>
 #include <registry.h>
 
 using namespace std;
@@ -122,6 +123,9 @@ namespace superfastmatch{
 			else if(req.resource=="index"){
 				process_index(req,res);
 			}
+			else if(req.resource=="queue"){
+				process_queue(req,res);
+			}
 			else if(req.resource=="echo"){
 				process_echo(req,res);
 			}
@@ -161,7 +165,7 @@ namespace superfastmatch{
 						break;					
 					case HTTPClient::MPUT:
 					case HTTPClient::MPOST:{
-							uint64_t queue_id = queue.add_document(doctype,docid,req.reqbody);
+							uint64_t queue_id = queue.add_document(doctype,docid,req.reqbody,req.verb==HTTPClient::MPUT);
 							res.message << "Queued document: " <<  queue_id << " for indexing queue id:"<< queue_id;
 							res.body << queue_id;
 							res.code=202;
@@ -196,6 +200,16 @@ namespace superfastmatch{
 				default:
 					res.message << "Unknown command";
 					res.code=500;
+					break;
+			}
+		}
+		
+		void process_queue(const RESTRequest& req,RESTResponse& res){
+			Queue queue(registry_);
+			switch (req.verb){
+				default:
+					queue.toString(res.body);
+					res.code=200;
 					break;
 			}
 		}
