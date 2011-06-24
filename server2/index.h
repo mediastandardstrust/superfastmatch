@@ -272,6 +272,7 @@ namespace superfastmatch
 				docs.clear();
 				sorter.step();
 			}
+			registry_.indexDB->defrag(0);
 			hashes.clear();
 		}
 		

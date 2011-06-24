@@ -9,6 +9,7 @@
 #include <tr1/unordered_map>
 #include <kcutil.h>
 #include <kcpolydb.h>
+#include <kchashdb.h>
 #include <registry.h>
 #include <document.h>
 #include <index.h>
@@ -354,15 +355,9 @@ namespace superfastmatch
 				FreeClear(work);
 				docs.clear();
 				
-			  	// const int kBufferSize = 16 << 10;
-			  	// char* buffer = new char[kBufferSize];			
-				// MallocExtension::instance()->GetStats(buffer,kBufferSize);
-				// cout << string(buffer,kBufferSize)  << endl;
 				// cout << "Releasing Memory" << endl;
 				// MallocExtension::instance()->ReleaseFreeMemory();
 				//  cout << "Done!" << endl;
-				// MallocExtension::instance()->GetStats(buffer,kBufferSize);
-				// cout << string(buffer,kBufferSize)  << endl;
 				// cout << "End Batch: " <<batch.size() << " Work: " << work.size() << " Docs: " << docs.size() << endl;
 			}
 			return workDone;

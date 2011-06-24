@@ -9,6 +9,8 @@ typedef unsigned __int64 uint64_t;
 #include <stdint.h>
 #endif
 
+#include <kcutil.h>
+
 typedef uint32_t hash_t;
 
 inline hash_t hashmurmur(const void* buf, size_t size) {
@@ -45,34 +47,40 @@ inline hash_t hashmurmur(const void* buf, size_t size) {
   return hash;
 }
 
-extern "C"
-{
-#ifdef WIN32
-#include <Rpc.h>
-#else
-#include <uuid/uuid.h>
-#endif
+inline std::string unitnumstr(int64_t num) {
+  if (num >= std::pow(1000.0, 6)) {
+    return kc::strprintf("%.3Lf quintillion", (long double)num / std::pow(1000.0, 6));
+  } else if (num >= std::pow(1000.0, 5)) {
+    return kc::strprintf("%.3Lf quadrillion", (long double)num / std::pow(1000.0, 5));
+  } else if (num >= std::pow(1000.0, 4)) {
+    return kc::strprintf("%.3Lf trillion", (long double)num / std::pow(1000.0, 4));
+  } else if (num >= std::pow(1000.0, 3)) {
+    return kc::strprintf("%.3Lf billion", (long double)num / std::pow(1000.0, 3));
+  } else if (num >= std::pow(1000.0, 2)) {
+    return kc::strprintf("%.3Lf million", (long double)num / std::pow(1000.0, 2));
+  } else if (num >= std::pow(1000.0, 1)) {
+    return kc::strprintf("%.3Lf thousand", (long double)num / std::pow(1000.0, 1));
+  }
+  return kc::strprintf("%lld", (long long)num);
 }
 
-std::string newUUID()
-{
-#ifdef WIN32
-    UUID uuid;
-    UuidCreate ( &uuid );
 
-    unsigned char * str;
-    UuidToStringA ( &uuid, &str );
-
-    std::string s( ( char* ) str );
-
-    RpcStringFreeA ( &str );
-#else
-    uuid_t uuid;
-    uuid_generate_random ( uuid );
-    char s[37];
-    uuid_unparse ( uuid, s );
-#endif
-    return s;
+// convert a number into the string with the byte unit
+inline std::string unitnumstrbyte(int64_t num) {
+  if ((unsigned long long)num >= 1ULL << 60) {
+    return kc::strprintf("%.3Lf EiB", (long double)num / (1ULL << 60));
+  } else if ((unsigned long long)num >= 1ULL << 50) {
+    return kc::strprintf("%.3Lf PiB", (long double)num / (1ULL << 50));
+  } else if ((unsigned long long)num >= 1ULL << 40) {
+    return kc::strprintf("%.3Lf TiB", (long double)num / (1ULL << 40));
+  } else if ((unsigned long long)num >= 1ULL << 30) {
+    return kc::strprintf("%.3Lf GiB", (long double)num / (1ULL << 30));
+  } else if ((unsigned long long)num >= 1ULL << 20) {
+    return kc::strprintf("%.3Lf MiB", (long double)num / (1ULL << 20));
+  } else if ((unsigned long long)num >= 1ULL << 10) {
+    return kc::strprintf("%.3Lf KiB", (long double)num / (1ULL << 10));
+  }
+  return kc::strprintf("%lld B", (long long)num);
 }
 
 template <class C> void FreeClear( C & cntr ) {

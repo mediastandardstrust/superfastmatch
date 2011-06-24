@@ -14,6 +14,8 @@
 #include <index.h>
 #include <queue.h>
 #include <registry.h>
+#include <cstdlib>
+#include <google/malloc_extension.h>
 
 using namespace std;
 using namespace kyototycoon;
@@ -129,6 +131,15 @@ namespace superfastmatch{
 			else if(req.resource=="echo"){
 				process_echo(req,res);
 			}
+			else if(req.resource=="defrag"){
+				process_defrag(req,res);
+			}
+			else if(req.resource=="heap"){
+				process_heap(req,res);
+			}
+			else if(req.resource=="init"){
+					process_init(req,res);
+			}
 			else{
 				process_status(req,res);
 			}
@@ -214,6 +225,41 @@ namespace superfastmatch{
 			}
 		}
 		
+		void process_defrag(const RESTRequest& req,RESTResponse& res){
+			if (registry_.indexDB->defrag(0)){
+				res.code=200;
+				res.body << "Defragged!";
+			}else{
+				res.code=500;
+				res.body << "Error Defragging";
+			}
+			
+		}
+		
+		void process_init(const RESTRequest& req,RESTResponse& res){
+			char hash[sizeof(hash_t)];
+			char values[12];
+			hash_t hash_int;
+			uint32_t rand_int;
+			for (uint32_t i=0;i<((1L<<32)-1);i++){
+ 				hash_int= kc::hton32(i);
+				memcpy(hash,&hash_int,sizeof(hash_t));
+				uint32_t count=(rand()%3)+1;
+				for (uint32_t j=0;j<count;j++){
+					rand_int=rand();
+					memcpy(values+j,&rand_int,4);
+				}
+				registry_.indexDB->set(hash,sizeof(hash_t),values,count);
+			}
+		}
+		
+		void process_heap(const RESTRequest& req, RESTResponse& res){
+			MallocExtensionWriter out;
+			MallocExtension::instance()->GetHeapSample(&out);
+			res.code=200;
+			res.body << out;
+		}
+		
 		void process_echo(const RESTRequest& req,RESTResponse& res){
 	      	for (map<string, string>::const_iterator it = req.reqheads.begin();it != req.reqheads.end(); it++) {
 	        	if (!it->first.empty()) res.body << it->first  << ": ";
@@ -224,7 +270,14 @@ namespace superfastmatch{
 		}
 		
 		void process_status(const RESTRequest& req,RESTResponse& res){
-	      	res.body << "<h1>Status</h1";
+	      	res.body << "<h1>Status</h1>";
+	      	res.body << "</dl><h2>DB's:</h2><pre>"<<registry_ <<"</pre>";			
+	      	res.body << "</dl><h2>Memory:</h2><pre>";
+			const int kBufferSize = 16 << 10;
+			char* buffer = new char[kBufferSize];			
+			MallocExtension::instance()->GetStats(buffer,kBufferSize);
+			res.body << string(buffer) <<"</pre>";
+			delete [] buffer;
 			res.code=200;
 		}
 	};
