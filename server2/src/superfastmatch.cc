@@ -1,15 +1,9 @@
-#include <iostream>
-#include <vector>
-#include <map>
-#include <kttimeddb.h>
 #include <kthttp.h>
-#include <string>
+#include <common.h>
 #include <logger.h>
 #include <worker.h>
 #include <registry.h>
 
-using namespace std;
-using namespace kyototycoon;
 using namespace superfastmatch;
 
 // the flag whether the server is alive

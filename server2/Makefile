@@ -1,80 +1,70 @@
-# Makefile for sample programs of Kyoto Tycoon
-
+# Makefile for SuperFastMatch
 
 #================================================================
 # Setting Variables
 #================================================================
-
 
 # Generic settings
 SHELL = /bin/sh
 
 # Targets
 MYBINS = superfastmatch
-OBJS = 
+OBJS = src/superfastmatch.o src/histogram.o src/worker.o src/queue.o src/posting.o src/document.o src/logger.o src/registry.o src/command.o
+EXTERNAL = leveldb
 
 # Building binaries
-CC = gcc
 CXX = g++
-# CFLAGS = -I. -I.. -Wall -ansi -pedantic -fsigned-char -O3
-CXXFLAGS = -I. -I.. -Wall -fsigned-char -fno-omit-frame-pointer -fno-builtin-malloc -fno-builtin-calloc -fno-builtin-realloc -fno-builtin-free -O3 -g -m64 -march=core2
-# CXXFLAGS = -I. -I.. -Wall -fsigned-char -O3 -g -m64 -march=core2
-LDFLAGS =
-# LIBS = -L. -L.. -lkyototycoon -lkyotocabinet -lstdc++ -lz -lpthread -lm -lc
-LIBS = -L. -L.. -lkyototycoon -lkyotocabinet -lstdc++ -lz -lpthread -lm -lc -ltcmalloc
-LDENV = LD_RUN_PATH=/lib:/usr/lib:$(HOME)/lib:/usr/local/lib:.:..
-# RUNENV = DYLD_FORCE_FLAT_NAMESPACE=1 TCMALLOC_RELEASE_RATE=10 HEAPPROFILE=/tmp/superfastmatch.hprof LD_LIBRARY_PATH=/lib:/usr/lib:$(HOME)/lib:/usr/local/lib:.:..
-RUNENV = LD_LIBRARY_PATH=/lib:/usr/lib:$(HOME)/lib:/usr/local/lib:.:..
+CXXFLAGS = -c -I./src -I/usr/local/include/ -Iexternal/leveldb/include/ -Wall -fsigned-char -fno-omit-frame-pointer -fno-builtin-malloc -fno-builtin-calloc -fno-builtin-realloc -fno-builtin-free -O3 -g -m64 -march=core2
+LDFLAGS = -Lexternal/leveldb -lkyototycoon -lkyotocabinet -lleveldb -lstdc++ -lz -lpthread -lm -lc -ltcmalloc
 
-
+# Enviroments
+RUNENV = TCMALLOC_SAMPLE_PARAMETER=524288
+PROFILEENV = DYLD_FORCE_FLAT_NAMESPACE=1 HEAPPROFILE=/tmp/superfastmatch.hprof 
+# Donny specific (change to match your environment) will eventually put in external folder
+DEBUGENV = DYLD_LIBRARY_PATH=/Volumes/1TB/src/google/google-perftools-1.7/.libs/ gdb 
 
 #================================================================
 # Suffix rules
 #================================================================
 
-
-.SUFFIXES :
-.SUFFIXES : .c .cc .o
-
-.c.o :
-	$(CC) -c $(CFLAGS) $<
+.SUFFIXES : 
+.SUFFIXES : .cc .o
 
 .cc.o :
-	$(CXX) -c $(CXXFLAGS) $<
-
-
+	$(CXX) $(CXXFLAGS) $< -o $@
 
 #================================================================
 # Actions
 #================================================================
 
-
-all : $(MYBINS)
+all : $(EXTERNAL) $(MYBINS) 
 
 clean :
-	rm -rf $(MYBINS) *.exe *.o a.out check.out gmon.out leak.log *.kch *.kct *~
+	rm -rf $(MYBINS) *.exe src/*.o *.kch *.kct
 
-
-static :
-	make LDFLAGS="$(LDFLAGS) -static"
-
-
-check :
-	rm -rf casket*
+check : all
+	rm -rf *.kct *.kch
 	$(RUNENV) ./superfastmatch
+	#Run test.sh
 
+profile : all
+	$(PROFILEENV) ./superfastmatch
 
-.PHONY : all clean static
+debug : CXXFLAGS += -O0 
+debug : clean all
+	$(DEBUGENV) superfastmatch
 
+leveldb :
+	cd external/leveldb && $(MAKE)
 
+.PHONY : all clean check profile debug $(EXTERNAL)
 
 #================================================================
 # Building binaries
 #================================================================
 
-superfastmatch : superfastmatch.o
-	$(LDENV) $(CXX) $(CXXFLAGS) -o $@ $< $(LDFLAGS) $(LIBS)
-
+superfastmatch : $(OBJS)
+	$(CXX) $(LDFLAGS) $(OBJS) -o $@ 
 
 # END OF FILE
 # DO NOT DELETE

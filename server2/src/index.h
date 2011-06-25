@@ -13,8 +13,8 @@
 #include <tr1/unordered_map>
 #include <cstring>
 #include <registry.h>
-#include <job.h>
 #include <document.h>
+#include <posting.h>
 
 namespace superfastmatch
 {
@@ -214,15 +214,6 @@ namespace superfastmatch
 		}
 		
 	private:
-		struct compareDocuments {
-		  	bool operator ()(Document* lhs, Document* rhs){
-			 	if (lhs->doctype() == rhs->doctype()){
-					return lhs->docid() < rhs->docid();
-				} 
-				return lhs->doctype() < rhs->doctype();
-			}
-		};
-		
 		void merge(kc::TinyHashMap& hashes,bool remove){
 			if (remove){
 				cout << "Removing " << hashes.count() << " hashes"<<endl;
@@ -278,29 +269,38 @@ namespace superfastmatch
 		
 	public:
 		bool batch(deque<Document*>& docs,bool remove){
-			kc::TinyHashMap hashes(registry_.max_hash_count);
-			std::sort(docs.begin(),docs.end(),compareDocuments());
-			char hash[sizeof(hash_t)];
-			char doc_pair[20];
-			while (!docs.empty()){
-				Document* doc = docs.front();
-				cout <<"Indexing: " << *doc << endl;
-				uint32_t doc_pair_length=0;
-				doc_pair_length+=kc::writevarnum(doc_pair,doc->doctype());
-				doc_pair_length+=kc::writevarnum(doc_pair+doc_pair_length,doc->docid());
-				for (Document::hashes_vector::const_iterator it=doc->unique_sorted_hashes().begin(),ite=doc->unique_sorted_hashes().end();it!=ite;++it){
-					hash_t hash_int = kc::hton32(*it);
-					memcpy(hash,&hash_int,sizeof(hash_t));
-					hashes.append(hash,sizeof(hash_t),doc_pair,doc_pair_length);
-				}
-				if (hashes.count()>registry_.max_hash_count){
-					cout << "Hash count limit reached: " << hashes.count() << " > " << registry_.max_hash_count << endl;
-					merge(hashes,remove);
-				}
-				doc->clear();
-				docs.pop_front();
-			}
-			merge(hashes,remove);
+			Posting* postings = new Posting(registry_);
+			postings->batch(docs,remove);
+			delete postings;
+			
+			// kc::TinyHashMap hashes(registry_.max_hash_count);
+			// std::sort(docs.begin(),docs.end(),compareDocuments());
+			// char hash[sizeof(hash_t)];
+			// char doc_pair[20];
+			// uint64_t append_count=0;
+			// while (!docs.empty()){
+			// 	Document* doc = docs.front();
+			// 	cout <<"Indexing: " << *doc << endl;
+			// 	uint32_t doc_pair_length=0;
+			// 	doc_pair_length+=kc::writevarnum(doc_pair,doc->doctype());
+			// 	doc_pair_length+=kc::writevarnum(doc_pair+doc_pair_length,doc->docid());
+			// 	for (Document::hashes_vector::const_iterator it=doc->unique_sorted_hashes().begin(),ite=doc->unique_sorted_hashes().end();it!=ite;++it){
+			// 		hash_t hash_int = kc::hton32(*it);
+			// 		memcpy(hash,&hash_int,sizeof(hash_t));
+			// 		hashes.append(hash,sizeof(hash_t),doc_pair,doc_pair_length);
+			// 		append_count++;
+			// 	}
+			// 	if (hashes.count()>registry_.max_hash_count){
+			// 		cout << "Hash count limit reached: " << hashes.count() << " > " << registry_.max_hash_count << " Appends: " << append_count<< endl;
+			// 		append_count=0;
+			// 		merge(hashes,remove);
+			// 	}
+			// 	doc->clear();
+			// 	docs.pop_front();
+			// }
+			// cout << "End of batch reached: " << hashes.count() << " < " << registry_.max_hash_count << " Appends: " << append_count<< endl;
+			// append_count=0;
+			// merge(hashes,remove);
 			return true;
 		}
 	};
