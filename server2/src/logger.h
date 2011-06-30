@@ -1,7 +1,6 @@
 #ifndef _SFMLOGGER_H                       // duplication check
 #define _SFMLOGGER_H
 
-#include <iostream>
 #include <kthttp.h>
 #include <common.h>
 

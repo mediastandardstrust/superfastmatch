@@ -104,6 +104,9 @@ namespace superfastmatch{
 		else if(req.resource=="echo"){
 			process_echo(req,res);
 		}
+		else if(req.resource=="sync"){
+			process_sync(req,res);
+		}
 		else if(req.resource=="defrag"){
 			process_defrag(req,res);
 		}
@@ -111,7 +114,7 @@ namespace superfastmatch{
 			process_heap(req,res);
 		}
 		else if(req.resource=="init"){
-				process_init(req,res);
+			process_init(req,res);
 		}
 		else{
 			process_status(req,res);
@@ -199,12 +202,23 @@ namespace superfastmatch{
 	}
 	
 	void Worker::process_defrag(const RESTRequest& req,RESTResponse& res){
-		if (registry_.indexDB->defrag(0)){
+		if (registry_.indexDB->defrag(0) && registry_.queueDB->defrag(0) && registry_.documentDB->defrag(0)){
 			res.code=200;
 			res.body << "Defragged!";
 		}else{
 			res.code=500;
 			res.body << "Error Defragging";
+		}
+		
+	}
+	
+	void Worker::process_sync(const RESTRequest& req,RESTResponse& res){
+		if (registry_.indexDB->synchronize() && registry_.queueDB->synchronize() && registry_.documentDB->synchronize()){
+			res.code=200;
+			res.body << "Synced!";
+		}else{
+			res.code=500;
+			res.body << "Error Syncing";
 		}
 		
 	}
@@ -243,14 +257,19 @@ namespace superfastmatch{
 	}
 	
 	void Worker::process_status(const RESTRequest& req,RESTResponse& res){
-      	res.body << "<h1>Status</h1>";
-      	res.body << "</dl><h2>DB's:</h2><pre>"<<registry_ <<"</pre>";			
-      	res.body << "</dl><h2>Memory:</h2><pre>";
+      	res.body << "<html><head><script type=\"text/javascript\" src=\"http://www.google.com/jsapi\"></script>\
+		    <script type=\"text/javascript\">\
+		      google.load('visualization', '1', {packages: ['corechart']});\
+		    </script>\
+		</head><body><h1>Status</h1>";
+      	res.body << registry_;			
+      	res.body << "<h2>Memory:</h2><pre>";
 		const int kBufferSize = 16 << 10;
 		char* buffer = new char[kBufferSize];			
 		MallocExtension::instance()->GetStats(buffer,kBufferSize);
 		res.body << string(buffer) <<"</pre>";
 		delete [] buffer;
+		res.body << "</body></html>";
 		res.code=200;
 	}
 }

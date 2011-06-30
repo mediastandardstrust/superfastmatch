@@ -1,61 +1,111 @@
 #include "posting.h"
 
+//Is this naughty?
+#include "document.h"
+#include "registry.h"
+
 namespace superfastmatch
 {
 	Posting::Posting(const Registry& registry):
 	registry_(registry)
 	{
-		grouper_.resize((1L<<registry.hash_width)-1);
-		cout << grouper_.max_size() << ":" <<grouper_.size() << endl;
-		options_.create_if_missing=true;
-		options_.compression = kNoCompression;
-	  	options_.block_cache = leveldb::NewLRUCache(100 * 1048576);  // 100MB cache
-		Status status = DestroyDB(registry.postings_path,options_);
-		assert(status.ok());
-		status = DB::Open(options_,registry_.postings_path, &db_);
-		assert(status.ok());
+		grouper_.resize(registry.max_hash_count);
+		
+		// Generate masks for each slot
+		// Slot 0 is a pass through
+		// Slots 1 to slot_count check the MSB of each number
+		// Eg. hash width of 16 and slot count of 4:
+		// Slot 1: 00 00 00 00 00 00 00 00
+		// Slot 2: 01 00 00 00 00 00 00 00
+		// Slot 3: 10 00 00 00 00 00 00 00
+		// Slot 4: 11 00 00 00 00 00 00 00
+		cout << registry.hash_width << ":" << registry.slot_count <<endl;
+		// Dummy slot for pass through
+		slots_.push_back(0);
+		for (uint64_t i=1;i<registry.slot_count;i++){
+			slots_.push_back((i<<(registry.hash_width-(registry.slot_count/2))));
+		}
+		// Stream through the documents with each thread 
+		// working with a slot mask
+		DocumentCursor* cursor = new DocumentCursor(registry);
+		Document* doc;
+		while ((doc=cursor->getNext())!=NULL){
+			addDocument(doc,1);
+			addDocument(doc,2);
+			addDocument(doc,3);
+			addDocument(doc,4);
+			delete doc;
+		}
+		delete cursor;
 	}
 	Posting::~Posting(){
-		delete db_;
+		grouper_.clear();
 	}
 
-	bool Posting::batch(deque<Document*>& docs,bool remove){
-		std::sort(docs.begin(),docs.end());
-		uint64_t append_count=0;
-		while (!docs.empty()){
-			Document* doc = docs.front();
-			cout <<"Posting: " << *doc << endl;
-			for (Document::hashes_vector::const_iterator it=doc->unique_sorted_hashes().begin(),ite=doc->unique_sorted_hashes().end();it!=ite;++it){
-				if (!grouper_.test(*it)){
-					grouper_.set(*it,0);
-				}
-				// static_cast<deque<uint32_t>* >(grouper_[*it])->push_back(doc->doctype());
-				// static_cast<deque<uint32_t>* >(grouper_[*it])->push_back(doc->docid());
-				grouper_[*it]=grouper_[*it]+1;
-				append_count++;
+	bool Posting::addDocument(Document* doc, uint32_t slot){
+		cout <<"Adding to Posting: " << *doc << " with Slot: " << slot << endl;
+		if (histogram_[doc->doctype()].size()==0){
+			hist_lock_.lock();
+			histogram_[doc->doctype()].resize(registry_.max_line_length);
+			histogram_[doc->doctype()][0]=registry_.max_hash_count;
+			hist_lock_.unlock();
+		}
+		doc_count_++;
+		hash_t hash;
+		uint32_t doc_count;
+		for (Document::hashes_vector::const_iterator it=doc->unique_sorted_hashes().begin(),ite=doc->unique_sorted_hashes().end();it!=ite;++it){
+			hash = (*it>>registry_.hash_width)^(*it&registry_.hash_mask);
+			if ((!slot) || ((hash&slots_[slot])==slots_[slot])){
+				// cout << slots_[slot] << ":" << slot << ":" << registry_.hash_width<< ":" << hash << ":"<< grouper_.size() <<endl;
+				doc_count=grouper_.mutating_get(hash);
+				histogram_[doc->doctype()][doc_count]--;
+				histogram_[doc->doctype()][doc_count+1]++;
+				grouper_.set(hash,doc_count+1);
+				hash_count_++;
 			}
-			// if (grouper_.num_nonempty()>registry_.max_hash_count){
-			// 	cout << "Hash count limit reached: " << grouper_.num_nonempty() << " > " << registry_.max_hash_count << " Appends: " << append_count<< endl;
-			// 	append_count=0;
-			// // 		merge(hashes,remove);
-			// 	grouper_.clear();
-			// }
-			doc->clear();
-			docs.pop_front();
 		}
-	
-		map<uint32_t,uint32_t> histogram;
-		for (sparsetable<uint32_t>::const_nonempty_iterator it=grouper_.nonempty_begin();it!=grouper_.nonempty_end();++it){
-			histogram[*it]++;
-		}
-		for (map<uint32_t,uint32_t>::const_iterator it=histogram.begin();it!=histogram.end();++it){
-			cout << it->first << ":" << it->second <<endl;
-		} 
-	
-		cout << "End of batch reached: " << grouper_.num_nonempty() << " < " << registry_.max_hash_count << " Appends: " << append_count<< endl;
-		append_count=0;
-		// merge(hashes,remove);
-		grouper_.clear();
 		return true;
+	}
+	
+	bool Posting::deleteDocument(Document* doc){
+		cout <<"Deleting from Posting: " << *doc << endl;
+		return true;
+	}
+	
+	ostream& operator<< (ostream& stream, Posting& posting) {
+		posting.hist_lock_.lock();
+		// Obviously this will go in ctemplates
+	    stream << "<script type=\"text/javascript\">\
+		      function drawVisualization() {\
+				var data = new google.visualization.DataTable();";
+		for (histogram_t::iterator it = posting.histogram_.begin(),ite=posting.histogram_.end();it!=ite;++it){
+				stream << "data.addColumn('number', 'Doc type "<< it->first<< "');";
+		}
+		for (uint32_t i=0;i<500;i++){
+			stream << "data.addRow([";
+			for (histogram_t::iterator it = posting.histogram_.begin(),ite=posting.histogram_.end();it!=ite;++it){
+				stream << it->second[i] <<",";
+			}
+			stream << " ]);";
+		}
+		stream << " var chart = new google.visualization.ColumnChart(document.getElementById('visualization'));\
+		            chart.draw(data, {width: 1500, height: 400,vAxis: {title: \"Count\",logScale:true},hAxis: {title: \"Docs per hash	\",}});\
+ 				  	google.visualization.events.addListener(chart, 'onmouseover', barMouseOver);\
+				  	google.visualization.events.addListener(chart, 'onmouseout', barMouseOut);\
+					function barMouseOver(e) {\
+				    	chart.setSelection([e]);\
+						document.getElementById(\"chartInfo\").innerHTML=e.row+\" hashes have \"+data.getValue(e.row,e.column)+\" documents\";\
+				  	}\
+				  	function barMouseOut(e) {\
+				    	chart.setSelection([{'row': null, 'column': null}]);\
+						document.getElementById(\"chartInfo\").innerHTML=\"\";\
+				  	}\
+		      }\
+		      google.setOnLoadCallback(drawVisualization);\
+		    </script>\
+			<div id=\"visualization\" style=\"width: 1500px; height: 400px;\"></div>\
+			<span id=\"chartInfo\"></span>";
+		posting.hist_lock_.unlock();
+		return stream;
 	}
 }

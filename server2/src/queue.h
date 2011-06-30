@@ -3,14 +3,12 @@
 
 #include <map>
 #include <iomanip>
-#include <iostream>
 #include <sstream>
 #include <deque>
 #include <registry.h>
 #include <document.h>
-#include <index.h>
 #include <command.h>
-#include <google/malloc_extension.h>
+#include <index.h>
 
 namespace superfastmatch
 {		

@@ -3,16 +3,31 @@
 
 #include <vector>
 #include <bitset>
-#include <iostream>
-#include <string>
 #include <map>
 #include <algorithm>
 #include <common.h>
-#include <ktutil.h>
 #include <registry.h>
 
 namespace superfastmatch
 {		
+	class DocumentCursor
+	{
+	private:
+		const Registry& registry_;
+		kc::ForestDB::Cursor* cursor_;
+		
+	public:
+		DocumentCursor(const Registry& registry);
+		~DocumentCursor();
+		
+		bool jumpFirst();
+		bool jumpLast();
+		bool jump(string& key);
+		Document* getNext();
+		Document* getPrevious();	
+		uint32_t getCount();
+	};
+	
 	class Document
 	{
 	public:
@@ -30,8 +45,7 @@ namespace superfastmatch
 		hashes_vector* hashes_;
 		hashes_vector* unique_sorted_hashes_;
 		hashes_bloom* bloom_;
-
-		
+	
 	public:
 		Document(const uint32_t doctype,const uint32_t docid,const char* content,const Registry& registry);
 		Document(string& key,const Registry& registry);
@@ -40,8 +54,8 @@ namespace superfastmatch
 		
 		void clear();
 		//Returns false if document already exists
-		bool save();
 		bool load();
+		bool save();
 		bool remove();
 		void serialize(stringstream& s);
 
@@ -52,7 +66,6 @@ namespace superfastmatch
 		string& text();
 		string& key();
 		uint64_t index_key();
-		
 		uint32_t windowsize();
 		uint32_t doctype();				
 		uint32_t docid();

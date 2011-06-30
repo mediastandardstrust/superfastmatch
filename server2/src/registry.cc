@@ -3,54 +3,87 @@
 namespace superfastmatch{
 	Registry::Registry(const string& filename){
 		//Todo load config from file
-		window_size=15;
-		hash_width=32;
 		thread_count=8;
+		window_size=15;
+		hash_width=24;
+		slot_count=4;
+		hash_mask=(1L<<hash_width)-1;
+		max_hash_count=(1L<<hash_width);
 		max_line_length=1<<16;
-		max_hash_count=(1L<<32)-1;
 		max_batch_count=20000;
 		timeout=1.0;
-		postings_path="/tmp/superfastmatch";
-		documentDB = new kc::PolyDB();
-		documentDB->open("document.kct#bnum=100000#zcomp=zlib");
-		indexDB = new kc::TreeDB();
-		// indexDB->open("index.kct#bnum=4000000#msiz=1g#fpow=16#psiz=32768#dfunit=64#pccap=256m#opts=lc");
-		// // indexDB->tune_logger(&logger, kc::BasicDB::Logger::WARN |kc::BasicDB::Logger::ERROR);
-		indexDB = new kc::TreeDB();
-		indexDB->tune_options(kc::TreeDB::TLINEAR|kc::TreeDB::TCOMPRESS);
-		indexDB->tune_buckets(4L*1000*1000);
-		indexDB->tune_map(1LL<< 30);
-		indexDB->tune_fbp(16);
-		indexDB->tune_page(32768);
-		indexDB->tune_defrag(64);
-		indexDB->tune_page_cache(1LL<< 28);
-		indexDB->open("index.kct");
+		comp_ = new kc::LZOCompressor<kc::LZO::RAW>;
+		queueDB = new kc::ForestDB();
+		// queueDB->tune_map(1LL<< 28);
+		// queueDB->tune_page(524288);
+		// queueDB->tune_defrag(8);
+		queueDB->tune_options(kc::ForestDB::TLINEAR|kc::ForestDB::TCOMPRESS);
+		queueDB->tune_page_cache(1LL<< 28);
+		queueDB->tune_page(524288);
+		queueDB->tune_compressor(comp_);
+		queueDB->open("queue.kcf");
+		documentDB = new kc::ForestDB();
+		// documentDB->tune_buckets(1L*1000*1000);
+		// documentDB->tune_map(1LL<< 28);
+		// documentDB->tune_defrag(8);
+		documentDB->tune_options(kc::ForestDB::TLINEAR|kc::ForestDB::TCOMPRESS);
+		documentDB->tune_page_cache(1LL<< 28);
+		documentDB->tune_page(524288);
+		documentDB->tune_compressor(comp_);
+		documentDB->open("document.kcf");
+		hashesDB = new kc::ForestDB();
+		hashesDB->tune_options(kc::ForestDB::TLINEAR|kc::ForestDB::TCOMPRESS);
+		hashesDB->tune_page_cache(1LL<< 28);
+		hashesDB->tune_page(524288);
+		hashesDB->tune_compressor(comp_);
+		hashesDB->open("hashes.kcf");
+		indexDB = new kc::ForestDB();
+		indexDB->tune_options(kc::ForestDB::TLINEAR|kc::ForestDB::TCOMPRESS);
+		// indexDB->tune_buckets(4L*1000*1000);
+		// indexDB->tune_map(1LL<< 30);
+		// indexDB->tune_fbp(16);
+		// indexDB->tune_page(32768);
+		// indexDB->tune_defrag(64);
+		// indexDB->tune_page_cache(1LL<< 28);
+		indexDB->open("index.kcf");
 		associationDB = new kc::PolyDB();
 		associationDB->open("association.kct#bnum=100000");
-		queueDB = new kc::PolyDB();
-		queueDB->open("queue.kct#bnum=1000000#zcomp=zlib");
 		miscDB = new kc::PolyDB();
 		miscDB->open("misc.kch");
+		postings = new Posting(*this);
 	}
 	Registry::~Registry(){
 		documentDB->close();
 		indexDB->close();
+		hashesDB->close();
 		associationDB->close();
 		queueDB->close();
 		miscDB->close();
 		delete documentDB;
 		delete indexDB;
+		delete hashesDB;
 		delete associationDB;
 		delete queueDB;
 		delete miscDB;
+		delete postings;
+		delete comp_;
 	}
 	
 	std::ostream& operator<< (std::ostream& stream, Registry& registry) {
+		stream << "<h2>Index:</h2>" << *registry.postings;
+		stream << "<h2>Queue DB:</h2><pre>";
+		registry.status(stream,registry.queueDB);
+		stream << "</pre><h2>Document DB:</h2><pre>";
+		registry.status(stream,registry.documentDB);
+		stream << "</pre><h2>Hashes DB:</h2><pre>";
+		registry.status(stream,registry.hashesDB);
+		stream << "</pre><h2>Index DB:</h2><pre>";
 		registry.status(stream,registry.indexDB);
+		stream << "</pre>";
 		return stream;
 	}
 	
-	void Registry::status(std::ostream& s, kc::TreeDB* db){
+	void Registry::status(std::ostream& s, kc::ForestDB* db){
 	    std::map<std::string, std::string> status;
 	    status["opaque"] = "";
 	    status["fbpnum_used"] = "";
@@ -70,8 +103,8 @@ namespace superfastmatch{
       	oprintf(s,"path: %s\n", status["path"].c_str());
       	int32_t flags = kc::atoi(status["flags"].c_str());
       	oprintf(s,"status flags:");
-      	if (flags & kc::TreeDB::FOPEN) oprintf(s," open");
-      	if (flags & kc::TreeDB::FFATAL) oprintf(s," fatal");
+      	if (flags & kc::ForestDB::FOPEN) oprintf(s," open");
+      	if (flags & kc::ForestDB::FFATAL) oprintf(s," fatal");
       	oprintf(s," (flags=%d)", flags);
       	if (kc::atoi(status["recovered"].c_str()) > 0) oprintf(s," (recovered)");
       	if (kc::atoi(status["reorganized"].c_str()) > 0) oprintf(s," (reorganized)");
@@ -87,9 +120,9 @@ namespace superfastmatch{
               fbpnum, fpow, fbpused, (long long)frgcnt);
       	int32_t opts = kc::atoi(status["opts"].c_str());
       	oprintf(s,"options:");
-      	if (opts & kc::TreeDB::TSMALL) oprintf(s," small");
-      	if (opts & kc::TreeDB::TLINEAR) oprintf(s," linear");
-      	if (opts & kc::TreeDB::TCOMPRESS) oprintf(s," compress");
+      	if (opts & kc::ForestDB::TSMALL) oprintf(s," small");
+      	if (opts & kc::ForestDB::TLINEAR) oprintf(s," linear");
+      	if (opts & kc::ForestDB::TCOMPRESS) oprintf(s," compress");
       	oprintf(s," (opts=%d)\n", opts);
       	oprintf(s,"comparator: %s\n", status["rcomp"].c_str());
       	if (status["opaque"].size() >= 16) {
@@ -115,7 +148,7 @@ namespace superfastmatch{
       	double load = 0;
       	if (pnum > 0 && bnumused > 0) {
         	load = (double)pnum / bnumused;
-        	if (!(opts & kc::TreeDB::TLINEAR)) load = std::log(load + 1) / std::log(2.0);
+        	if (!(opts & kc::ForestDB::TLINEAR)) load = std::log(load + 1) / std::log(2.0);
       	}
       	oprintf(s,"buckets: %lld (used=%lld) (load=%.2f)\n",
               (long long)bnum, (long long)bnumused, load);

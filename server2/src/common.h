@@ -9,6 +9,8 @@ typedef unsigned __int64 uint64_t;
 #include <stdint.h>
 #endif
 
+#include <iostream>
+#include <string>
 #include <kcutil.h>
 #include <ktutil.h>
 
@@ -18,6 +20,7 @@ namespace superfastmatch{
 	namespace kc=kyotocabinet;
 
 	typedef uint32_t hash_t;
+	const uint64_t MAX_HASH=(1L<<32)-1;
 
 	inline hash_t hashmurmur(const void* buf, size_t size) {
 	  const uint64_t mul = 0xc6a4a7935bd1e995ULL;

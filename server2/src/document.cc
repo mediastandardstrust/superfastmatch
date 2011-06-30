@@ -2,8 +2,47 @@
 
 namespace superfastmatch
 {
+	DocumentCursor::DocumentCursor(const Registry& registry):
+	registry_(registry){
+		cursor_=registry.documentDB->cursor();
+		cursor_->jump();
+	};
+	
+	DocumentCursor::~DocumentCursor(){
+		delete cursor_;
+	}
+
+	bool DocumentCursor::jumpFirst(){
+		return cursor_->jump();
+	}
+	
+	bool DocumentCursor::jumpLast(){
+		return cursor_->jump_back();
+	};
+	
+	bool DocumentCursor::jump(string& key){
+		return cursor_->jump(key);
+	};
+	
+	Document* DocumentCursor::getNext(){
+		string key;
+		if (cursor_->get_key(&key,true)){
+			return new Document(key,registry_);
+		};
+		return NULL;
+	};
+	
+	Document* DocumentCursor::getPrevious(){
+		return NULL;
+	};	
+	
+	uint32_t DocumentCursor::getCount(){
+		return registry_.documentDB->count();		
+	};
+	
+	
 	Document::Document(const uint32_t doctype,const uint32_t docid,const char* content,const Registry& registry):
-		doctype_(doctype),docid_(docid),registry_(registry),key_(0),content_(0),content_map_(0),hashes_(0),unique_sorted_hashes_(0),bloom_(0)
+	doctype_(doctype),docid_(docid),registry_(registry),key_(0),content_(0),content_map_(0),hashes_(0),unique_sorted_hashes_(0),bloom_(0)
 	{
 		char key[8];
 		kc::writefixnum(key,kc::hton32(doctype_),4);
@@ -19,7 +58,7 @@ namespace superfastmatch
 		doctype_ = kc::ntoh32(kc::readfixnum(key.substr(0,4).data(),4));
 		docid_ = kc::ntoh32(kc::readfixnum(key.substr(4,4).data(),4));
 		content_ = new string();
-		registry_.documentDB->get(*key_,content_);
+		load();
 	}
 	
 	Document::~Document(){
@@ -55,15 +94,45 @@ namespace superfastmatch
 	}
 
 	bool Document::save(){
-		return registry_.documentDB->cas(key_->data(),key_->size(),NULL,0,content_->data(),content_->size());
+		// Maximum size of hashes given maximum hash value
+		char* h = new char[(unique_sorted_hashes().size()*kc::sizevarnum(MAX_HASH))+kc::sizevarnum(unique_sorted_hashes().size())];
+		uint32_t offset=0;
+		hash_t previous=0;
+		// Write the length first so that the read vector can be sized correctly
+		offset+=kc::writevarnum(h,unique_sorted_hashes().size());
+		// Write deltas, knowing that the hashes are sorted
+		for (hashes_vector::const_iterator it=unique_sorted_hashes().begin(),ite=unique_sorted_hashes().end();it!=ite;++it){
+			offset+=kc::writevarnum(h+offset,*it-previous);
+			previous=*it;
+		}
+		bool success = registry_.hashesDB->cas(key_->data(),key_->size(),NULL,0,h,offset) && \
+			   registry_.documentDB->cas(key_->data(),key_->size(),NULL,0,content_->data(),content_->size()); 
+		delete[] h;
+		return success;
 	}
 	
 	bool Document::load(){
+		string hashes;
+		if (not registry_.hashesDB->get(*key_,&hashes)){
+			return false;
+		}
+		uint32_t offset=0;
+		uint64_t length;
+		uint64_t hash;
+		uint64_t previous=0;;
+		offset+=kc::readvarnum(hashes.data()+offset,hashes.size()-offset,&length);
+		unique_sorted_hashes_=new hashes_vector();
+		unique_sorted_hashes_->reserve(length);
+		while (offset<hashes.size()){
+			offset+=kc::readvarnum(hashes.data()+offset,hashes.size()-offset,&hash);
+			unique_sorted_hashes_->push_back(hash+previous);
+			previous+=hash;
+		}
 		return registry_.documentDB->get(*key_,content_);
 	}
 	
 	bool Document::remove(){
-		return registry_.documentDB->remove(*key_);
+		return registry_.documentDB->remove(*key_) && registry_.hashesDB->remove(*key_);
 	}
 	
 	void Document::serialize(stringstream& s){

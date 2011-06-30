@@ -9,20 +9,21 @@ SHELL = /bin/sh
 
 # Targets
 MYBINS = superfastmatch
-OBJS = src/superfastmatch.o src/histogram.o src/worker.o src/queue.o src/posting.o src/document.o src/logger.o src/registry.o src/command.o
+OBJS = src/superfastmatch.o src/worker.o src/queue.o src/posting.o src/document.o src/logger.o src/registry.o src/command.o src/index.o
 EXTERNAL = leveldb
 
 # Building binaries
 CXX = g++
-CXXFLAGS = -c -I./src -I/usr/local/include/ -Iexternal/leveldb/include/ -Wall -fsigned-char -fno-omit-frame-pointer -fno-builtin-malloc -fno-builtin-calloc -fno-builtin-realloc -fno-builtin-free -O3 -g -m64 -march=core2
-LDFLAGS = -Lexternal/leveldb -lkyototycoon -lkyotocabinet -lleveldb -lstdc++ -lz -lpthread -lm -lc -ltcmalloc
+CXXFLAGS = -c -I./src -I/usr/local/include/ -Iexternal/leveldb/include/ -Wall -funsigned-char -fno-omit-frame-pointer -fno-builtin-malloc -fno-builtin-calloc -fno-builtin-realloc -fno-builtin-free  -m64 -march=core2 -O3 -g
+LDFLAGS = -Lexternal/leveldb -lkyototycoon -lkyotocabinet -lleveldb -lstdc++ -lz -lpthread -lm -lc -ltcmalloc -lctemplate 
 
 # Enviroments
-RUNENV = TCMALLOC_SAMPLE_PARAMETER=524288
-PROFILEENV = DYLD_FORCE_FLAT_NAMESPACE=1 HEAPPROFILE=/tmp/superfastmatch.hprof 
+RUNENV = DYLD_FORCE_FLAT_NAMESPACE=1 DYLD_INSERT_LIBRARIES=/usr/local/lib/libtcmalloc.dylib TCMALLOC_SAMPLE_PARAMETER=524288
+PROFILEENV = DYLD_FORCE_FLAT_NAMESPACE=1 DYLD_INSERT_LIBRARIES=/usr/local/lib/libtcmalloc.dylib HEAPPROFILE=/tmp/superfastmatch.hprof 
 # Donny specific (change to match your environment) will eventually put in external folder
-DEBUGENV = DYLD_LIBRARY_PATH=/Volumes/1TB/src/google/google-perftools-1.7/.libs/ gdb 
-
+# DEBUGENV = DYLD_FORCE_FLAT_NAMESPACE=1 DYLD_LIBRARY_PATH=/Volumes/1TB/src/google/google-perftools-1.7/.libs/ gdb 
+# 
+DEBUGENV = DYLD_FORCE_FLAT_NAMESPACE=1 DYLD_LIBRARY_PATH=/Volumes/1TB/src/google/google-perftools-1.7/.libs/ HEAPPROFILE=/tmp/superfastmatch.hprof HEAP_PROFILE_MMAP=true gdb
 #================================================================
 # Suffix rules
 #================================================================
@@ -34,16 +35,30 @@ DEBUGENV = DYLD_LIBRARY_PATH=/Volumes/1TB/src/google/google-perftools-1.7/.libs/
 	$(CXX) $(CXXFLAGS) $< -o $@
 
 #================================================================
+# Dependency stuff
+# http://www.scottmcpeak.com/autodepend/autodepend.html
+#================================================================
+
+%.o: %.cc
+	$(CXX) -c $(CXXFLAGS) $*.cc -o $*.o
+	$(CXX) -MM $(CXXFLAGS) $*.cc > $*.d
+	@mv -f $*.d $*.d.tmp
+	@sed -e 's|.*:|$*.o:|' < $*.d.tmp > $*.d
+	@sed -e 's/.*://' -e 's/\\$$//' < $*.d.tmp | fmt -1 | \
+	  sed -e 's/^ *//' -e 's/$$/:/' >> $*.d
+	@rm -f $*.d.tmp
+
+#================================================================
 # Actions
 #================================================================
 
 all : $(EXTERNAL) $(MYBINS) 
 
 clean :
-	rm -rf $(MYBINS) *.exe src/*.o *.kch *.kct
+	rm -rf $(MYBINS) *.exe src/*.o src/*.d *.kch *.kct *.kcf            
 
 check : all
-	rm -rf *.kct *.kch
+	rm -rf *.kct *.kch *.kcf
 	$(RUNENV) ./superfastmatch
 	#Run test.sh
 
@@ -53,6 +68,9 @@ profile : all
 debug : CXXFLAGS += -O0 
 debug : clean all
 	$(DEBUGENV) superfastmatch
+
+# pull in dependency info for *existing* .o files
+-include $(OBJS:.o=.d)
 
 leveldb :
 	cd external/leveldb && $(MAKE)

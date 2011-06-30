@@ -29,19 +29,19 @@ namespace superfastmatch{
 		CommandStatus status_;
 		uint32_t doc_type_;
 		uint32_t doc_id_;
-		string payload_;
-		Document* document_;
 
 		static const char* key_format;
 
 	public:	
-		Command(const Registry& registry,string& key,string& payload);
+		Command(const Registry& registry,const string& key);
 		Command(const Registry& registry,const uint64_t queue_id, const uint32_t priority,const CommandType type,const CommandStatus status, const uint32_t doc_type,const uint32_t doc_id,const string& payload);
 		~Command();
 		
 	private:
 		string command_key();
-		bool save(bool keep_payload=true);
+		bool update();
+		bool remove();
+		bool getPayload(string* payload);
 		
 	public:
 		
@@ -50,10 +50,10 @@ namespace superfastmatch{
 		uint32_t getDocType();
 		uint32_t getDocId();
 		uint64_t getQueueId();
-		bool setActive();
 		bool setFinished();
 		bool setFailed();
-		bool remove();
+		
+		// The user of this reference is responsible for it's deletion
 		Document* getDocument();
 		
 		friend std::ostream& operator<< (std::ostream& stream, Command& command);

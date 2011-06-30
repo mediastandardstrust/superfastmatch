@@ -3,9 +3,7 @@
 
 #include <map>
 #include <iomanip>
-#include <iostream>
 #include <sstream>
-#include <kcutil.h>
 #include <kthttp.h>
 #include <kcthread.h>
 #include <registry.h>
@@ -49,6 +47,7 @@ namespace superfastmatch{
 		void process_index(const RESTRequest&, RESTResponse&);
 		void process_queue(const RESTRequest&, RESTResponse&);
 		void process_defrag(const RESTRequest&, RESTResponse&);
+		void process_sync(const RESTRequest&, RESTResponse&);
 		void process_init(const RESTRequest&, RESTResponse&);
 		void process_heap(const RESTRequest&, RESTResponse&);
 		void process_echo(const RESTRequest&, RESTResponse&);

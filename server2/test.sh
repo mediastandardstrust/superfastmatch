@@ -8,15 +8,15 @@ function send_doc {
 	do
 		if [[ "${method}" == "DELETE" ]] ; then
 			echo "curl -X $method -H \"Expect:\" 127.0.0.1:1978/document/$doctype/$docid/"
-			curl -X $method -H "Expect:" 127.0.0.1:1978/document/$doctype/$docid/ #&			
+			curl -sS -X $method -H "Expect:" 127.0.0.1:1978/document/$doctype/$docid/ -o test.log #&			
 		else
 			# echo "$(date) $method-ing $file with doctype: $doctype docid: $docid"
 			echo "curl -X $method -H \"Expect:\" -d \"filename=$file\" --data-urlencode \"text@$file\" 127.0.0.1:1978/document/$doctype/$docid/"
-			curl -X $method -H "Expect:" -d "filename=$file" --data-urlencode "text@$file" 127.0.0.1:1978/document/$doctype/$docid/ #&
+			curl -sS -X $method -H "Expect:" -d "filename=$file" --data-urlencode "text@$file" 127.0.0.1:1978/document/$doctype/$docid/ -o test.log #&
 		fi
 		docid=$(($docid+1))
 	    NPROC=$(($NPROC+1))
-	    # if [ "$NPROC" -ge 8 ]; then
+	    # if [ "$NPROC" -ge 4 ]; then
 	    #     wait
 	    #     NPROC=0
 	    # fi
@@ -43,7 +43,11 @@ function send_doc {
 # curl -X POST -H "Expect:" 127.0.0.1:1978/index/ 
 
 echo "Test POST-ing documents"
-send_doc POST 3  "../superfastmatch/fixtures/pan11-external/source-documents/*.txt"
+send_doc POST 1  "../superfastmatch/fixtures/pan11-external/source-documents/*.txt"
+
+# echo "Test POST-ing documents"
+# send_doc POST 2  "../superfastmatch/fixtures/pan11-external/suspicious-documents/*.txt"
+
 # 
 # echo "Test batch indexing"
 # curl -X POST -H "Expect:" 127.0.0.1:1978/index/

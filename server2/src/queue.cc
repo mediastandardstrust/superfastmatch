@@ -18,27 +18,28 @@ namespace superfastmatch{
 		CommandType batchType=Invalid;			
 		deque<Command*> batch;
 		deque<Command*> work;
-		deque<Document*> docs;
 		Index index(registry_);
 		while(CommandFactory::getNextBatch(registry_,batch,batchType)){
 			workDone=true;
 			switch (batchType){
 				case AddDocument:
-					cout << "Adding Document(s)" <<endl;
+					//This loop should be multithreaded!
 					while(!batch.empty()){
+						Document* doc = batch.front()->getDocument();
 						//Check if document exists and insert drop if it does
-						if (batch.front()->getDocument()->save()){
-							batch.front()->setActive();
+						if (doc->save()){
+							cout << "Added: " << *doc <<endl;
 							work.push_back(batch.front());
-							docs.push_back(batch.front()->getDocument());
 							batch.pop_front();	
+							registry_.postings->addDocument(doc);
 						}else{
-							cout << "Inserting drop for: " << *batch.front()->getDocument() << endl;
+							cout << "Inserting drop for: " << *doc << endl;
 							CommandFactory::insertDropDocument(registry_,batch.front());
+							delete doc;//Necessary?
 							break;
 						}
+						delete doc;//Necessary?
 					}
-					index.batch(docs,false);
 					for(deque<Command*>::iterator it=work.begin(),ite=work.end();it!=ite;++it){
 						(*it)->setFinished();
 					}
@@ -46,26 +47,24 @@ namespace superfastmatch{
 				case DropDocument:
 					cout << "Dropping Document(s)" <<endl;
 					while(!batch.empty()){
-						batch.front()->setActive();
 						work.push_back(batch.front());
-						docs.push_back(batch.front()->getDocument());
 						batch.pop_front();	
 					}
-					index.batch(docs,true);
+					index.batch(work);
 					for (deque<Command*>::iterator it=work.begin(),ite=work.end();it!=ite;++it){
-						if (not((*it)->getDocument()->remove())){
+						Document* doc = (*it)->getDocument();
+						if (not(doc->remove())){
 							(*it)->setFailed();
 						}else{
 							(*it)->setFinished();
 						}
+						delete doc;//Necessary?
 					}
 					break;
 				case AddAssociation:
 					cout << "Adding Association(s)" <<endl;
 					while(!batch.empty()){;
-						batch.front()->setActive();
 						work.push_back(batch.front());
-						docs.push_back(batch.front()->getDocument());
 						batch.pop_front();
 					}
 					//Do Add Association Here
@@ -76,9 +75,7 @@ namespace superfastmatch{
 				case DropAssociation:
 					cout << "Dropping Association(s)" <<endl;
 					while(!batch.empty()){
-						batch.front()->setActive();
 						work.push_back(batch.front());
-						docs.push_back(batch.front()->getDocument());
 						batch.pop_front();
 					}
 					//Do Drop Association
@@ -92,7 +89,6 @@ namespace superfastmatch{
 			}
 			FreeClear(batch);
 			FreeClear(work);
-			docs.clear();
 			
 			// cout << "Releasing Memory" << endl;
 			// MallocExtension::instance()->ReleaseFreeMemory();

@@ -3,31 +3,35 @@
 namespace superfastmatch{
 	const char* Command::key_format = "%d:%020d:%03d:%d:%010d:%010d";	
 	
-	Command::Command(const Registry& registry,string& key,string& payload):
-	registry_(registry),queue_id_(0),priority_(0),type_(Invalid),status_(Queued),doc_type_(0),doc_id_(0),payload_(payload),document_(0){
+	Command::Command(const Registry& registry,const string& key):
+	registry_(registry),queue_id_(0),priority_(0),type_(Invalid),status_(Queued),doc_type_(0),doc_id_(0){
 		if(sscanf(key.c_str(),key_format,&status_,&queue_id_,&priority_,&type_,&doc_type_,&doc_id_)!=6){
 			throw "Bad parse of Command key!";
 		}
 	}
 	
 	Command::Command(const Registry& registry,const uint64_t queue_id, const uint32_t priority,const CommandType type,const CommandStatus status, const uint32_t doc_type,const uint32_t doc_id,const string& payload):
-	registry_(registry),queue_id_(queue_id),priority_(priority),type_(type),status_(status),doc_type_(doc_type),doc_id_(doc_id),payload_(payload),document_(0){
-		save();
+	registry_(registry),queue_id_(queue_id),priority_(priority),type_(type),status_(status),doc_type_(doc_type),doc_id_(doc_id){
+		registry_.queueDB->set(command_key(),payload);
 	}
 	
-	Command::~Command(){
-		if (document_!=0){
-			delete document_;
-			document_=0;
-		}
-	}
+	Command::~Command(){}
 	
 	string Command::command_key(){
 		return kc::strprintf(key_format,status_,queue_id_,priority_,type_,doc_type_,doc_id_);
 	}
 	
-	bool Command::save(bool keep_payload){
-		return registry_.queueDB->set(command_key(),keep_payload?payload_:"");
+	//Note that this method destroys the payload
+	bool Command::update(){
+		return registry_.queueDB->set(command_key(),"");
+	}
+	
+	bool Command::remove(){
+		return registry_.queueDB->remove(command_key());
+	}
+	
+	bool Command::getPayload(string* payload){
+		return registry_.queueDB->get(command_key(),payload);
 	}
 	
 	CommandType Command::getType(){
@@ -50,29 +54,30 @@ namespace superfastmatch{
 		return queue_id_;
 	}
 
-	bool Command::setActive(){
-		return remove() && (status_=Active) && save();
-	}
-	
 	bool Command::setFinished(){
-		return remove() && (status_=Finished) && save(false);
+		if (not remove()){
+			return false;
+		}
+		status_=Finished;
+		return update();
 	}
 	
 	bool Command::setFailed(){
-		return remove() && (status_=Failed) && save();
-	}
-	
-	bool Command::remove(){
-		return registry_.queueDB->remove(command_key());
+		if (not remove()){
+			return false;
+		}
+		status_=Failed;
+		return update();
 	}
 	
 	Document* Command::getDocument(){
-		if (document_==0){
-			document_=new Document(doc_type_,doc_id_,payload_.c_str(),registry_);
-			// In case of drop document!
-			document_->load();
-		}
-		return document_;
+		string payload;
+		getPayload(&payload);
+		Document* doc = new Document(doc_type_,doc_id_,payload.c_str(),registry_);
+		// This may return false, ignore.
+		// Important for drop document case
+		doc->load();
+		return doc;
 	}
 	
 	std::ostream& operator<< (std::ostream& stream, Command& command) {
@@ -161,12 +166,11 @@ namespace superfastmatch{
 	}
 	
 	void CommandFactory::getAllCommands(const Registry& registry_,vector<Command*>& commands){
-		kc::PolyDB::Cursor* cur = registry_.queueDB->cursor();
+		kc::ForestDB::Cursor* cur = registry_.queueDB->cursor();
 		cur->jump();
 		string key;
-		string value;
-		while (cur->get(&key,&value,true)){
-			Command* command = new Command(registry_,key,value);
+		while (cur->get_key(&key,true)){
+			Command* command = new Command(registry_,key);
 			commands.push_back(command);
 		}
 		delete cur;
@@ -174,13 +178,12 @@ namespace superfastmatch{
 	
 	bool CommandFactory::getNextBatch(const Registry& registry_,deque<Command*>& batch,CommandType& batchType){
 		string key;
-		string value;
 		uint32_t batch_count=0;
-		kc::PolyDB::Cursor* cur = registry_.queueDB->cursor();
+		kc::ForestDB::Cursor* cur = registry_.queueDB->cursor();
 		cur->jump();
-		while (batch_count<registry_.max_batch_count && cur->get(&key,&value,true)){
+		while (batch_count<registry_.max_batch_count && cur->get_key(&key,true)){
 			batch_count++;
-			Command* command = new Command(registry_,key,value);
+			Command* command = new Command(registry_,key);
 			if (command->getStatus()!=Queued){
 				delete command;
 				command=0;
