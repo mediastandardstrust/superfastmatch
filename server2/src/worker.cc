@@ -12,12 +12,6 @@ namespace superfastmatch{
 		bool first_is_numeric;
 		bool second_is_numeric;
 		string cursor;
-	
-		bool isNumeric(string& input){
-			float f; 
-			istringstream s(input); 
-			return(s >> f);
-		}
 			
 		RESTRequest(  const HTTPClient::Method& method,
 					  const string& path,
@@ -62,11 +56,13 @@ namespace superfastmatch{
 	struct RESTResponse{
 		map<string, string>& resheads;
 		stringstream body;
+		TemplateDictionary dict;
+		string template_name;
 		int32_t code;
 		stringstream message;
 		
 		RESTResponse(map<string,string>& resheads):
-		resheads(resheads){}
+		resheads(resheads),dict("response"){}
 	};
 
 	void Worker::process_idle(HTTPServer* serv) {
@@ -75,7 +71,10 @@ namespace superfastmatch{
 	    
     void Worker::process_timer(HTTPServer* serv) {
 		Queue queue(registry_);
-		if (queue.process()){
+		if(!registry_.postings->isReady()){
+			registry_.postings->init();
+		}
+		else if (queue.process()){
 			serv->log(Logger::INFO,"Finished processing command queue");
 		};
     }
@@ -89,6 +88,7 @@ namespace superfastmatch{
                  		const map<string, string>& misc) 
 	{
 		double start = kyotocabinet::time();
+		registry_.templates->ReloadAllIfChanged(TemplateCache::LAZY_RELOAD);
 		RESTRequest req(method,path,reqheads,reqbody,misc);
 		RESTResponse res(resheads);
 		
@@ -104,21 +104,19 @@ namespace superfastmatch{
 		else if(req.resource=="echo"){
 			process_echo(req,res);
 		}
-		else if(req.resource=="sync"){
-			process_sync(req,res);
-		}
-		else if(req.resource=="defrag"){
-			process_defrag(req,res);
-		}
 		else if(req.resource=="heap"){
 			process_heap(req,res);
-		}
-		else if(req.resource=="init"){
-			process_init(req,res);
 		}
 		else{
 			process_status(req,res);
 		}
+		
+		TemplateDictionary* header_dict = res.dict.AddIncludeDictionary("HEADER");
+		header_dict->SetFilename(HEADER);
+		TemplateDictionary* footer_dict = res.dict.AddIncludeDictionary("FOOTER");
+		footer_dict->SetFilename(FOOTER);
+		// res.dict.Dump();
+		ExpandTemplate(res.template_name,DO_NOT_STRIP,&res.dict,&resbody);
 	
 		res.message << " Response Time: " << setiosflags(ios::fixed) << setprecision(4) << kyotocabinet::time()-start << " secs";
 		if (res.code==500 || res.code==404){
@@ -126,7 +124,7 @@ namespace superfastmatch{
 		}else{
 			serv->log(Logger::INFO,res.message.str().c_str());
 		}
-		resbody.append(res.body.str());
+		// resbody.append(res.body.str());
 		return res.code;
  	}
 
@@ -182,8 +180,13 @@ namespace superfastmatch{
 	}
 		
 	void Worker::process_index(const RESTRequest& req,RESTResponse& res){
-		Index index(registry_);
+		res.dict.SetTemplateGlobalValue("TITLE","Index");
 		switch(req.verb){
+			case HTTPClient::MGET:
+				registry_.postings->fill_list_dictionary(&res.dict,0);
+				res.template_name=INDEX_PAGE;
+				res.code=200;
+				break;
 			default:
 				res.message << "Unknown command";
 				res.code=500;
@@ -198,45 +201,6 @@ namespace superfastmatch{
 				queue.toString(res.body);
 				res.code=200;
 				break;
-		}
-	}
-	
-	void Worker::process_defrag(const RESTRequest& req,RESTResponse& res){
-		if (registry_.indexDB->defrag(0) && registry_.queueDB->defrag(0) && registry_.documentDB->defrag(0)){
-			res.code=200;
-			res.body << "Defragged!";
-		}else{
-			res.code=500;
-			res.body << "Error Defragging";
-		}
-		
-	}
-	
-	void Worker::process_sync(const RESTRequest& req,RESTResponse& res){
-		if (registry_.indexDB->synchronize() && registry_.queueDB->synchronize() && registry_.documentDB->synchronize()){
-			res.code=200;
-			res.body << "Synced!";
-		}else{
-			res.code=500;
-			res.body << "Error Syncing";
-		}
-		
-	}
-	
-	void Worker::process_init(const RESTRequest& req,RESTResponse& res){
-		char hash[sizeof(hash_t)];
-		char values[12];
-		hash_t hash_int;
-		uint32_t rand_int;
-		for (uint32_t i=0;i<((1L<<32)-1);i++){
-				hash_int= kc::hton32(i);
-			memcpy(hash,&hash_int,sizeof(hash_t));
-			uint32_t count=(rand()%3)+1;
-			for (uint32_t j=0;j<count;j++){
-				rand_int=rand();
-				memcpy(values+j,&rand_int,4);
-			}
-			registry_.indexDB->set(hash,sizeof(hash_t),values,count);
 		}
 	}
 	
@@ -256,20 +220,22 @@ namespace superfastmatch{
       	res.code=200;
 	}
 	
+	// (TODO) This is ugly!
 	void Worker::process_status(const RESTRequest& req,RESTResponse& res){
-      	res.body << "<html><head><script type=\"text/javascript\" src=\"http://www.google.com/jsapi\"></script>\
-		    <script type=\"text/javascript\">\
-		      google.load('visualization', '1', {packages: ['corechart']});\
-		    </script>\
-		</head><body><h1>Status</h1>";
-      	res.body << registry_;			
-      	res.body << "<h2>Memory:</h2><pre>";
+		size_t memory;
 		const int kBufferSize = 16 << 10;
-		char* buffer = new char[kBufferSize];			
+		char* buffer = new char[kBufferSize];
+		MallocExtension::instance()->GetNumericProperty("generic.current_allocated_bytes",&memory);
 		MallocExtension::instance()->GetStats(buffer,kBufferSize);
-		res.body << string(buffer) <<"</pre>";
+		res.dict.SetFormattedValue("MEMORY","%.4f",double(memory)/1024/1024/1024);
+		res.dict.SetValue("MEMORY_STATS",string(buffer));
+		registry_.fill_status_dictionary(&res.dict);
 		delete [] buffer;
-		res.body << "</body></html>";
+		TemplateDictionary* postings_dict=res.dict.AddIncludeDictionary("POSTING_STATS");
+		res.dict.SetTemplateGlobalValue("TITLE","Status");
+		postings_dict->SetFilename(POSTING_STATS);
+		registry_.postings->fill_histogram_dictionary(postings_dict);
+		res.template_name=STATUS_PAGE;
 		res.code=200;
 	}
 }

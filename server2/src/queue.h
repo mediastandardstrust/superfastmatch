@@ -8,7 +8,6 @@
 #include <registry.h>
 #include <document.h>
 #include <command.h>
-#include <index.h>
 
 namespace superfastmatch
 {		

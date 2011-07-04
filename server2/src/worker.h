@@ -2,18 +2,16 @@
 #define _SFMWORKER_H
 
 #include <map>
-#include <iomanip>
 #include <sstream>
+#include <cstdlib>
+#include <google/malloc_extension.h>
 #include <kthttp.h>
 #include <kcthread.h>
 #include <registry.h>
 #include <logger.h>
 #include <queue.h>
 #include <document.h>
-#include <index.h>
 #include <queue.h>
-#include <cstdlib>
-#include <google/malloc_extension.h>
 
 using namespace std;
 using namespace kyototycoon;
@@ -46,9 +44,6 @@ namespace superfastmatch{
 		void process_document(const RESTRequest&, RESTResponse&);
 		void process_index(const RESTRequest&, RESTResponse&);
 		void process_queue(const RESTRequest&, RESTResponse&);
-		void process_defrag(const RESTRequest&, RESTResponse&);
-		void process_sync(const RESTRequest&, RESTResponse&);
-		void process_init(const RESTRequest&, RESTResponse&);
 		void process_heap(const RESTRequest&, RESTResponse&);
 		void process_echo(const RESTRequest&, RESTResponse&);
 		void process_status(const RESTRequest&, RESTResponse&);

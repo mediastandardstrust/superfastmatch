@@ -9,7 +9,7 @@ SHELL = /bin/sh
 
 # Targets
 MYBINS = superfastmatch
-OBJS = src/superfastmatch.o src/worker.o src/queue.o src/posting.o src/document.o src/logger.o src/registry.o src/command.o src/index.o
+OBJS = src/superfastmatch.o src/worker.o src/queue.o src/posting.o src/document.o src/logger.o src/registry.o src/command.o
 EXTERNAL = leveldb
 
 # Building binaries
@@ -21,9 +21,9 @@ LDFLAGS = -Lexternal/leveldb -lkyototycoon -lkyotocabinet -lleveldb -lstdc++ -lz
 RUNENV = DYLD_FORCE_FLAT_NAMESPACE=1 DYLD_INSERT_LIBRARIES=/usr/local/lib/libtcmalloc.dylib TCMALLOC_SAMPLE_PARAMETER=524288
 PROFILEENV = DYLD_FORCE_FLAT_NAMESPACE=1 DYLD_INSERT_LIBRARIES=/usr/local/lib/libtcmalloc.dylib HEAPPROFILE=/tmp/superfastmatch.hprof 
 # Donny specific (change to match your environment) will eventually put in external folder
-# DEBUGENV = DYLD_FORCE_FLAT_NAMESPACE=1 DYLD_LIBRARY_PATH=/Volumes/1TB/src/google/google-perftools-1.7/.libs/ gdb 
-# 
-DEBUGENV = DYLD_FORCE_FLAT_NAMESPACE=1 DYLD_LIBRARY_PATH=/Volumes/1TB/src/google/google-perftools-1.7/.libs/ HEAPPROFILE=/tmp/superfastmatch.hprof HEAP_PROFILE_MMAP=true gdb
+DEBUGENV = DYLD_FORCE_FLAT_NAMESPACE=1 DYLD_LIBRARY_PATH=/Volumes/1TB/src/google/google-perftools-1.7/.libs/ gdb 
+# DEBUGENV = DYLD_FORCE_FLAT_NAMESPACE=1 DYLD_LIBRARY_PATH=/Volumes/1TB/src/google/google-perftools-1.7/.libs/ HEAPPROFILE=/tmp/superfastmatch.hprof HEAP_PROFILE_MMAP=true gdb
+
 #================================================================
 # Suffix rules
 #================================================================

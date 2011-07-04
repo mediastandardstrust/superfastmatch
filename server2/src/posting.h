@@ -6,7 +6,6 @@
 #include <map>
 #include <google/sparsetable>
 #include <google/sparse_hash_map>
-#include <ctemplate/template.h>  
 #include <kcthread.h>
 #include <common.h>
 
@@ -18,59 +17,115 @@ namespace superfastmatch
 	// Forward Declarations
 	class Document;
 	class Registry;
+	class Command;
+	class PostingSlot;
 	
-	// We choose a size of 32 so that all hash widths can be slotted 
-	// by either 2,4 or 8 threads without any locking
-	// Eg. hash_width=25 then max_hash_count=33554432
-	//     33554432/4/32=262144
-	// With the default size of 48 we get a fractional value of 174762.6666...
-	// which would mean that more than one thread could resize a sparsegroup
-	typedef sparsetable<hash_t,32> grouper_t;
 	typedef map<uint32_t,vector<uint32_t> > histogram_t;
+
+	class TaskPayload{
+	public:
+		enum TaskOperation{
+			AddDocument,
+			DeleteDocument
+		};
+	private:
+		Document* document_;
+		TaskOperation operation_;
+		kc::AtomicInt64 slots_left_;
+	public:
+		TaskPayload(Document* document,TaskOperation operation,uint32_t slots);
+		~TaskPayload();
+		
+		uint64_t markSlotFinished();
+		TaskOperation getTaskOperation();
+		Document* getDocument();
+	};
+
+	class PostingTaskQueue : public kc::TaskQueue{
+	public:
+		explicit PostingTaskQueue();
+	private:
+		void do_task(Task* task);
+	};
+
+	class PostingTask : public kc::TaskQueue::Task{
+	private:
+		PostingSlot* slot_;
+		TaskPayload* payload_;
+	public:
+		explicit PostingTask(PostingSlot* slot,TaskPayload* payload);
+		~PostingTask();
+		
+		PostingSlot* getSlot();
+		TaskPayload* getPayload();
+	};
+
+	class PostingSlot{
+	private:
+		class PostLine{
+		private:
+			static const uint16_t DEFAULT_BUCKET_LENGTH = 16;
+			char* bucket_;
+		public:
+			PostLine();
+			~PostLine();
+			
+			uint32_t decode(vector<uint32_t>& line);
+			uint32_t encode(const vector<uint32_t>& line,char* out);
+			void commit(const char* out,const uint32_t length, const bool allocate);
+		};
+		
+		const Registry& registry_;
+		const uint32_t slot_number_;
+		hash_t offset_;
+		hash_t span_;
+		sparsetable<PostLine,48> index_;
+		vector<uint32_t> line_;
+		char* out_;
+		histogram_t doc_counts_;
+		histogram_t gap_counts_;
+		kc::RWLock index_lock_;
+		kc::RWLock doc_counts_lock_;
+		kc::RWLock gap_counts_lock_;
+		PostingTaskQueue queue_;
+		
+	public:
+		PostingSlot(const Registry& registry,uint32_t slot_number);
+		~PostingSlot();
+		
+		// Returns number of items in queue
+		bool alterIndex(Document* doc,TaskPayload::TaskOperation operation);
+		void mergeHistogram(histogram_t& histogram);
+		uint32_t fill_list_dictionary(TemplateDictionary* dict,hash_t start);
+		uint64_t addTask(TaskPayload* payload);
+		uint32_t getTaskCount();
+	};
 
 	class Posting{
 	private:		
 		const Registry& registry_;
+		vector<PostingSlot*> slots_;
 		uint32_t doc_count_;
 		uint32_t hash_count_;
-		vector<hash_t> slots_;
-		grouper_t grouper_;
-		histogram_t histogram_;
-		kc::Mutex hist_lock_;
-
-		//Cursor per thread instead?
-
-		// class PostingQueue : public kc::TaskQueue {
-		// 	   	public:
-		// 	    	class PostingTask : public Task {
-		// 	      		friend class PostingQueue;
-		// 	     	public:
-		// 	      		explicit PostingTask(Document* doc,AtomicInt64* state):
-		// 	          	doc_(doc){}
-		// 	     	private:
-		// 		Document* doc_;
-		// 		AtomicInt64* state_;
-		// 	    	};
-		// 	    explicit PostingQueue(uint32_t slot):
-		// slot_(slot){}
-		// 	   	private:
-		// 	uint32_t slot_;
-		// 	    	void do_task(Task* task) {
-		// 	      		PostingTask* ptask = (PostingTask*)task;
-		// 		addDocument(ptask.doc_,slot_);
-		// 		ptask.state_++;
-		// 	      		delete ptask;
-		// 	    	}
-		// };
+		bool ready_;
+		
+		// Folling three methods return the current queue length for all slots combined		
+		uint64_t alterIndex(Document* doc,TaskPayload::TaskOperation operation);
+		uint64_t addDocument(Document* doc);
+		uint64_t deleteDocument(Document* doc);
 		
 	public:
 		Posting(const Registry& registry);
 		~Posting();
 		
-		bool addDocument(Document* doc,uint32_t slot=0);
-		bool deleteDocument(Document* doc);
+		bool init();
+		// void compareDocument(Document* doc,unordered_map<uint32_t,<unordered_map<uint32_t,uint32_t> >* results);
+		bool addDocuments(vector<Command*> commands);
+		bool deleteDocuments(vector<Command*> commands);
+		bool isReady();
 		
-		friend std::ostream& operator<< (std::ostream& stream, Posting& posting);
+		void fill_list_dictionary(TemplateDictionary* dict,hash_t start);
+		void fill_histogram_dictionary(TemplateDictionary* dict);		
 	};
 }
 

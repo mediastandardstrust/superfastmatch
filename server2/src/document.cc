@@ -27,7 +27,8 @@ namespace superfastmatch
 	Document* DocumentCursor::getNext(){
 		string key;
 		if (cursor_->get_key(&key,true)){
-			return new Document(key,registry_);
+			Document* doc = new Document(key,registry_);
+			return doc;
 		};
 		return NULL;
 	};
@@ -45,8 +46,10 @@ namespace superfastmatch
 	doctype_(doctype),docid_(docid),registry_(registry),key_(0),content_(0),content_map_(0),hashes_(0),unique_sorted_hashes_(0),bloom_(0)
 	{
 		char key[8];
-		kc::writefixnum(key,kc::hton32(doctype_),4);
-		kc::writefixnum(key+4,kc::hton32(docid_),4);
+		uint32_t dt=kc::hton32(doctype_);
+		uint32_t di=kc::hton32(docid_);
+		memcpy(key,&dt,4);
+		memcpy(key+4,&di,4);
 		key_ = new string(key,8);
 		content_ = new std::string(content);
 	}
@@ -55,8 +58,10 @@ namespace superfastmatch
 	registry_(registry),key_(0),content_(0),content_map_(0),hashes_(0),unique_sorted_hashes_(0),bloom_(0)
 	{
 		key_= new string(key);
-		doctype_ = kc::ntoh32(kc::readfixnum(key.substr(0,4).data(),4));
-		docid_ = kc::ntoh32(kc::readfixnum(key.substr(4,4).data(),4));
+		memcpy(&doctype_,key.data(),4);
+		memcpy(&docid_,key.data()+4,4);
+		doctype_=kc::ntoh32(doctype_);
+		docid_=kc::ntoh32(docid_);
 		content_ = new string();
 		load();
 	}

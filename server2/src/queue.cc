@@ -17,30 +17,27 @@ namespace superfastmatch{
 		bool workDone=false;
 		CommandType batchType=Invalid;			
 		deque<Command*> batch;
-		deque<Command*> work;
-		Index index(registry_);
+		vector<Command*> work;
 		while(CommandFactory::getNextBatch(registry_,batch,batchType)){
 			workDone=true;
 			switch (batchType){
 				case AddDocument:
-					//This loop should be multithreaded!
 					while(!batch.empty()){
 						Document* doc = batch.front()->getDocument();
 						//Check if document exists and insert drop if it does
 						if (doc->save()){
-							cout << "Added: " << *doc <<endl;
+							cout << "Saved: " << *doc <<endl;
 							work.push_back(batch.front());
 							batch.pop_front();	
-							registry_.postings->addDocument(doc);
 						}else{
 							cout << "Inserting drop for: " << *doc << endl;
 							CommandFactory::insertDropDocument(registry_,batch.front());
-							delete doc;//Necessary?
 							break;
 						}
-						delete doc;//Necessary?
+						delete doc;
 					}
-					for(deque<Command*>::iterator it=work.begin(),ite=work.end();it!=ite;++it){
+					registry_.postings->addDocuments(work);
+					for(vector<Command*>::iterator it=work.begin(),ite=work.end();it!=ite;++it){
 						(*it)->setFinished();
 					}
 					break;	
@@ -50,15 +47,15 @@ namespace superfastmatch{
 						work.push_back(batch.front());
 						batch.pop_front();	
 					}
-					index.batch(work);
-					for (deque<Command*>::iterator it=work.begin(),ite=work.end();it!=ite;++it){
+					registry_.postings->deleteDocuments(work);
+					for (vector<Command*>::iterator it=work.begin(),ite=work.end();it!=ite;++it){
 						Document* doc = (*it)->getDocument();
 						if (not(doc->remove())){
 							(*it)->setFailed();
 						}else{
 							(*it)->setFinished();
 						}
-						delete doc;//Necessary?
+						delete doc;
 					}
 					break;
 				case AddAssociation:
@@ -68,7 +65,7 @@ namespace superfastmatch{
 						batch.pop_front();
 					}
 					//Do Add Association Here
-					for(deque<Command*>::iterator it=work.begin(),ite=work.end();it!=ite;++it){
+					for(vector<Command*>::iterator it=work.begin(),ite=work.end();it!=ite;++it){
 						(*it)->setFinished();
 					}
 					break;
@@ -79,7 +76,7 @@ namespace superfastmatch{
 						batch.pop_front();
 					}
 					//Do Drop Association
-					for(deque<Command*>::iterator it=work.begin(),ite=work.end();it!=ite;++it){
+					for(vector<Command*>::iterator it=work.begin(),ite=work.end();it!=ite;++it){
 						(*it)->setFinished();
 					}
 					break;

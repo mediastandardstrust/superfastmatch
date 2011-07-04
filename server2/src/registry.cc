@@ -7,12 +7,14 @@ namespace superfastmatch{
 		window_size=15;
 		hash_width=24;
 		slot_count=4;
+		page_size=500;
 		hash_mask=(1L<<hash_width)-1;
 		max_hash_count=(1L<<hash_width);
 		max_line_length=1<<16;
 		max_batch_count=20000;
 		timeout=1.0;
-		comp_ = new kc::LZOCompressor<kc::LZO::RAW>;
+		comp_ = new kc::ZLIBCompressor<kc::ZLIB::RAW>;
+		// comp_ = new kc::LZOCompressor<kc::LZO::RAW>;
 		queueDB = new kc::ForestDB();
 		// queueDB->tune_map(1LL<< 28);
 		// queueDB->tune_page(524288);
@@ -37,30 +39,21 @@ namespace superfastmatch{
 		hashesDB->tune_page(524288);
 		hashesDB->tune_compressor(comp_);
 		hashesDB->open("hashes.kcf");
-		indexDB = new kc::ForestDB();
-		indexDB->tune_options(kc::ForestDB::TLINEAR|kc::ForestDB::TCOMPRESS);
-		// indexDB->tune_buckets(4L*1000*1000);
-		// indexDB->tune_map(1LL<< 30);
-		// indexDB->tune_fbp(16);
-		// indexDB->tune_page(32768);
-		// indexDB->tune_defrag(64);
-		// indexDB->tune_page_cache(1LL<< 28);
-		indexDB->open("index.kcf");
 		associationDB = new kc::PolyDB();
 		associationDB->open("association.kct#bnum=100000");
 		miscDB = new kc::PolyDB();
 		miscDB->open("misc.kch");
 		postings = new Posting(*this);
+		templates = mutable_default_template_cache();
+		templates->SetTemplateRootDirectory("templates");
 	}
 	Registry::~Registry(){
+		queueDB->close();
 		documentDB->close();
-		indexDB->close();
 		hashesDB->close();
 		associationDB->close();
-		queueDB->close();
 		miscDB->close();
 		delete documentDB;
-		delete indexDB;
 		delete hashesDB;
 		delete associationDB;
 		delete queueDB;
@@ -69,18 +62,20 @@ namespace superfastmatch{
 		delete comp_;
 	}
 	
-	std::ostream& operator<< (std::ostream& stream, Registry& registry) {
-		stream << "<h2>Index:</h2>" << *registry.postings;
-		stream << "<h2>Queue DB:</h2><pre>";
-		registry.status(stream,registry.queueDB);
-		stream << "</pre><h2>Document DB:</h2><pre>";
-		registry.status(stream,registry.documentDB);
-		stream << "</pre><h2>Hashes DB:</h2><pre>";
-		registry.status(stream,registry.hashesDB);
-		stream << "</pre><h2>Index DB:</h2><pre>";
-		registry.status(stream,registry.indexDB);
-		stream << "</pre>";
-		return stream;
+	void Registry::fill_db_dictionary(TemplateDictionary* dict, kc::ForestDB* db, const string name){
+		stringstream s;
+		status(s,db);
+		TemplateDictionary* db_dict = dict->AddSectionDictionary("DB");
+		db_dict->SetValue("NAME",name);
+		db_dict->SetValue("STATS",s.str());				
+	}
+	
+	void Registry::fill_status_dictionary(TemplateDictionary* dict){
+		fill_db_dictionary(dict,queueDB,"Queue DB");
+		fill_db_dictionary(dict,documentDB,"Document DB");
+		fill_db_dictionary(dict,hashesDB,"Hashes DB");
+		// fill_db_dictionary(dict,associationDB,"Association DB");
+		// fill_db_dictionary(dict,miscDB,"Misc DB");
 	}
 	
 	void Registry::status(std::ostream& s, kc::ForestDB* db){

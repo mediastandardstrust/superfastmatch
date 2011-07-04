@@ -10,9 +10,11 @@ typedef unsigned __int64 uint64_t;
 #endif
 
 #include <iostream>
+#include <iomanip>
 #include <string>
 #include <kcutil.h>
 #include <ktutil.h>
+#include <templates.h>
 
 using namespace std;
 namespace superfastmatch{
@@ -110,6 +112,18 @@ namespace superfastmatch{
 			}
 	    }
 	    cntr.clear();
+	}
+	
+	inline bool isNumeric(string& input){
+		float f; 
+		istringstream s(input); 
+		return(s >> f);
+	}
+	
+	inline string toString(uint64_t number){ 
+		stringstream s;
+		s << number;
+		return s.str();
 	}
 }
 

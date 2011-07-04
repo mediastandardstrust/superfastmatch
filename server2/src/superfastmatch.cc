@@ -1,5 +1,4 @@
 #include <kthttp.h>
-#include <common.h>
 #include <logger.h>
 #include <worker.h>
 #include <registry.h>
