@@ -3,6 +3,7 @@
 
 #include <cassert>
 #include <deque>
+#include <algorithm>
 #include <map>
 #include <google/sparsetable>
 #include <google/sparse_hash_map>
@@ -21,6 +22,8 @@ namespace superfastmatch
 	class PostingSlot;
 	
 	typedef map<uint32_t,vector<uint32_t> > histogram_t;
+	typedef map<uint32_t,vector<uint32_t> > search_line_t;
+	typedef map<hash_t,search_line_t> search_t;
 
 	class TaskPayload{
 	public:
@@ -61,27 +64,31 @@ namespace superfastmatch
 	};
 
 	class PostingSlot{
-	private:
+	public:
 		class PostLine{
 		private:
-			static const uint16_t DEFAULT_BUCKET_LENGTH = 16;
+			static const size_t DEFAULT_BUCKET_LENGTH = 16;
 			char* bucket_;
 		public:
-			PostLine();
-			~PostLine();
+			PostLine(const size_t size=DEFAULT_BUCKET_LENGTH);
+			// PostLine(const PostLine& copy);
+			// PostLine & operator=(const PostLine & other);
+
+			// ~PostLine();
 			
-			uint32_t decode(vector<uint32_t>& line);
-			uint32_t encode(const vector<uint32_t>& line,char* out);
-			void commit(const char* out,const uint32_t length, const bool allocate);
+			void clear();
+			void commit(const char* out,const uint32_t length)const;
+			uint32_t decode(vector<uint32_t>& line) const;
+			uint32_t encode(const vector<uint32_t>& line,char* out)const;
 		};
-		
+	private:
 		const Registry& registry_;
 		const uint32_t slot_number_;
-		hash_t offset_;
-		hash_t span_;
+		const hash_t offset_;
+		const hash_t span_;
+		char* out_;
 		sparsetable<PostLine,48> index_;
 		vector<uint32_t> line_;
-		char* out_;
 		histogram_t doc_counts_;
 		histogram_t gap_counts_;
 		kc::RWLock index_lock_;
@@ -89,12 +96,15 @@ namespace superfastmatch
 		kc::RWLock gap_counts_lock_;
 		PostingTaskQueue queue_;
 		
+		void debug(const char* prefix, hash_t hash);
+		
 	public:
 		PostingSlot(const Registry& registry,uint32_t slot_number);
 		~PostingSlot();
 		
 		// Returns number of items in queue
 		bool alterIndex(Document* doc,TaskPayload::TaskOperation operation);
+		bool searchIndex(const vector<hash_t>& hashes,search_t& search);
 		void mergeHistogram(histogram_t& histogram);
 		uint32_t fill_list_dictionary(TemplateDictionary* dict,hash_t start);
 		uint64_t addTask(TaskPayload* payload);

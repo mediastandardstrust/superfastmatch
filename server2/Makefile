@@ -66,7 +66,8 @@ profile : all
 	$(PROFILEENV) ./superfastmatch
 
 debug : CXXFLAGS += -O0 
-debug : clean all
+debug : all
+	rm -rf *.kct *.kch *.kcf
 	$(DEBUGENV) superfastmatch
 
 # pull in dependency info for *existing* .o files

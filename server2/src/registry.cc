@@ -2,12 +2,20 @@
 
 namespace superfastmatch{
 	Registry::Registry(const string& filename){
-		//Todo load config from file
+		logger = new Logger();
+		logger->open("-");
+		// TODO load config from file
+		// Number of threads for serving incoming web requests
 		thread_count=8;
+		// Size of rolling window of text that is hashed
 		window_size=15;
-		hash_width=24;
+		// Number of bits of hash that are used
+		hash_width=28;
+		// Number of slots the hash width is divided into. One thread per slot
 		slot_count=4;
+		// Number of hashes returned on the index page
 		page_size=500;
+		
 		hash_mask=(1L<<hash_width)-1;
 		max_hash_count=(1L<<hash_width);
 		max_line_length=1<<16;
@@ -60,6 +68,8 @@ namespace superfastmatch{
 		delete miscDB;
 		delete postings;
 		delete comp_;
+		logger->close();
+		delete logger;
 	}
 	
 	void Registry::fill_db_dictionary(TemplateDictionary* dict, kc::ForestDB* db, const string name){

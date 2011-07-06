@@ -6,6 +6,7 @@
 #include <kcplantdb.h>
 #include <kccompress.h>
 #include <posting.h>
+#include <logger.h>
 
 using namespace std;
 using namespace kyototycoon;
@@ -32,6 +33,7 @@ namespace superfastmatch{
 		kc::PolyDB* associationDB;
 		kc::PolyDB* miscDB;
 		TemplateCache* templates;
+		Logger* logger;
 		// TODO rename to index 
 		Posting* postings;
 		
