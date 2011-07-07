@@ -27,7 +27,7 @@ int main(int argc, char** argv) {
 
 	// prepare the server
 	HTTPServer serv;
-	serv.set_network("127.0.0.1:1978", registry.timeout);
+	serv.set_network("192.168.0.3:1978", registry.timeout);
 	serv.set_worker(&worker, registry.thread_count);
 
 	// set up the logger

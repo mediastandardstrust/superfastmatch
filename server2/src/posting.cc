@@ -210,6 +210,8 @@ namespace superfastmatch
 		index_lock_.lock_writer();
 		for (Document::hashes_vector::const_iterator it=doc->unique_sorted_hashes().begin(),ite=doc->unique_sorted_hashes().end();it!=ite;++it){
 			hash = ((*it>>registry_.hash_width)^(*it&registry_.hash_mask))-offset_;
+			uint32_t doctype=doc->doctype();
+			uint32_t docid=doc->docid();
 			if (hash<span_){
 				bool noop=false;
 				if (!index_.test(hash)){
@@ -224,15 +226,15 @@ namespace superfastmatch
 					case TaskPayload::AddDocument:
 						while (true){
 							// Insert before
-							if ((*line_iterator>doc->doctype()) || (line_iterator==line_.end())){
-								line_iterator=line_.insert(line_iterator,doc->docid());
+							if ((*line_iterator>doctype) || (line_iterator==line_.end())){
+								line_iterator=line_.insert(line_iterator,docid);
 								line_iterator=line_.insert(line_iterator,1);
-								line_iterator=line_.insert(line_iterator,doc->doctype());
+								line_iterator=line_.insert(line_iterator,doctype);
 								doc_count=1;
 								break;
 							}
 							// Merge
-							else if (*line_iterator==doc->doctype()){
+							else if (*line_iterator==doctype){
 								// Move to doc type length
 								line_iterator++;
 								// And record the new doc count position
@@ -242,22 +244,24 @@ namespace superfastmatch
 								while(true){
 									line_iterator++;
 					 				if (line_iterator==line_.end()){
-										line_.push_back(doc->docid());	
+										line_.push_back(docid);	
 										*doc_count_marker+=1;
 										doc_count=*doc_count_marker;
 										break;
 									}else if(line_iterator==merge_end){
-										line_.insert(merge_end,doc->docid());	
+										line_.insert(merge_end,docid);	
 										*doc_count_marker+=1;
 										doc_count=*doc_count_marker;
 										break;
-									}else if ((*line_iterator>doc->docid())){
-										line_.insert(line_iterator,doc->docid());
+									}else if ((*line_iterator>docid)){
+										line_.insert(line_iterator,docid);
 										*doc_count_marker+=1;
 										doc_count=*doc_count_marker;
 										break;
-									}else if (*line_iterator==doc->docid()){ 	// Check for dupes
+									}else if (*line_iterator==docid){ 	// Check for dupes
 										noop=true;
+										// to prevent compiler warning
+										doc_count=0;
 										break;
 									};
 									
@@ -271,13 +275,13 @@ namespace superfastmatch
 							}
 						}
 						if (!noop){
-							doc_counts_[doc->doctype()][doc_count-1]--;
-							doc_counts_[doc->doctype()][doc_count]++;	
+							doc_counts_[doctype][doc_count-1]--;
+							doc_counts_[doctype][doc_count]++;	
 						}
 						break;
 					case TaskPayload::DeleteDocument:
-						doc_counts_[doc->doctype()][doc_count]--;
-						doc_counts_[doc->doctype()][doc_count-1]++;
+						doc_counts_[doctype][doc_count]--;
+						doc_counts_[doctype][doc_count-1]++;
 						break;
 				}
 				// debug("After: ",hash);
@@ -300,25 +304,23 @@ namespace superfastmatch
 		return true;
 	}
 	
-	bool PostingSlot::searchIndex(const vector<hash_t>& hashes,search_t& results){
+	bool PostingSlot::searchIndex(const vector<hash_t>& hashes,search_t& results,usage_t& usage){
 		vector<uint32_t> line;
 		vector<uint32_t>::const_iterator line_cursor;
 		vector<uint32_t>::const_iterator doc_it;
 		vector<uint32_t>::const_iterator doc_ite;
 		uint32_t doc_type;
-		hash_t hash;
 		index_lock_.lock_reader();
 		for (vector<hash_t>::const_iterator it=hashes.begin(),ite=hashes.end();it!=ite;++it){
-			hash = ((*it>>registry_.hash_width)^(*it&registry_.hash_mask))-offset_;
-			if ((hash<span_)&&index_.test(*it)){
+			if (index_.test(*it)){
 				PostLine post_line=index_.unsafe_get(*it);	
-				post_line.decode(line);
+				usage[*it+offset_]=post_line.decode(line);
 				line_cursor=line.begin();
 				while(line_cursor!=line.end()){
 					doc_type=*line_cursor;
 					doc_it=line_cursor+2;
 					doc_ite=doc_it+*(line_cursor+1);
-					std::copy(doc_it,doc_ite,back_inserter(results[hash][doc_type]));
+					std::copy(doc_it,doc_ite,back_inserter(results[*it+offset_][doc_type]));
 					line_cursor=doc_ite;
 				}
 			}
@@ -353,13 +355,15 @@ namespace superfastmatch
 			}
 			index_lock_.unlock();
 			search_t results;
-			searchIndex(existing,results);
+			usage_t usage;
+			searchIndex(existing,results,usage);
 			for (search_t::iterator it=results.begin(),ite=results.end();it!=ite;++it){
 				for (search_line_t::iterator it2=it->second.begin(),ite2=it->second.end();it2!=ite2;++it2){
 					TemplateDictionary* posting_dict = dict->AddSectionDictionary("POSTING");
 					if (it2==it->second.begin()){
 						TemplateDictionary* hash_dict = posting_dict->AddSectionDictionary("HASH");				
 						hash_dict->SetIntValue("HASH",it->first);
+						hash_dict->SetIntValue("BYTES",usage[it->first]);
 						hash_dict->SetIntValue("DOC_TYPE_COUNT",it->second.size());
 					}
 					uint32_t previous=0;
@@ -500,6 +504,17 @@ namespace superfastmatch
 				break;
 			}
 		}
+		TemplateDictionary* page_dict=dict->AddIncludeDictionary("PAGING");
+		page_dict->SetFilename(PAGING);
+		page_dict->SetValueAndShowSection("PAGE",toString(0),"FIRST");
+		if (start>registry_.page_size){
+			page_dict->SetValueAndShowSection("PAGE",toString(start-registry_.page_size),"PREVIOUS");	
+		}
+		else{
+			page_dict->SetValueAndShowSection("PAGE",toString(0),"PREVIOUS");	
+		}
+		page_dict->SetValueAndShowSection("PAGE",toString(min(registry_.max_hash_count-registry_.page_size,start+registry_.page_size)),"NEXT");
+		page_dict->SetValueAndShowSection("PAGE",toString(registry_.max_hash_count-registry_.page_size),"LAST");
 	}
 
 	void Posting::fill_histogram_dictionary(TemplateDictionary* dict){

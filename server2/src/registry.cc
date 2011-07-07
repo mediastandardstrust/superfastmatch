@@ -10,11 +10,11 @@ namespace superfastmatch{
 		// Size of rolling window of text that is hashed
 		window_size=15;
 		// Number of bits of hash that are used
-		hash_width=28;
+		hash_width=24;
 		// Number of slots the hash width is divided into. One thread per slot
 		slot_count=4;
-		// Number of hashes returned on the index page
-		page_size=500;
+		// Number of lines returned on the association,document and index pages
+		page_size=100;
 		
 		hash_mask=(1L<<hash_width)-1;
 		max_hash_count=(1L<<hash_width);

@@ -1,14 +1,19 @@
+<!DOCTYPE html> 
 <html>
 	<head>
+	    <meta charset='utf-8'> 
 		<script type="text/javascript" src="http://www.google.com/jsapi"></script>
 		<title>Superfastmatch | {{TITLE}}</title>
 		<style type="text/css">
+		table.wide
+		{
+			width:100%;
+		}
+		
 		table
 		{
 			font-family: "Lucida Sans Unicode", "Lucida Grande", Sans-Serif;
 			font-size: 12px;
-			margin: 45px;
-/*			width: 480px;*/
 			text-align: left;
 			border-collapse: collapse;
 		}
@@ -35,6 +40,21 @@
 			background: #d0dafd;
 			color: #339;
 		}
+		
+		ul.navigation li{
+			display: inline;
+			list-style-type: none;
+		} 
+		
 		</style>
 	</head>
 	<body>
+		<ul class="navigation">
+			<li><a href="/">Search</a></li>
+			<li><a href="/document/">Documents</a></li>
+			<li><a href="/association/">Associations</a></li>
+			<li><a href="/index/">Index</a></li>
+			<li><a href="/queue/">Queue</a></li>
+			<li><a href="/help/">Help</a></li>
+			<li><a href="/status/">Status</a></li>
+		</ul>

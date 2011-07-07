@@ -24,6 +24,7 @@ namespace superfastmatch
 	typedef map<uint32_t,vector<uint32_t> > histogram_t;
 	typedef map<uint32_t,vector<uint32_t> > search_line_t;
 	typedef map<hash_t,search_line_t> search_t;
+	typedef map<hash_t,uint32_t> usage_t;
 
 	class TaskPayload{
 	public:
@@ -104,7 +105,7 @@ namespace superfastmatch
 		
 		// Returns number of items in queue
 		bool alterIndex(Document* doc,TaskPayload::TaskOperation operation);
-		bool searchIndex(const vector<hash_t>& hashes,search_t& search);
+		bool searchIndex(const vector<hash_t>& hashes,search_t& search,usage_t& usage);
 		void mergeHistogram(histogram_t& histogram);
 		uint32_t fill_list_dictionary(TemplateDictionary* dict,hash_t start);
 		uint64_t addTask(TaskPayload* payload);

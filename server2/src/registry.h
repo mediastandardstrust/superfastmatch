@@ -22,7 +22,7 @@ namespace superfastmatch{
 		uint32_t hash_mask;
 		uint32_t thread_count;
 		uint32_t slot_count; // Must be either 2,4,8,16,etc.
-		uint32_t page_size;
+		uint64_t page_size;
 		uint32_t max_line_length; //Needs to be aware of max stack size for platform
 		uint64_t max_hash_count;
 		uint32_t max_batch_count;

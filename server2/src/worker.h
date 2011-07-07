@@ -41,12 +41,14 @@ namespace superfastmatch{
 							const map<string, string>& misc);
 	
 	private:							
+		void process_search(const RESTRequest&, RESTResponse&);
 		void process_document(const RESTRequest&, RESTResponse&);
 		void process_index(const RESTRequest&, RESTResponse&);
 		void process_queue(const RESTRequest&, RESTResponse&);
+		void process_help(const RESTRequest&, RESTResponse&);
+		void process_status(const RESTRequest&, RESTResponse&);
 		void process_heap(const RESTRequest&, RESTResponse&);
 		void process_echo(const RESTRequest&, RESTResponse&);
-		void process_status(const RESTRequest&, RESTResponse&);
 	};
 }
 

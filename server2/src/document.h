@@ -26,6 +26,8 @@ namespace superfastmatch
 		Document* getNext();
 		Document* getPrevious();	
 		uint32_t getCount();
+		
+		void fill_list_dictionary(TemplateDictionary* dict,uint32_t doctype,uint32_t docid);
 	};
 	
 	class Document
@@ -57,19 +59,21 @@ namespace superfastmatch
 		bool load();
 		bool save();
 		bool remove();
-		void serialize(stringstream& s);
-
+		
 		hashes_vector& hashes();
 		hashes_vector& unique_sorted_hashes();
 		hashes_bloom& bloom();
 		content_map& content();
 		string& text();
 		string& key();
+		string& title();
 		uint64_t index_key();
 		uint32_t windowsize();
 		uint32_t doctype();				
 		uint32_t docid();
-			
+		
+		void fill_document_dictionary(TemplateDictionary* dict);
+		
 		friend std::ostream& operator<< (std::ostream& stream, Document& document);
 		
 		friend bool operator< (Document& lhs,Document& rhs);

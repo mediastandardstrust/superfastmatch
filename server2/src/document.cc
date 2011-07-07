@@ -41,6 +41,55 @@ namespace superfastmatch
 		return registry_.documentDB->count();		
 	};
 	
+	// TODO Inline everything! OR load docs for each cursor!
+	void DocumentCursor::fill_list_dictionary(TemplateDictionary* dict,uint32_t doctype,uint32_t doc_id){
+		if (getCount()==0){
+			return;
+		}
+		TemplateDictionary* page_dict=dict->AddIncludeDictionary("PAGING");
+		page_dict->SetFilename(PAGING);
+		uint32_t count=0;
+		Document* doc;
+		char* key=new char[8];
+		size_t key_length;
+		uint32_t di;
+		if (doctype!=0){
+			uint32_t dt=kc::hton32(doctype);
+			memcpy(key,&dt,4);
+			cursor_->jump(key,4);
+		}
+		delete[] key;
+		key=cursor_->get_key(&key_length,false);
+		memcpy(&di,key+4,4);
+		di=kc::ntoh32(di);
+		page_dict->SetValueAndShowSection("PAGE",toString(di),"FIRST");
+		delete[] key;
+		while (((doc=getNext())!=NULL)&&count<registry_.page_size){
+			if ((doctype!=0) && (doctype!=doc->doctype())){
+				break;
+			}
+			TemplateDictionary* doc_dict = dict->AddSectionDictionary("DOCUMENT");
+			doc_dict->SetIntValue("DOC_TYPE",doc->doctype());
+			doc_dict->SetIntValue("DOC_ID",doc->docid());
+			doc_dict->SetValue("DOC_TITLE",doc->title());
+			count++;
+		}
+		if (cursor_->step()){
+			key=cursor_->get_key(&key_length,false);
+			memcpy(&di,key+4,4);
+			di=kc::ntoh32(di);
+			page_dict->SetValueAndShowSection("PAGE",toString(di),"NEXT");
+			delete[] key;	
+		}
+		if ((doctype==0)&&(cursor_->jump_back())){
+			key=cursor_->get_key(&key_length,false);
+			memcpy(&di,key+4,4);
+			di=kc::ntoh32(di);
+			page_dict->SetValueAndShowSection("PAGE",toString(di),"LAST");
+			delete[] key;	
+		}
+	}
+	
 	
 	Document::Document(const uint32_t doctype,const uint32_t docid,const char* content,const Registry& registry):
 	doctype_(doctype),docid_(docid),registry_(registry),key_(0),content_(0),content_map_(0),hashes_(0),unique_sorted_hashes_(0),bloom_(0)
@@ -140,15 +189,6 @@ namespace superfastmatch
 		return registry_.documentDB->remove(*key_) && registry_.hashesDB->remove(*key_);
 	}
 	
-	void Document::serialize(stringstream& s){
-		for (content_map::iterator it=content().begin();it!=content().end();it++){
-			if (it->first!="text"){
-				s << it->first << " : " << it->second << endl;	
-			}
-		}
-		s << text();
-	}
-	
 	Document::hashes_vector& Document::hashes(){
 		if (hashes_==0){
 			hashes_ = new hashes_vector();
@@ -201,6 +241,10 @@ namespace superfastmatch
 		return content()["text"];
 	}
 	
+	string& Document::title(){
+		return content()["title"];	
+	}
+	
 	string& Document::key(){
 		return *key_;
 	}
@@ -226,6 +270,18 @@ namespace superfastmatch
 		stream << "Document(" << document.doctype() << "," << document.docid() << ")";
 		return stream;
 	}
+	
+	void Document::fill_document_dictionary(TemplateDictionary* dict){
+		for (content_map::iterator it=content().begin();it!=content().end();it++){
+			if (it->first!="text"){
+				TemplateDictionary* meta_dict=dict->AddSectionDictionary("META");
+				meta_dict->SetValue("KEY",it->first);
+				meta_dict->SetValue("VALUE",it->second);
+			}
+		}
+		dict->SetValue("TEXT",text());
+	}
+	
 	
 	bool operator< (Document& lhs,Document& rhs){
 		if (lhs.doctype() == rhs.doctype()){

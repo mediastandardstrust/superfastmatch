@@ -12,6 +12,7 @@ namespace superfastmatch{
 		bool first_is_numeric;
 		bool second_is_numeric;
 		string cursor;
+		bool cursor_is_numeric;
 			
 		RESTRequest(  const HTTPClient::Method& method,
 					  const string& path,
@@ -46,6 +47,7 @@ namespace superfastmatch{
 						kc::strsplit(*it,"=",&parts);
 						if ((parts.size()==2) && (parts[0]=="cursor")){
 							cursor=parts[1];
+							cursor_is_numeric=isNumeric(cursor);
 						}
 					}				
 				}
@@ -107,8 +109,16 @@ namespace superfastmatch{
 		else if(req.resource=="heap"){
 			process_heap(req,res);
 		}
-		else{
+		else if(req.resource=="status"){
 			process_status(req,res);
+		}
+		else if(req.resource=="help"){
+			process_help(req,res);
+		}
+		else if(req.resource=="search"){
+			process_search(req,res);
+		}else{
+			process_search(req,res);
 		}
 		
 		TemplateDictionary* header_dict = res.dict.AddIncludeDictionary("HEADER");
@@ -128,7 +138,20 @@ namespace superfastmatch{
 		return res.code;
  	}
 
+	void Worker::process_search(const RESTRequest& req,RESTResponse& res){
+		res.dict.SetTemplateGlobalValue("TITLE","Search");
+		res.template_name=SEARCH_PAGE;
+		res.code=200;
+	}
+
+	void Worker::process_help(const RESTRequest& req,RESTResponse& res){
+		res.dict.SetTemplateGlobalValue("TITLE","Help");
+		res.template_name=HELP_PAGE;
+		res.code=200;
+	}
+
 	void Worker::process_document(const RESTRequest& req,RESTResponse& res){
+		res.dict.SetTemplateGlobalValue("TITLE","Document");
 		if (req.first_is_numeric && req.second_is_numeric){
 			uint32_t doctype = kc::atoi(req.first_id.data());
 			uint32_t docid = kc::atoi(req.second_id.data());
@@ -140,7 +163,8 @@ namespace superfastmatch{
 					if (doc.load()){
 						res.message << "Getting document: " << doc;
 						if(req.verb==HTTPClient::MGET){
-							doc.serialize(res.body);
+							res.template_name=DOCUMENT_PAGE;
+							doc.fill_document_dictionary(&res.dict);
 						}
 						res.code=200;
 					}else{
@@ -170,11 +194,16 @@ namespace superfastmatch{
 			}
 		}
 		else if (req.first_is_numeric){
-			// Do doctype stuff
+			DocumentCursor cursor(registry_);
+			uint32_t doctype = kc::atoi(req.first_id.data());
+			cursor.fill_list_dictionary(&res.dict,doctype,0);
+			res.template_name=DOCUMENTS_PAGE;
 			res.code=200;
 		}
 		else{
-			//Do document index stuff
+			DocumentCursor cursor(registry_);
+			cursor.fill_list_dictionary(&res.dict,0,0);
+			res.template_name=DOCUMENTS_PAGE;
 			res.code=200;
 		}
 	}
@@ -183,7 +212,11 @@ namespace superfastmatch{
 		res.dict.SetTemplateGlobalValue("TITLE","Index");
 		switch(req.verb){
 			case HTTPClient::MGET:
-				registry_.postings->fill_list_dictionary(&res.dict,0);
+				if (req.cursor_is_numeric){
+					registry_.postings->fill_list_dictionary(&res.dict,kc::atoi(req.cursor.c_str()));
+				}else{
+					registry_.postings->fill_list_dictionary(&res.dict,0);
+				}
 				res.template_name=INDEX_PAGE;
 				res.code=200;
 				break;

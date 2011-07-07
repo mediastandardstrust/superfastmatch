@@ -7,12 +7,12 @@ function send_doc {
 	for file in $files
 	do
 		if [[ "${method}" == "DELETE" ]] ; then
-			echo "curl -X $method -H \"Expect:\" 127.0.0.1:1978/document/$doctype/$docid/"
-			curl -sS -X $method -H "Expect:" 127.0.0.1:1978/document/$doctype/$docid/ -o test.log #&			
+			echo "curl -X $method -H \"Expect:\" 192.168.0.3:1978/document/$doctype/$docid/"
+			curl -sS -X $method -H "Expect:" 192.168.0.3:1978/document/$doctype/$docid/ -o test.log #&			
 		else
 			# echo "$(date) $method-ing $file with doctype: $doctype docid: $docid"
-			echo "curl -X $method -H \"Expect:\" -d \"filename=$file\" --data-urlencode \"text@$file\" 127.0.0.1:1978/document/$doctype/$docid/"
-			curl -sS -X $method -H "Expect:" -d "filename=$file" --data-urlencode "text@$file" 127.0.0.1:1978/document/$doctype/$docid/ -o test.log #&
+			echo "curl -X $method -H \"Expect:\" -d \"title=$(basename $file)\" --data-urlencode \"text@$file\" 192.168.0.3:1978/document/$doctype/$docid/"
+			curl -sS -X $method -H "Expect:" -d "title=$(basename $file)" --data-urlencode "text@$file" 192.168.0.3:1978/document/$doctype/$docid/ -o test.log #&
 		fi
 		docid=$(($docid+1))
 	    NPROC=$(($NPROC+1))
@@ -31,8 +31,8 @@ function send_doc {
 # send_doc PUT 2 "../superfastmatch/fixtures/*.txt"
 
 # echo "Test POST-ing documents"
-# send_doc POST 2 "../superfastmatch/fixtures/*.txt" 
-
+# send_doc POST 1 "../superfastmatch/fixtures/*.txt" 
+# 
 # echo "Test POST-ing documents"
 # send_doc POST 2 "../superfastmatch/fixtures/*.txt"
 # 
@@ -41,12 +41,12 @@ function send_doc {
 
 # echo "Test batch indexing"
 # curl -X POST -H "Expect:" 127.0.0.1:1978/index/ 
-
+# 
 echo "Test POST-ing documents"
 send_doc POST 1  "../superfastmatch/fixtures/pan11-external/source-documents/*.txt"
 
-# echo "Test POST-ing documents"
-# send_doc POST 2  "../superfastmatch/fixtures/pan11-external/suspicious-documents/*.txt"
+echo "Test POST-ing documents"
+send_doc POST 2  "../superfastmatch/fixtures/pan11-external/suspicious-documents/*.txt"
 
 # 
 # echo "Test batch indexing"
