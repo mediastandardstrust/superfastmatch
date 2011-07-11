@@ -113,22 +113,25 @@ namespace superfastmatch
 	
 	uint32_t PostingSlot::PostLine::decode(vector<uint32_t>& line) const{
 		uint32_t offset=0;
+		uint32_t index=0;
 		uint64_t docs_length;
+		uint64_t doc_type;
 		uint64_t previous;
 		uint64_t value;
 		line.resize(0);
 		while (bucket_[offset]!=0){
 			// Read doc type
-			offset+=kc::readvarnum(bucket_+offset,5,&value);
-			line.push_back(value);
+			offset+=kc::readvarnum(bucket_+offset,5,&doc_type);
 			// Read doc type sequence length
 			offset+=kc::readvarnum(bucket_+offset,5,&docs_length);
-			line.push_back(docs_length);
+			line.resize(index+docs_length+2);
+			line[index++]=doc_type;
+			line[index++]=docs_length;
 			// Read the delta encoded docids
 			previous=0;
 			for (uint32_t i=0;i<docs_length;i++){
 				offset+=kc::readvarnum(bucket_+offset,5,&value);
-				line.push_back(value+previous);
+				line[index++]=value+previous;
 				previous+=value;
 			}
 		}
@@ -192,14 +195,8 @@ namespace superfastmatch
 	}
 	
 	bool PostingSlot::alterIndex(Document* doc,TaskPayload::TaskOperation operation){
-		if (doc_counts_[doc->doctype()].size()==0){
-			doc_counts_lock_.lock_writer();
-			doc_counts_[doc->doctype()].resize(registry_.max_line_length);
-			doc_counts_[doc->doctype()][0]=index_.size();
-			doc_counts_lock_.unlock();
-		}
 		hash_t hash;
-		uint32_t doc_count;
+		uint32_t doc_count=0;
 		uint32_t incoming_length;
 		uint32_t outgoing_length;
 		// Where hash width is below 32 we will get duplicates per document
@@ -222,86 +219,89 @@ namespace superfastmatch
 				incoming_length=posting_line->decode(line_);
 				// debug("Before: ",hash);
 				line_iterator=line_.begin();
-				switch (operation){
-					case TaskPayload::AddDocument:
-						while (true){
-							// Insert before
-							if ((*line_iterator>doctype) || (line_iterator==line_.end())){
-								line_iterator=line_.insert(line_iterator,docid);
-								line_iterator=line_.insert(line_iterator,1);
-								line_iterator=line_.insert(line_iterator,doctype);
-								doc_count=1;
-								break;
-							}
-							// Merge
-							else if (*line_iterator==doctype){
-								// Move to doc type length
-								line_iterator++;
-								// And record the new doc count position
-								doc_count_marker=line_iterator;
-								merge_end=line_iterator+*line_iterator+1;
-								// And insert the item in sorted order
-								while(true){
-									line_iterator++;
-					 				if (line_iterator==line_.end()){
-										line_.push_back(docid);	
-										*doc_count_marker+=1;
-										doc_count=*doc_count_marker;
-										break;
-									}else if(line_iterator==merge_end){
-										line_.insert(merge_end,docid);	
-										*doc_count_marker+=1;
-										doc_count=*doc_count_marker;
-										break;
-									}else if ((*line_iterator>docid)){
-										line_.insert(line_iterator,docid);
-										*doc_count_marker+=1;
-										doc_count=*doc_count_marker;
-										break;
-									}else if (*line_iterator==docid){ 	// Check for dupes
-										noop=true;
-										// to prevent compiler warning
-										doc_count=0;
-										break;
-									};
-									
+				if(line_.size()<registry_.max_line_length){
+					switch (operation){
+						case TaskPayload::AddDocument:
+							while (true){
+								// Insert before
+								if ((*line_iterator>doctype) || (line_iterator==line_.end())){
+									line_iterator=line_.insert(line_iterator,docid);
+									line_iterator=line_.insert(line_iterator,1);
+									line_iterator=line_.insert(line_iterator,doctype);
+									doc_count=1;
+									break;
 								}
-								break;
-							}else{
-								// Move to doc type length 
-								line_iterator++;
-								// Jump to next doc type
-								line_iterator+=(*line_iterator+1);
+								// Merge
+								else if (*line_iterator==doctype){
+									// Move to doc type length
+									line_iterator++;
+									// And record the new doc count position
+									doc_count_marker=line_iterator;
+									merge_end=line_iterator+*line_iterator+1;
+									// And insert the item in sorted order
+									while(true){
+										line_iterator++;
+						 				if (line_iterator==line_.end()){
+											line_.push_back(docid);	
+											*doc_count_marker+=1;
+											doc_count=*doc_count_marker;
+											break;
+										}else if(line_iterator==merge_end){
+											line_.insert(merge_end,docid);	
+											*doc_count_marker+=1;
+											doc_count=*doc_count_marker;
+											break;
+										}else if ((*line_iterator>docid)){
+											line_.insert(line_iterator,docid);
+											*doc_count_marker+=1;
+											doc_count=*doc_count_marker;
+											break;
+										}else if (*line_iterator==docid){ 	// Check for dupes
+											noop=true;
+											break;
+										};
+
+									}
+									break;
+								}else{
+									// Move to doc type length 
+									line_iterator++;
+									// Jump to next doc type
+									line_iterator+=(*line_iterator+1);
+								}
 							}
+							break;
+						case TaskPayload::DeleteDocument:
+							break;
+					}					
+					// debug("After: ",hash);
+					// Decide how to allocate memory
+					if (!noop){
+						outgoing_length=posting_line->encode(line_,out_);
+						if ((outgoing_length/16)!=(incoming_length/16)){
+							size_t size=((outgoing_length/16)+1)*16;
+							posting_line->clear();
+							PostLine* new_line = new PostLine(size);
+							index_.set(hash,*new_line);
+							new_line->commit(out_,outgoing_length);	
+						}else{
+							posting_line->commit(out_,outgoing_length);	
 						}
-						if (!noop){
-							doc_counts_[doctype][doc_count-1]--;
-							doc_counts_[doctype][doc_count]++;	
-						}
-						break;
-					case TaskPayload::DeleteDocument:
-						doc_counts_[doctype][doc_count]--;
-						doc_counts_[doctype][doc_count-1]++;
-						break;
-				}
-				// debug("After: ",hash);
-				// Decide how to allocate memory
-				if (!noop){
-					outgoing_length=posting_line->encode(line_,out_);
-					if ((outgoing_length/16)!=(incoming_length/16)){
-						size_t size=((outgoing_length/16)+1)*16;
-						posting_line->clear();
-						PostLine* new_line = new PostLine(size);
-						index_.set(hash,*new_line);
-						new_line->commit(out_,outgoing_length);	
-					}else{
-						posting_line->commit(out_,outgoing_length);	
 					}
 				}
 			}
 		}
 		index_lock_.unlock();
 		return true;
+	}
+	
+	uint64_t PostingSlot::addTask(TaskPayload* payload){
+		PostingTask* task = new PostingTask(this,payload);
+		return queue_.add_task(task);
+	}
+	
+	uint32_t PostingSlot::getTaskCount(){
+		return queue_.count();
 	}
 	
 	bool PostingSlot::searchIndex(const vector<hash_t>& hashes,search_t& results,usage_t& usage){
@@ -329,69 +329,85 @@ namespace superfastmatch
 		return true;
 	}
 	
-	uint64_t PostingSlot::addTask(TaskPayload* payload){
-		PostingTask* task = new PostingTask(this,payload);
-		return queue_.add_task(task);
-	}
-	
-	uint32_t PostingSlot::getTaskCount(){
-		return queue_.count();
-	}
-	
 	uint32_t PostingSlot::fill_list_dictionary(TemplateDictionary* dict,hash_t start){
-		uint32_t count=0;
+		index_lock_.lock_reader();
 		hash_t hash=(offset_>start)?0:start-offset_;
-		if (hash<span_){
-			vector<hash_t> existing;
-			index_lock_.lock_reader();
-			for(;hash<span_;hash++){
-				if(index_.test(hash)){
-					existing.push_back(hash);
-					count++;
-					if(count>registry_.page_size){
-						break;
-					}
+		// Find first hash
+    while (hash<span_ && !index_.test(hash)){    
+      hash++;
+    }
+    // If not in slot break early
+  	if (index_.num_nonempty()==0 || hash>=span_){
+        index_lock_.unlock();
+        return 0;
+  	}
+    // Scan non empty
+    uint32_t count=0;
+    vector<uint32_t> line;
+    uint32_t doc_type;
+		vector<uint32_t>::const_iterator line_cursor;
+		vector<uint32_t>::const_iterator doc_it;
+		vector<uint32_t>::const_iterator doc_ite;
+    sparsetable<PostLine>::nonempty_iterator it=index_.get_iter(hash);
+    while (it!=index_.nonempty_end() && count<registry_.page_size){
+      uint32_t bytes=it->decode(line);
+			line_cursor=line.begin();
+			while(line_cursor!=line.end()){
+			  TemplateDictionary* posting_dict = dict->AddSectionDictionary("POSTING");
+			  if (line_cursor==line.begin()){
+			   	TemplateDictionary* hash_dict = posting_dict->AddSectionDictionary("HASH");				
+    			hash_dict->SetIntValue("HASH",index_.get_pos(it)+offset_);
+    			hash_dict->SetIntValue("BYTES",bytes);
+    			hash_dict->SetIntValue("DOC_TYPE_COUNT",0); 
+			  }
+				doc_type=*line_cursor;
+				doc_it=line_cursor+2;
+				doc_ite=doc_it+*(line_cursor+1);
+				posting_dict->SetIntValue("DOC_TYPE",doc_type);	
+				uint32_t previous=0;
+				while(doc_it!=doc_ite){
+					TemplateDictionary* doc_id_dict = posting_dict->AddSectionDictionary("DOC_IDS");
+					doc_id_dict->SetIntValue("DOC_ID",*doc_it);	
+					TemplateDictionary* doc_delta_dict = posting_dict->AddSectionDictionary("DOC_DELTAS");
+					doc_delta_dict->SetIntValue("DOC_DELTA",*doc_it-previous);
+          previous=*doc_it;
+          doc_it++;
 				}
+        line_cursor=doc_ite;
 			}
-			index_lock_.unlock();
-			search_t results;
-			usage_t usage;
-			searchIndex(existing,results,usage);
-			for (search_t::iterator it=results.begin(),ite=results.end();it!=ite;++it){
-				for (search_line_t::iterator it2=it->second.begin(),ite2=it->second.end();it2!=ite2;++it2){
-					TemplateDictionary* posting_dict = dict->AddSectionDictionary("POSTING");
-					if (it2==it->second.begin()){
-						TemplateDictionary* hash_dict = posting_dict->AddSectionDictionary("HASH");				
-						hash_dict->SetIntValue("HASH",it->first);
-						hash_dict->SetIntValue("BYTES",usage[it->first]);
-						hash_dict->SetIntValue("DOC_TYPE_COUNT",it->second.size());
-					}
-					uint32_t previous=0;
-					for (uint32_t i=0;i<it2->second.size();i++){
-						posting_dict->SetIntValue("DOC_TYPE",it2->first);	
-						TemplateDictionary* doc_id_dict = posting_dict->AddSectionDictionary("DOC_IDS");
-						doc_id_dict->SetIntValue("DOC_ID",it2->second[i]);	
-						TemplateDictionary* doc_delta_dict = posting_dict->AddSectionDictionary("DOC_DELTAS");
-						doc_delta_dict->SetIntValue("DOC_DELTA",it2->second[i]-previous);
-						previous=it2->second[i];
-					}
-				}
-			}
-		}
+      it++;
+      count++;
+    }
+    index_lock_.unlock();
 		return count;
 	}
 	
-	void PostingSlot::mergeHistogram(histogram_t& histogram){
-		doc_counts_lock_.lock_reader();
-		for (histogram_t::iterator it=doc_counts_.begin(),ite=doc_counts_.end();it!=ite;++it){
-			if (histogram[it->first].size()==0){
-				histogram[it->first].resize(registry_.max_line_length);
-			}
-			for (uint32_t i=0;i<(it->second).size();i++){
-				histogram[it->first][i]+=doc_counts_[it->first][i];
+	void PostingSlot::fillHistograms(histogram_t& hash_hist,histogram_t& gaps_hist){
+		vector<uint32_t> line;
+		vector<uint32_t>::const_iterator line_cursor;
+		vector<uint32_t>::const_iterator doc_it;
+		vector<uint32_t>::const_iterator doc_ite;
+		uint32_t doc_type;
+		uint32_t doc_length;
+		line.reserve(registry_.max_line_length);
+		index_lock_.lock_reader();
+		for (sparsetable<PostLine,48>::nonempty_iterator it=index_.nonempty_begin(),ite=index_.nonempty_end();it!=ite;++it){
+				it->decode(line);
+				line_cursor=line.begin();
+				while(line_cursor!=line.end()){
+					doc_type=*line_cursor;
+					doc_length=*(line_cursor+1);
+					hash_hist[doc_type][doc_length]++;
+					doc_it=line_cursor+2;
+					doc_ite=doc_it+doc_length;
+					while(doc_it!=doc_ite){
+						gaps_hist[doc_type][*doc_it]++;
+						doc_it++;
+					}
+					line_cursor=doc_ite;
 			}
 		}
-		doc_counts_lock_.unlock();
+		index_lock_.unlock();
 	}
 	
 	// ---------------
@@ -412,28 +428,27 @@ namespace superfastmatch
 		}
 	}
 	
+	void Posting::wait(){
+		for (uint32_t i=0;i<registry_.slot_count;i++){
+			if (slots_[i]->getTaskCount()!=0){
+				kc::Thread::sleep(0.2);				
+			}
+		}
+		cout << "Releasing Memory" << endl;
+		MallocExtension::instance()->ReleaseFreeMemory();
+		cout << "Done!" << endl;
+	}
+	
 	bool Posting::init(){
 		// Load the stored docs
 		double start = kc::time();
 		DocumentCursor* cursor = new DocumentCursor(registry_);
 		Document* doc;
 		while ((doc=cursor->getNext())!=NULL){
-			if (addDocument(doc)>2000){
-				cout << "Chilling with queue lengths: ";
-				for (uint32_t i=0;i<registry_.slot_count;i++){
-					cout << slots_[i]->getTaskCount() << ":";
-				}
-				cout << endl;
-				// Throttle
-				kc::Thread::chill();
-			}
+			addDocument(doc);
 		}
 		delete cursor;
-		for (uint32_t i=0;i<registry_.slot_count;i++){
-			if (slots_[i]->getTaskCount()!=0){
-				sleep(0.2);				
-			}
-		}
+		wait();
 		cout << "Posting initialisation finished in: " << setiosflags(ios::fixed) << setprecision(4) << kc::time()-start << " secs" << endl;
 		ready_=true;
 		return ready_;
@@ -444,6 +459,10 @@ namespace superfastmatch
 		TaskPayload* task = new TaskPayload(doc,operation,registry_.slot_count);
 		for (uint32_t i=0;i<registry_.slot_count;i++){
 			queue_length+=slots_[i]->addTask(task);
+		}
+		if (queue_length>registry_.slot_count*40){
+			kc::Thread::sleep(0.05);
+			cout << "Sleeping for 0.05 secs with queue length: " << queue_length << endl;
 		}
 		return queue_length;
 	}
@@ -466,15 +485,9 @@ namespace superfastmatch
 	
 	bool Posting::addDocuments(vector<Command*> commands){
 		for (vector<Command*>::iterator it=commands.begin(),ite=commands.end();it!=ite;++it){
-			if (addDocument((*it)->getDocument())>100){
-				// sleep(1.0);
-			}
+			addDocument((*it)->getDocument());
 		}
-		for (uint32_t i=0;i<registry_.slot_count;i++){
-			if (slots_[i]->getTaskCount()!=0){
-				sleep(1.0);				
-			}
-		}
+		wait();
 		return true;
 	}
 	
@@ -484,16 +497,18 @@ namespace superfastmatch
 				// sleep(1.0);
 			}
 		}
-		for (uint32_t i=0;i<registry_.slot_count;i++){
-			if (slots_[i]->getTaskCount()!=0){
-				sleep(1.0);				
-			}
-		}
+		wait();
 		return true;
 	}
 	
 	bool Posting::isReady(){
 		return ready_;
+	}
+	
+	void Posting::fill_status_dictionary(TemplateDictionary* dict){
+		dict->SetIntValue("DOC_COUNT",doc_count_);
+		dict->SetIntValue("HASH_COUNT",hash_count_);
+		dict->SetIntValue("AVERAGE_DOC_LENGTH",(doc_count_>0)?hash_count_/doc_count_:0);
 	}
 	
 	void Posting::fill_list_dictionary(TemplateDictionary* dict,hash_t start){
@@ -518,23 +533,48 @@ namespace superfastmatch
 	}
 
 	void Posting::fill_histogram_dictionary(TemplateDictionary* dict){
-		histogram_t hist;
+		histogram_t hash_hist;
+		histogram_t gaps_hist;
 		for (uint32_t i=0;i<slots_.size();i++){
-			slots_[i]->mergeHistogram(hist);
+			slots_[i]->fillHistograms(hash_hist,gaps_hist);
 		}
-		dict->SetIntValue("DOC_COUNT",doc_count_);
-		dict->SetIntValue("HASH_COUNT",hash_count_);
-		dict->SetIntValue("AVERAGE_DOC_LENGTH",(doc_count_>0)?hash_count_/doc_count_:0);
-		for (histogram_t::iterator it = hist.begin(),ite=hist.end();it!=ite;++it){
-			dict->ShowSection("HISTOGRAM");
-			dict->SetValueAndShowSection("DOC_TYPE",toString(it->first),"COLUMNS");
+		// Hash histogram
+		TemplateDictionary* hash_dict = dict->AddIncludeDictionary("HASH_HISTOGRAM");
+    hash_dict->SetFilename(HISTOGRAM);
+    hash_dict->SetValue("NAME","hashes");
+    hash_dict->SetValue("TITLE","Frequency of documents per hash");
+		for (histogram_t::const_iterator it = hash_hist.begin(),ite=hash_hist.end();it!=ite;++it){
+			hash_dict->SetValueAndShowSection("DOC_TYPE",toString(it->first),"COLUMNS");
 		}
 		for (uint32_t i=0;i<500;i++){
-			TemplateDictionary* rows_dict=dict->AddSectionDictionary("ROWS");
-			for (histogram_t::iterator it = hist.begin(),ite=hist.end();it!=ite;++it){
-				rows_dict->SetValueAndShowSection("DOC_COUNTS",toString(it->second[i]),"COLUMN");
-			}
+			TemplateDictionary* rows_dict=hash_dict->AddSectionDictionary("ROWS");
+			rows_dict->SetIntValue("INDEX",i);
+			for (histogram_t::iterator it = hash_hist.begin(),ite=hash_hist.end();it!=ite;++it){
+					rows_dict->SetValueAndShowSection("DOC_COUNTS",toString(it->second[i]),"COLUMN");	
+			}	
 		}
+		// Deltas Histogram
+		TemplateDictionary* deltas_dict = dict->AddIncludeDictionary("DELTAS_HISTOGRAM");
+    deltas_dict->SetFilename(HISTOGRAM);
+    deltas_dict->SetValue("NAME","deltas");
+    deltas_dict->SetValue("TITLE","Frequency of document deltas");
+		for (histogram_t::const_iterator it = gaps_hist.begin(),ite=gaps_hist.end();it!=ite;++it){
+			deltas_dict->SetValueAndShowSection("DOC_TYPE",toString(it->first),"COLUMNS");
+		}
+		for (histogram_t::iterator it = gaps_hist.begin(),ite=gaps_hist.end();it!=ite;++it){
+      vector<uint32_t> sorted_keys;
+      sorted_keys.reserve(it->second.size());
+      for (stats_t::const_iterator it2=it->second.begin(),ite2=it->second.end();it2!=ite2;++it2){
+        sorted_keys.push_back(it2->first);
+      }
+      for (vector<uint32_t>::const_iterator it2=sorted_keys.begin(),ite2=sorted_keys.end();it2!=ite2;++it2){
+       	TemplateDictionary* rows_dict=deltas_dict->AddSectionDictionary("ROWS");
+    		rows_dict->SetIntValue("INDEX",*it2);
+  			rows_dict->SetValueAndShowSection("DOC_COUNTS",toString(it->second[*it2]),"COLUMN"); 
+      }
+		}	
+
+		fill_status_dictionary(dict);
 		// dict->Dump();
 	}
 }

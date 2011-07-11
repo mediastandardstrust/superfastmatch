@@ -109,6 +109,9 @@ namespace superfastmatch{
 		else if(req.resource=="heap"){
 			process_heap(req,res);
 		}
+		else if(req.resource=="histograms"){
+			process_histograms(req,res);
+		}
 		else if(req.resource=="status"){
 			process_status(req,res);
 		}
@@ -253,7 +256,13 @@ namespace superfastmatch{
       	res.code=200;
 	}
 	
-	// (TODO) This is ugly!
+	void Worker::process_histograms(const RESTRequest& req,RESTResponse& res){
+		res.dict.SetTemplateGlobalValue("TITLE","Histograms");
+		registry_.postings->fill_histogram_dictionary(&res.dict);
+		res.template_name=HISTOGRAMS_PAGE;
+		res.code=200;
+	}
+	
 	void Worker::process_status(const RESTRequest& req,RESTResponse& res){
 		size_t memory;
 		const int kBufferSize = 16 << 12;
@@ -262,12 +271,10 @@ namespace superfastmatch{
 		MallocExtension::instance()->GetStats(buffer,kBufferSize);
 		res.dict.SetFormattedValue("MEMORY","%.4f",double(memory)/1024/1024/1024);
 		res.dict.SetValue("MEMORY_STATS",string(buffer));
-		registry_.fill_status_dictionary(&res.dict);
 		delete [] buffer;
-		TemplateDictionary* postings_dict=res.dict.AddIncludeDictionary("POSTING_STATS");
+		registry_.fill_status_dictionary(&res.dict);
+		registry_.postings->fill_status_dictionary(&res.dict);
 		res.dict.SetTemplateGlobalValue("TITLE","Status");
-		postings_dict->SetFilename(POSTING_STATS);
-		registry_.postings->fill_histogram_dictionary(postings_dict);
 		res.template_name=STATUS_PAGE;
 		res.code=200;
 	}

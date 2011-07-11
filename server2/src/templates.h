@@ -17,10 +17,11 @@ namespace superfastmatch{
 	RegisterTemplateFilename(DOCUMENTS_PAGE, "documents_page.tpl");
 	RegisterTemplateFilename(DOCUMENT_PAGE, "document_page.tpl");
 	RegisterTemplateFilename(HELP_PAGE, "help_page.tpl");
+	RegisterTemplateFilename(HISTOGRAMS_PAGE, "histograms_page.tpl");
 
 	// Register parts
-	RegisterTemplateFilename(POSTING_STATS, "posting_stats.tpl");
 	RegisterTemplateFilename(PAGING, "paging.tpl");
+	RegisterTemplateFilename(HISTOGRAM, "histogram.tpl");
 
 }
 

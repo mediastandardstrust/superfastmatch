@@ -57,4 +57,5 @@
 			<li><a href="/queue/">Queue</a></li>
 			<li><a href="/help/">Help</a></li>
 			<li><a href="/status/">Status</a></li>
+			<li><a href="/histograms/">Histograms</a></li>
 		</ul>

@@ -86,11 +86,6 @@ namespace superfastmatch{
 			}
 			FreeClear(batch);
 			FreeClear(work);
-			
-			// cout << "Releasing Memory" << endl;
-			// MallocExtension::instance()->ReleaseFreeMemory();
-			//  cout << "Done!" << endl;
-			// cout << "End Batch: " <<batch.size() << " Work: " << work.size() << " Docs: " << docs.size() << endl;
 		}
 		return workDone;
 	}

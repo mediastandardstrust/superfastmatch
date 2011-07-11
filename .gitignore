@@ -1,4 +1,5 @@
 .DS_Store
+superfastmatch/fixtures/pan*
 *.o
 *.so
 *.pyc

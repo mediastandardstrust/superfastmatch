@@ -10,15 +10,15 @@ namespace superfastmatch{
 		// Size of rolling window of text that is hashed
 		window_size=15;
 		// Number of bits of hash that are used
-		hash_width=24;
+		hash_width=26;
 		// Number of slots the hash width is divided into. One thread per slot
-		slot_count=4;
+		slot_count=8;
 		// Number of lines returned on the association,document and index pages
 		page_size=100;
 		
 		hash_mask=(1L<<hash_width)-1;
 		max_hash_count=(1L<<hash_width);
-		max_line_length=1<<16;
+		max_line_length=1<<12;
 		max_batch_count=20000;
 		timeout=1.0;
 		comp_ = new kc::ZLIBCompressor<kc::ZLIB::RAW>;
