@@ -9,13 +9,14 @@ SHELL = /bin/sh
 
 # Targets
 MYBINS = superfastmatch
-OBJS = src/superfastmatch.o src/worker.o src/queue.o src/posting.o src/document.o src/logger.o src/registry.o src/command.o
+OBJS = src/superfastmatch.o src/worker.o src/queue.o src/posting.o src/document.o src/logger.o src/registry.o src/command.o src/postline.o
 EXTERNAL = leveldb
 
 # Building binaries
-CXX = g++
-CXXFLAGS = -c -I./src -I/usr/local/include/ -Iexternal/leveldb/include/ -Wall -funsigned-char -fno-omit-frame-pointer -fno-builtin-malloc -fno-builtin-calloc -fno-builtin-realloc -fno-builtin-free  -m64 -march=core2 -O3 -g
-LDFLAGS = -Lexternal/leveldb -lkyototycoon -lkyotocabinet -lleveldb -lstdc++ -lz -lpthread -lm -lc -ltcmalloc -lctemplate 
+INCLUDES = -I./src -I./tests -I/usr/local/include/ -Iexternal/leveldb/include/ -Itests/utils/ 
+CXXFLAGS = -Wall -Wextra -funsigned-char -fno-omit-frame-pointer -fno-builtin-malloc -fno-builtin-calloc -fno-builtin-realloc -fno-builtin-free  -m64 -march=core2 -O3 -g
+LIBS = -Lexternal/leveldb -lkyototycoon -lkyotocabinet -lleveldb -lstdc++ -lz -lpthread -lm -lc -ltcmalloc -lctemplate 
+CXX = g++ $(INCLUDES)
 
 # Enviroments
 RUNENV = DYLD_FORCE_FLAT_NAMESPACE=1 DYLD_INSERT_LIBRARIES=/usr/local/lib/libtcmalloc.dylib TCMALLOC_SAMPLE_PARAMETER=524288
@@ -25,6 +26,13 @@ DEBUGENV = DYLD_FORCE_FLAT_NAMESPACE=1 DYLD_LIBRARY_PATH=/Volumes/1TB/src/google
 # DEBUGENV = DYLD_FORCE_FLAT_NAMESPACE=1 DYLD_LIBRARY_PATH=/Volumes/1TB/src/google/google-perftools-1.7/.libs/ HEAPPROFILE=/tmp/superfastmatch.hprof HEAP_PROFILE_MMAP=true gdb
 
 #================================================================
+# Test variables
+#================================================================
+
+TESTS = tests/postline-unittest.o
+GTEST_DIR = tests/utils
+
+#================================================================
 # Suffix rules
 #================================================================
 
@@ -32,7 +40,7 @@ DEBUGENV = DYLD_FORCE_FLAT_NAMESPACE=1 DYLD_LIBRARY_PATH=/Volumes/1TB/src/google
 .SUFFIXES : .cc .o
 
 .cc.o :
-	$(CXX) $(CXXFLAGS) $< -o $@
+	$(CXX) $(CXXFLAGS) $< -o $@ 
 
 #================================================================
 # Dependency stuff
@@ -55,12 +63,15 @@ DEBUGENV = DYLD_FORCE_FLAT_NAMESPACE=1 DYLD_LIBRARY_PATH=/Volumes/1TB/src/google
 all : $(EXTERNAL) $(MYBINS) 
 
 clean :
-	rm -rf $(MYBINS) *.exe src/*.o src/*.d *.kch *.kct *.kcf            
+	rm -rf $(MYBINS) $(TESTS) $(GTEST_DIR)/*.o $(GTEST_DIR)/*.a *.a *.o *.exe src/*.o src/*.d *.kch *.kct *.kcf            
 
-check : all
+check : CXXFLAGS += -O0
+check : $(TESTS)
+	$(TESTS:.o=)
+
+run : all
 	rm -rf *.kct *.kch *.kcf
 	$(RUNENV) ./superfastmatch
-	#Run test.sh
 
 profile : all
 	$(PROFILEENV) ./superfastmatch
@@ -79,11 +90,21 @@ leveldb :
 .PHONY : all clean check profile debug $(EXTERNAL)
 
 #================================================================
+# Building Tests
+#================================================================
+
+gmock-gtest.a : $(GTEST_DIR)/gmock-gtest-all.o
+	$(AR) $(ARFLAGS) $@ $^
+
+tests/postline-unittest.o : src/postline.cc tests/postline-unittest.cc gmock-gtest.a 
+	$(CXX) $(CXXFLAGS) $^ -o $* 
+
+#================================================================
 # Building binaries
 #================================================================
 
-superfastmatch : $(OBJS)
-	$(CXX) $(LDFLAGS) $(OBJS) -o $@ 
+superfastmatch : $(OBJS) 
+	$(CXX) $(LIBS) $(OBJS) -o $@ 
 
 # END OF FILE
 # DO NOT DELETE

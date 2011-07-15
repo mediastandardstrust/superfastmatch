@@ -3,3 +3,4 @@
 *.kcf
 *.d
 external
+*.dSYM

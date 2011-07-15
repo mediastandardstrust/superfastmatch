@@ -5,7 +5,8 @@ function send_doc {
 	dir=$3
 	filemask=$4
 	
-	for file in `ls -AS $dir | grep $filemask`
+  # for file in `ls -AS $dir | grep $filemask`
+	for file in `ls -A $dir | grep $filemask`
 	do
 		if [[ "${method}" == "DELETE" ]] ; then
 			echo "curl -X $method -H \"Expect:\" 192.168.0.3:1978/document/$doctype/$docid/"

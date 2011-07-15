@@ -83,23 +83,6 @@ namespace superfastmatch
 		memset(bucket_,0,size);
 	}
 	
-	// This is cheeky
-	// PostingSlot::PostLine::PostLine(const PostLine& copy):
-	// bucket_(copy.bucket_){}
-	// 
-	// PostingSlot::PostLine & PostingSlot::PostLine::operator=(const PostingSlot::PostLine& other){
-	// 	if (this != &other)
-	//         {
-	//             char* bucket_=
-	//             std::copy(other.bucket_, other.bucket_ + strlen(other.bucket_)+1, new_bucket_);
-	//             delete [] bucket_;
-	//             bucket_ = nebucket_;
-	//         }
-	//         return *this;
-	// }
-	// 
-	// PostingSlot::PostLine::~PostLine(){}
-
 	void PostingSlot::PostLine::clear(){
 		if (bucket_!=NULL){
 			delete[] bucket_;
@@ -351,16 +334,16 @@ namespace superfastmatch
     sparsetable<PostLine>::nonempty_iterator it=index_.get_iter(hash);
     while (it!=index_.nonempty_end() && count<registry_.page_size){
       uint32_t bytes=it->decode(line);
+      uint32_t doc_type_count=0;
 			line_cursor=line.begin();
+			TemplateDictionary* hash_dict=NULL;
 			while(line_cursor!=line.end()){
 			  TemplateDictionary* posting_dict = dict->AddSectionDictionary("POSTING");
 			  if (line_cursor==line.begin()){
-			   	TemplateDictionary* hash_dict = posting_dict->AddSectionDictionary("HASH");				
-    			hash_dict->SetIntValue("HASH",index_.get_pos(it)+offset_);
-    			hash_dict->SetIntValue("BYTES",bytes);
-    			hash_dict->SetIntValue("DOC_TYPE_COUNT",0); 
-			  }
+			     hash_dict = posting_dict->AddSectionDictionary("HASH");				
+		   	}
 				doc_type=*line_cursor;
+        doc_type_count++;
 				doc_it=line_cursor+2;
 				doc_ite=doc_it+*(line_cursor+1);
 				posting_dict->SetIntValue("DOC_TYPE",doc_type);	
@@ -374,6 +357,11 @@ namespace superfastmatch
           doc_it++;
 				}
         line_cursor=doc_ite;
+        if (line_cursor==line.end()){
+    			hash_dict->SetIntValue("HASH",index_.get_pos(it)+offset_);
+    			hash_dict->SetIntValue("BYTES",bytes);
+    			hash_dict->SetIntValue("DOC_TYPE_COUNT",doc_type_count); 
+			  }
 			}
       it++;
       count++;
@@ -400,8 +388,9 @@ namespace superfastmatch
 					hash_hist[doc_type][doc_length]++;
 					doc_it=line_cursor+2;
 					doc_ite=doc_it+doc_length;
+          stats_t* doc_type_gaps = &gaps_hist[doc_type];
 					while(doc_it!=doc_ite){
-						gaps_hist[doc_type][*doc_it]++;
+						(*doc_type_gaps)[*doc_it]++;
 						doc_it++;
 					}
 					line_cursor=doc_ite;
@@ -493,9 +482,7 @@ namespace superfastmatch
 	
 	bool Posting::deleteDocuments(vector<Command*> commands){
 		for (vector<Command*>::iterator it=commands.begin(),ite=commands.end();it!=ite;++it){
-			if (deleteDocument((*it)->getDocument())>100){
-				// sleep(1.0);
-			}
+      deleteDocument((*it)->getDocument());
 		}
 		wait();
 		return true;
@@ -515,7 +502,7 @@ namespace superfastmatch
 		uint32_t count=0;
 		for (uint32_t i=0;i<slots_.size();i++){
 			count+=slots_[i]->fill_list_dictionary(dict,start);
-			if (count>registry_.page_size){
+			if (count>=registry_.page_size){
 				break;
 			}
 		}
@@ -547,10 +534,10 @@ namespace superfastmatch
 			hash_dict->SetValueAndShowSection("DOC_TYPE",toString(it->first),"COLUMNS");
 		}
 		for (uint32_t i=0;i<500;i++){
-			TemplateDictionary* rows_dict=hash_dict->AddSectionDictionary("ROWS");
-			rows_dict->SetIntValue("INDEX",i);
+			TemplateDictionary* row_dict=hash_dict->AddSectionDictionary("ROW");
+			row_dict->SetIntValue("INDEX",i);
 			for (histogram_t::iterator it = hash_hist.begin(),ite=hash_hist.end();it!=ite;++it){
-					rows_dict->SetValueAndShowSection("DOC_COUNTS",toString(it->second[i]),"COLUMN");	
+					row_dict->SetValueAndShowSection("DOC_COUNTS",toString(it->second[i]),"COLUMN");	
 			}	
 		}
 		// Deltas Histogram
@@ -561,20 +548,22 @@ namespace superfastmatch
 		for (histogram_t::const_iterator it = gaps_hist.begin(),ite=gaps_hist.end();it!=ite;++it){
 			deltas_dict->SetValueAndShowSection("DOC_TYPE",toString(it->first),"COLUMNS");
 		}
+		vector<uint32_t> sorted_keys;
 		for (histogram_t::iterator it = gaps_hist.begin(),ite=gaps_hist.end();it!=ite;++it){
-      vector<uint32_t> sorted_keys;
-      sorted_keys.reserve(it->second.size());
       for (stats_t::const_iterator it2=it->second.begin(),ite2=it->second.end();it2!=ite2;++it2){
         sorted_keys.push_back(it2->first);
       }
-      for (vector<uint32_t>::const_iterator it2=sorted_keys.begin(),ite2=sorted_keys.end();it2!=ite2;++it2){
-       	TemplateDictionary* rows_dict=deltas_dict->AddSectionDictionary("ROWS");
-    		rows_dict->SetIntValue("INDEX",*it2);
-  			rows_dict->SetValueAndShowSection("DOC_COUNTS",toString(it->second[*it2]),"COLUMN"); 
+    }
+    std::sort(sorted_keys.begin(),sorted_keys.end());
+    vector<uint32_t>::iterator res_it=std::unique(sorted_keys.begin(),sorted_keys.end());
+    sorted_keys.resize(res_it-sorted_keys.begin());
+    for (vector<uint32_t>::const_iterator it=sorted_keys.begin(),ite=sorted_keys.end();it!=ite;++it){
+     	TemplateDictionary* row_dict=deltas_dict->AddSectionDictionary("ROW");
+  		row_dict->SetIntValue("INDEX",*it);
+      for (histogram_t::iterator it2 = gaps_hist.begin(),ite2=gaps_hist.end();it2!=ite2;++it2){
+  			row_dict->SetValueAndShowSection("DOC_COUNTS",toString(it2->second[*it]),"COLUMN"); 
       }
 		}	
-
 		fill_status_dictionary(dict);
-		// dict->Dump();
 	}
 }

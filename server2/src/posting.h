@@ -11,6 +11,7 @@
 #include <google/malloc_extension.h>
 #include <kcthread.h>
 #include <common.h>
+#include <templates.h>
 
 using google::sparsetable;  
 using namespace std;

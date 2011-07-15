@@ -1,6 +1,7 @@
 #ifndef _SFMTEMPLATES_H                       // duplication check
-#define _SFMTEMPLATES
+#define _SFMTEMPLATES_H
 
+#include <common.h>
 #include <ctemplate/template.h>
 
 using namespace ctemplate;

@@ -10,11 +10,11 @@ typedef unsigned __int64 uint64_t;
 #endif
 
 #include <iostream>
+#include <algorithm>
 #include <iomanip>
 #include <string>
 #include <kcutil.h>
 #include <ktutil.h>
-#include <templates.h>
 
 using namespace std;
 namespace superfastmatch{

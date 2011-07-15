@@ -12,6 +12,7 @@
 #include <queue.h>
 #include <document.h>
 #include <queue.h>
+#include <templates.h>
 
 using namespace std;
 using namespace kyototycoon;

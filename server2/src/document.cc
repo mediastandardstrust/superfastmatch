@@ -219,7 +219,7 @@ namespace superfastmatch
 			}
 			std::sort(unique_sorted_hashes_->begin(),unique_sorted_hashes_->end());
 			hashes_vector::iterator it = unique (unique_sorted_hashes_->begin(), unique_sorted_hashes_->end());
-		  	unique_sorted_hashes_->resize(it-unique_sorted_hashes_->begin());
+		  unique_sorted_hashes_->resize(it-unique_sorted_hashes_->begin());
 		}
 		return *unique_sorted_hashes_;
 	}
