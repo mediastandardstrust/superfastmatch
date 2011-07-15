@@ -38,15 +38,16 @@ namespace superfastmatch
   class PostLine{
   private:
     PostLineCodec* codec_;
+    unsigned char* start_;
     vector<PostLineHeader> header_;
     vector<uint32_t> section_;
-    uint32_t updated_;
-    size_t old_length_;
-    size_t new_offset_;
-    size_t original_offset_;
-    unsigned char* start_;
-    unsigned char* temp_header_;
-    unsigned char* temp_section_;
+    uint32_t updated_section_;
+    size_t old_section_length_;
+    size_t new_section_length_;
+    size_t old_header_length_;
+    size_t new_header_length_;
+    unsigned char* new_header_;
+    unsigned char* new_section_;
   
   public:
     PostLine(PostLineCodec* codec,uint32_t max_length);

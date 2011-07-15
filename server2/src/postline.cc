@@ -56,45 +56,45 @@ namespace superfastmatch
   
   PostLine::PostLine(PostLineCodec* codec,uint32_t max_length):
   codec_(codec),
-  temp_header_(new unsigned char[max_length]),
-  temp_section_(new unsigned char[max_length])
+  new_header_(new unsigned char[max_length]),
+  new_section_(new unsigned char[max_length])
   {}
   
   PostLine::~PostLine(){
-    delete[] temp_header_;
-    delete[] temp_section_;
+    delete[] new_header_;
+    delete[] new_section_;
   }
   
   void PostLine::load(const unsigned char* start){
     start_=const_cast<unsigned char*>(start);
-    original_offset_=codec_->decodeHeader(start_,header_);
-    new_offset_=original_offset_;
+    old_header_length_=codec_->decodeHeader(start_,header_);
+    new_header_length_=old_header_length_;
   }
   
   void PostLine::commit(unsigned char* out){
     vector<PostLineHeader>::iterator new_section;
     size_t offset=0;
-    size_t updated_offset=0;
-    size_t updated_start=0;
+    size_t updated_section_offset=0;
+    size_t updated_section_start=0;
     for(vector<PostLineHeader>::iterator it=header_.begin(),ite=header_.end();it!=ite;++it){
-      if (it->doc_type==updated_){
+      if (it->doc_type==updated_section_){
         new_section=it;
-        updated_start=offset;
-        updated_offset+=it->length;
-        offset+=old_length_;
+        updated_section_start=offset;
+        updated_section_offset+=it->length;
+        offset+=old_section_length_;
       }else{
-        memmove(out+new_offset_+updated_offset,start_+original_offset_+offset,it->length);
+        memmove(out+new_header_length_+updated_section_offset,start_+old_header_length_+offset,it->length);
         offset+=it->length;
       }
     }
-    memcpy(out+new_offset_+updated_start,temp_section_,new_section->length);
-    memcpy(out,temp_header_,new_offset_);
-    original_offset_=new_offset_;
+    memcpy(out+new_header_length_+updated_section_start,new_section_,new_section->length);
+    memcpy(out,new_header_,new_header_length_);
+    old_header_length_=new_header_length_;
     start_=out;
   }
   
   void PostLine::addDocument(const uint32_t doc_type,const uint32_t doc_id){
-    updated_=doc_type;
+    updated_section_=doc_type;
     vector<PostLineHeader>::iterator header=header_.begin();
     size_t offset=0;
     while(true){
@@ -107,7 +107,7 @@ namespace superfastmatch
       offset+=header->length;
       header++;
     }
-    old_length_=codec_->decodeSection(start_+original_offset_+offset,header->length,section_);
+    old_section_length_=codec_->decodeSection(start_+old_header_length_+offset,header->length,section_);
     uint32_t previous=0;
     vector<uint32_t>::iterator cursor=section_.begin();
 
@@ -128,12 +128,13 @@ namespace superfastmatch
       previous+=*cursor;
       cursor++;
     }
-    header->length=codec_->encodeSection(section_,temp_section_);
-    new_offset_=codec_->encodeHeader(header_,temp_header_);
+    header->length=codec_->encodeSection(section_,new_section_);
+    new_section_length_=header->length;
+    new_header_length_=codec_->encodeHeader(header_,new_header_);
   }
   
   size_t PostLine::getLength(){
-    size_t length=new_offset_;
+    size_t length=new_header_length_;
     for (size_t i=0;i<header_.size();i++){
       length+=header_[i].length;
     }
@@ -167,7 +168,7 @@ namespace superfastmatch
   
   void PostLine::getDeltas(const uint32_t doc_type,vector<uint32_t>& deltas){
     deltas.resize(0);
-    size_t offset=original_offset_;
+    size_t offset=old_header_length_;
     for(vector<PostLineHeader>::iterator it=header_.begin(),ite=header_.end();it!=ite;++it){
       if (it->doc_type==doc_type){
         codec_->decodeSection(start_+offset,it->length,deltas);
