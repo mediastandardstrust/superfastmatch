@@ -55,7 +55,7 @@ TEST(PostLineTest,PostLineTest){
   EXPECT_EQ(1U,length);
   length=line->getLength();
   EXPECT_EQ(4U,length);
-  line->commit(out);
+  ASSERT_TRUE(line->commit(out));
   EXPECT_EQ(out[0],2);
   EXPECT_EQ(out[1],1);
   EXPECT_EQ(out[2],0);
@@ -64,112 +64,186 @@ TEST(PostLineTest,PostLineTest){
   EXPECT_THAT(deltas,ElementsAre(1));
   line->getDocIds(2,docids);
   EXPECT_THAT(deltas,ElementsAre(1));
+  // Add new document
   line->addDocument(2,7);
-  line->commit(out);
+  ASSERT_TRUE(line->commit(out));
   line->getDeltas(2,deltas);
   EXPECT_THAT(deltas,ElementsAre(1,6));
   line->getDocIds(2,docids);
   EXPECT_THAT(docids,ElementsAre(1,7));
   line->getDocIds(1,docids);
   EXPECT_THAT(docids.size(),0);
+  // Add new document
   line->addDocument(2,3);
-  line->commit(out);
+  ASSERT_TRUE(line->commit(out));
   line->getDeltas(2,deltas);
   EXPECT_THAT(deltas,ElementsAre(1,2,4));
   line->getDocIds(2,docids);
   EXPECT_THAT(docids,ElementsAre(1,3,7));
+  // Add new document with new doc type
   line->addDocument(1,3);
-  line->commit(out);
+  ASSERT_TRUE(line->commit(out));
   line->getDocIds(1,docids);
   EXPECT_THAT(docids,ElementsAre(3));
   line->getDocIds(2,docids);
   EXPECT_THAT(docids,ElementsAre(1,3,7));
+  // Add new document before
   line->addDocument(1,1);
-  line->commit(out);
+  ASSERT_TRUE(line->commit(out));
   line->getDocIds(1,docids);
   EXPECT_THAT(docids,ElementsAre(1,3));
   line->getDocIds(2,docids);
   EXPECT_THAT(docids,ElementsAre(1,3,7));
+  // Add new document at end
   line->addDocument(1,9);
-  line->commit(out);
+  ASSERT_TRUE(line->commit(out));
   line->getDocIds(1,docids);
   EXPECT_THAT(docids,ElementsAre(1,3,9));
   line->getDocIds(2,docids);
   EXPECT_THAT(docids,ElementsAre(1,3,7));
+  // Add new document with new doc type
   line->addDocument(5,9);
-  line->commit(out);
+  ASSERT_TRUE(line->commit(out));
   line->getDocIds(1,docids);
   EXPECT_THAT(docids,ElementsAre(1,3,9));
   line->getDocIds(2,docids);
   EXPECT_THAT(docids,ElementsAre(1,3,7));
   line->getDocIds(5,docids);
   EXPECT_THAT(docids,ElementsAre(9));
+  // Commit with no change
+  ASSERT_FALSE(line->commit(out));
+  line->getDocIds(1,docids);
+  EXPECT_THAT(docids,ElementsAre(1,3,9));
+  line->getDocIds(2,docids);
+  EXPECT_THAT(docids,ElementsAre(1,3,7));
+  line->getDocIds(5,docids);
+  EXPECT_THAT(docids,ElementsAre(9));
+  // Delete a document
+  line->deleteDocument(2,3);
+  line->commit(out);
+  line->getDocIds(1,docids);
+  EXPECT_THAT(docids,ElementsAre(1,3,9));
+  line->getDocIds(2,docids);
+  EXPECT_THAT(docids,ElementsAre(1,7));
+  line->getDocIds(5,docids);
+  EXPECT_THAT(docids,ElementsAre(9));
+  // Delete a document
+  line->deleteDocument(5,9);
+  line->commit(out);
+  line->getDocIds(1,docids);
+  EXPECT_THAT(docids,ElementsAre(1,3,9));
+  line->getDocIds(2,docids);
+  EXPECT_THAT(docids,ElementsAre(1,7));
+  line->getDocIds(5,docids);
+  EXPECT_EQ(0U,docids.size());
   delete[] out;
   delete[] in;
 }
 
-//cout << *line;
-//cout <<"---------------"<<endl;
+TEST(PostLineTest,BadParametersPostLineTest){
+  unsigned char* first = new unsigned char[8];
+  memset(first,0,8);
+  PostLineCodec* codec = new VarIntCodec();
+  PostLine* line = new PostLine(codec,512);
+  line->load(first);
+  EXPECT_EQ(1U,line->getLength());
+  ASSERT_FALSE(line->addDocument(2,0));
+  EXPECT_EQ(1U,line->getLength());
+  ASSERT_FALSE(line->addDocument(0,0));
+  EXPECT_EQ(1U,line->getLength());
+  ASSERT_FALSE(line->addDocument(0,1));
+  EXPECT_EQ(1U,line->getLength());
+  ASSERT_FALSE(line->deleteDocument(0,1));
+  EXPECT_EQ(1U,line->getLength());
+  ASSERT_FALSE(line->deleteDocument(1,0));
+  EXPECT_EQ(1U,line->getLength());
+  ASSERT_FALSE(line->deleteDocument(0,0));
+  EXPECT_EQ(1U,line->getLength());
+  // Delete non existent document
+  ASSERT_FALSE(line->deleteDocument(2,56));
+  EXPECT_EQ(1U,line->getLength());
+  delete[] first;
+}
 
+TEST(PostLineTest,RealisticPostLineTest){
+  unsigned char* first = new unsigned char[8];
+  unsigned char* second = new unsigned char[16];
+  memset(first,0,8);
+  memset(second,0,16);
+  vector<uint32_t> docids;
+  PostLineCodec* codec = new VarIntCodec();
+  PostLine* line = new PostLine(codec,512);
+  line->load(first);
+  // This is the single 0 marking the end of the header!
+  EXPECT_EQ(1U,line->getLength());
+  line->addDocument(2,1);
+  EXPECT_EQ(4U,line->getLength());
+  line->commit(first);
+  EXPECT_EQ(4U,line->getLength());
+  line->addDocument(3,97);
+  EXPECT_EQ(7U,line->getLength());
+  line->commit(first);
+  EXPECT_EQ(7U,line->getLength());
+  line->addDocument(4,65);
+  EXPECT_EQ(10U,line->getLength());
+  line->commit(second);
+  memset(first,0,8);
+  EXPECT_EQ(10U,line->getLength());
+  line->addDocument(4,64);
+  line->commit(second);
+  line->getDocIds(2,docids);
+  EXPECT_THAT(docids,ElementsAre(1));
+  line->getDocIds(3,docids);
+  EXPECT_THAT(docids,ElementsAre(97));
+  line->getDocIds(4,docids);
+  EXPECT_THAT(docids,ElementsAre(64,65));
+  line->deleteDocument(2,1);
+  line->commit(second);
+  line->deleteDocument(3,97);
+  line->commit(second);
+  line->deleteDocument(4,64);
+  line->commit(second);
+  line->deleteDocument(4,65);
+  line->commit(first);
+  EXPECT_EQ(1U,line->getLength());
+  delete[] first;
+  delete[] second;
+}
 
-// TEST(PostLineTest,BigPostLineTest){
-//   unsigned char* in = new unsigned char[4096];
-//   unsigned char* out = new unsigned char[4096];
-//   vector<uint32_t> deltas;
-//   vector<uint32_t> docids;
-//   memset(in,0,4096);
-//   PostLineCodec* codec = new VarIntCodec();
-//   PostLine* line = new PostLine(codec,4096*5);
-//   // line->load(in);
-//   // for (size_t doc_type=1;doc_type<4;doc_type++){
-//   //   for (size_t doc_id=1;doc_id<16;doc_id++){
-//   //     line->addDocument(doc_type,doc_id);
-//   //     line->commit(in);
-//   //   }
-//   // }
-//   // cout << *line << endl;
-//   // cout <<"---------------"<<endl;
-//   // for (size_t doc_type=3;doc_type>0;doc_type--){
-//   //   for (size_t doc_id=1;doc_id<16;doc_id++){
-//   //     line->addDocument(doc_type,doc_id);
-//   //     line->commit(in);
-//   //   }
-//   //   cout << *line;
-//   //   cout <<"---------------"<<endl;
-//   // }
-//   memset(in,0,4096);
-//   line->load(in);
-//   for (size_t doc_type=3;doc_type>0;doc_type--){
-//     for (size_t doc_id=1;doc_id<16;doc_id++){
-//       line->addDocument(doc_type,doc_id);
-//       line->commit(in);
-//       cout << *line;
-//       cout <<"---------------"<<endl;
-//     }
-//   }
-//   // length=line->getLength(1);
-//   // EXPECT_EQ(1U,length);
-//   // length=line->getLength();
-//   // EXPECT_EQ(4U,length);
-//   // line->commit(out);
-//   // EXPECT_EQ(out[0],1);
-//   // EXPECT_EQ(out[1],1);
-//   // EXPECT_EQ(out[2],0);
-//   // EXPECT_EQ(out[3],1);
-//   // line->load(out);
-//   // line->getDeltas(1,deltas);
-//   // EXPECT_THAT(deltas,ElementsAre(1));
-//   // line->getDocIds(1,docids);
-//   // EXPECT_THAT(deltas,ElementsAre(1));
-//   // line->addDocument(1,2);
-//   // line->commit(out);
-//   // line->getDeltas(1,deltas);
-//   // EXPECT_THAT(deltas,ElementsAre(1,1));
-//   // line->getDocIds(1,docids);
-//   // EXPECT_THAT(docids,ElementsAre(1,2));
-//   delete[] out;
-//   delete[] in;
-// }
+TEST(PostLineTest,BigPostLineTest){
+  unsigned char* forwards = new unsigned char[4096];
+  unsigned char* backwards = new unsigned char[4096];
+  vector<uint32_t> f_deltas;
+  vector<uint32_t> b_deltas;
+  memset(forwards,0,4096);
+  memset(backwards,0,4096);
+  PostLineCodec* codec = new VarIntCodec();
+  PostLine* line = new PostLine(codec,4096*5);
+  line->load(forwards);
+  for (size_t doc_type=1;doc_type<12;doc_type++){
+    for (size_t doc_id=1;doc_id<=256;doc_id++){
+      line->addDocument(doc_type,doc_id);
+      line->commit(forwards);
+    }
+  }
+  line->load(backwards);
+  for (size_t doc_type=12;doc_type>0;doc_type--){
+    for (size_t doc_id=256;doc_id>0;doc_id--){
+      line->addDocument(doc_type,doc_id);
+      line->commit(backwards);
+    }
+  }
+  for (size_t doc_type=1;doc_type<12;doc_type++){
+    line->load(forwards);
+    line->getDeltas(doc_type,f_deltas);
+    line->load(backwards);
+    line->getDeltas(doc_type,b_deltas);
+    EXPECT_EQ(f_deltas.size(),b_deltas.size());
+    EXPECT_THAT(f_deltas,ContainerEq(b_deltas));
+  }
+  delete[] forwards;
+  delete[] backwards;
+}
 
 
 int main(int argc, char **argv) {

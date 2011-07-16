@@ -56,47 +56,103 @@ namespace superfastmatch
   
   PostLine::PostLine(PostLineCodec* codec,uint32_t max_length):
   codec_(codec),
-  new_header_(new unsigned char[max_length]),
-  new_section_(new unsigned char[max_length])
+  temp_header_(new unsigned char[max_length]),
+  temp_sections_(new unsigned char[max_length]),
+  old_header_length_(0),
+  temp_header_length_(0),
+  temp_sections_length_(0),
+  updated_section_(0)
   {}
   
   PostLine::~PostLine(){
-    delete[] new_header_;
-    delete[] new_section_;
+    delete[] temp_header_;
+    delete[] temp_sections_;
   }
   
   void PostLine::load(const unsigned char* start){
     start_=const_cast<unsigned char*>(start);
     old_header_length_=codec_->decodeHeader(start_,header_);
-    new_header_length_=old_header_length_;
+    updated_section_=0;
+    temp_header_length_=0;
+    temp_sections_length_=0;
   }
   
-  void PostLine::commit(unsigned char* out){
-    vector<PostLineHeader>::iterator new_section;
-    size_t offset=0;
-    size_t updated_section_offset=0;
-    size_t updated_section_start=0;
-    for(vector<PostLineHeader>::iterator it=header_.begin(),ite=header_.end();it!=ite;++it){
+  bool PostLine::commit(unsigned char* out){
+    if (updated_section_==0){
+      return false;
+    }
+    memcpy(out,temp_header_,temp_header_length_);
+    memcpy(out+temp_header_length_,temp_sections_,temp_sections_length_);
+    old_header_length_=temp_header_length_;
+    start_=out;
+    updated_section_=0;
+    temp_header_length_=0;
+    temp_sections_length_=0; 
+    return true;
+  }
+
+  bool PostLine::deleteDocument(const uint32_t doc_type,const uint32_t doc_id){
+    if ((doc_type==0)||(doc_id==0)){
+      return false;
+    }
+    vector<PostLineHeader>::iterator header=header_.begin();
+    size_t offset=old_header_length_;
+    bool noop=true;
+    while(header!=header_.end()){
+      if (header->doc_type==doc_type){
+        noop=false;
+        break;
+      }
+      offset+=header->length;
+      header++;
+    }
+    if (noop){
+      return false;
+    }
+    noop=true;
+    codec_->decodeSection(start_+offset,header->length,section_);
+    uint32_t previous=0;
+    vector<uint32_t>::iterator cursor=section_.begin();
+    while(cursor!=section_.end()){
+      if(((previous+*cursor)==doc_id)){
+        cursor=section_.erase(cursor);
+        *cursor+=doc_id-previous;
+        noop=false;
+        break;
+      }
+      previous+=*cursor;
+      cursor++;
+    }
+    if (noop){
+      return false;
+    }
+    updated_section_=doc_type;
+    size_t old_sections_length=old_header_length_;
+    for (vector<PostLineHeader>::iterator it=header_.begin(),ite=header_.end();it!=ite;++it){
       if (it->doc_type==updated_section_){
-        new_section=it;
-        updated_section_start=offset;
-        updated_section_offset+=it->length;
-        offset+=old_section_length_;
+        old_sections_length+=header->length;
+        header->length=codec_->encodeSection(section_,temp_sections_+temp_sections_length_);
+        temp_sections_length_+=header->length;
+        if (header->length==0){
+          header_.erase(header);
+        }
       }else{
-        memmove(out+new_header_length_+updated_section_offset,start_+old_header_length_+offset,it->length);
-        offset+=it->length;
+        memcpy(temp_sections_+temp_sections_length_,start_+old_sections_length,it->length);
+        temp_sections_length_+=it->length;
+        old_sections_length+=it->length;
       }
     }
-    memcpy(out+new_header_length_+updated_section_start,new_section_,new_section->length);
-    memcpy(out,new_header_,new_header_length_);
-    old_header_length_=new_header_length_;
-    start_=out;
+    temp_header_length_=codec_->encodeHeader(header_,temp_header_);
+    return true;
   }
   
-  void PostLine::addDocument(const uint32_t doc_type,const uint32_t doc_id){
+  bool PostLine::addDocument(const uint32_t doc_type,const uint32_t doc_id){
+    if ((doc_type==0)||(doc_id==0)){
+      return false;
+    }
     updated_section_=doc_type;
     vector<PostLineHeader>::iterator header=header_.begin();
-    size_t offset=0;
+    size_t offset=old_header_length_;
     while(true){
       if((header==header_.end())||(header->doc_type>doc_type)){
         header=header_.insert(header,PostLineHeader(doc_type,0));
@@ -107,10 +163,9 @@ namespace superfastmatch
       offset+=header->length;
       header++;
     }
-    old_section_length_=codec_->decodeSection(start_+old_header_length_+offset,header->length,section_);
+    codec_->decodeSection(start_+offset,header->length,section_);
     uint32_t previous=0;
     vector<uint32_t>::iterator cursor=section_.begin();
-
     while(true){
       if(cursor==section_.end()){
         section_.push_back(doc_id-previous);
@@ -118,8 +173,7 @@ namespace superfastmatch
       }
       else if ((previous+*cursor)>doc_id){
         *cursor+=previous-doc_id;
-        cursor=section_.insert(cursor,doc_id-previous);
-        cursor++;
+        section_.insert(cursor,doc_id-previous);
         break;
       }
       else if(((previous+*cursor)==doc_id)){
@@ -128,13 +182,24 @@ namespace superfastmatch
       previous+=*cursor;
       cursor++;
     }
-    header->length=codec_->encodeSection(section_,new_section_);
-    new_section_length_=header->length;
-    new_header_length_=codec_->encodeHeader(header_,new_header_);
+    size_t old_sections_length=old_header_length_;
+    for (vector<PostLineHeader>::iterator it=header_.begin(),ite=header_.end();it!=ite;++it){
+      if (it->doc_type==updated_section_){
+        old_sections_length+=header->length;
+        header->length=codec_->encodeSection(section_,temp_sections_+temp_sections_length_);
+        temp_sections_length_+=header->length;
+      }else{
+        memcpy(temp_sections_+temp_sections_length_,start_+old_sections_length,it->length);
+        temp_sections_length_+=it->length;
+        old_sections_length+=it->length;
+      }
+    }
+    temp_header_length_=codec_->encodeHeader(header_,temp_header_);
+    return true;
   }
   
-  size_t PostLine::getLength(){
-    size_t length=new_header_length_;
+  size_t PostLine::getLength(){ 
+    size_t length=(temp_header_length_==0)?old_header_length_:temp_header_length_;
     for (size_t i=0;i<header_.size();i++){
       length+=header_[i].length;
     }
@@ -144,8 +209,10 @@ namespace superfastmatch
   size_t PostLine::getLength(const uint32_t doc_type){
     vector<PostLineHeader>::iterator it=header_.begin();
     while(it!=header_.end()){
-      if (it->doc_type==doc_type)
-        return it->length;
+      if (it->doc_type==doc_type){
+       return it->length; 
+      }
+      it++;
     }
     return 0;
   }
@@ -182,14 +249,16 @@ namespace superfastmatch
     vector<uint32_t> doctypes;
     vector<uint32_t> docids;
     postline.getDocTypes(doctypes);
+    stream << "Total Bytes: "<< postline.getLength() << endl;
     for (vector<uint32_t>::iterator it=doctypes.begin(),ite=doctypes.end();it!=ite;++it){
       postline.getDocIds(*it,docids);
-      stream << "Doc Type: " << *it << " Doc Ids: {";
+      stream << "Doc Type: " << *it << " Bytes: " << postline.getLength(*it) << " Doc Ids: {";
       for (vector<uint32_t>::iterator it2=docids.begin(),ite2=docids.end();it2!=ite2;it2++){
         stream << *it2 <<",";
       }
       stream << "}" <<endl; 
-    }
+    }      
+    stream << "-----------------------------------------------"<<endl;
     return stream;
   }
 }

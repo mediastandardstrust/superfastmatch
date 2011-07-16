@@ -39,26 +39,33 @@ namespace superfastmatch
   private:
     PostLineCodec* codec_;
     unsigned char* start_;
+    unsigned char* temp_header_;
+    unsigned char* temp_sections_;
+    size_t old_header_length_;
+    size_t temp_header_length_;
+    size_t temp_sections_length_;
     vector<PostLineHeader> header_;
     vector<uint32_t> section_;
     uint32_t updated_section_;
-    size_t old_section_length_;
-    size_t new_section_length_;
-    size_t old_header_length_;
-    size_t new_header_length_;
-    unsigned char* new_header_;
-    unsigned char* new_section_;
   
   public:
     PostLine(PostLineCodec* codec,uint32_t max_length);
     ~PostLine();
 
     void load(const unsigned char* start);
+    
+    // Returns false if there are no changes
     // out must have a length greater than or equal to getLength()
-    void commit(unsigned char* out);
-    // commit must be called after each add/delete operation
-    void addDocument(const uint32_t doc_type,const uint32_t doc_id);
-    void deleteDocument(const uint32_t doc_type,const uint32_t doc_id);
+    bool commit(unsigned char* out);
+    
+    // Returns false if the doc_type or doc_id are 0
+    // commit must be called after each add operation
+    bool addDocument(const uint32_t doc_type,const uint32_t doc_id);
+    
+    // Returns false if the doc_type or doc_id are 0 or the document is not present
+    // commit must be called after each succesful delete operation
+    bool deleteDocument(const uint32_t doc_type,const uint32_t doc_id);
+
     size_t getLength();
     size_t getLength(const uint32_t doc_type);
     void getDocTypes(vector<uint32_t>& doc_types);
