@@ -13,7 +13,6 @@ DATA = data/*.kct data/*.kch data/*.kcf
 # Targets
 MYBINS = superfastmatch
 OBJS = src/superfastmatch.o src/worker.o src/queue.o src/posting.o src/document.o src/logger.o src/registry.o src/command.o src/postline.o
-EXTERNAL = leveldb
 
 # Building binaries
 INCLUDES = -I./src -I./tests -I/usr/local/include/ -Iexternal/leveldb/include/ -Itests/utils/ 
@@ -86,9 +85,6 @@ debug : all
 
 # pull in dependency info for *existing* .o files
 -include $(OBJS:.o=.d)
-
-leveldb :
-	cd external/leveldb && $(MAKE)
 
 .PHONY : all clean check profile debug $(EXTERNAL)
 
