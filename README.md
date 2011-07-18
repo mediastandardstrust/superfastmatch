@@ -3,6 +3,8 @@ README
 
 This is a new version of Superfastmatch written in C++ to improve matching performance and with an index running totally in memory to improve response times.
 
+The point of the software is to index large amounts of text in memory. Therefore there isn't much reason to run it on a 32-bit OS with a 4GB cap on memory and a 64-bit OS is assumed
+
 The process for installation is as follows:
 
 
@@ -30,6 +32,12 @@ The easier route is to run:
     ./scripts/bootstrap.sh
 
 and wait for everything to build. The script will ask you for your sudo password, which is required to install the libraries.
+
+On Ubuntu you'll need to do this first:
+
+    sudo apt-get install libunwind7
+
+Which is a dependency for perftools.
 
 Test
 ----

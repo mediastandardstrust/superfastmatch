@@ -8,7 +8,7 @@ svn checkout http://google-sparsehash.googlecode.com/svn/trunk/ external/google-
 cd external && for i in *.tar.gz; do tar xzvf $i; done
 cd ctemplate* && ./configure && make && sudo make install && cd ..
 cd google-perftools* && ./configure && make && sudo make install  && cd ..
-cd google-gflags && ./configure && make && sudo make install  && cd ..
+cd gflags* && ./configure && make && sudo make install  && cd ..
 cd kyotocabinet* && ./configure && make && sudo make install && cd ..
 cd kyototycoon* && ./configure && make && sudo make install && cd ..
 cd google-sparsehash* && ./configure && make && sudo make install && cd ..
