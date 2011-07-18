@@ -94,7 +94,7 @@ gmock-gtest.a : $(GTEST_DIR)/gmock-gtest-all.o
 	$(AR) $(ARFLAGS) $@ $^
 
 tests/postline-unittest.o : src/postline.cc tests/postline-unittest.cc gmock-gtest.a 
-	$(CXX) $(CXXFLAGS) $^ -o $* 
+	$(CXX) -lpthread $(CXXFLAGS) $^ -o $* 
 
 #================================================================
 # Building binaries
