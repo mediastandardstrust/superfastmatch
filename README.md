@@ -61,6 +61,8 @@ After that you can run:
 
 to get a superfastmatch instance running. Nothing is currently configurable from the command line yet. Coming soon...
 
+Visit http://127.0.0.1:8080 to test the interface.
+
 Data
 ----
 
