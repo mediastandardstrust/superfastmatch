@@ -1,7 +1,0 @@
-include LICENSE
-include README.rst
-recursive-include superfastmatch/docs *
-include paver-minilib.zip
-include setup.py
-recursive-include superfastmatch/tests *
-recursive-include superfastmatch/scripts *
