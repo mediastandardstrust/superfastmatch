@@ -21,13 +21,13 @@ int main(int argc, char** argv) {
 
 	// set up the registry
 	Registry registry("superfastmatch.cfg");
-	
+
   	// prepare the worker
   	Worker worker(registry);
 
 	// prepare the server
 	HTTPServer serv;
-	serv.set_network("192.168.0.3:1978", registry.timeout);
+	serv.set_network("127.0.0.1:1978", registry.timeout);
 	serv.set_worker(&worker, registry.thread_count);
 
 	// set up the logger

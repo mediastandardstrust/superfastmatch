@@ -37,7 +37,11 @@ On Ubuntu you'll need to do this first:
 
     sudo apt-get install libunwind7
 
-Which is a dependency for perftools.
+Which is a dependency for perftools. And you might also need a:
+
+    sudo ldconfig
+
+after the script has finished.
 
 Test
 ----

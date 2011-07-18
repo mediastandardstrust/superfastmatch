@@ -15,17 +15,15 @@ MYBINS = superfastmatch
 OBJS = src/superfastmatch.o src/worker.o src/queue.o src/posting.o src/document.o src/logger.o src/registry.o src/command.o src/postline.o
 
 # Building binaries
-INCLUDES = -I./src -I./tests -I/usr/local/include/ -Iexternal/leveldb/include/ -Itests/utils/ 
+INCLUDES = -I./src -I./tests -I/usr/local/include/ -Itests/utils/ 
 CXXFLAGS = -Wall -Wextra -funsigned-char -fno-omit-frame-pointer -fno-builtin-malloc -fno-builtin-calloc -fno-builtin-realloc -fno-builtin-free  -m64 -march=core2 -O3 -g
-LIBS = -Lexternal/leveldb -lkyototycoon -lkyotocabinet -lleveldb -lstdc++ -lz -lpthread -lm -lc -ltcmalloc -lctemplate 
+LIBS = -Lexternal/leveldb -lkyototycoon -lkyotocabinet -lstdc++ -lz -lpthread -lm -lc -ltcmalloc -lctemplate 
 CXX = g++ $(INCLUDES)
 
 # Enviroments
-RUNENV = DYLD_FORCE_FLAT_NAMESPACE=1 DYLD_INSERT_LIBRARIES=/usr/local/lib/libtcmalloc.dylib TCMALLOC_SAMPLE_PARAMETER=524288
-PROFILEENV = DYLD_FORCE_FLAT_NAMESPACE=1 DYLD_INSERT_LIBRARIES=/usr/local/lib/libtcmalloc.dylib HEAPPROFILE=/tmp/superfastmatch.hprof 
-# Donny specific (change to match your environment) will eventually put in external folder
-DEBUGENV = DYLD_FORCE_FLAT_NAMESPACE=1 DYLD_LIBRARY_PATH=/Volumes/1TB/src/google/google-perftools-1.7/.libs/ gdb 
-# DEBUGENV = DYLD_FORCE_FLAT_NAMESPACE=1 DYLD_LIBRARY_PATH=/Volumes/1TB/src/google/google-perftools-1.7/.libs/ HEAPPROFILE=/tmp/superfastmatch.hprof HEAP_PROFILE_MMAP=true gdb
+RUNENV = TCMALLOC_SAMPLE_PARAMETER=524288
+PROFILEENV = HEAPPROFILE=/tmp/superfastmatch.hprof 
+DEBUGENV = gdb 
 
 #================================================================
 # Test variables

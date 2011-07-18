@@ -7,7 +7,7 @@ namespace superfastmatch
 		cursor_=registry.documentDB->cursor();
 		cursor_->jump();
 	};
-	
+
 	DocumentCursor::~DocumentCursor(){
 		delete cursor_;
 	}
@@ -15,15 +15,15 @@ namespace superfastmatch
 	bool DocumentCursor::jumpFirst(){
 		return cursor_->jump();
 	}
-	
+
 	bool DocumentCursor::jumpLast(){
 		return cursor_->jump_back();
 	};
-	
+
 	bool DocumentCursor::jump(string& key){
 		return cursor_->jump(key);
 	};
-	
+
 	Document* DocumentCursor::getNext(){
 		string key;
 		if (cursor_->get_key(&key,true)){
@@ -32,15 +32,15 @@ namespace superfastmatch
 		};
 		return NULL;
 	};
-	
+
 	Document* DocumentCursor::getPrevious(){
 		return NULL;
-	};	
-	
-	uint32_t DocumentCursor::getCount(){
-		return registry_.documentDB->count();		
 	};
-	
+
+	uint32_t DocumentCursor::getCount(){
+		return registry_.documentDB->count();
+	};
+
 	// TODO Inline everything! OR load docs for each cursor!
 	void DocumentCursor::fill_list_dictionary(TemplateDictionary* dict,uint32_t doctype,uint32_t doc_id){
 		if (getCount()==0){
@@ -60,9 +60,11 @@ namespace superfastmatch
 		}
 		delete[] key;
 		key=cursor_->get_key(&key_length,false);
-		memcpy(&di,key+4,4);
-		di=kc::ntoh32(di);
-		page_dict->SetValueAndShowSection("PAGE",toString(di),"FIRST");
+		if (key!=NULL){
+			memcpy(&di,key+4,4);
+			di=kc::ntoh32(di);
+			page_dict->SetValueAndShowSection("PAGE",toString(di),"FIRST");
+		}
 		delete[] key;
 		while (((doc=getNext())!=NULL)&&count<registry_.page_size){
 			if ((doctype!=0) && (doctype!=doc->doctype())){
@@ -79,18 +81,17 @@ namespace superfastmatch
 			memcpy(&di,key+4,4);
 			di=kc::ntoh32(di);
 			page_dict->SetValueAndShowSection("PAGE",toString(di),"NEXT");
-			delete[] key;	
+			delete[] key;
 		}
 		if ((doctype==0)&&(cursor_->jump_back())){
 			key=cursor_->get_key(&key_length,false);
 			memcpy(&di,key+4,4);
 			di=kc::ntoh32(di);
 			page_dict->SetValueAndShowSection("PAGE",toString(di),"LAST");
-			delete[] key;	
+			delete[] key;
 		}
 	}
-	
-	
+
 	Document::Document(const uint32_t doctype,const uint32_t docid,const char* content,const Registry& registry):
 	doctype_(doctype),docid_(docid),registry_(registry),key_(0),content_(0),content_map_(0),hashes_(0),unique_sorted_hashes_(0),bloom_(0)
 	{
