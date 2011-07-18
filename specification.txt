@@ -1,0 +1,84 @@
+REST Specification
+==================
+
+URL											METHOD		DESCRIPTION																		RESPONSE
+
+/											GET			Returns Home page with js and css to browse the datastore						200
+/document/									GET 		Returns the first page of documents												200
+/document/?cursor=<cursor>					GET 		Returns the page of documents beginning with <cursor>							200
+/document/<doctype>/        				GET         Returns the first page of documents with <doctype>								200
+/document/<doctype>/?cursor=<cursor>		GET			Returns the page of documents with <doctype> beginning with <cursor>			200
+/document/<doctype>/<docid>/				GET			Returns the document with <doctype> and <docid> if exists						200/404/304
+/document/<doctype>/<docid>/				POST		Create or update the document with <doctype> and <docid> and defer association 	202
+/document/<doctype>/<docid>/				PUT 		Create or update the document with <doctype> and <docid> and associate		 	202
+/document/<doctype>/<docid>/				DELETE		Delete the document with <doctype> and <docid> and related associations			204/404
+/index/										GET			Returns the first page of the index												200
+/index/?cursor=<cursor>						GET         Returns the page of the index beginning with <cursor>							200
+/association/								GET			Returns the first page of associations											200
+/association/?cursor=<cursor>				GET			Returns the page of associations beginning with <cursor>						200
+/association/<doctype>/						GET 		Returns the the first page of associations for <doctype>						200
+/association/<doctype>/?cursor=<cursor>		GET 		Returns the the page of associations for <doctype> beginning with <cursor>		200
+/association/<doctype>/<docid>/  			GET 		Returns the associations for a specific document						 		200/304
+/association/								POST		Updates associations for all documents											202
+/association/<doctype>/						POST		Updates associations for all documents with <doctype>							202
+/association/<doctype1>/<doctype2>/			POST		Updates associations for all documents with <doctype1> against <doctype2>		202
+/search/									POST		Returns the results for a search of all documents								200
+/search/<doctype>/							POST		Returns the results for a search against documents of <doctype>					200
+/status/									GET			Returns counts for each DB														200
+/queue/										GET			Returns the first page of jobs													200
+/queue/?cursor=<cursor>						GET			Returns the page of jobs beginning with <cursor>								200
+/queue/<jobid>/								GET			Returns the details of <queueid>												200/404/304
+
+where <doctype>, <docid> and <queueid> are integers between 1 and 4294967295
+
+
+DB Specification
+================
+
+Document
+--------
+
+Key		: uint32 doctype in network byte order followed by uint32 docid in network byte order		
+Value	: ascii/unicode(?) text
+Options	: document.kct#bnum=1g#ktopts=p#zcomp=zlib
+
+Index
+-----
+
+Key		: uint32 hash in network byte order
+Value	: sequence of doctype as uint32 followed by number of docids terminated by 0 
+          sequence of docids as uint32 for each doctype (possibly delta encoded)
+          whole sequence encoded as variable length integers
+Options: index.kct#bnum=1g#ktopts=p
+
+Association
+-----------
+
+Key		: uint32 from doctype in network byte order followed by uint32 from docid in network byte order
+		  uint32 to doctype in network byte order followed by uint32 to docid in network byte order
+Value	: sequence of uint32 of from document start position,uint32 to document start postion, uint32 fragment length, uint64 fragmentid
+          whole sequence encoded as variable length integers
+
+Fragment
+--------
+
+Key		: uint64 composed of uint32 length followed by uint32 hash of content acquired by separate chaining
+Value	: ascii/unicode(?) text
+
+Changes
+-------
+
+Key		: string of request url?
+Value	: SHA1 of result content
+
+Jobs
+----
+
+Key		: incrementing uint64
+Value	: ?
+
+
+
+
+
+

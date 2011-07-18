@@ -9,6 +9,13 @@ superfastmatch.egg-info/*
 .build
 .env
 .cache
-dist
-superfastmatch/docs
-*.kct
+previous/
+gmock-gtest.a
+tests/postline-unittest
+*.d
+external/
+*.dSYM
+data/
+fixtures/
+
+superfastmatch
