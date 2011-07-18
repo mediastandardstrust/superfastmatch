@@ -1,5 +1,4 @@
 .DS_Store
-superfastmatch/fixtures/pan*
 *.o
 *.so
 *.pyc
@@ -16,6 +15,5 @@ tests/postline-unittest
 external/
 *.dSYM
 data/
-fixtures/
 
 superfastmatch
