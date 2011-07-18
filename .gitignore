@@ -5,6 +5,7 @@ superfastmatch/fixtures/pan*
 *.pyc
 *.db
 *.egg-info
+*.log
 superfastmatch.egg-info/*
 .build
 .env
