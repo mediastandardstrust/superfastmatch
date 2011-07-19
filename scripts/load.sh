@@ -13,11 +13,11 @@ function send_doc {
 	#for file in `ls -A $dir | grep $filemask`
 	do
 		if [[ "${method}" == "DELETE" ]] ; then
-			echo "curl -X $method -H \"Expect:\" 192.168.0.3:1978/document/$doctype/$docid/"
-			curl -sS -X $method -H "Expect:" 192.168.0.3:1978/document/$doctype/$docid/ -o test.log #&			
+			echo "curl -X $method -H \"Expect:\" 127.0.0.1:8080/document/$doctype/$docid/"
+			curl -sS -X $method -H "Expect:" 127.0.0.1:8080/document/$doctype/$docid/ -o test.log #&			
 		else
-			echo "curl -X $method -H \"Expect:\" -d \"title=$file\" --data-urlencode \"text@$dir$file\" 192.168.0.3:1978/document/$doctype/$docid/"
-			curl -sS -X $method -H "Expect:" -d "title=$file" --data-urlencode "text@$dir$file" 192.168.0.3:1978/document/$doctype/$docid/ -o load.log #&
+			echo "curl -X $method -H \"Expect:\" -d \"title=$file\" --data-urlencode \"text@$dir$file\" 127.0.0.1:8080/document/$doctype/$docid/"
+			curl -sS -X $method -H "Expect:" -d "title=$file" --data-urlencode "text@$dir$file" 127.0.0.1:8080/document/$doctype/$docid/ -o load.log #&
 		fi
 		docid=$(($docid+1))
 		NPROC=$(($NPROC+1))

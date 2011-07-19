@@ -1,3 +1,4 @@
+mkdir external
 curl http://google-ctemplate.googlecode.com/files/ctemplate-0.99.tar.gz -o external/ctemplate-0.99.tar.gz
 curl http://google-perftools.googlecode.com/files/google-perftools-1.8.tar.gz -o external/google-perftools-1.8.tar.gz
 curl http://google-gflags.googlecode.com/files/gflags-1.5.tar.gz -o external/gflags-1.5.tar.gz

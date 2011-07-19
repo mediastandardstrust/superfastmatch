@@ -17,7 +17,7 @@ OBJS = src/superfastmatch.o src/worker.o src/queue.o src/posting.o src/document.
 # Building binaries
 INCLUDES = -I./src -I./tests -I/usr/local/include/ -Itests/utils/ 
 CXXFLAGS = -Wall -Wextra -funsigned-char -fno-omit-frame-pointer -fno-builtin-malloc -fno-builtin-calloc -fno-builtin-realloc -fno-builtin-free  -m64 -march=core2 -O3 -g
-LIBS = -Lexternal/leveldb -lkyototycoon -lkyotocabinet -lstdc++ -lz -lpthread -lm -lc -ltcmalloc -lctemplate 
+LIBS = -lkyototycoon -lkyotocabinet -lstdc++ -lz -lpthread -lm -lc -ltcmalloc -lctemplate 
 CXX = g++ $(INCLUDES)
 
 # Enviroments
@@ -70,14 +70,18 @@ check : $(TESTS)
 	$(TESTS:.o=)
 
 run : all
+	mkdir data
 	rm -rf $(DATA)
 	$(RUNENV) ./superfastmatch
 
 profile : all
+	mkdir data
+	rm -rf $(DATA)
 	$(PROFILEENV) ./superfastmatch
 
 debug : CXXFLAGS += -O0 
 debug : all
+	mkdir data
 	rm -rf $(DATA)
 	$(DEBUGENV) superfastmatch
 
