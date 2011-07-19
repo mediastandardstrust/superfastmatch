@@ -60,7 +60,7 @@ GTEST_DIR = tests/utils
 # Actions
 #================================================================
 
-all : $(EXTERNAL) $(MYBINS) 
+all : $(MYBINS) 
 
 clean :
 	rm -rf $(MYBINS) $(DATA) $(TESTS) $(GTEST_DIR)/*.o $(GTEST_DIR)/*.a *.a *.o *.exe src/*.o src/*.d            
@@ -70,25 +70,25 @@ check : $(TESTS)
 	$(TESTS:.o=)
 
 run : all
-	mkdir data
+	mkdir -p data
 	rm -rf $(DATA)
 	$(RUNENV) ./superfastmatch
 
 profile : all
-	mkdir data
+	mkdir -p data
 	rm -rf $(DATA)
 	$(PROFILEENV) ./superfastmatch
 
 debug : CXXFLAGS += -O0 
 debug : all
-	mkdir data
+	mkdir -p data
 	rm -rf $(DATA)
 	$(DEBUGENV) superfastmatch
 
 # pull in dependency info for *existing* .o files
 -include $(OBJS:.o=.d)
 
-.PHONY : all clean check profile debug $(EXTERNAL)
+.PHONY : all clean check profile debug
 
 #================================================================
 # Building Tests
