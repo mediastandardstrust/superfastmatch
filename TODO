@@ -4,7 +4,7 @@ TODO
 * Implement search page
 * Implement association task
 * Create a DocumentSharedPtr and AssociationSharedPtr and pass them around instead
-* Create an AssociationCursor and respective Page
+* Create an AssociationCursor and respective page
 * Create a Fragment class and associated page
 * Write tests for each class
 * Implement gflags parsing
