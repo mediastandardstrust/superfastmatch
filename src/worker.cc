@@ -149,7 +149,7 @@ namespace superfastmatch{
     switch (req.verb){
       case HTTPClient::MPOST:{
           Document doc(0,0,req.reqbody.c_str(),registry_);
-          registry_.postings->searchIndex(&doc); 
+          registry_.postings->searchIndex(&doc,&res.dict); 
           res.code=200;
           res.template_name=RESULTS_PAGE;
         }
@@ -275,7 +275,7 @@ namespace superfastmatch{
     MallocExtensionWriter out;
     MallocExtension::instance()->GetHeapSample(&out);
     res.dict.SetValue("BODY",out);
-    res.template_name=ECHO_PAGE;
+    res.template_name=EMPTY_PAGE;
     res.code=200;
   }
   

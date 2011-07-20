@@ -15,6 +15,8 @@ namespace superfastmatch{
     slot_count=8;
     // Number of lines returned on the association,document and index pages
     page_size=100;
+    // Number of search results and associations returned
+    num_results=20;
     
     hash_mask=(1L<<hash_width)-1;
     max_hash_count=(1L<<hash_width);

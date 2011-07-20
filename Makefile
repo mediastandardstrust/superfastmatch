@@ -12,7 +12,7 @@ DATA = data/*.kct data/*.kch data/*.kcf
 
 # Targets
 MYBINS = superfastmatch
-OBJS = src/superfastmatch.o src/worker.o src/queue.o src/posting.o src/document.o src/logger.o src/registry.o src/command.o src/postline.o
+OBJS = src/superfastmatch.o src/worker.o src/queue.o src/posting.o src/document.o src/logger.o src/registry.o src/command.o src/postline.o src/association.o
 
 # Building binaries
 INCLUDES = -I./src -I./tests -I/usr/local/include/ -Itests/utils/ 

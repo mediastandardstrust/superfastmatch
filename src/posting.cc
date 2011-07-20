@@ -4,6 +4,7 @@
 #include "document.h"
 #include "command.h"
 #include "registry.h"
+#include "association.h"
 
 namespace superfastmatch
 {
@@ -152,15 +153,16 @@ namespace superfastmatch
         line_.getDocTypes(doctypes);
         for (vector<uint32_t>::const_iterator it2=doctypes.begin(),ite2=doctypes.end();it2!=ite2;++it2){
           line_.getDocIds(*it2,docids);
-            for (vector<uint32_t>::const_iterator it3=doctypes.begin(),ite3=doctypes.end();it3!=ite3;++it3){
+            for (vector<uint32_t>::const_iterator it3=docids.begin(),ite3=docids.end();it3!=ite3;++it3){
               DocTally* tally=&results[DocPair(*it2,*it3)];
-              if ((tally->last_seen-position)<registry_.max_distance){
+              if ((position-tally->last_seen)<registry_.max_distance){
                 tally->count++;
+                tally->total+=docids.size();
+              }
+              tally->last_seen=position;
             }
-            tally->last_seen=position;
           }
         }
-      }
       position++;
     }
     index_lock_.unlock();
@@ -302,10 +304,32 @@ namespace superfastmatch
     return queue_length;
   }
   
-  void Posting::searchIndex(Document* doc){
+  void Posting::searchIndex(Document* doc,TemplateDictionary* dict){
     search_t results;
+    inverted_search_t pruned_results;
     for (size_t i=0;i<registry_.slot_count;i++){
       slots_[i]->searchIndex(doc,results);
+    }
+    for (search_t::iterator it=results.begin(),ite=results.end();it!=ite;it++){
+      if (it->second.count>1){
+        pruned_results.insert(pair<DocTally,DocPair>(it->second,it->first));
+      }
+    }
+    size_t count=0;
+    inverted_search_t::iterator it=pruned_results.begin();
+    while(it!=pruned_results.end() && count<registry_.num_results){
+      TemplateDictionary* result_dict=dict->AddSectionDictionary("RESULT");
+      result_dict->SetIntValue("DOC_TYPE",it->second.doc_type);
+      result_dict->SetIntValue("DOC_ID",it->second.doc_id);
+      result_dict->SetIntValue("COUNT",it->first.count);
+      result_dict->SetIntValue("TOTAL",it->first.total);
+      result_dict->SetFormattedValue("HEAT","%.2f",double(it->first.total)/it->first.count);
+      Document* other = new Document(it->second.doc_type,it->second.doc_id,"",registry_);
+      other->load();
+      Association association(registry_,doc,other);
+      association.fill_item_dictionary(dict);
+      count++;
+      it++;
     }
   }
   

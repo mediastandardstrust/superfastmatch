@@ -29,21 +29,21 @@ function send_doc {
 	wait
 }
 
-echo "Test PUT-ing documents as doctype 1"
-send_doc PUT 1 "fixtures/gutenberg/" ".txt"
+# echo "Test PUT-ing documents as doctype 1"
+# send_doc PUT 1 "fixtures/gutenberg/" ".txt"
  
-echo "Test DELETE-ing documents"
-send_doc DELETE 1 "fixtures/gutenberg/" ".txt"
- 
-echo "Test POST-ing documents"
-send_doc POST 2 "fixtures/gutenberg/" ".txt"
+# echo "Test DELETE-ing documents"
+# send_doc DELETE 1 "fixtures/gutenberg/" ".txt"
+#  
+# echo "Test POST-ing documents"
+# send_doc POST 2 "fixtures/gutenberg/" ".txt"
 
 
 # echo "Test batch indexing"
 # curl -X POST -H "Expect:" 127.0.0.1:1978/index/
 
-# echo "Test POST-ing documents"
-# send_doc POST 1 "fixtures/pan11-external/source-documents/" ".txt"
+echo "Test POST-ing documents"
+send_doc POST 1 "fixtures/pan11-external/source-documents/" ".txt"
 # 
 # echo "Test POST-ing documents"
 # send_doc POST 2 "fixtures/pan11-external/suspicious-documents/" ".txt"

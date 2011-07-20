@@ -25,6 +25,7 @@ namespace superfastmatch
   class Registry;
   class Command;
   class PostingSlot;
+  class Association;
   
   struct DocPair{
     uint32_t doc_type;
@@ -46,17 +47,25 @@ namespace superfastmatch
   
   struct DocTally{
     uint64_t count;
+    uint64_t total;
     uint64_t last_seen;
     DocTally():
     count(0),
+    total(0),
     last_seen(0)
     {}
   };
   
+  typedef struct
+  {
+    bool operator()(const DocTally &lhs, const DocTally &rhs) const { return lhs.count > rhs.count;}
+  } DocTallyEq;
+    
   typedef sparsetable<unsigned char*,48> index_t;
   typedef unordered_map<uint32_t,uint64_t> stats_t;
   typedef unordered_map<uint32_t,stats_t> histogram_t;
   typedef unordered_map<DocPair,DocTally,DocPairHash,DocPairEq> search_t;
+  typedef multimap<DocTally,DocPair,DocTallyEq> inverted_search_t;
 
   class TaskPayload{
   public:
@@ -143,7 +152,7 @@ namespace superfastmatch
     bool init();
     bool addDocuments(vector<Command*> commands);
     bool deleteDocuments(vector<Command*> commands);
-    void searchIndex(Document* doc);
+    void searchIndex(Document* doc,TemplateDictionary* dict);
     bool isReady();
     
     void fill_status_dictionary(TemplateDictionary* dict);

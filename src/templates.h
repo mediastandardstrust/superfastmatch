@@ -28,6 +28,7 @@ namespace superfastmatch{
 	RegisterTemplateFilename(HISTOGRAMS_PAGE, "histograms_page.tpl");
 
 	// Register parts
+	RegisterTemplateFilename(ASSOCIATION, "association.tpl");
 	RegisterTemplateFilename(PAGING, "paging.tpl");
 	RegisterTemplateFilename(HISTOGRAM, "histogram.tpl");
 
