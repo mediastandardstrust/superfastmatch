@@ -66,7 +66,7 @@ namespace superfastmatch
   PostingTaskQueue::PostingTaskQueue(){}
   
   void PostingTaskQueue::do_task(Task* task) {
-        PostingTask* ptask = (PostingTask*)task;
+    PostingTask* ptask = (PostingTask*)task;
     Document* doc = ptask->getPayload()->getDocument();
     PostingSlot* slot = ptask->getSlot();
     slot->alterIndex(doc,ptask->getPayload()->getTaskOperation());
@@ -146,23 +146,23 @@ namespace superfastmatch
     vector<uint32_t> doctypes;
     uint64_t position=0;
     index_lock_.lock_reader();
-    for (vector<hash_t>::const_iterator it=doc->unique_sorted_hashes().begin(),ite=doc->unique_sorted_hashes().end();it!=ite;++it){
+    for (vector<hash_t>::const_iterator it=doc->hashes().begin(),ite=doc->hashes().end();it!=ite;++it){
       hash = ((*it>>registry_.hash_width)^(*it&registry_.hash_mask))-offset_;
       if ((hash<span_) && (index_.test(hash))){
         line_.load(index_.unsafe_get(hash));  
         line_.getDocTypes(doctypes);
         for (vector<uint32_t>::const_iterator it2=doctypes.begin(),ite2=doctypes.end();it2!=ite2;++it2){
           line_.getDocIds(*it2,docids);
-            for (vector<uint32_t>::const_iterator it3=docids.begin(),ite3=docids.end();it3!=ite3;++it3){
-              DocTally* tally=&results[DocPair(*it2,*it3)];
-              if ((position-tally->last_seen)<registry_.max_distance){
-                tally->count++;
-                tally->total+=docids.size();
-              }
-              tally->last_seen=position;
+          for (vector<uint32_t>::const_iterator it3=docids.begin(),ite3=docids.end();it3!=ite3;++it3){
+            DocTally* tally=&results[DocPair(*it2,*it3)];
+            if ((position-tally->last_seen)<registry_.max_distance){
+              tally->count++;
+              tally->total+=docids.size();
             }
+            tally->last_seen=position;
           }
         }
+      }
       position++;
     }
     index_lock_.unlock();

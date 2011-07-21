@@ -42,7 +42,7 @@ namespace superfastmatch
   };
 
   // TODO Inline everything! OR load docs for each cursor!
-  void DocumentCursor::fill_list_dictionary(TemplateDictionary* dict,uint32_t doctype,uint32_t doc_id){
+  void DocumentCursor::fill_list_dictionary(TemplateDictionary* dict,uint32_t doctype,uint32_t docid){
     if (getCount()==0){
       return;
     }
@@ -65,8 +65,13 @@ namespace superfastmatch
       di=kc::ntoh32(di);
       page_dict->SetValueAndShowSection("PAGE",toString(di),"FIRST");
     }
+    if (docid!=0){
+      di=kc::hton32(docid);
+      memcpy(key+4,&di,4);
+      cursor_->jump(key,8);
+    }
     delete[] key;
-    while (((doc=getNext())!=NULL)&&count<registry_.page_size){
+    while ((count<registry_.page_size && (doc=getNext())!=NULL)){
       if ((doctype!=0) && (doctype!=doc->doctype())){
         break;
       }
@@ -76,7 +81,7 @@ namespace superfastmatch
       doc_dict->SetValue("DOC_TITLE",doc->title());
       count++;
     }
-    if (cursor_->step()){
+    if (doc!=NULL){
       key=cursor_->get_key(&key_length,false);
       memcpy(&di,key+4,4);
       di=kc::ntoh32(di);
@@ -178,9 +183,11 @@ namespace superfastmatch
     offset+=kc::readvarnum(hashes.data()+offset,hashes.size()-offset,&length);
     unique_sorted_hashes_=new hashes_vector();
     unique_sorted_hashes_->reserve(length);
+    bloom_=new hashes_bloom();
     while (offset<hashes.size()){
       offset+=kc::readvarnum(hashes.data()+offset,hashes.size()-offset,&hash);
       unique_sorted_hashes_->push_back(hash+previous);
+      bloom_->set((hash+previous)&0xFFFFFF);
       previous+=hash;
     }
     return registry_.documentDB->get(*key_,content_);
@@ -226,7 +233,9 @@ namespace superfastmatch
   }
   
   Document::hashes_bloom& Document::bloom(){
-    hashes();
+    if (bloom_==0){
+      hashes(); 
+    }
     return *bloom_;
   }
   

@@ -223,14 +223,22 @@ namespace superfastmatch{
     }
     else if (req.first_is_numeric){
       DocumentCursor cursor(registry_);
-      uint32_t doctype = kc::atoi(req.first_id.data());
-      cursor.fill_list_dictionary(&res.dict,doctype,0);
+      uint32_t doctype=kc::atoi(req.first_id.c_str());
+      uint32_t docid=0;
+      if (req.cursor_is_numeric){
+        docid=kc::atoi(req.cursor.c_str());
+      }
+      cursor.fill_list_dictionary(&res.dict,doctype,docid);
       res.template_name=DOCUMENTS_PAGE;
       res.code=200;
     }
     else{
       DocumentCursor cursor(registry_);
-      cursor.fill_list_dictionary(&res.dict,0,0);
+      uint32_t docid=0;
+      if (req.cursor_is_numeric){
+        docid=kc::atoi(req.cursor.c_str());
+      }
+      cursor.fill_list_dictionary(&res.dict,0,docid);
       res.template_name=DOCUMENTS_PAGE;
       res.code=200;
     }
