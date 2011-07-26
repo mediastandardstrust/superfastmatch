@@ -1,10 +1,37 @@
 #include "registry.h"
+#include <gflags/gflags.h>
+#include <validators.h>
 
 namespace superfastmatch{
-  Registry::Registry(const string& filename){
+
+  // Command line flags
+  DEFINE_int32(port, 8080, "What port to listen on");
+  static const bool port_dummy = google::RegisterFlagValidator(&FLAGS_port, &ValidatePort);
+
+  DEFINE_string(address,"127.0.0.1" , "What address to listen on");
+  static const bool address_dummy = google::RegisterFlagValidator(&FLAGS_address, &ValidateAddress);
+
+  DEFINE_int32(thread_count,8,"Number of threads for serving requests");
+  static const bool thread_count__dummy = google::RegisterFlagValidator(&FLAGS_thread_count, &ValidateThreads);
+
+  DEFINE_int32(slot_count,8,"Number of slots to divide the index into (one thread per slot)");
+  static const bool slot_count_dummy = google::RegisterFlagValidator(&FLAGS_slot_count, &ValidateThreads);
+
+  DEFINE_int32(hash_width,24,"Number of bits to use to hash windows of text");
+  static const bool hash_width_dummy = google::RegisterFlagValidator(&FLAGS_hash_width, &ValidateHashWidth);
+
+  DEFINE_int32(window_size,15,"Number of characters to use as a window of text for hashing");
+  static const bool window_size_dummy = google::RegisterFlagValidator(&FLAGS_window_size, &ValidateWindowSize);
+    
+  DEFINE_string(data_dir,"./data","Path to store data files");
+
+  uint32_t Registry::getHashWidth(){
+    return FLAGS_hash_width;
+  }
+
+  Registry::Registry(){
     logger = new Logger();
     logger->open("-");
-    // TODO load config from file
     // Number of threads for serving incoming web requests
     thread_count=8;
     // Size of rolling window of text that is hashed

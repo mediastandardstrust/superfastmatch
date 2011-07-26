@@ -19,7 +19,7 @@ using namespace std;
 
 namespace superfastmatch
 {
-  
+
   // Forward Declarations
   class Document;
   class Registry;

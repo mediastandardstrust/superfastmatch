@@ -17,7 +17,7 @@ OBJS = src/superfastmatch.o src/worker.o src/queue.o src/posting.o src/document.
 # Building binaries
 INCLUDES = -I./src -I./tests -I/usr/local/include/ -Itests/utils/ 
 CXXFLAGS = -Wall -Wextra -funsigned-char -fno-omit-frame-pointer -fno-builtin-malloc -fno-builtin-calloc -fno-builtin-realloc -fno-builtin-free  -m64 -march=core2 -O3 -g
-LIBS = -lkyototycoon -lkyotocabinet -lstdc++ -lz -lpthread -lm -lc -ltcmalloc -lctemplate 
+LIBS = -lkyototycoon -lkyotocabinet -lstdc++ -lz -lpthread -lm -lc -ltcmalloc -lctemplate -lgflags
 CXX = g++ $(INCLUDES)
 
 # Enviroments
@@ -29,7 +29,7 @@ DEBUGENV = gdb
 # Test variables
 #================================================================
 
-TESTS = tests/postline-unittest.o
+TESTS = tests/postline-unittest.o tests/document-unittest.o
 GTEST_DIR = tests/utils
 
 #================================================================
@@ -99,6 +99,9 @@ gmock-gtest.a : $(GTEST_DIR)/gmock-gtest-all.o
 
 tests/postline-unittest.o : src/postline.cc tests/postline-unittest.cc gmock-gtest.a 
 	$(CXX) -lpthread $(CXXFLAGS) $^ -o $* 
+
+tests/document-unittest.o : src/document.cc tests/document-unittest.cc gmock-gtest.a
+	$(CXX) -lpthread $(CXXFLAGS) $^ -o $*
 
 #================================================================
 # Building binaries

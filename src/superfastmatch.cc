@@ -1,7 +1,9 @@
+#include <gflags/gflags.h>
 #include <kthttp.h>
 #include <logger.h>
 #include <worker.h>
 #include <registry.h>
+
 
 using namespace superfastmatch;
 
@@ -14,36 +16,47 @@ static void stopserver(int signum) {
   g_serv = NULL;
 }
 
+
 // main routine
 int main(int argc, char** argv) {
-  	// set the signal handler to stop the server
-  	setkillsignalhandler(stopserver);
+  // set the signal handler to stop the server
+  setkillsignalhandler(stopserver);
 
-	// set up the registry
-	Registry registry("superfastmatch.cfg");
+  // set up the registry
+  Registry registry;
+  RegistryInterface registry2;
+  
 
-  	// prepare the worker
-  	Worker worker(registry);
+  // set usage message
+  string usage("This program allows bulk text comparison.  Sample usage:\n");
+  usage += argv[0];
+  google::SetUsageMessage(usage);
 
-	// prepare the server
-	HTTPServer serv;
-	serv.set_network("127.0.0.1:8080", registry.timeout);
-	serv.set_worker(&worker, registry.thread_count);
+  // parse command line options
+  google::ParseCommandLineFlags(&argc, &argv, true);
 
-	// set up the logger
-	Logger logger;
-	logger.open("-");
-	serv.set_logger(&logger, Logger::INFO | Logger::SYSTEM | Logger::ERROR);
-	serv.log(Logger::SYSTEM, "================ [START]: pid=%d", getpid());
+  // prepare the worker
+  Worker worker(registry);
 
-	g_serv = &serv;
+  // prepare the server
+  HTTPServer serv;
+  serv.set_network("127.0.0.1:8080", registry.timeout);
+  serv.set_worker(&worker, registry.thread_count);
 
-	// start the server and block until it stops
-	serv.start();
+  // set up the logger
+  Logger logger;
+  logger.open("-");
+  serv.set_logger(&logger, Logger::INFO | Logger::SYSTEM | Logger::ERROR);
+  serv.log(Logger::SYSTEM, "================ [START]: pid=%d", getpid());
 
-	// clean up connections and other resources
-	serv.finish();
+  g_serv = &serv;
 
-	serv.log(Logger::SYSTEM, "================ [FINISH]: pid=%d", getpid());
-	return 0;
+  // start the server and block until it stops
+  serv.start();
+
+  // clean up connections and other resources
+  serv.finish();
+
+  serv.log(Logger::SYSTEM, "================ [FINISH]: pid=%d", getpid());
+  return 0;
 }
