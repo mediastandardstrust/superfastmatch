@@ -7,8 +7,8 @@
 # Generic settings
 SHELL = /bin/sh
 
-# Data files
-DATA = data/*.kct data/*.kch data/*.kcf
+# Data path
+DATA = ./data
 
 # Targets
 MYBINS = superfastmatch
@@ -70,25 +70,22 @@ check : $(TESTS)
 	$(TESTS:.o=)
 
 run : all
-	mkdir -p data
-	rm -rf $(DATA)
-	$(RUNENV) ./superfastmatch
+	mkdir -p $(DATA)
+	$(RUNENV) ./superfastmatch -reset
 
 profile : all
 	mkdir -p data
-	rm -rf $(DATA)
-	$(PROFILEENV) ./superfastmatch
+	$(PROFILEENV) ./superfastmatch -reset
 
 debug : CXXFLAGS += -O0 
 debug : all
 	mkdir -p data
-	rm -rf $(DATA)
-	$(DEBUGENV) superfastmatch
+	$(DEBUGENV) superfastmatch -reset
 
 # pull in dependency info for *existing* .o files
 -include $(OBJS:.o=.d)
 
-.PHONY : all clean check profile debug
+.PHONY : all clean check profile debug run
 
 #================================================================
 # Building Tests

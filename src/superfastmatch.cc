@@ -22,11 +22,6 @@ int main(int argc, char** argv) {
   // set the signal handler to stop the server
   setkillsignalhandler(stopserver);
 
-  // set up the registry
-  Registry registry;
-  RegistryInterface registry2;
-  
-
   // set usage message
   string usage("This program allows bulk text comparison.  Sample usage:\n");
   usage += argv[0];
@@ -35,13 +30,19 @@ int main(int argc, char** argv) {
   // parse command line options
   google::ParseCommandLineFlags(&argc, &argv, true);
 
+  // set up the registry
+  Registry registry;
+  RegistryInterface* registry2 = new Registry();
+
   // prepare the worker
   Worker worker(registry);
 
   // prepare the server
   HTTPServer serv;
-  serv.set_network("127.0.0.1:8080", registry.timeout);
-  serv.set_worker(&worker, registry.thread_count);
+  stringstream network;
+  network << registry.getAddress() << ":" <<registry.getPort();
+  serv.set_network(network.str(), registry.getTimeout());
+  serv.set_worker(&worker, registry.getThreadCount());
 
   // set up the logger
   Logger logger;

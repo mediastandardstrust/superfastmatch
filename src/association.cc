@@ -10,7 +10,7 @@ namespace superfastmatch
      return lhs.right < rhs.right;
   }
   
-  Association::Association(const Registry& registry,Document* from_document,Document* to_document):
+  Association::Association(Registry& registry,Document* from_document,Document* to_document):
   registry_(registry),
   from_document_(0),
   to_document_(0)
@@ -38,6 +38,7 @@ namespace superfastmatch
     uint32_t to_hashes_count   = to_hashes.size();
     std::string from_text = from_document_->text();
     std::string to_text = to_document_->text();
+    uint32_t window_size=registry_.getWindowSize();
 
     //Find from_document hashes set
     hashes_set from_hashes_set;
@@ -70,7 +71,7 @@ namespace superfastmatch
       if (to_match!=to_matches_end){
         positions_set checked_matches(to_match->second);
         for (positions_set::iterator it=checked_matches.begin();it!=checked_matches.end();++it){
-          if (from_text.compare(i,registry_.window_size,to_text,*it,registry_.window_size)){
+          if (from_text.compare(i,window_size,to_text,*it,window_size)){
             checked_matches.erase(it);
           }
         }
@@ -104,7 +105,7 @@ namespace superfastmatch
              break;
           }
        }
-       results_.push_back(Result(first->left,first_right,counter+registry_.window_size));
+       results_.push_back(Result(first->left,first_right,counter+window_size));
     }
     sort(results_.begin(),results_.end(),result_sorter);
 

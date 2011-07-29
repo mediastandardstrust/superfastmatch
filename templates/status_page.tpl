@@ -2,6 +2,8 @@
 	<h1>Status</h1>
 	<h2>Index:</h2>
 	<ul>
+		<li>{{HASH_WIDTH}} bits per hash</li>
+		<li>{{SLOT_COUNT}} slots in index</li>
 		<li>{{DOC_COUNT}} docs in index</li>
 		<li>{{HASH_COUNT}} hashes added to index</li>
 		<li>{{AVERAGE_DOC_LENGTH}} average document length</li>	

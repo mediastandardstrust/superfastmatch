@@ -22,7 +22,7 @@ namespace superfastmatch{
   
   class Command{
   private:
-    const Registry& registry_;
+    Registry& registry_;
     uint64_t queue_id_;
     uint32_t priority_;
     CommandType type_;
@@ -33,8 +33,8 @@ namespace superfastmatch{
     static const char* key_format;
 
   public: 
-    Command(const Registry& registry,const string& key);
-    Command(const Registry& registry,const uint64_t queue_id, const uint32_t priority,const CommandType type,const CommandStatus status, const uint32_t doc_type,const uint32_t doc_id,const string& payload);
+    Command(Registry& registry,const string& key);
+    Command(Registry& registry,const uint64_t queue_id, const uint32_t priority,const CommandType type,const CommandStatus status, const uint32_t doc_type,const uint32_t doc_id,const string& payload);
     ~Command();
     
   private:
@@ -61,13 +61,13 @@ namespace superfastmatch{
   
   class CommandFactory{
   private:
-    static Command* createCommand(const Registry& registry, const CommandType commandType,const uint64_t queue_id,const uint32_t doc_type, const uint32_t doc_id,const string& payload);
+    static Command* createCommand(Registry& registry, const CommandType commandType,const uint64_t queue_id,const uint32_t doc_type, const uint32_t doc_id,const string& payload);
   public:
-    static uint64_t addDocument(const Registry& registry_,const uint32_t doc_type, const uint32_t doc_id,const string& content,const bool associate);
-    static uint64_t dropDocument(const Registry& registry_,const uint32_t doc_type, const uint32_t doc_id);
-    static void insertDropDocument(const Registry& registry_,Command* command);
-    static void getAllCommands(const Registry& registry_,vector<Command*>& commands);
-    static bool getNextBatch(const Registry& registry_,deque<Command*>& batch,CommandType& batchType);
+    static uint64_t addDocument(Registry& registry_,const uint32_t doc_type, const uint32_t doc_id,const string& content,const bool associate);
+    static uint64_t dropDocument(Registry& registry_,const uint32_t doc_type, const uint32_t doc_id);
+    static void insertDropDocument(Registry& registry_,Command* command);
+    static void getAllCommands(Registry& registry_,vector<Command*>& commands);
+    static bool getNextBatch(Registry& registry_,deque<Command*>& batch,CommandType& batchType);
   };
 }
 

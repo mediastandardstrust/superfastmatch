@@ -36,7 +36,7 @@ namespace superfastmatch{
             }
             delete doc;
           }
-          registry_.postings->addDocuments(work);
+          registry_.getPostings()->addDocuments(work);
           for(vector<Command*>::iterator it=work.begin(),ite=work.end();it!=ite;++it){
             (*it)->setFinished();
           }
@@ -47,7 +47,7 @@ namespace superfastmatch{
             work.push_back(batch.front());
             batch.pop_front();  
           }
-          registry_.postings->deleteDocuments(work);
+          registry_.getPostings()->deleteDocuments(work);
           for (vector<Command*>::iterator it=work.begin(),ite=work.end();it!=ite;++it){
             Document* doc = (*it)->getDocument();
             if (not(doc->remove())){

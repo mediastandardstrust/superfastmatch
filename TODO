@@ -1,14 +1,14 @@
 TODO
 ----
 
-* Implement search page
+* ~~Implement search page~~
 * Better ordering of search results and fragments within an association
 * Implement association task
 * Create a DocumentSharedPtr and AssociationSharedPtr and pass them around instead
 * Create an AssociationCursor and respective page
 * Create a Fragment class and associated page
 * Write tests for each class
-* Implement gflags parsing
+* ~~Implement gflags parsing~~
 * Update init.d with correct settings and paths
 * Separate queue payload out to speed up queue page
 * Add separate meta db to speed up document page

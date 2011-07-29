@@ -77,13 +77,13 @@ namespace superfastmatch
   // PostingSlot members
   // -------------------
   
-  PostingSlot::PostingSlot(const Registry& registry,uint32_t slot_number):
+  PostingSlot::PostingSlot(Registry& registry,uint32_t slot_number):
   registry_(registry),slot_number_(slot_number),
-  offset_((registry.max_hash_count/registry.slot_count)*slot_number), // Offset for sparsetable insertion
-  span_(registry.max_hash_count/registry.slot_count), // Span of slot, ie. ignore every hash where (hash-offset)>span
+  offset_((registry.getMaxHashCount()/registry.getSlotCount())*slot_number), // Offset for sparsetable insertion
+  span_(registry.getMaxHashCount()/registry.getSlotCount()), // Span of slot, ie. ignore every hash where (hash-offset)>span
   codec_(new VarIntCodec()),
-  line_(codec_,registry.max_line_length),
-  index_(registry.max_hash_count/registry.slot_count)
+  line_(codec_,registry.getMaxLineLength()),
+  index_(registry.getMaxHashCount()/registry.getSlotCount())
   {
     // 1 thread per slot, increase slot_number to get more threads!
     queue_.start(1);
@@ -97,12 +97,14 @@ namespace superfastmatch
   bool PostingSlot::alterIndex(Document* doc,TaskPayload::TaskOperation operation){
     index_lock_.lock_writer();
     hash_t hash;
+    hash_t hash_mask=registry_.getHashMask();
+    uint32_t hash_width=registry_.getHashWidth();
     size_t incoming_length;
     size_t outgoing_length;
     // Where hash width is below 32 we will get duplicates per document
     // We discard them with a no operation 
     for (Document::hashes_vector::const_iterator it=doc->unique_sorted_hashes().begin(),ite=doc->unique_sorted_hashes().end();it!=ite;++it){
-      hash = ((*it>>registry_.hash_width)^(*it&registry_.hash_mask))-offset_;
+      hash = ((*it>>hash_width)^(*it&hash_mask))-offset_;
       uint32_t doctype=doc->doctype();
       uint32_t docid=doc->docid();
       if (hash<span_){
@@ -142,12 +144,15 @@ namespace superfastmatch
   
   bool PostingSlot::searchIndex(Document* doc,search_t& results){
     hash_t hash;
+    hash_t hash_mask=registry_.getHashMask();
+    uint32_t hash_width=registry_.getHashWidth();
     vector<uint32_t> docids;
     vector<uint32_t> doctypes;
-    uint64_t position=0;
+    size_t position=0;
+    size_t max_distance=registry_.getMaxDistance();
     index_lock_.lock_reader();
     for (vector<hash_t>::const_iterator it=doc->hashes().begin(),ite=doc->hashes().end();it!=ite;++it){
-      hash = ((*it>>registry_.hash_width)^(*it&registry_.hash_mask))-offset_;
+      hash = ((*it>>hash_width)^(*it&hash_mask))-offset_;
       if ((hash<span_) && (index_.test(hash))){
         line_.load(index_.unsafe_get(hash));  
         line_.getDocTypes(doctypes);
@@ -155,7 +160,7 @@ namespace superfastmatch
           line_.getDocIds(*it2,docids);
           for (vector<uint32_t>::const_iterator it3=docids.begin(),ite3=docids.end();it3!=ite3;++it3){
             DocTally* tally=&results[DocPair(*it2,*it3)];
-            if ((position-tally->last_seen)<registry_.max_distance){
+            if ((position-tally->last_seen)<max_distance){
               tally->count++;
               tally->total+=docids.size();
             }
@@ -195,7 +200,7 @@ namespace superfastmatch
     vector<uint32_t> doc_types;
     vector<uint32_t> doc_ids;
     index_t::nonempty_iterator it=index_.get_iter(hash);
-    while (it!=index_.nonempty_end() && count<registry_.page_size){
+    while (it!=index_.nonempty_end() && count<registry_.getPageSize()){
       count++;
       line_.load(*it);
       line_.getDocTypes(doc_types);
@@ -251,22 +256,22 @@ namespace superfastmatch
   // Posting members
   // ---------------
   
-  Posting::Posting(const Registry& registry):
+  Posting::Posting(Registry& registry):
   registry_(registry),doc_count_(0),hash_count_(0),ready_(false)
   {
-    for (uint32_t i=0;i<registry.slot_count;i++){
+    for (uint32_t i=0;i<registry.getSlotCount();i++){
       slots_.push_back(new PostingSlot(registry,i));
     }
   }
   
   Posting::~Posting(){
-    for (uint32_t i=0;i<slots_.size();i++){
+    for (size_t i=0;i<slots_.size();i++){
       delete slots_[i];
     }
   }
   
   void Posting::wait(){
-    for (uint32_t i=0;i<registry_.slot_count;i++){
+    for (size_t i=0;i<slots_.size();i++){
       if (slots_[i]->getTaskCount()!=0){
         kc::Thread::sleep(0.2);       
       }
@@ -293,11 +298,11 @@ namespace superfastmatch
   
   uint64_t Posting::alterIndex(Document* doc,TaskPayload::TaskOperation operation){
     uint64_t queue_length=0;
-    TaskPayload* task = new TaskPayload(doc,operation,registry_.slot_count);
-    for (size_t i=0;i<registry_.slot_count;i++){
+    TaskPayload* task = new TaskPayload(doc,operation,slots_.size());
+    for (size_t i=0;i<slots_.size();i++){
       queue_length+=slots_[i]->addTask(task);
     }
-    if (queue_length>registry_.slot_count*40){
+    if (queue_length>slots_.size()*40){
       kc::Thread::sleep(0.05);
       cout << "Sleeping for 0.05 secs with queue length: " << queue_length << endl;
     }
@@ -307,7 +312,7 @@ namespace superfastmatch
   void Posting::searchIndex(Document* doc,TemplateDictionary* dict){
     search_t results;
     inverted_search_t pruned_results;
-    for (size_t i=0;i<registry_.slot_count;i++){
+    for (size_t i=0;i<slots_.size();i++){
       slots_[i]->searchIndex(doc,results);
     }
     for (search_t::iterator it=results.begin(),ite=results.end();it!=ite;it++){
@@ -316,8 +321,9 @@ namespace superfastmatch
       }
     }
     size_t count=0;
+    size_t num_results=registry_.getNumResults();
     inverted_search_t::iterator it=pruned_results.begin();
-    while(it!=pruned_results.end() && count<registry_.num_results){
+    while(it!=pruned_results.end() && count<num_results){
       TemplateDictionary* result_dict=dict->AddSectionDictionary("RESULT");
       result_dict->SetIntValue("DOC_TYPE",it->second.doc_type);
       result_dict->SetIntValue("DOC_ID",it->second.doc_id);
@@ -370,6 +376,8 @@ namespace superfastmatch
   }
   
   void Posting::fill_status_dictionary(TemplateDictionary* dict){
+    dict->SetIntValue("HASH_WIDTH",registry_.getHashWidth());
+    dict->SetIntValue("SLOT_COUNT",registry_.getSlotCount());
     dict->SetIntValue("DOC_COUNT",doc_count_);
     dict->SetIntValue("HASH_COUNT",hash_count_);
     dict->SetIntValue("AVERAGE_DOC_LENGTH",(doc_count_>0)?hash_count_/doc_count_:0);
@@ -377,23 +385,23 @@ namespace superfastmatch
   
   void Posting::fill_list_dictionary(TemplateDictionary* dict,hash_t start){
     uint32_t count=0;
-    for (uint32_t i=0;i<slots_.size();i++){
+    for (size_t i=0;i<slots_.size();i++){
       count+=slots_[i]->fill_list_dictionary(dict,start);
-      if (count>=registry_.page_size){
+      if (count>=registry_.getPageSize()){
         break;
       }
     }
     TemplateDictionary* page_dict=dict->AddIncludeDictionary("PAGING");
     page_dict->SetFilename(PAGING);
     page_dict->SetValueAndShowSection("PAGE",toString(0),"FIRST");
-    if (start>registry_.page_size){
-      page_dict->SetValueAndShowSection("PAGE",toString(start-registry_.page_size),"PREVIOUS"); 
+    if (start>registry_.getPageSize()){
+      page_dict->SetValueAndShowSection("PAGE",toString(start-registry_.getPageSize()),"PREVIOUS"); 
     }
     else{
       page_dict->SetValueAndShowSection("PAGE",toString(0),"PREVIOUS"); 
     }
-    page_dict->SetValueAndShowSection("PAGE",toString(min(registry_.max_hash_count-registry_.page_size,start+registry_.page_size)),"NEXT");
-    page_dict->SetValueAndShowSection("PAGE",toString(registry_.max_hash_count-registry_.page_size),"LAST");
+    page_dict->SetValueAndShowSection("PAGE",toString(min(registry_.getMaxHashCount()-registry_.getPageSize(),start+registry_.getPageSize())),"NEXT");
+    page_dict->SetValueAndShowSection("PAGE",toString(registry_.getMaxHashCount()-registry_.getPageSize()),"LAST");
   }
 
   void Posting::fill_histogram_dictionary(TemplateDictionary* dict){

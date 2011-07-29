@@ -13,7 +13,7 @@ namespace superfastmatch
 {   
   class Queue{
   private:
-    const Registry& registry_;
+    Registry& registry_;
   public:
     Queue(Registry& registry);
   

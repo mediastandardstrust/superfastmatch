@@ -107,7 +107,7 @@ namespace superfastmatch
 
   class PostingSlot{
   private:
-    const Registry& registry_;
+    Registry& registry_;
     const uint32_t slot_number_;
     const hash_t offset_;
     const hash_t span_;
@@ -118,7 +118,7 @@ namespace superfastmatch
     PostingTaskQueue queue_;
     
   public:
-    PostingSlot(const Registry& registry,uint32_t slot_number);
+    PostingSlot(Registry& registry,uint32_t slot_number);
     ~PostingSlot();
     
     bool alterIndex(Document* doc,TaskPayload::TaskOperation operation);
@@ -133,7 +133,7 @@ namespace superfastmatch
 
   class Posting{
   private:    
-    const Registry& registry_;
+    Registry& registry_;
     vector<PostingSlot*> slots_;
     uint32_t doc_count_;
     uint32_t hash_count_;
@@ -146,7 +146,7 @@ namespace superfastmatch
     void wait();
     
   public:
-    Posting(const Registry& registry);
+    Posting(Registry& registry);
     ~Posting();
     
     bool init();
