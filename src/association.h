@@ -34,13 +34,13 @@ namespace superfastmatch
   class Association
   {
   private:
-    Registry& registry_;
+    Registry* registry_;
     vector<Result> results_;
     Document* from_document_;
     Document* to_document_;
     
   public:
-    Association(Registry& registry,Document* from_document,Document* to_document);
+    Association(Registry* registry,Document* from_document,Document* to_document);
     
     bool load();
     void fill_item_dictionary(TemplateDictionary* dict);

@@ -3,16 +3,16 @@
 namespace superfastmatch{
   const char* Command::key_format = "%d:%020d:%03d:%d:%010d:%010d"; 
   
-  Command::Command(Registry& registry,const string& key):
+  Command::Command(Registry* registry,const string& key):
   registry_(registry),queue_id_(0),priority_(0),type_(Invalid),status_(Queued),doc_type_(0),doc_id_(0){
     if(sscanf(key.c_str(),key_format,&status_,&queue_id_,&priority_,&type_,&doc_type_,&doc_id_)!=6){
       throw "Bad parse of Command key!";
     }
   }
   
-  Command::Command(Registry& registry,const uint64_t queue_id, const uint32_t priority,const CommandType type,const CommandStatus status, const uint32_t doc_type,const uint32_t doc_id,const string& payload):
+  Command::Command(Registry* registry,const uint64_t queue_id, const uint32_t priority,const CommandType type,const CommandStatus status, const uint32_t doc_type,const uint32_t doc_id,const string& payload):
   registry_(registry),queue_id_(queue_id),priority_(priority),type_(type),status_(status),doc_type_(doc_type),doc_id_(doc_id){
-    registry_.getQueueDB()->set(command_key(),payload);
+    registry_->getQueueDB()->set(command_key(),payload);
   }
   
   Command::~Command(){}
@@ -23,15 +23,15 @@ namespace superfastmatch{
   
   //Note that this method destroys the payload
   bool Command::update(){
-    return registry_.getQueueDB()->set(command_key(),"");
+    return registry_->getQueueDB()->set(command_key(),"");
   }
   
   bool Command::remove(){
-    return registry_.getQueueDB()->remove(command_key());
+    return registry_->getQueueDB()->remove(command_key());
   }
   
   bool Command::getPayload(string* payload){
-    return registry_.getQueueDB()->get(command_key(),payload);
+    return registry_->getQueueDB()->get(command_key(),payload);
   }
   
   CommandType Command::getType(){
@@ -118,7 +118,7 @@ namespace superfastmatch{
     dict->SetIntValue("DOC_ID",doc_id_);
   }
   
-  Command* CommandFactory::createCommand(Registry& registry, const CommandType commandType,const uint64_t queue_id,const uint32_t doc_type, const uint32_t doc_id,const string& payload){
+  Command* CommandFactory::createCommand(Registry* registry, const CommandType commandType,const uint64_t queue_id,const uint32_t doc_type, const uint32_t doc_id,const string& payload){
     switch (commandType){
       case AddDocument:
         return new Command(registry,queue_id,101,commandType,Queued,doc_type,doc_id,payload);
@@ -134,8 +134,8 @@ namespace superfastmatch{
     throw "Invalid Command Type!";  
   }
   
-  uint64_t CommandFactory::addDocument(Registry& registry_,const uint32_t doc_type, const uint32_t doc_id,const string& content,const bool associate){
-    uint64_t queue_id = registry_.getMiscDB()->increment("QueueCounter",1);
+  uint64_t CommandFactory::addDocument(Registry* registry_,const uint32_t doc_type, const uint32_t doc_id,const string& content,const bool associate){
+    uint64_t queue_id = registry_->getMiscDB()->increment("QueueCounter",1);
     string empty;
     Command* add_doc = CommandFactory::createCommand(registry_,AddDocument,queue_id,doc_type,doc_id,content);
     delete add_doc;
@@ -146,8 +146,8 @@ namespace superfastmatch{
     return queue_id;
   }
     
-  uint64_t CommandFactory::dropDocument(Registry& registry_,const uint32_t doc_type, const uint32_t doc_id){
-    uint64_t queue_id = registry_.getMiscDB()->increment("QueueCounter",1);
+  uint64_t CommandFactory::dropDocument(Registry* registry_,const uint32_t doc_type, const uint32_t doc_id){
+    uint64_t queue_id = registry_->getMiscDB()->increment("QueueCounter",1);
     string empty;
     Command* drop_doc = CommandFactory::createCommand(registry_,DropDocument,queue_id,doc_type,doc_id,empty);
     Command* drop_ass = CommandFactory::createCommand(registry_,DropAssociation,queue_id,doc_type,doc_id,empty);
@@ -156,7 +156,7 @@ namespace superfastmatch{
     return queue_id;
   }
   
-  void CommandFactory::insertDropDocument(Registry& registry_,Command* command){
+  void CommandFactory::insertDropDocument(Registry* registry_,Command* command){
     string empty;
     Command* drop_doc = CommandFactory::createCommand(registry_,DropDocument,command->getQueueId(),command->getDocType(),command->getDocId(),empty);
     Command* drop_ass = CommandFactory::createCommand(registry_,DropAssociation,command->getQueueId(),command->getDocType(),command->getDocId(),empty);
@@ -164,8 +164,8 @@ namespace superfastmatch{
     delete drop_ass;
   }
   
-  void CommandFactory::getAllCommands(Registry& registry_,vector<Command*>& commands){
-    kc::ForestDB::Cursor* cur = registry_.getQueueDB()->cursor();
+  void CommandFactory::getAllCommands(Registry* registry_,vector<Command*>& commands){
+    kc::ForestDB::Cursor* cur = registry_->getQueueDB()->cursor();
     cur->jump();
     string key;
     while (cur->get_key(&key,true)){
@@ -175,12 +175,12 @@ namespace superfastmatch{
     delete cur;
   }
   
-  bool CommandFactory::getNextBatch(Registry& registry_,deque<Command*>& batch,CommandType& batchType){
+  bool CommandFactory::getNextBatch(Registry* registry_,deque<Command*>& batch,CommandType& batchType){
     string key;
     uint32_t batch_count=0;
-    kc::ForestDB::Cursor* cur = registry_.getQueueDB()->cursor();
+    kc::ForestDB::Cursor* cur = registry_->getQueueDB()->cursor();
     cur->jump();
-    while (batch_count<registry_.getMaxBatchCount() && cur->get_key(&key,true)){
+    while (batch_count<registry_->getMaxBatchCount() && cur->get_key(&key,true)){
       batch_count++;
       Command* command = new Command(registry_,key);
       if (command->getStatus()!=Queued){

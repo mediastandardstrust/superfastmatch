@@ -2,9 +2,9 @@
 
 namespace superfastmatch
 {
-  DocumentCursor::DocumentCursor(Registry& registry):
+  DocumentCursor::DocumentCursor(Registry* registry):
   registry_(registry){
-    cursor_=registry.getDocumentDB()->cursor();
+    cursor_=registry->getDocumentDB()->cursor();
     cursor_->jump();
   };
 
@@ -38,7 +38,7 @@ namespace superfastmatch
   };
 
   uint32_t DocumentCursor::getCount(){
-    return registry_.getDocumentDB()->count();
+    return registry_->getDocumentDB()->count();
   };
 
   // TODO Inline everything! OR load docs for each cursor!
@@ -71,7 +71,7 @@ namespace superfastmatch
       cursor_->jump(key,8);
     }
     delete[] key;
-    while ((count<registry_.getPageSize() && (doc=getNext())!=NULL)){
+    while ((count<registry_->getPageSize() && (doc=getNext())!=NULL)){
       if ((doctype!=0) && (doctype!=doc->doctype())){
         break;
       }
@@ -97,7 +97,7 @@ namespace superfastmatch
     }
   }
 
-  Document::Document(const uint32_t doctype,const uint32_t docid,const char* content,Registry& registry):
+  Document::Document(const uint32_t doctype,const uint32_t docid,const char* content,Registry* registry):
   doctype_(doctype),docid_(docid),registry_(registry),key_(0),content_(0),content_map_(0),hashes_(0),unique_sorted_hashes_(0),bloom_(0)
   {
     char key[8];
@@ -109,7 +109,7 @@ namespace superfastmatch
     content_ = new std::string(content);
   }
   
-  Document::Document(string& key,Registry& registry):
+  Document::Document(string& key,Registry* registry):
   registry_(registry),key_(0),content_(0),content_map_(0),hashes_(0),unique_sorted_hashes_(0),bloom_(0)
   {
     key_= new string(key);
@@ -165,15 +165,15 @@ namespace superfastmatch
       offset+=kc::writevarnum(h+offset,*it-previous);
       previous=*it;
     }
-    bool success = registry_.getHashesDB()->cas(key_->data(),key_->size(),NULL,0,h,offset) && \
-         registry_.getDocumentDB()->cas(key_->data(),key_->size(),NULL,0,content_->data(),content_->size()); 
+    bool success = registry_->getHashesDB()->cas(key_->data(),key_->size(),NULL,0,h,offset) && \
+         registry_->getDocumentDB()->cas(key_->data(),key_->size(),NULL,0,content_->data(),content_->size()); 
     delete[] h;
     return success;
   }
   
   bool Document::load(){
     string hashes;
-    if (not registry_.getHashesDB()->get(*key_,&hashes)){
+    if (not registry_->getHashesDB()->get(*key_,&hashes)){
       return false;
     }
     uint32_t offset=0;
@@ -190,23 +190,23 @@ namespace superfastmatch
       bloom_->set((hash+previous)&0xFFFFFF);
       previous+=hash;
     }
-    return registry_.getDocumentDB()->get(*key_,content_);
+    return registry_->getDocumentDB()->get(*key_,content_);
   }
   
   bool Document::remove(){
-    return registry_.getDocumentDB()->remove(*key_) && registry_.getHashesDB()->remove(*key_);
+    return registry_->getDocumentDB()->remove(*key_) && registry_->getHashesDB()->remove(*key_);
   }
   
   Document::hashes_vector& Document::hashes(){
     if (hashes_==0){
       hashes_ = new hashes_vector();
       bloom_ = new hashes_bloom();
-      uint32_t length = text().length()-registry_.getWindowSize();
+      uint32_t length = text().length()-registry_->getWindowSize();
       hashes_->resize(length);
       const char* data = text().data();
       hash_t hash;
       for (uint32_t i=0;i<length;i++){
-        hash = hashmurmur(data+i,registry_.getWindowSize()+1);
+        hash = hashmurmur(data+i,registry_->getWindowSize()+1);
         (*hashes_)[i]=hash;
         bloom_->set(hash&0xFFFFFF);
       }
@@ -217,12 +217,12 @@ namespace superfastmatch
   Document::hashes_vector& Document::unique_sorted_hashes(){
     if (unique_sorted_hashes_==0){
       unique_sorted_hashes_=new hashes_vector();
-      uint32_t length = text().length()-registry_.getWindowSize();
+      uint32_t length = text().length()-registry_->getWindowSize();
       unique_sorted_hashes_->resize(length);
       const char* data = text().data();
       hash_t hash;
       for (uint32_t i=0;i<length;i++){
-        hash = hashmurmur(data+i,registry_.getWindowSize()+1);
+        hash = hashmurmur(data+i,registry_->getWindowSize()+1);
         (*unique_sorted_hashes_)[i]=hash;
       }
       std::sort(unique_sorted_hashes_->begin(),unique_sorted_hashes_->end());
@@ -265,7 +265,7 @@ namespace superfastmatch
   }
     
   uint32_t Document::windowsize(){
-    return registry_.getWindowSize();
+    return registry_->getWindowSize();
   }
   
   uint32_t Document::doctype(){

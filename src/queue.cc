@@ -2,7 +2,7 @@
 
 namespace superfastmatch{
   
-  Queue::Queue(Registry& registry):
+  Queue::Queue(Registry* registry):
   registry_(registry){}
 
   uint64_t Queue::add_document(const uint32_t doc_type,const uint32_t doc_id,const string& content,bool associate){
@@ -36,7 +36,7 @@ namespace superfastmatch{
             }
             delete doc;
           }
-          registry_.getPostings()->addDocuments(work);
+          registry_->getPostings()->addDocuments(work);
           for(vector<Command*>::iterator it=work.begin(),ite=work.end();it!=ite;++it){
             (*it)->setFinished();
           }
@@ -47,7 +47,7 @@ namespace superfastmatch{
             work.push_back(batch.front());
             batch.pop_front();  
           }
-          registry_.getPostings()->deleteDocuments(work);
+          registry_->getPostings()->deleteDocuments(work);
           for (vector<Command*>::iterator it=work.begin(),ite=work.end();it!=ite;++it){
             Document* doc = (*it)->getDocument();
             if (not(doc->remove())){

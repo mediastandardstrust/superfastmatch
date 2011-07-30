@@ -31,71 +31,71 @@ namespace superfastmatch{
 
   DEFINE_bool(debug_templates,false,"Forces template reload for every template file change");
 
-  uint32_t Registry::getHashWidth() const{
+  uint32_t FlagsRegistry::getHashWidth() const{
     return FLAGS_hash_width;
   }
 
-  hash_t Registry::getHashMask() const{
+  hash_t FlagsRegistry::getHashMask() const{
     return (1L<<getHashWidth())-1;
   };
   
-  uint32_t Registry::getWindowSize() const{
+  uint32_t FlagsRegistry::getWindowSize() const{
     return FLAGS_window_size;
   };
   
-  uint32_t Registry::getThreadCount() const{
+  uint32_t FlagsRegistry::getThreadCount() const{
     return FLAGS_thread_count;
   };
   
-  uint32_t Registry::getSlotCount() const{
+  uint32_t FlagsRegistry::getSlotCount() const{
     return FLAGS_slot_count;
   };
   
-  size_t Registry::getPageSize() const{
+  size_t FlagsRegistry::getPageSize() const{
     return 100;
   };
   
-  size_t Registry::getNumResults() const{
+  size_t FlagsRegistry::getNumResults() const{
     return 20;
   };
   
-  size_t Registry::getMaxLineLength() const{
+  size_t FlagsRegistry::getMaxLineLength() const{
     return 1<<12;
   };
   
-  size_t Registry::getMaxHashCount() const{
+  size_t FlagsRegistry::getMaxHashCount() const{
     return 1<<getHashWidth();
   };
   
-  size_t Registry::getMaxBatchCount() const{
+  size_t FlagsRegistry::getMaxBatchCount() const{
     return 20000;
   };
   
-  size_t Registry::getMaxDistance() const{
+  size_t FlagsRegistry::getMaxDistance() const{
     return 100;
   };
   
-  double Registry::getTimeout() const{
+  double FlagsRegistry::getTimeout() const{
     return 1.0;
   };
   
-  string Registry::getDataPath() const{
+  string FlagsRegistry::getDataPath() const{
     return FLAGS_data_path;
   };
   
-  string Registry::getAddress() const{
+  string FlagsRegistry::getAddress() const{
     return FLAGS_address;    
   };
   
-  uint32_t Registry::getPort() const{
+  uint32_t FlagsRegistry::getPort() const{
     return FLAGS_port;    
   };
   
-  uint32_t Registry::getMode(){
-    return kc::BasicDB::OWRITER|(FLAGS_reset?(kc::BasicDB::OTRUNCATE):(kc::BasicDB::OCREATE));
+  uint32_t FlagsRegistry::getMode(){
+    return kc::BasicDB::OWRITER|kc::BasicDB::OCREATE|(FLAGS_reset?(kc::BasicDB::OTRUNCATE):0);
   };
   
-  kc::ForestDB* Registry::getQueueDB(){
+  kc::ForestDB* FlagsRegistry::getQueueDB(){
     if (queueDB_==0){
       string path = getDataPath()+"/queue.kcf";
       queueDB_ = new kc::ForestDB();
@@ -110,7 +110,7 @@ namespace superfastmatch{
     return queueDB_;
   };
   
-  kc::ForestDB* Registry::getDocumentDB(){
+  kc::ForestDB* FlagsRegistry::getDocumentDB(){
     if (documentDB_==0){
       string path = getDataPath()+"/document.kcf";
       documentDB_ = new kc::ForestDB();
@@ -123,7 +123,7 @@ namespace superfastmatch{
     return documentDB_;
   };
 
-  kc::ForestDB* Registry::getMetaDB(){
+  kc::ForestDB* FlagsRegistry::getMetaDB(){
     if (metaDB_==0){
       string path = getDataPath()+"/meta.kcf";
       metaDB_ = new kc::ForestDB();
@@ -135,7 +135,7 @@ namespace superfastmatch{
     return metaDB_;
   };
 
-  kc::ForestDB* Registry::getHashesDB(){
+  kc::ForestDB* FlagsRegistry::getHashesDB(){
     if (hashesDB_==0){
       string path = getDataPath()+"/hashes.kcf";
       hashesDB_ = new kc::ForestDB();
@@ -148,7 +148,7 @@ namespace superfastmatch{
     return hashesDB_;
   };
 
-  kc::ForestDB* Registry::getAssociationDB(){
+  kc::ForestDB* FlagsRegistry::getAssociationDB(){
     if (associationDB_==0){ 
       string path = getDataPath()+"/associations.kcf";
       associationDB_ = new kc::ForestDB();
@@ -159,7 +159,7 @@ namespace superfastmatch{
     return associationDB_;
   };
 
-  kc::PolyDB* Registry::getMiscDB(){
+  kc::PolyDB* FlagsRegistry::getMiscDB(){
     if (miscDB_==0){
       string path = getDataPath()+"/misc.kch";
       miscDB_ = new kc::PolyDB();
@@ -168,7 +168,7 @@ namespace superfastmatch{
     return miscDB_;
   };
 
-  TemplateCache* Registry::getTemplateCache(){
+  TemplateCache* FlagsRegistry::getTemplateCache(){
     if (templates_==0){
       templates_ = mutable_default_template_cache();
       templates_->SetTemplateRootDirectory(FLAGS_template_path);
@@ -179,7 +179,7 @@ namespace superfastmatch{
     return templates_;
   };
 
-  Logger* Registry::getLogger(){
+  Logger* FlagsRegistry::getLogger(){
     if (logger_==0){
       logger_ = new Logger();
       logger_->open("-");
@@ -187,14 +187,14 @@ namespace superfastmatch{
     return logger_;
   };
 
-  Posting* Registry::getPostings(){
+  Posting* FlagsRegistry::getPostings(){
     if (postings_==0){
-      postings_ = new Posting(*this);
+      postings_ = new Posting(this);
     }
     return postings_;
   };
 
-  Registry::Registry():
+  FlagsRegistry::FlagsRegistry():
   comp_(new kc::ZLIBCompressor<kc::ZLIB::RAW>),
   queueDB_(0),
   documentDB_(0),
@@ -207,7 +207,7 @@ namespace superfastmatch{
   postings_(0)
   {}
 
-  Registry::~Registry(){
+  FlagsRegistry::~FlagsRegistry(){
     if (queueDB_!=0){
       queueDB_->close(); 
     }
@@ -236,7 +236,7 @@ namespace superfastmatch{
     delete logger_;
   }
   
-  void Registry::fill_db_dictionary(TemplateDictionary* dict, kc::BasicDB* db, const string name){
+  void FlagsRegistry::fill_db_dictionary(TemplateDictionary* dict, kc::BasicDB* db, const string name){
     stringstream s;
     status(s,db);
     TemplateDictionary* db_dict = dict->AddSectionDictionary("DB");
@@ -244,7 +244,7 @@ namespace superfastmatch{
     db_dict->SetValue("STATS",s.str());       
   }
   
-  void Registry::fill_status_dictionary(TemplateDictionary* dict){
+  void FlagsRegistry::fill_status_dictionary(TemplateDictionary* dict){
     fill_db_dictionary(dict,getQueueDB(),"Queue DB");
     fill_db_dictionary(dict,getDocumentDB(),"Document DB");
     fill_db_dictionary(dict,getHashesDB(),"Hashes DB");
@@ -252,7 +252,7 @@ namespace superfastmatch{
     fill_db_dictionary(dict,getMiscDB(),"Misc DB");
   }
   
-  void Registry::status(std::ostream& s, kc::BasicDB* db){
+  void FlagsRegistry::status(std::ostream& s, kc::BasicDB* db){
     std::map<std::string, std::string> status;
     status["opaque"] = "";
     status["fbpnum_used"] = "";

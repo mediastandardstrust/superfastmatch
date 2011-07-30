@@ -13,11 +13,11 @@ namespace superfastmatch
   class DocumentCursor
   {
   private:
-    Registry& registry_;
+    Registry* registry_;
     kc::ForestDB::Cursor* cursor_;
     
   public:
-    DocumentCursor(Registry& registry);
+    DocumentCursor(Registry* registry);
     ~DocumentCursor();
     
     bool jumpFirst();
@@ -40,7 +40,7 @@ namespace superfastmatch
   private:
     uint32_t doctype_;
     uint32_t docid_;
-    Registry& registry_;
+    Registry* registry_;
     std::string* key_;
     std::string* content_;
     content_map* content_map_;
@@ -49,8 +49,8 @@ namespace superfastmatch
     hashes_bloom* bloom_;
   
   public:
-    Document(const uint32_t doctype,const uint32_t docid,const char* content,Registry& registry);
-    Document(string& key,Registry& registry);
+    Document(const uint32_t doctype,const uint32_t docid,const char* content,Registry* registry);
+    Document(string& key,Registry* registry);
     
     ~Document();
     

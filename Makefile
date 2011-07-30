@@ -64,6 +64,7 @@ all : $(MYBINS)
 
 clean :
 	rm -rf $(MYBINS) $(DATA) $(TESTS) $(GTEST_DIR)/*.o $(GTEST_DIR)/*.a *.a *.o *.exe src/*.o src/*.d            
+	mkdir -p $(DATA)
 
 check : CXXFLAGS += -O0
 check : $(TESTS)
@@ -74,7 +75,7 @@ run : all
 	$(RUNENV) ./superfastmatch -reset
 
 profile : all
-	mkdir -p data
+	mkdir -p $(DATA)
 	$(PROFILEENV) ./superfastmatch -reset
 
 debug : CXXFLAGS += -O0 

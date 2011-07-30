@@ -74,14 +74,18 @@ namespace superfastmatch{
     dict("response"){}
   };
 
+  Worker::Worker(Registry* registry):
+  registry_(registry)
+  { }
+
   void Worker::process_idle(HTTPServer* serv) {
     // serv->log(Logger::INFO,"Idle");
   }
       
     void Worker::process_timer(HTTPServer* serv) {
     Queue queue(registry_);
-    if(!registry_.getPostings()->isReady()){
-      registry_.getPostings()->init();
+    if(!registry_->getPostings()->isReady()){
+      registry_->getPostings()->init();
     }
     else if (queue.process()){
       serv->log(Logger::INFO,"Finished processing command queue");
@@ -132,7 +136,7 @@ namespace superfastmatch{
     
     res.dict.AddIncludeDictionary("HEADER")->SetFilename(HEADER);
     res.dict.AddIncludeDictionary("FOOTER")->SetFilename(FOOTER);
-    registry_.getTemplateCache()->ExpandWithData(res.template_name,DO_NOT_STRIP,&res.dict,NULL,&resbody);
+    registry_->getTemplateCache()->ExpandWithData(res.template_name,DO_NOT_STRIP,&res.dict,NULL,&resbody);
   
     res.message << " Response Time: " << setiosflags(ios::fixed) << setprecision(4) << kyotocabinet::time()-start << " secs";
     if (res.code==500 || res.code==404){
@@ -148,7 +152,7 @@ namespace superfastmatch{
     switch (req.verb){
       case HTTPClient::MPOST:{
           Document doc(0,0,req.reqbody.c_str(),registry_);
-          registry_.getPostings()->searchIndex(&doc,&res.dict); 
+          registry_->getPostings()->searchIndex(&doc,&res.dict); 
           res.code=200;
           res.template_name=RESULTS_PAGE;
         }
@@ -248,9 +252,9 @@ namespace superfastmatch{
     switch(req.verb){
       case HTTPClient::MGET:
         if (req.cursor_is_numeric){
-          registry_.getPostings()->fill_list_dictionary(&res.dict,kc::atoi(req.cursor.c_str()));
+          registry_->getPostings()->fill_list_dictionary(&res.dict,kc::atoi(req.cursor.c_str()));
         }else{
-          registry_.getPostings()->fill_list_dictionary(&res.dict,0);
+          registry_->getPostings()->fill_list_dictionary(&res.dict,0);
         }
         res.template_name=INDEX_PAGE;
         res.code=200;
@@ -301,7 +305,7 @@ namespace superfastmatch{
   
   void Worker::process_histograms(const RESTRequest& req,RESTResponse& res){
     res.dict.SetTemplateGlobalValue("TITLE","Histograms");
-    registry_.getPostings()->fill_histogram_dictionary(&res.dict);
+    registry_->getPostings()->fill_histogram_dictionary(&res.dict);
     res.template_name=HISTOGRAMS_PAGE;
     res.code=200;
   }
@@ -315,8 +319,8 @@ namespace superfastmatch{
     res.dict.SetFormattedValue("MEMORY","%.4f",double(memory)/1024/1024/1024);
     res.dict.SetValue("MEMORY_STATS",string(buffer));
     delete [] buffer;
-    registry_.fill_status_dictionary(&res.dict);
-    registry_.getPostings()->fill_status_dictionary(&res.dict);
+    registry_->fill_status_dictionary(&res.dict);
+    registry_->getPostings()->fill_status_dictionary(&res.dict);
     res.dict.SetTemplateGlobalValue("TITLE","Status");
     res.template_name=STATUS_PAGE;
     res.code=200;

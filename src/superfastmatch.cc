@@ -31,8 +31,8 @@ int main(int argc, char** argv) {
   google::ParseCommandLineFlags(&argc, &argv, true);
 
   // set up the registry
-  Registry registry;
-  RegistryInterface* registry2 = new Registry();
+  // Registry registry;
+  Registry* registry = new FlagsRegistry();
 
   // prepare the worker
   Worker worker(registry);
@@ -40,9 +40,9 @@ int main(int argc, char** argv) {
   // prepare the server
   HTTPServer serv;
   stringstream network;
-  network << registry.getAddress() << ":" <<registry.getPort();
-  serv.set_network(network.str(), registry.getTimeout());
-  serv.set_worker(&worker, registry.getThreadCount());
+  network << registry->getAddress() << ":" <<registry->getPort();
+  serv.set_network(network.str(), registry->getTimeout());
+  serv.set_worker(&worker, registry->getThreadCount());
 
   // set up the logger
   Logger logger;
@@ -59,5 +59,6 @@ int main(int argc, char** argv) {
   serv.finish();
 
   serv.log(Logger::SYSTEM, "================ [FINISH]: pid=%d", getpid());
+  delete registry;
   return 0;
 }

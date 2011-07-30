@@ -10,7 +10,7 @@ namespace superfastmatch
      return lhs.right < rhs.right;
   }
   
-  Association::Association(Registry& registry,Document* from_document,Document* to_document):
+  Association::Association(Registry* registry,Document* from_document,Document* to_document):
   registry_(registry),
   from_document_(0),
   to_document_(0)
@@ -38,7 +38,7 @@ namespace superfastmatch
     uint32_t to_hashes_count   = to_hashes.size();
     std::string from_text = from_document_->text();
     std::string to_text = to_document_->text();
-    uint32_t window_size=registry_.getWindowSize();
+    uint32_t window_size=registry_->getWindowSize();
 
     //Find from_document hashes set
     hashes_set from_hashes_set;

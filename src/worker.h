@@ -23,16 +23,12 @@ namespace superfastmatch{
   
   class Worker : public HTTPServer::Worker {
   private:
-    Registry& registry_;
+    Registry* registry_;
   public: 
-    explicit Worker(Registry& registry):
-    registry_(registry)
-    { }
-    
+    explicit Worker(Registry* registry);
+
     void process_idle(HTTPServer* serv);
-
     void process_timer(HTTPServer* serv);
-
     int32_t process(HTTPServer* serv, HTTPServer::Session* sess,
                       const string& path, HTTPClient::Method method,
                       const map<string, string>& reqheads,

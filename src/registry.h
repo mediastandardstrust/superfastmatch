@@ -14,7 +14,7 @@ using namespace kyototycoon;
 namespace superfastmatch{
 
   // Interface class for easy mocking in tests
-  class RegistryInterface{
+  class Registry{
   public:
     // Settings
     virtual uint32_t getHashWidth() const=0;
@@ -46,9 +46,11 @@ namespace superfastmatch{
     virtual TemplateCache* getTemplateCache()=0;
     virtual Logger* getLogger()=0;
     virtual Posting* getPostings()=0;    
+    
+    virtual void fill_status_dictionary(TemplateDictionary* dict)=0;
   };
 
-  class Registry : public RegistryInterface
+  class FlagsRegistry : public Registry
   {
   private:
     kc::Compressor* comp_;
@@ -63,8 +65,8 @@ namespace superfastmatch{
     Posting* postings_;
 
   public:
-    Registry();
-    ~Registry();
+    FlagsRegistry();
+    ~FlagsRegistry();
     
     uint32_t getHashWidth() const;
     hash_t getHashMask() const;
