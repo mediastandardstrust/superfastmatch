@@ -96,7 +96,7 @@ namespace superfastmatch{
   };
   
   // TODO make a parameterised function for opening DB
-  kc::ForestDB* FlagsRegistry::getQueueDB(){
+  kc::BasicDB* FlagsRegistry::getQueueDB(){
     if (queueDB_==0){
       string path = getDataPath()+"/queue.kcf";
       queueDB_ = new kc::ForestDB();
@@ -111,7 +111,7 @@ namespace superfastmatch{
     return queueDB_;
   };
   
-  kc::ForestDB* FlagsRegistry::getDocumentDB(){
+  kc::BasicDB* FlagsRegistry::getDocumentDB(){
     if (documentDB_==0){
       string path = getDataPath()+"/document.kcf";
       documentDB_ = new kc::ForestDB();
@@ -124,7 +124,7 @@ namespace superfastmatch{
     return documentDB_;
   };
 
-  kc::ForestDB* FlagsRegistry::getMetaDB(){
+  kc::BasicDB* FlagsRegistry::getMetaDB(){
     if (metaDB_==0){
       string path = getDataPath()+"/meta.kcf";
       metaDB_ = new kc::ForestDB();
@@ -149,7 +149,7 @@ namespace superfastmatch{
     return hashesDB_;
   };
 
-  kc::ForestDB* FlagsRegistry::getAssociationDB(){
+  kc::BasicDB* FlagsRegistry::getAssociationDB(){
     if (associationDB_==0){ 
       string path = getDataPath()+"/associations.kcf";
       associationDB_ = new kc::ForestDB();
@@ -160,7 +160,7 @@ namespace superfastmatch{
     return associationDB_;
   };
 
-  kc::PolyDB* FlagsRegistry::getMiscDB(){
+  kc::BasicDB* FlagsRegistry::getMiscDB(){
     if (miscDB_==0){
       string path = getDataPath()+"/misc.kch";
       miscDB_ = new kc::PolyDB();

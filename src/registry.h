@@ -35,12 +35,12 @@ namespace superfastmatch{
 
     // DB's
     virtual uint32_t getMode()=0;
-    virtual kc::ForestDB* getQueueDB()=0;
-    virtual kc::ForestDB* getDocumentDB()=0;
-    virtual kc::ForestDB* getMetaDB()=0;
+    virtual kc::BasicDB* getQueueDB()=0;
+    virtual kc::BasicDB* getDocumentDB()=0;
+    virtual kc::BasicDB* getMetaDB()=0;
     virtual kc::BasicDB* getHashesDB()=0;
-    virtual kc::ForestDB* getAssociationDB()=0;
-    virtual kc::PolyDB* getMiscDB()=0;
+    virtual kc::BasicDB* getAssociationDB()=0;
+    virtual kc::BasicDB* getMiscDB()=0;
 
     // Common bits - these might not belong here!
     virtual TemplateCache* getTemplateCache()=0;
@@ -85,12 +85,12 @@ namespace superfastmatch{
     double getTimeout() const;
 
     uint32_t getMode();
-    kc::ForestDB* getQueueDB();
-    kc::ForestDB* getDocumentDB();
-    kc::ForestDB* getMetaDB();
+    kc::BasicDB* getQueueDB();
+    kc::BasicDB* getDocumentDB();
+    kc::BasicDB* getMetaDB();
     kc::BasicDB* getHashesDB();
-    kc::ForestDB* getAssociationDB();
-    kc::PolyDB* getMiscDB();
+    kc::BasicDB* getAssociationDB();
+    kc::BasicDB* getMiscDB();
     TemplateCache* getTemplateCache();
     Logger* getLogger();
     Posting* getPostings();

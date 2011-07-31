@@ -14,7 +14,7 @@ namespace superfastmatch
   {
   private:
     Registry* registry_;
-    kc::ForestDB::Cursor* cursor_;
+    kc::BasicDB::Cursor* cursor_;
     
   public:
     DocumentCursor(Registry* registry);
