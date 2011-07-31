@@ -245,8 +245,7 @@ TEST(PostLineTest,BigPostLineTest){
   delete[] backwards;
 }
 
-
-int main(int argc, char **argv) {
-  ::testing::InitGoogleTest(&argc, argv);
+int main(int argc, char** argv) {
+  ::testing::InitGoogleMock(&argc, argv);
   return RUN_ALL_TESTS();
 }

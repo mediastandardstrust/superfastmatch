@@ -38,7 +38,7 @@ namespace superfastmatch{
     virtual kc::ForestDB* getQueueDB()=0;
     virtual kc::ForestDB* getDocumentDB()=0;
     virtual kc::ForestDB* getMetaDB()=0;
-    virtual kc::ForestDB* getHashesDB()=0;
+    virtual kc::BasicDB* getHashesDB()=0;
     virtual kc::ForestDB* getAssociationDB()=0;
     virtual kc::PolyDB* getMiscDB()=0;
 
@@ -88,7 +88,7 @@ namespace superfastmatch{
     kc::ForestDB* getQueueDB();
     kc::ForestDB* getDocumentDB();
     kc::ForestDB* getMetaDB();
-    kc::ForestDB* getHashesDB();
+    kc::BasicDB* getHashesDB();
     kc::ForestDB* getAssociationDB();
     kc::PolyDB* getMiscDB();
     TemplateCache* getTemplateCache();

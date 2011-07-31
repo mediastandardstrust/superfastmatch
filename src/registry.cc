@@ -95,6 +95,7 @@ namespace superfastmatch{
     return kc::BasicDB::OWRITER|kc::BasicDB::OCREATE|(FLAGS_reset?(kc::BasicDB::OTRUNCATE):0);
   };
   
+  // TODO make a parameterised function for opening DB
   kc::ForestDB* FlagsRegistry::getQueueDB(){
     if (queueDB_==0){
       string path = getDataPath()+"/queue.kcf";
@@ -135,7 +136,7 @@ namespace superfastmatch{
     return metaDB_;
   };
 
-  kc::ForestDB* FlagsRegistry::getHashesDB(){
+  kc::BasicDB* FlagsRegistry::getHashesDB(){
     if (hashesDB_==0){
       string path = getDataPath()+"/hashes.kcf";
       hashesDB_ = new kc::ForestDB();

@@ -1053,7 +1053,7 @@ class GTEST_API_ UnitTestImpl {
 #if GTEST_HAS_PARAM_TEST
   // Returns ParameterizedTestCaseRegistry object used to keep track of
   // value-parameterized tests and instantiate and register them.
-  internal::ParameterizedTestCaseRegistry* parameterized_test_registry() {
+  internal::ParameterizedTestCaseRegistry& parameterized_test_registry() {
     return parameterized_test_registry_;
   }
 #endif  // GTEST_HAS_PARAM_TEST
@@ -5207,7 +5207,7 @@ int UnitTest::random_seed() const { return impl_->random_seed(); }
 // Returns ParameterizedTestCaseRegistry object used to keep track of
 // value-parameterized tests and instantiate and register them.
 // L < mutex_
-internal::ParameterizedTestCaseRegistry*
+internal::ParameterizedTestCaseRegistry&
     UnitTest::parameterized_test_registry() {
   return impl_->parameterized_test_registry();
 }

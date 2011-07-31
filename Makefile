@@ -63,12 +63,12 @@ GTEST_DIR = tests/utils
 all : $(MYBINS) 
 
 clean :
-	rm -rf $(MYBINS) $(DATA) $(TESTS) $(GTEST_DIR)/*.o $(GTEST_DIR)/*.a *.a *.o *.exe src/*.o src/*.d            
+	rm -rf $(MYBINS) $(DATA) tests/*.o $(GTEST_DIR)/*.o $(GTEST_DIR)/*.a *.a *.o *.exe src/*.o src/*.d            
 	mkdir -p $(DATA)
 
 check : CXXFLAGS += -O0
 check : $(TESTS)
-	$(TESTS:.o=)
+	$(TESTS:.o=;)
 
 run : all
 	mkdir -p $(DATA)
@@ -99,7 +99,7 @@ tests/postline-unittest.o : src/postline.cc tests/postline-unittest.cc gmock-gte
 	$(CXX) -lpthread $(CXXFLAGS) $^ -o $* 
 
 tests/document-unittest.o : src/document.cc tests/document-unittest.cc gmock-gtest.a
-	$(CXX) -lpthread $(CXXFLAGS) $^ -o $*
+	$(CXX) $(INCLUDES)-lpthread -lkyotocabinet -lctemplate $(CXXFLAGS) $^ -o $*
 
 #================================================================
 # Building binaries
