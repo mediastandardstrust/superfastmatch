@@ -5,6 +5,7 @@
 #include <bitset>
 #include <map>
 #include <algorithm>
+#include <string>
 #include <common.h>
 #include <registry.h>
 
@@ -43,6 +44,7 @@ namespace superfastmatch
     Registry* registry_;
     std::string* key_;
     std::string* content_;
+    std::string* lower_case_;
     content_map* content_map_;
     hashes_vector* hashes_;
     hashes_vector* unique_sorted_hashes_;
@@ -65,11 +67,12 @@ namespace superfastmatch
     hashes_bloom& bloom();
     content_map& content();
     string& text();
-    string& key();
+    string& getLowerCase();
+    string& getKey();
     string& title();
     uint64_t index_key();
     uint32_t windowsize();
-    uint32_t doctype();       
+    uint32_t doctype();
     uint32_t docid();
     
     void fill_document_dictionary(TemplateDictionary* dict);

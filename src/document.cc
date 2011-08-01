@@ -98,7 +98,7 @@ namespace superfastmatch
   }
 
   Document::Document(const uint32_t doctype,const uint32_t docid,const char* content,Registry* registry):
-  doctype_(doctype),docid_(docid),registry_(registry),key_(0),content_(0),content_map_(0),hashes_(0),unique_sorted_hashes_(0),bloom_(0)
+  doctype_(doctype),docid_(docid),registry_(registry),key_(0),content_(0),lower_case_(0),content_map_(0),hashes_(0),unique_sorted_hashes_(0),bloom_(0)
   {
     char key[8];
     uint32_t dt=kc::hton32(doctype_);
@@ -110,7 +110,7 @@ namespace superfastmatch
   }
   
   Document::Document(string& key,Registry* registry):
-  registry_(registry),key_(0),content_(0),content_map_(0),hashes_(0),unique_sorted_hashes_(0),bloom_(0)
+  registry_(registry),key_(0),content_(0),lower_case_(0),content_map_(0),hashes_(0),unique_sorted_hashes_(0),bloom_(0)
   {
     key_= new string(key);
     memcpy(&doctype_,key.data(),4);
@@ -135,6 +135,10 @@ namespace superfastmatch
   }
   
   void Document::clear(){
+    if (lower_case_!=0){
+      delete lower_case_;
+      lower_case_=0;
+    }
     if (content_map_!=0){
       delete content_map_;
       content_map_=0;
@@ -203,7 +207,8 @@ namespace superfastmatch
       bloom_ = new hashes_bloom();
       uint32_t length = text().length()-registry_->getWindowSize();
       hashes_->resize(length);
-      const char* data = text().data();
+      const char* data=getLowerCase().data();
+      // const char* data=text().data();
       hash_t hash;
       for (uint32_t i=0;i<length;i++){
         hash = hashmurmur(data+i,registry_->getWindowSize()+1);
@@ -214,12 +219,14 @@ namespace superfastmatch
     return *hashes_;
   }
   
+  //TODO use hashes method!
   Document::hashes_vector& Document::unique_sorted_hashes(){
     if (unique_sorted_hashes_==0){
       unique_sorted_hashes_=new hashes_vector();
       uint32_t length = text().length()-registry_->getWindowSize();
       unique_sorted_hashes_->resize(length);
-      const char* data = text().data();
+      const char* data=getLowerCase().data();
+      // const char* data=text().data();
       hash_t hash;
       for (uint32_t i=0;i<length;i++){
         hash = hashmurmur(data+i,registry_->getWindowSize()+1);
@@ -230,6 +237,15 @@ namespace superfastmatch
       unique_sorted_hashes_->resize(it-unique_sorted_hashes_->begin());
     }
     return *unique_sorted_hashes_;
+  }
+  
+  string& Document::getLowerCase(){
+    if (lower_case_==0){
+      lower_case_=new string(text());
+      //TODO look at http://code.google.com/p/stringencoders/source/browse/trunk/src/modp_ascii.c
+      std::transform(lower_case_->begin(), lower_case_->end(), lower_case_->begin(), ::tolower);
+    }
+    return *lower_case_;
   }
   
   Document::hashes_bloom& Document::bloom(){
@@ -255,7 +271,7 @@ namespace superfastmatch
     return content()["title"];  
   }
   
-  string& Document::key(){
+  string& Document::getKey(){
     return *key_;
   }
   

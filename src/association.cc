@@ -12,22 +12,76 @@ namespace superfastmatch
   
   Association::Association(Registry* registry,Document* from_document,Document* to_document):
   registry_(registry),
-  from_document_(0),
-  to_document_(0)
+  from_document_(from_document),
+  to_document_(to_document)
   {
-    if (from_document->text().length()<to_document->text().length()){
-      from_document_=from_document;
-      to_document_=to_document;
+    key_=new string(from_document->getKey());
+    key_->append(to_document->getKey());
+    reverse_key_=new string(to_document->getKey());
+    reverse_key_->append(from_document->getKey());
+    if(not load()){
+      match();
     }
-    else{
-      from_document_=to_document;
-      to_document_=from_document;
+  }
+  
+  Association::~Association(){
+    delete key_;
+    delete reverse_key_;
+  }
+  
+  string& Association::getKey(){
+    return *key_;
+  }
+  
+  string& Association::getReverseKey(){
+    return *reverse_key_;
+  }
+  
+  bool Association::load(){
+    string value;
+    bool flip=false;
+    if(not registry_->getAssociationDB()->get(getKey(),&value)){
+      return false; 
     }
-    match();
-    save();
+    if (value=="x"){
+      if (not registry_->getAssociationDB()->get(getReverseKey(),&value)){
+        return false;
+      }
+      flip=true;
+    }
+    size_t offset=0;
+    uint64_t left,right,length;
+    while(offset<value.size()){
+      offset+=kc::readvarnum(value.data()+offset,5,flip?&right:&left);
+      offset+=kc::readvarnum(value.data()+offset,5,flip?&left:&right);
+      offset+=kc::readvarnum(value.data()+offset,5,&length);
+      results_.push_back(Result(left,right,length));
+    }
+    return true;
+  }
+  
+  bool Association::save(){
+    bool success=true;
+    char* value=new char[getResultCount()*5];
+    size_t offset=0;
+    for (size_t i=0;i<results_.size();i++){
+      offset+=kc::writevarnum(value+offset,results_[i].left);
+      offset+=kc::writevarnum(value+offset,results_[i].right);
+      offset+=kc::writevarnum(value+offset,results_[i].length);
+    }
+    if (not registry_->getAssociationDB()->set(getKey().data(),16,value,offset)){
+      success=false;
+    }
+    if (not registry_->getAssociationDB()->set(getReverseKey().data(),16,"x",1)){
+      success=false;
+    }
+    delete value;
+    return success;
   }
   
   void Association::match(){
+    // TODO Optimise for shorter document
+    // if (from_document->text().length()<to_document->text().length()){
     Document::hashes_bloom* bloom = new Document::hashes_bloom();
     Document::hashes_vector from_hashes,to_hashes;
     *bloom|=from_document_->bloom();
@@ -36,13 +90,13 @@ namespace superfastmatch
     to_hashes=to_document_->hashes();
     uint32_t from_hashes_count = from_hashes.size();
     uint32_t to_hashes_count   = to_hashes.size();
-    std::string from_text = from_document_->text();
-    std::string to_text = to_document_->text();
+    string from_text = from_document_->getLowerCase();
+    string to_text = to_document_->getLowerCase();
     uint32_t window_size=registry_->getWindowSize();
 
     //Find from_document hashes set
     hashes_set from_hashes_set;
-    for (uint32_t i =0;i<from_hashes_count;i++){
+    for (size_t i=0;i<from_hashes_count;i++){
       if (bloom->test(from_hashes[i]&0xFFFFFF)){
         from_hashes_set.insert(from_hashes[i]);
       }
@@ -50,13 +104,11 @@ namespace superfastmatch
 
     //Find to_document hashes map
     matches_map to_matches;
-    // to_matches.set_empty_key(NULL);
     hashes_set::iterator from_hashes_set_end=from_hashes_set.end();
     hash_t hash;
-    for (uint32_t i=0;i<to_hashes_count;i++){
+    for (size_t i=0;i<to_hashes_count;i++){
       hash=to_hashes[i];
       if (bloom->test(hash&0xFFFFFF)){
-      // if (bloom.test(hash&0xFFFFFF)){
         if (from_hashes_set.find(hash)!=from_hashes_set_end){
           to_matches[hash].insert(i);   
         }
@@ -66,7 +118,7 @@ namespace superfastmatch
     //Build matches
     matches_deque matches;
     matches_map::iterator to_matches_end=to_matches.end();
-    for (uint32_t i=0;i<from_hashes_count;i++){
+    for (size_t i=0;i<from_hashes_count;i++){
       matches_map::iterator to_match=to_matches.find(from_hashes[i]);
       if (to_match!=to_matches_end){
         positions_set checked_matches(to_match->second);
@@ -108,21 +160,31 @@ namespace superfastmatch
        results_.push_back(Result(first->left,first_right,counter+window_size));
     }
     sort(results_.begin(),results_.end(),result_sorter);
-
-    std::cout << "Matched: " << *from_document_ << " with: " << *to_document_;
-    std::cout << " Bloom size: " << bloom->count()<< " From hashes: " << from_document_->hashes().size() <<" To hashes: " << to_document_->hashes().size();
-    std::cout << " From hashes set: " << from_hashes_set.size() << " To hashes map: " << to_matches.size() << " Matches: " << matches.size();
-    std::cout << " Results: " << results_.size() << std::endl;
-
     delete bloom;
   }
-  
-  bool Association::load(){
-    return true;
+
+  size_t Association::getTotalLength(){
+    size_t total=0;
+    for (size_t i=0;i<results_.size();i++){
+      total+=getLength(i);
+    }
+    return total;
   }
   
-  bool Association::save(){
-    return true;    
+  size_t Association::getResultCount(){
+    return results_.size();
+  }
+  
+  string Association::getFromResult(size_t index){
+    return from_document_->text().substr(results_[index].left,results_[index].length);
+  }
+  
+  string Association::getToResult(size_t index){
+    return to_document_->text().substr(results_[index].right,results_[index].length);
+  }
+  
+  size_t Association::getLength(size_t index){
+    return results_[index].length;
   }
   
   void Association::fill_item_dictionary(TemplateDictionary* dict){

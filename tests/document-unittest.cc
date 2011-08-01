@@ -9,21 +9,35 @@ using namespace superfastmatch;
 using namespace kyotocabinet;
 
 TEST(DocumentTest,ConstructorTest){
-  BasicDB* hashesDB = new ProtoTreeDB();
+  PolyDB* hashesDB = new PolyDB();
+  PolyDB* documentDB = new PolyDB();
+  hashesDB->open();
+  documentDB->open();
   MockRegistry registry;
   EXPECT_CALL(registry,getWindowSize())
     .WillRepeatedly(Return(4));
   EXPECT_CALL(registry,getHashesDB())
     .WillRepeatedly(Return(hashesDB));
-  Document* doc = new Document(1,1,"text=this+is+a+test&title=Also+a+test&filename=test.txt",&registry);
-  EXPECT_EQ(14U,doc->text().size());
-  EXPECT_STREQ("this is a test",doc->text().c_str());
-  EXPECT_EQ(11U,doc->title().size());
-  EXPECT_STREQ("Also a test",doc->title().c_str());
-  EXPECT_EQ(8U,doc->content()["filename"].size());
-  EXPECT_STREQ("test.txt",doc->content()["filename"].c_str());
-  doc->save();
-  delete doc;
+  EXPECT_CALL(registry,getDocumentDB())
+    .WillRepeatedly(Return(hashesDB));
+  Document* doc1 = new Document(1,1,"text=This+is+a+test&title=Also+a+test&filename=test.txt",&registry);
+  Document* doc2 = new Document(1,2,"text=Another+test&title=Also+a+test&filename=test2.txt",&registry);
+  EXPECT_EQ(14U,doc1->text().size());
+  EXPECT_STREQ("This is a test",doc1->text().c_str());
+  EXPECT_STREQ("this is a test",doc1->getLowerCase().c_str());
+  EXPECT_STREQ("Another test",doc2->text().c_str());
+  EXPECT_STREQ("another test",doc2->getLowerCase().c_str());
+  EXPECT_EQ(11U,doc1->title().size());
+  EXPECT_STREQ("Also a test",doc1->title().c_str());
+  EXPECT_EQ(8U,doc1->content()["filename"].size());
+  EXPECT_STREQ("test.txt",doc1->content()["filename"].c_str());
+  doc1->save();
+  delete doc1;
+  delete doc2;
+  hashesDB->close();
+  documentDB->close();
+  delete hashesDB;
+  delete documentDB;
 }
 
 int main(int argc, char** argv) {

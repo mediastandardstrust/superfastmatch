@@ -35,18 +35,29 @@ namespace superfastmatch
   {
   private:
     Registry* registry_;
-    vector<Result> results_;
     Document* from_document_;
     Document* to_document_;
+    string* key_;
+    string* reverse_key_;
+    vector<Result> results_;
     
   public:
     Association(Registry* registry,Document* from_document,Document* to_document);
+    ~Association();
     
-    bool load();
+    bool save();
+    string& getKey();
+    string& getReverseKey();
+    size_t getTotalLength();
+    size_t getResultCount();
+    string getFromResult(size_t index);
+    string getToResult(size_t index);
+    size_t getLength(size_t index);
+
     void fill_item_dictionary(TemplateDictionary* dict);
     void fill_list_dictionary(TemplateDictionary* dict);
   private:
-    bool save();
+    bool load();
     void match();
   };
 }//namespace Superfastmatch

@@ -29,7 +29,7 @@ DEBUGENV = gdb
 # Test variables
 #================================================================
 
-TESTS = tests/postline-unittest.o tests/document-unittest.o
+TESTS = tests/postline-unittest.o tests/document-unittest.o tests/association-unittest.o
 GTEST_DIR = tests/utils
 
 #================================================================
@@ -99,7 +99,10 @@ tests/postline-unittest.o : src/postline.cc tests/postline-unittest.cc gmock-gte
 	$(CXX) -lpthread $(CXXFLAGS) $^ -o $* 
 
 tests/document-unittest.o : src/document.cc tests/document-unittest.cc gmock-gtest.a
-	$(CXX) $(INCLUDES)-lpthread -lkyotocabinet -lctemplate $(CXXFLAGS) $^ -o $*
+	$(CXX) $(INCLUDES) -lpthread -lkyotocabinet -lctemplate $(CXXFLAGS) $^ -o $*
+
+tests/association-unittest.o : src/document.cc src/association.cc tests/association-unittest.cc gmock-gtest.a
+	$(CXX) $(INCLUDES) -lpthread -lkyotocabinet -lctemplate $(CXXFLAGS) $^ -o $*
 
 #================================================================
 # Building binaries
