@@ -32,7 +32,7 @@ int main(int argc, char** argv) {
 
   // set up the registry
   // Registry registry;
-  Registry* registry = new FlagsRegistry();
+  FlagsRegistry* registry = new FlagsRegistry();
 
   // prepare the worker
   Worker worker(registry);
@@ -54,11 +54,12 @@ int main(int argc, char** argv) {
 
   // start the server and block until it stops
   serv.start();
-
+  
   // clean up connections and other resources
   serv.finish();
 
-  serv.log(Logger::SYSTEM, "================ [FINISH]: pid=%d", getpid());
   delete registry;
+
+  serv.log(Logger::SYSTEM, "================ [FINISH]: pid=%d", getpid());
   return 0;
 }

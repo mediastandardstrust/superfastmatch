@@ -363,6 +363,7 @@ namespace superfastmatch
       results.clear();
       pruned_results.clear();
       doc=(*it)->getDocument();
+      cout << "Associating: " << *doc << endl;
       searchIndex(doc,results,pruned_results);
       for(inverted_search_t::iterator it2=pruned_results.begin(),ite2=pruned_results.end();it2!=ite2 && count<num_results;++it2){
         Document* other = new Document(it2->second.doc_type,it2->second.doc_id,"",registry_);
@@ -402,7 +403,6 @@ namespace superfastmatch
       it++;
       delete other;
     }
-    
   }
   
   void Posting::fill_status_dictionary(TemplateDictionary* dict){
