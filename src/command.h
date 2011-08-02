@@ -9,6 +9,7 @@ namespace superfastmatch{
     Invalid,
     AddDocument,
     AddAssociation,
+    AddAssociations,
     DropDocument,
     DropAssociation
   };
@@ -66,6 +67,8 @@ namespace superfastmatch{
     static uint64_t addDocument(Registry* registry_,const uint32_t doc_type, const uint32_t doc_id,const string& content,const bool associate);
     static uint64_t dropDocument(Registry* registry_,const uint32_t doc_type, const uint32_t doc_id);
     static void insertDropDocument(Registry* registry_,Command* command);
+    static uint64_t addAssociations(Registry* registry_,const uint32_t doc_type);
+    static void insertAddAssociation(Registry* registry_,const uint32_t doc_type, const uint32_t doc_id,Command* command);
     static void getAllCommands(Registry* registry_,vector<Command*>& commands);
     static bool getNextBatch(Registry* registry_,deque<Command*>& batch,CommandType& batchType);
   };

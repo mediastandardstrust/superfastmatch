@@ -15,8 +15,9 @@ MYBINS = superfastmatch
 OBJS = src/superfastmatch.o src/worker.o src/queue.o src/posting.o src/document.o src/logger.o src/registry.o src/command.o src/postline.o src/association.o
 
 # Building binaries
-INCLUDES = -I./src -I./tests -I/usr/local/include/ -Itests/utils/ 
-CXXFLAGS = -Wall -Wextra -funsigned-char -fno-omit-frame-pointer -fno-builtin-malloc -fno-builtin-calloc -fno-builtin-realloc -fno-builtin-free  -m64 -march=core2 -O3 -g
+INCLUDES = -I./src -I./tests -I/usr/local/include/ -Itests/utils/
+LDFLAGS = -Wl -no_pie
+CXXFLAGS = -Wall -Wextra -funsigned-char -fno-omit-frame-pointer -fno-builtin-malloc -fno-builtin-calloc -fno-builtin-realloc -fno-builtin-free -m64 -march=core2 -O3 -g
 LIBS = -lkyototycoon -lkyotocabinet -lstdc++ -lz -lpthread -lm -lc -ltcmalloc -lctemplate -lgflags
 CXX = g++ $(INCLUDES)
 
@@ -109,7 +110,7 @@ tests/association-unittest.o : src/document.cc src/association.cc tests/associat
 #================================================================
 
 superfastmatch : $(OBJS) 
-	$(CXX) $(LIBS) $(OBJS) -o $@ 
+	$(CXX) $(LDFLAGS) $(LIBS) $(OBJS) -o $@ 
 
 # END OF FILE
 # DO NOT DELETE

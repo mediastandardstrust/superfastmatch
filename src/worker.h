@@ -35,11 +35,12 @@ namespace superfastmatch{
                       const string& reqbody,
                       map<string, string>& resheads,
                       string& resbody,
-              const map<string, string>& misc);
+                      const map<string, string>& misc);
   
   private:              
     void process_search(const RESTRequest&, RESTResponse&);
     void process_document(const RESTRequest&, RESTResponse&);
+    void process_association(const RESTRequest&, RESTResponse&);
     void process_index(const RESTRequest&, RESTResponse&);
     void process_queue(const RESTRequest&, RESTResponse&);
     void process_help(const RESTRequest&, RESTResponse&);

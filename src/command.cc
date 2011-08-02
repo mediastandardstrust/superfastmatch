@@ -105,6 +105,9 @@ namespace superfastmatch{
       case AddAssociation:
         dict->SetValue("ACTION","Add Association");
         break;
+      case AddAssociations:
+        dict->SetValue("ACTION","Add Associations");
+        break;
       case DropDocument:
         dict->SetValue("ACTION","Drop Document");
         break;
@@ -120,6 +123,8 @@ namespace superfastmatch{
   
   Command* CommandFactory::createCommand(Registry* registry, const CommandType commandType,const uint64_t queue_id,const uint32_t doc_type, const uint32_t doc_id,const string& payload){
     switch (commandType){
+      case AddAssociations:
+        return new Command(registry,queue_id,100,commandType,Queued,doc_type,doc_id,payload);
       case AddDocument:
         return new Command(registry,queue_id,101,commandType,Queued,doc_type,doc_id,payload);
       case AddAssociation:
@@ -154,6 +159,20 @@ namespace superfastmatch{
     delete drop_doc;
     delete drop_ass;
     return queue_id;
+  }
+  
+  uint64_t CommandFactory::addAssociations(Registry* registry_,const uint32_t doc_type){
+    uint64_t queue_id = registry_->getMiscDB()->increment("QueueCounter",1);
+    string empty;
+    Command* add_ass = CommandFactory::createCommand(registry_,AddAssociations,queue_id,doc_type,0,empty);
+    delete add_ass;
+    return queue_id;
+  }
+  
+  void CommandFactory::insertAddAssociation(Registry* registry_,const uint32_t doc_type, const uint32_t doc_id,Command* command){
+    string empty;
+    Command* add_ass = CommandFactory::createCommand(registry_,AddAssociation,command->getQueueId(),doc_type,doc_id,empty);
+    delete add_ass;    
   }
   
   void CommandFactory::insertDropDocument(Registry* registry_,Command* command){

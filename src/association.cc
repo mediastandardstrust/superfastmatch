@@ -62,7 +62,7 @@ namespace superfastmatch
   
   bool Association::save(){
     bool success=true;
-    char* value=new char[getResultCount()*5];
+    char* value=new char[getResultCount()*5*3];
     size_t offset=0;
     for (size_t i=0;i<results_.size();i++){
       offset+=kc::writevarnum(value+offset,results_[i].left);

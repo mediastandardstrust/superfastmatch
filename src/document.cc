@@ -306,6 +306,23 @@ namespace superfastmatch
       }
     }
     dict->SetValue("TEXT",text());
+    // This belongs in Association Cursor
+    // And need a key based Association Constructot
+    kc::BasicDB::Cursor* cursor=registry_->getAssociationDB()->cursor();
+    cursor->jump(getKey().data(),8);
+    string next;
+    string other_key;
+    while((cursor->get_key(&next,true))){
+      // getKey().compare(next.substr(0,4))==0)){
+      cout << "!!" <<endl;
+      other_key=next.substr(8,8);
+      Document* other = new Document(other_key,registry_);
+      other->load();
+      Association association(registry_,this,other);
+      association.fill_item_dictionary(dict);
+      delete other; 
+    }
+    delete cursor;
   }
   
   

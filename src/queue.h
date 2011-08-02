@@ -19,6 +19,7 @@ namespace superfastmatch
   
     uint64_t add_document(const uint32_t doc_type,const uint32_t doc_id,const string& content,bool associate);
     uint64_t delete_document(const uint32_t& doc_type,const uint32_t& doc_id);
+    uint64_t addAssociations(const uint32_t& doc_type=0);
     
     bool process();
     bool purge();

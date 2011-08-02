@@ -11,11 +11,15 @@ namespace superfastmatch{
 
   uint64_t Queue::delete_document(const uint32_t& doc_type,const uint32_t& doc_id){
     return CommandFactory::dropDocument(registry_,doc_type,doc_id);
-  }   
+  }
+  
+  uint64_t Queue::addAssociations(const uint32_t& doc_type){
+    return CommandFactory::addAssociations(registry_,doc_type);
+  }
   
   bool Queue::process(){
     bool workDone=false;
-    CommandType batchType=Invalid;      
+    CommandType batchType=Invalid;
     deque<Command*> batch;
     vector<Command*> work;
     while(CommandFactory::getNextBatch(registry_,batch,batchType)){
@@ -64,9 +68,20 @@ namespace superfastmatch{
             work.push_back(batch.front());
             batch.pop_front();
           }
-          //Do Add Association Here
+          registry_->getPostings()->addAssociations(work);
           for(vector<Command*>::iterator it=work.begin(),ite=work.end();it!=ite;++it){
             (*it)->setFinished();
+          }
+          break;
+        case AddAssociations:{
+            DocumentCursor* cursor = new DocumentCursor(registry_);
+            Document* doc;
+            while((doc=cursor->getNext())!=NULL){
+              CommandFactory::insertAddAssociation(registry_,doc->doctype(),doc->docid(),batch.front());
+              delete doc;
+            }
+            delete cursor;
+            batch.front()->setFinished();
           }
           break;
         case DropAssociation:

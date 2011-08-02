@@ -107,6 +107,9 @@ namespace superfastmatch{
     if(req.resource=="document"){
       process_document(req,res);  
     }
+    else if(req.resource=="association"){
+      process_association(req,res);
+    }
     else if(req.resource=="index"){
       process_index(req,res);
     }
@@ -152,7 +155,7 @@ namespace superfastmatch{
     switch (req.verb){
       case HTTPClient::MPOST:{
           Document doc(0,0,req.reqbody.c_str(),registry_);
-          registry_->getPostings()->searchIndex(&doc,&res.dict); 
+          registry_->getPostings()->fill_search_dictionary(&doc,&res.dict); 
           res.code=200;
           res.template_name=RESULTS_PAGE;
         }
@@ -244,6 +247,19 @@ namespace superfastmatch{
       cursor.fill_list_dictionary(&res.dict,0,docid);
       res.template_name=DOCUMENTS_PAGE;
       res.code=200;
+    }
+  }
+  
+  void Worker::process_association(const RESTRequest& req, RESTResponse& res){
+    res.dict.SetTemplateGlobalValue("TITLE","Association");
+    Queue queue(registry_);
+    switch (req.verb){
+      case HTTPClient::MPOST:{
+        queue.addAssociations();
+        break;
+      }
+      default:
+        break;
     }
   }
     

@@ -139,10 +139,12 @@ namespace superfastmatch
     uint32_t hash_count_;
     bool ready_;
     
+    void searchIndex(Document* doc,search_t& results,inverted_search_t& pruned_results);
     // Folling three methods return the current queue length for all slots combined   
     uint64_t alterIndex(Document* doc,TaskPayload::TaskOperation operation);
     uint64_t addDocument(Document* doc);
     uint64_t deleteDocument(Document* doc);
+    uint64_t associateDocument(Document* doc);
     void wait();
     
   public:
@@ -152,12 +154,13 @@ namespace superfastmatch
     bool init();
     bool addDocuments(vector<Command*> commands);
     bool deleteDocuments(vector<Command*> commands);
-    void searchIndex(Document* doc,TemplateDictionary* dict);
+    bool addAssociations(vector<Command*> commands);
     bool isReady();
-    
+
+    void fill_search_dictionary(Document* doc,TemplateDictionary* dict);
     void fill_status_dictionary(TemplateDictionary* dict);
     void fill_list_dictionary(TemplateDictionary* dict,hash_t start);
-    void fill_histogram_dictionary(TemplateDictionary* dict);   
+    void fill_histogram_dictionary(TemplateDictionary* dict);
   };
 }
 

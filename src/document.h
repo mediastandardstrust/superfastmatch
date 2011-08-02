@@ -8,6 +8,7 @@
 #include <string>
 #include <common.h>
 #include <registry.h>
+#include <association.h>
 
 namespace superfastmatch
 {   
@@ -25,7 +26,7 @@ namespace superfastmatch
     bool jumpLast();
     bool jump(string& key);
     Document* getNext();
-    Document* getPrevious();  
+    Document* getPrevious();
     uint32_t getCount();
     
     void fill_list_dictionary(TemplateDictionary* dict,uint32_t doctype,uint32_t docid);

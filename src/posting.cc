@@ -309,9 +309,7 @@ namespace superfastmatch
     return queue_length;
   }
   
-  void Posting::searchIndex(Document* doc,TemplateDictionary* dict){
-    search_t results;
-    inverted_search_t pruned_results;
+  void Posting::searchIndex(Document* doc,search_t& results,inverted_search_t& pruned_results){
     for (size_t i=0;i<slots_.size();i++){
       slots_[i]->searchIndex(doc,results);
     }
@@ -319,23 +317,6 @@ namespace superfastmatch
       if (it->second.count>1){
         pruned_results.insert(pair<DocTally,DocPair>(it->second,it->first));
       }
-    }
-    size_t count=0;
-    size_t num_results=registry_->getNumResults();
-    inverted_search_t::iterator it=pruned_results.begin();
-    while(it!=pruned_results.end() && count<num_results){
-      TemplateDictionary* result_dict=dict->AddSectionDictionary("RESULT");
-      result_dict->SetIntValue("DOC_TYPE",it->second.doc_type);
-      result_dict->SetIntValue("DOC_ID",it->second.doc_id);
-      result_dict->SetIntValue("COUNT",it->first.count);
-      result_dict->SetIntValue("TOTAL",it->first.total);
-      result_dict->SetFormattedValue("HEAT","%.2f",double(it->first.total)/it->first.count);
-      Document* other = new Document(it->second.doc_type,it->second.doc_id,"",registry_);
-      other->load();
-      Association association(registry_,doc,other);
-      association.fill_item_dictionary(dict);
-      count++;
-      it++;
     }
   }
   
@@ -371,8 +352,57 @@ namespace superfastmatch
     return true;
   }
   
+  bool Posting::addAssociations(vector<Command*> commands){
+    search_t results;
+    inverted_search_t pruned_results;
+    Document* doc;
+    size_t num_results=registry_->getNumResults();
+    size_t count;
+    for (vector<Command*>::iterator it=commands.begin(),ite=commands.end();it!=ite;++it){
+      count=0;
+      results.clear();
+      pruned_results.clear();
+      doc=(*it)->getDocument();
+      searchIndex(doc,results,pruned_results);
+      for(inverted_search_t::iterator it2=pruned_results.begin(),ite2=pruned_results.end();it2!=ite2 && count<num_results;++it2){
+        Document* other = new Document(it2->second.doc_type,it2->second.doc_id,"",registry_);
+        other->load();
+        Association* association= new Association(registry_,doc,other);
+        association->save();
+        delete association;
+        delete other;
+      }  
+    }
+    return true;
+  }
+  
   bool Posting::isReady(){
     return ready_;
+  }
+  
+  void Posting::fill_search_dictionary(Document* doc,TemplateDictionary* dict){
+    search_t results;
+    inverted_search_t pruned_results;
+    searchIndex(doc,results,pruned_results);
+    size_t count=0;
+    size_t num_results=registry_->getNumResults();
+    inverted_search_t::iterator it=pruned_results.begin();
+    while(it!=pruned_results.end() && count<num_results){
+      TemplateDictionary* result_dict=dict->AddSectionDictionary("RESULT");
+      result_dict->SetIntValue("DOC_TYPE",it->second.doc_type);
+      result_dict->SetIntValue("DOC_ID",it->second.doc_id);
+      result_dict->SetIntValue("COUNT",it->first.count);
+      result_dict->SetIntValue("TOTAL",it->first.total);
+      result_dict->SetFormattedValue("HEAT","%.2f",double(it->first.total)/it->first.count);
+      Document* other = new Document(it->second.doc_type,it->second.doc_id,"",registry_);
+      other->load();
+      Association association(registry_,doc,other);
+      association.fill_item_dictionary(dict);
+      count++;
+      it++;
+      delete other;
+    }
+    
   }
   
   void Posting::fill_status_dictionary(TemplateDictionary* dict){
