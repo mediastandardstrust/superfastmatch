@@ -21,14 +21,23 @@ namespace superfastmatch
   struct Match{
      uint32_t left;
      positions_set right;
-     Match(uint32_t left,positions_set right) :left(left), right(right){}
+     Match(uint32_t left,positions_set right):
+     left(left),
+     right(right)
+     {}
   };
   
   struct Result{
-     uint32_t left;
-     uint32_t right;
-     uint32_t length;
-     Result(uint32_t left,uint32_t right,uint32_t length) : left(left), right(right), length(length){}
+    uint32_t left;
+    uint32_t right;
+    string text;
+    uint32_t length;
+    Result(uint32_t left,uint32_t right,string text,uint32_t length):
+    left(left),
+    right(right),
+    text(text),
+    length(length)
+    {}
   };
 
   class Association
@@ -39,7 +48,7 @@ namespace superfastmatch
     Document* to_document_;
     string* key_;
     string* reverse_key_;
-    vector<Result> results_;
+    vector<Result>* results_;
     
   public:
     Association(Registry* registry,Document* from_document,Document* to_document);

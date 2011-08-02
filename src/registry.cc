@@ -20,7 +20,7 @@ namespace superfastmatch{
   DEFINE_int32(hash_width,24,"Number of bits to use to hash windows of text");
   static const bool hash_width_dummy = google::RegisterFlagValidator(&FLAGS_hash_width, &ValidateHashWidth);
 
-  DEFINE_int32(window_size,15,"Number of characters to use as a window of text for hashing");
+  DEFINE_int32(window_size,40,"Number of characters to use as a window of text for hashing");
   static const bool window_size_dummy = google::RegisterFlagValidator(&FLAGS_window_size, &ValidateWindowSize);
     
   DEFINE_string(data_path,"data","Path to store data files");

@@ -3,17 +3,20 @@
 namespace superfastmatch
 {
   bool result_sorter(Result const& lhs,Result const& rhs ){
-     if (lhs.length!=rhs.length)
-        return lhs.length > rhs.length;
-     if (lhs.left!=rhs.left)
-        return lhs.left < rhs.left;
-     return lhs.right < rhs.right;
+    if (lhs.length!=rhs.length)
+      return lhs.length > rhs.length;
+    if (lhs.text.compare(rhs.text)!=0)
+      return lhs.text.compare(rhs.text);
+    if (lhs.left!=rhs.left)
+      return lhs.left < rhs.left;
+    return lhs.right < rhs.right;
   }
   
   Association::Association(Registry* registry,Document* from_document,Document* to_document):
   registry_(registry),
   from_document_(from_document),
-  to_document_(to_document)
+  to_document_(to_document),
+  results_(new vector<Result>())
   {
     key_=new string(from_document->getKey());
     key_->append(to_document->getKey());
@@ -27,6 +30,7 @@ namespace superfastmatch
   Association::~Association(){
     delete key_;
     delete reverse_key_;
+    delete results_;
   }
   
   string& Association::getKey(){
@@ -55,7 +59,7 @@ namespace superfastmatch
       offset+=kc::readvarnum(value.data()+offset,5,flip?&right:&left);
       offset+=kc::readvarnum(value.data()+offset,5,flip?&left:&right);
       offset+=kc::readvarnum(value.data()+offset,5,&length);
-      results_.push_back(Result(left,right,length));
+      results_->push_back(Result(left,right,from_document_->text().substr(left,length),length));
     }
     return true;
   }
@@ -64,10 +68,10 @@ namespace superfastmatch
     bool success=true;
     char* value=new char[getResultCount()*5*3];
     size_t offset=0;
-    for (size_t i=0;i<results_.size();i++){
-      offset+=kc::writevarnum(value+offset,results_[i].left);
-      offset+=kc::writevarnum(value+offset,results_[i].right);
-      offset+=kc::writevarnum(value+offset,results_[i].length);
+    for (size_t i=0;i<results_->size();i++){
+      offset+=kc::writevarnum(value+offset,results_->at(i).left);
+      offset+=kc::writevarnum(value+offset,results_->at(i).right);
+      offset+=kc::writevarnum(value+offset,results_->at(i).length);
     }
     if (not registry_->getAssociationDB()->set(getKey().data(),16,value,offset)){
       success=false;
@@ -146,7 +150,7 @@ namespace superfastmatch
           if ((next->left-first->left)==counter){
              positions_set::iterator next_right=next->right.find(first_right+counter);
              if (next_right!=next->right.end()){
-                next->right.erase(*next_right);     
+                next->right.erase(*next_right);
                 counter++;
              }
              else{
@@ -157,52 +161,67 @@ namespace superfastmatch
              break;
           }
        }
-       results_.push_back(Result(first->left,first_right,counter+window_size));
+       results_->push_back(Result(first->left,first_right,from_text.substr(first->left,counter+window_size),counter+window_size));
     }
-    sort(results_.begin(),results_.end(),result_sorter);
+    sort(results_->begin(),results_->end(),result_sorter);
     delete bloom;
   }
 
   size_t Association::getTotalLength(){
     size_t total=0;
-    for (size_t i=0;i<results_.size();i++){
+    for (size_t i=0;i<results_->size();i++){
       total+=getLength(i);
     }
     return total;
   }
   
   size_t Association::getResultCount(){
-    return results_.size();
+    return results_->size();
   }
   
   string Association::getFromResult(size_t index){
-    return from_document_->text().substr(results_[index].left,results_[index].length);
+    return from_document_->text().substr(results_->at(index).left,results_->at(index).length);
   }
   
   string Association::getToResult(size_t index){
-    return to_document_->text().substr(results_[index].right,results_[index].length);
+    return to_document_->text().substr(results_->at(index).right,results_->at(index).length);
   }
   
   size_t Association::getLength(size_t index){
-    return results_[index].length;
+    return results_->at(index).length;
   }
   
   void Association::fill_item_dictionary(TemplateDictionary* dict){
-    TemplateDictionary* association_dict=dict->AddIncludeDictionary("ASSOCIATION");
-    association_dict->SetFilename(ASSOCIATION);
-    association_dict->SetValue("FROM_TITLE",from_document_->title());
-    association_dict->SetIntValue("FROM_DOC_TYPE",from_document_->doctype());
-    association_dict->SetIntValue("FROM_DOC_ID",from_document_->docid());
-    association_dict->SetValue("TO_TITLE",to_document_->title());
-    association_dict->SetIntValue("TO_DOC_TYPE",to_document_->doctype());
-    association_dict->SetIntValue("TO_DOC_ID",to_document_->docid());
-    for (size_t i=0;i<results_.size();i++){
-      TemplateDictionary* fragment_dict=association_dict->AddSectionDictionary("FRAGMENT");
-      fragment_dict->SetIntValue("LEFT_POSITION",results_[i].left);
-      fragment_dict->SetIntValue("RIGHT_POSITION",results_[i].right);
-      fragment_dict->SetIntValue("LENGTH",results_[i].length);
-      fragment_dict->SetValue("LEFT",from_document_->text().substr(results_[i].left,results_[i].length));
-      fragment_dict->SetValue("RIGHT",to_document_->text().substr(results_[i].right,results_[i].length));
+    uint32_t previous_left=numeric_limits<uint32_t>::max();
+    uint32_t previous_right=numeric_limits<uint32_t>::max();
+    uint32_t previous_length=0;
+    string previous_text="";
+    string text;
+    TemplateDictionary* fragment_dict;
+    TemplateDictionary* left_dict;
+    TemplateDictionary* right_dict;
+    for (size_t i=0;i<results_->size();i++){
+      text=from_document_->text().substr(results_->at(i).left,results_->at(i).length);
+      if (text.compare(previous_text)!=0){
+        fragment_dict=dict->AddSectionDictionary("FRAGMENT");
+        fragment_dict->SetValue("TITLE",to_document_->title());
+        fragment_dict->SetIntValue("DOC_TYPE",to_document_->doctype());
+        fragment_dict->SetIntValue("DOC_ID",to_document_->docid());
+        fragment_dict->SetIntValue("LENGTH",results_->at(i).length);
+        fragment_dict->SetValue("TEXT",text);
+      }
+      if (previous_left!=results_->at(i).left){
+        left_dict=fragment_dict->AddSectionDictionary("LEFT_POSITIONS");
+        left_dict->SetIntValue("LEFT_POSITION",results_->at(i).left);
+      }
+      if(previous_right!=results_->at(i).right){
+        right_dict=fragment_dict->AddSectionDictionary("RIGHT_POSITIONS");
+        right_dict->SetIntValue("RIGHT_POSITION",results_->at(i).right);
+      }
+      previous_text=text;
+      previous_left=results_->at(i).left;
+      previous_right=results_->at(i).right;
+      previous_length=results_->at(i).length;
     }
   }
   

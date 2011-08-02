@@ -306,6 +306,8 @@ namespace superfastmatch
       }
     }
     dict->SetValue("TEXT",text());
+    TemplateDictionary* association_dict=dict->AddIncludeDictionary("ASSOCIATION");
+    association_dict->SetFilename(ASSOCIATION);
     // This belongs in Association Cursor
     // And need a key based Association Constructot
     kc::BasicDB::Cursor* cursor=registry_->getAssociationDB()->cursor();
@@ -314,15 +316,13 @@ namespace superfastmatch
     string other_key;
     while((cursor->get_key(&next,true))&&(getKey().compare(next.substr(0,8))==0)){
       other_key=next.substr(8,8);
-      Document* other = new Document(other_key,registry_);
-      other->load();
-      Association association(registry_,this,other);
-      association.fill_item_dictionary(dict);
-      delete other; 
+      Document other(other_key,registry_);
+      other.load();
+      Association association(registry_,this,&other);
+      association.fill_item_dictionary(association_dict);
     }
     delete cursor;
   }
-  
   
   bool operator< (Document& lhs,Document& rhs){
     if (lhs.doctype() == rhs.doctype()){
@@ -331,4 +331,4 @@ namespace superfastmatch
     return lhs.doctype() < rhs.doctype();
   }
 
-}//namespace Superfastmatch
+}//namespace superfastmatch

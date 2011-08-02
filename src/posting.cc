@@ -314,7 +314,7 @@ namespace superfastmatch
       slots_[i]->searchIndex(doc,results);
     }
     for (search_t::iterator it=results.begin(),ite=results.end();it!=ite;it++){
-      if (it->second.count>1){
+      if ((it->second.count>1) && !(it->first.doc_type==doc->doctype() && it->first.doc_id==doc->docid())){
         pruned_results.insert(pair<DocTally,DocPair>(it->second,it->first));
       }
     }
@@ -388,6 +388,8 @@ namespace superfastmatch
     size_t count=0;
     size_t num_results=registry_->getNumResults();
     inverted_search_t::iterator it=pruned_results.begin();
+    TemplateDictionary* association_dict=dict->AddIncludeDictionary("ASSOCIATION");
+    association_dict->SetFilename(ASSOCIATION);
     while(it!=pruned_results.end() && count<num_results){
       TemplateDictionary* result_dict=dict->AddSectionDictionary("RESULT");
       result_dict->SetIntValue("DOC_TYPE",it->second.doc_type);
@@ -398,7 +400,7 @@ namespace superfastmatch
       Document* other = new Document(it->second.doc_type,it->second.doc_id,"",registry_);
       other->load();
       Association association(registry_,doc,other);
-      association.fill_item_dictionary(dict);
+      association.fill_item_dictionary(association_dict);
       count++;
       it++;
       delete other;

@@ -27,6 +27,10 @@
 			border-bottom: 1px solid #fff;
 			color: #039;
 		}
+		table th.textColumn
+		{
+			width:70%;
+		}
 		table td
 		{
 			padding: 8px;
