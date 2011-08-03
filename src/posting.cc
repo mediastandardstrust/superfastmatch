@@ -5,6 +5,7 @@
 #include "command.h"
 #include "registry.h"
 #include "association.h"
+#include <google/profiler.h>
 
 namespace superfastmatch
 {
@@ -148,7 +149,10 @@ namespace superfastmatch
     uint32_t hash_width=registry_->getHashWidth();
     vector<uint32_t> docids;
     vector<uint32_t> doctypes;
+    DocTally* tally;
+    DocPair pair(0,0);
     size_t position=0;
+    size_t doc_count;
     size_t max_distance=registry_->getMaxDistance();
     index_lock_.lock_reader();
     for (vector<hash_t>::const_iterator it=doc->hashes().begin(),ite=doc->hashes().end();it!=ite;++it){
@@ -158,11 +162,15 @@ namespace superfastmatch
         line_.getDocTypes(doctypes);
         for (vector<uint32_t>::const_iterator it2=doctypes.begin(),ite2=doctypes.end();it2!=ite2;++it2){
           line_.getDocIds(*it2,docids);
+          doc_count=docids.size();
           for (vector<uint32_t>::const_iterator it3=docids.begin(),ite3=docids.end();it3!=ite3;++it3){
-            DocTally* tally=&results[DocPair(*it2,*it3)];
+            pair.doc_type=*it2;
+            pair.doc_id=*it3;
+            tally=&results[pair];
+            // cout << results.bucket_count() << ":" << results.load_factor() << ":" << results.size() <<endl; 
             if ((position-tally->last_seen)<max_distance){
               tally->count++;
-              tally->total+=docids.size();
+              tally->total+=doc_count;
             }
             tally->last_seen=position;
           }
@@ -353,6 +361,7 @@ namespace superfastmatch
   }
   
   bool Posting::addAssociations(vector<Command*> commands){
+    ProfilerStart("/tmp/superfastmatch");
     search_t results;
     inverted_search_t pruned_results;
     Document* doc;
@@ -373,6 +382,7 @@ namespace superfastmatch
       } 
       delete doc;
     }
+    ProfilerStop();
     return true;
   }
   

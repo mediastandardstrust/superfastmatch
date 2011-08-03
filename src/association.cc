@@ -93,7 +93,7 @@ namespace superfastmatch
     from_hashes=from_document_->hashes();
     to_hashes=to_document_->hashes();
     uint32_t from_hashes_count = from_hashes.size();
-    uint32_t to_hashes_count   = to_hashes.size();
+    uint32_t to_hashes_count = to_hashes.size();
     string from_text = from_document_->getLowerCase();
     string to_text = to_document_->getLowerCase();
     uint32_t window_size=registry_->getWindowSize();
