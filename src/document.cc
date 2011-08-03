@@ -109,6 +109,19 @@ namespace superfastmatch
     content_ = new std::string(content);
   }
   
+  Document::Document(const uint32_t doctype,const uint32_t docid,Registry* registry):
+  doctype_(doctype),docid_(docid),registry_(registry),key_(0),content_(0),lower_case_(0),content_map_(0),hashes_(0),unique_sorted_hashes_(0),bloom_(0)
+  {
+    char key[8];
+    uint32_t dt=kc::hton32(doctype_);
+    uint32_t di=kc::hton32(docid_);
+    memcpy(key,&dt,4);
+    memcpy(key+4,&di,4);
+    key_ = new string(key,8);;
+    content_ = new string();
+    load();    
+  }
+  
   Document::Document(string& key,Registry* registry):
   registry_(registry),key_(0),content_(0),lower_case_(0),content_map_(0),hashes_(0),unique_sorted_hashes_(0),bloom_(0)
   {
@@ -122,19 +135,6 @@ namespace superfastmatch
   }
   
   Document::~Document(){
-    clear();
-    if(key_!=0){
-      delete key_;
-      key_=0;
-    }
-    if (content_!=0){
-      delete content_;        
-      content_=0;
-    }
-    // printf("Destroyed Document (%p)\n", this);
-  }
-  
-  void Document::clear(){
     if (lower_case_!=0){
       delete lower_case_;
       lower_case_=0;
@@ -144,7 +144,7 @@ namespace superfastmatch
       content_map_=0;
     }
     if (hashes_!=0){
-      delete hashes_;       
+      delete hashes_;
       hashes_=0;
     }
     if (unique_sorted_hashes_!=0){
@@ -154,27 +154,17 @@ namespace superfastmatch
     if (bloom_!=0){
       delete bloom_;
       bloom_=0; 
-    } 
+    }
+    if(key_!=0){
+      delete key_;
+      key_=0;
+    }
+    if (content_!=0){
+      delete content_;
+      content_=0;
+    }
   }
 
-  bool Document::save(){
-    // Maximum size of hashes given maximum hash value
-    char* h = new char[(unique_sorted_hashes().size()*kc::sizevarnum(MAX_HASH))+kc::sizevarnum(unique_sorted_hashes().size())];
-    uint32_t offset=0;
-    hash_t previous=0;
-    // Write the length first so that the read vector can be sized correctly
-    offset+=kc::writevarnum(h,unique_sorted_hashes().size());
-    // Write deltas, knowing that the hashes are sorted
-    for (hashes_vector::const_iterator it=unique_sorted_hashes().begin(),ite=unique_sorted_hashes().end();it!=ite;++it){
-      offset+=kc::writevarnum(h+offset,*it-previous);
-      previous=*it;
-    }
-    bool success = registry_->getHashesDB()->cas(key_->data(),key_->size(),NULL,0,h,offset) && \
-         registry_->getDocumentDB()->cas(key_->data(),key_->size(),NULL,0,content_->data(),content_->size()); 
-    delete[] h;
-    return success;
-  }
-  
   bool Document::load(){
     string hashes;
     if (not registry_->getHashesDB()->get(*key_,&hashes)){
@@ -197,6 +187,24 @@ namespace superfastmatch
     return registry_->getDocumentDB()->get(*key_,content_);
   }
   
+  bool Document::save(){
+    // Maximum size of hashes given maximum hash value
+    char* h = new char[(unique_sorted_hashes().size()*kc::sizevarnum(MAX_HASH))+kc::sizevarnum(unique_sorted_hashes().size())];
+    uint32_t offset=0;
+    hash_t previous=0;
+    // Write the length first so that the read vector can be sized correctly
+    offset+=kc::writevarnum(h,unique_sorted_hashes().size());
+    // Write deltas, knowing that the hashes are sorted
+    for (hashes_vector::const_iterator it=unique_sorted_hashes().begin(),ite=unique_sorted_hashes().end();it!=ite;++it){
+      offset+=kc::writevarnum(h+offset,*it-previous);
+      previous=*it;
+    }
+    bool success = registry_->getHashesDB()->cas(key_->data(),key_->size(),NULL,0,h,offset) && \
+         registry_->getDocumentDB()->cas(key_->data(),key_->size(),NULL,0,content_->data(),content_->size()); 
+    delete[] h;
+    return success;
+  }
+  
   bool Document::remove(){
     return registry_->getDocumentDB()->remove(*key_) && registry_->getHashesDB()->remove(*key_);
   }
@@ -204,7 +212,9 @@ namespace superfastmatch
   Document::hashes_vector& Document::hashes(){
     if (hashes_==0){
       hashes_ = new hashes_vector();
-      bloom_ = new hashes_bloom();
+      if (bloom_==0){
+        bloom_ = new hashes_bloom();
+      }
       uint32_t length = text().length()-registry_->getWindowSize();
       hashes_->resize(length);
       const char* data=getLowerCase().data();
@@ -280,10 +290,6 @@ namespace superfastmatch
     return index_key<<32 | docid_;
   }
     
-  uint32_t Document::windowsize(){
-    return registry_->getWindowSize();
-  }
-  
   uint32_t Document::doctype(){
     return doctype_;
   }
@@ -309,7 +315,7 @@ namespace superfastmatch
     TemplateDictionary* association_dict=dict->AddIncludeDictionary("ASSOCIATION");
     association_dict->SetFilename(ASSOCIATION);
     // This belongs in Association Cursor
-    // And need a key based Association Constructot
+    // And need a key based Association Constructor
     kc::BasicDB::Cursor* cursor=registry_->getAssociationDB()->cursor();
     cursor->jump(getKey().data(),8);
     string next;
@@ -317,7 +323,6 @@ namespace superfastmatch
     while((cursor->get_key(&next,true))&&(getKey().compare(next.substr(0,8))==0)){
       other_key=next.substr(8,8);
       Document other(other_key,registry_);
-      other.load();
       Association association(registry_,this,&other);
       association.fill_item_dictionary(association_dict);
     }

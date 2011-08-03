@@ -6,7 +6,7 @@ namespace superfastmatch
     if (lhs.length!=rhs.length)
       return lhs.length > rhs.length;
     if (lhs.text.compare(rhs.text)!=0)
-      return lhs.text.compare(rhs.text);
+      return lhs.text < rhs.text;
     if (lhs.left!=rhs.left)
       return lhs.left < rhs.left;
     return lhs.right < rhs.right;

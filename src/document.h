@@ -53,11 +53,11 @@ namespace superfastmatch
   
   public:
     Document(const uint32_t doctype,const uint32_t docid,const char* content,Registry* registry);
+    Document(const uint32_t doctype,const uint32_t docid,Registry* registry);
     Document(string& key,Registry* registry);
     
     ~Document();
     
-    void clear();
     //Returns false if document already exists
     bool load();
     bool save();
@@ -72,7 +72,6 @@ namespace superfastmatch
     string& getKey();
     string& title();
     uint64_t index_key();
-    uint32_t windowsize();
     uint32_t doctype();
     uint32_t docid();
     

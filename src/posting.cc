@@ -277,7 +277,7 @@ namespace superfastmatch
       }
     }
     cout << "Releasing Memory" << endl;
-    MallocExtension::instance()->ReleaseFreeMemory();
+    // MallocExtension::instance()->ReleaseFreeMemory();
     cout << "Done!" << endl;
   }
   
@@ -366,13 +366,11 @@ namespace superfastmatch
       cout << "Associating: " << *doc << endl;
       searchIndex(doc,results,pruned_results);
       for(inverted_search_t::iterator it2=pruned_results.begin(),ite2=pruned_results.end();it2!=ite2 && count<num_results;++it2){
-        Document* other = new Document(it2->second.doc_type,it2->second.doc_id,"",registry_);
-        other->load();
-        Association* association= new Association(registry_,doc,other);
-        association->save();
-        delete association;
-        delete other;
-      }  
+        Document other(it2->second.doc_type,it2->second.doc_id,registry_);
+        Association association(registry_,doc,&other);
+        association.save();
+      } 
+      delete doc;
     }
     return true;
   }
@@ -397,13 +395,11 @@ namespace superfastmatch
       result_dict->SetIntValue("COUNT",it->first.count);
       result_dict->SetIntValue("TOTAL",it->first.total);
       result_dict->SetFormattedValue("HEAT","%.2f",double(it->first.total)/it->first.count);
-      Document* other = new Document(it->second.doc_type,it->second.doc_id,"",registry_);
-      other->load();
-      Association association(registry_,doc,other);
+      Document other(it->second.doc_type,it->second.doc_id,registry_);
+      Association association(registry_,doc,&other);
       association.fill_item_dictionary(association_dict);
       count++;
       it++;
-      delete other;
     }
   }
   
