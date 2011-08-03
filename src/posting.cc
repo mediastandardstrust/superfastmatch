@@ -277,7 +277,7 @@ namespace superfastmatch
       }
     }
     cout << "Releasing Memory" << endl;
-    // MallocExtension::instance()->ReleaseFreeMemory();
+    MallocExtension::instance()->ReleaseFreeMemory();
     cout << "Done!" << endl;
   }
   
@@ -369,6 +369,7 @@ namespace superfastmatch
         Document other(it2->second.doc_type,it2->second.doc_id,registry_);
         Association association(registry_,doc,&other);
         association.save();
+        count++;
       } 
       delete doc;
     }
