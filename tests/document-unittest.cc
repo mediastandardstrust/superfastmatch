@@ -24,9 +24,9 @@ TEST(DocumentTest,ConstructorTest){
   Document* doc2 = new Document(1,2,"text=Another+test&title=Also+a+test&filename=test2.txt",&registry);
   EXPECT_EQ(14U,doc1->text().size());
   EXPECT_STREQ("This is a test",doc1->text().c_str());
-  EXPECT_STREQ("this is a test",doc1->getLowerCase().c_str());
+  EXPECT_STREQ("this is a test",doc1->getCleanText().c_str());
   EXPECT_STREQ("Another test",doc2->text().c_str());
-  EXPECT_STREQ("another test",doc2->getLowerCase().c_str());
+  EXPECT_STREQ("another test",doc2->getCleanText().c_str());
   EXPECT_EQ(11U,doc1->title().size());
   EXPECT_STREQ("Also a test",doc1->title().c_str());
   EXPECT_EQ(8U,doc1->content()["filename"].size());
@@ -38,6 +38,12 @@ TEST(DocumentTest,ConstructorTest){
   documentDB->close();
   delete hashesDB;
   delete documentDB;
+}
+
+TEST(DocumentTest, CleanTextTest){
+  Document* doc = new Document(1,1,"text=This+a+test+with+*+*++***&^$%$#@@<>?lots+of+whitespace",&registry);
+  EXPECT_EQ(doc->text().size(),doc->getCleanText().size());
+  EXPECT_EQ("this a test with                    lots of whitespace",doc->getCleanText());
 }
 
 int main(int argc, char** argv) {
