@@ -38,8 +38,7 @@ namespace superfastmatch
     
   typedef struct{
     size_t operator() (const DocPair& k) const { 
-      uint64_t key = (static_cast<uint64_t>(k.doc_type)<<32)&k.doc_id;
-      return kc::hashmurmur((const void*)&key,8);
+      return (static_cast<uint64_t>(k.doc_type)<<32)&k.doc_id;
     }
   } DocPairHash;
 

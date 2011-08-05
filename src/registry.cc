@@ -17,12 +17,14 @@ namespace superfastmatch{
   DEFINE_int32(slot_count,8,"Number of slots to divide the index into (one thread per slot)");
   static const bool slot_count_dummy = google::RegisterFlagValidator(&FLAGS_slot_count, &ValidateThreads);
 
-  DEFINE_int32(hash_width,24,"Number of bits to use to hash windows of text");
+  DEFINE_int32(hash_width,28,"Number of bits to use to hash windows of text");
   static const bool hash_width_dummy = google::RegisterFlagValidator(&FLAGS_hash_width, &ValidateHashWidth);
 
-  DEFINE_int32(window_size,40,"Number of characters to use as a window of text for hashing");
+  DEFINE_int32(window_size,15,"Number of characters to use as a window of text for hashing");
   static const bool window_size_dummy = google::RegisterFlagValidator(&FLAGS_window_size, &ValidateWindowSize);
     
+  DEFINE_int32(max_posting_threshold,100,"Number of entries for a hash above which are ignored for search");
+ 
   DEFINE_string(data_path,"data","Path to store data files");
   
   DEFINE_bool(reset,false,"Reset index and remove all documents");
@@ -38,6 +40,14 @@ namespace superfastmatch{
   hash_t FlagsRegistry::getHashMask() const{
     return (1L<<getHashWidth())-1;
   };
+
+  hash_t FlagsRegistry::getWhiteSpaceHash(bool masked) const{
+    string white_space(getWindowSize()+1,' ');
+    hash_t hash = kc::hashmurmur(white_space.data(),white_space.size());
+    if (masked)
+      return((hash>>getHashWidth())^(hash&getHashMask()));
+    return hash;
+  }
   
   uint32_t FlagsRegistry::getWindowSize() const{
     return FLAGS_window_size;
@@ -70,6 +80,10 @@ namespace superfastmatch{
   size_t FlagsRegistry::getMaxBatchCount() const{
     return 20000;
   };
+
+  size_t FlagsRegistry::getMaxPostingThreshold() const{
+    return FLAGS_max_posting_threshold;
+  }
   
   size_t FlagsRegistry::getMaxDistance() const{
     return 100;

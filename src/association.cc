@@ -97,11 +97,12 @@ namespace superfastmatch
     string from_text = from_document_->getLowerCase();
     string to_text = to_document_->getLowerCase();
     uint32_t window_size=registry_->getWindowSize();
+    hash_t white_space=registry_->getWhiteSpaceHash(false);
 
     //Find from_document hashes set
     hashes_set from_hashes_set;
     for (size_t i=0;i<from_hashes_count;i++){
-      if (bloom->test(from_hashes[i]&0xFFFFFF)){
+      if ((bloom->test(from_hashes[i]&0xFFFFFF))&&(from_hashes[i]!=white_space)){
         from_hashes_set.insert(from_hashes[i]);
       }
     }
@@ -112,7 +113,7 @@ namespace superfastmatch
     hash_t hash;
     for (size_t i=0;i<to_hashes_count;i++){
       hash=to_hashes[i];
-      if (bloom->test(hash&0xFFFFFF)){
+      if ((bloom->test(hash&0xFFFFFF))&&(hash!=white_space)){
         if (from_hashes_set.find(hash)!=from_hashes_set_end){
           to_matches[hash].insert(i);   
         }

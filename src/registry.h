@@ -20,6 +20,7 @@ namespace superfastmatch{
     virtual uint32_t getHashWidth() const=0;
     virtual hash_t getHashMask() const=0;
     virtual uint32_t getWindowSize() const=0;
+    virtual hash_t getWhiteSpaceHash(bool masked=true) const=0;
     virtual uint32_t getThreadCount() const=0;
     virtual uint32_t getSlotCount() const=0;
     virtual size_t getPageSize() const=0;
@@ -27,6 +28,7 @@ namespace superfastmatch{
     virtual size_t getMaxLineLength() const=0;
     virtual size_t getMaxHashCount() const=0;
     virtual size_t getMaxBatchCount() const=0;
+    virtual size_t getMaxPostingThreshold() const=0;
     virtual size_t getMaxDistance() const=0;
     virtual double getTimeout() const=0;
     virtual string getDataPath() const=0;
@@ -71,6 +73,7 @@ namespace superfastmatch{
     uint32_t getHashWidth() const;
     hash_t getHashMask() const;
     uint32_t getWindowSize() const;
+    hash_t getWhiteSpaceHash(bool masked=true) const;
     uint32_t getThreadCount() const;
     uint32_t getSlotCount() const;
     size_t getPageSize() const;
@@ -78,6 +81,7 @@ namespace superfastmatch{
     size_t getMaxLineLength() const;
     size_t getMaxHashCount() const;
     size_t getMaxBatchCount() const;
+    size_t getMaxPostingThreshold() const;
     size_t getMaxDistance() const;
     string getDataPath() const;
     string getAddress() const;

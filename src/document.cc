@@ -71,7 +71,7 @@ namespace superfastmatch
       cursor_->jump(key,8);
     }
     delete[] key;
-    while ((count<registry_->getPageSize() && (doc=getNext())!=NULL)){
+    while (((doc=getNext())!=NULL)&&(count<registry_->getPageSize())){
       if ((doctype!=0) && (doctype!=doc->doctype())){
         break;
       }
@@ -236,7 +236,6 @@ namespace superfastmatch
       uint32_t length = text().length()-registry_->getWindowSize();
       unique_sorted_hashes_->resize(length);
       const char* data=getLowerCase().data();
-      // const char* data=text().data();
       hash_t hash;
       for (uint32_t i=0;i<length;i++){
         hash = hashmurmur(data+i,registry_->getWindowSize()+1);

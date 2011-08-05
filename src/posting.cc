@@ -145,8 +145,11 @@ namespace superfastmatch
   
   bool PostingSlot::searchIndex(Document* doc,search_t& results){
     hash_t hash;
+    uint32_t doctype=doc->doctype();    
+    uint32_t docid=doc->docid();
     hash_t hash_mask=registry_->getHashMask();
     uint32_t hash_width=registry_->getHashWidth();
+    uint32_t threshold=registry_->getMaxPostingThreshold();
     vector<uint32_t> docids;
     vector<uint32_t> doctypes;
     DocTally* tally;
@@ -163,17 +166,21 @@ namespace superfastmatch
         for (vector<uint32_t>::const_iterator it2=doctypes.begin(),ite2=doctypes.end();it2!=ite2;++it2){
           line_.getDocIds(*it2,docids);
           doc_count=docids.size();
-          for (vector<uint32_t>::const_iterator it3=docids.begin(),ite3=docids.end();it3!=ite3;++it3){
-            pair.doc_type=*it2;
-            pair.doc_id=*it3;
-            tally=&results[pair];
-            // cout << results.bucket_count() << ":" << results.load_factor() << ":" << results.size() <<endl; 
-            if ((position-tally->last_seen)<max_distance){
-              tally->count++;
-              tally->total+=doc_count;
-            }
-            tally->last_seen=position;
-          }
+	  if (doc_count<=threshold){
+	    for (vector<uint32_t>::const_iterator it3=docids.begin(),ite3=docids.end();it3!=ite3;++it3){
+	      pair.doc_type=*it2;
+	      pair.doc_id=*it3;
+	      if (!(pair.doc_id==docid)&&(pair.doc_type==doctype)){
+		tally=&results[pair];
+		// cout << results.bucket_count() << ":" << results.load_factor() << ":" << results.size() <<endl; 
+		if ((position-tally->last_seen)<max_distance){
+		  tally->count++;
+		  tally->total+=doc_count;
+		}
+		tally->last_seen=position;
+	      }
+	    }
+	  }
         }
       }
       position++;

@@ -334,6 +334,7 @@ namespace superfastmatch{
     MallocExtension::instance()->GetStats(buffer,kBufferSize);
     res.dict.SetFormattedValue("MEMORY","%.4f",double(memory)/1024/1024/1024);
     res.dict.SetValue("MEMORY_STATS",string(buffer));
+    res.dict.SetIntValue("WHITESPACE_HASH",registry_->getWhiteSpaceHash());
     delete [] buffer;
     registry_->fill_status_dictionary(&res.dict);
     registry_->getPostings()->fill_status_dictionary(&res.dict);

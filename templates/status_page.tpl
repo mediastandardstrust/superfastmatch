@@ -7,6 +7,7 @@
 		<li>{{DOC_COUNT}} docs in index</li>
 		<li>{{HASH_COUNT}} hashes added to index</li>
 		<li>{{AVERAGE_DOC_LENGTH}} average document length</li>	
+		<li><a href="/index/?cursor={{WHITESPACE_HASH}}">Whitespace</a></li>
 	</ul>
 	<h2>Total Memory Usage: {{MEMORY}} GB</h2>
 	{{#DB}}
