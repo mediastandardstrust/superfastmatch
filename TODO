@@ -16,3 +16,4 @@ TODO
 * JSON versions of appropriate templates
 * Full curl test of REST API
 * Adopt Google C++ Coding standards (eg, getMethods())
+* Implement unicode using ICU

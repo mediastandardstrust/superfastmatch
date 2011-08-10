@@ -10,6 +10,8 @@ class MockRegistry : public Registry {
       hash_t());
   MOCK_CONST_METHOD0(getWindowSize,
       uint32_t());
+  MOCK_CONST_METHOD1(getWhiteSpaceHash,
+      hash_t(bool));
   MOCK_CONST_METHOD0(getThreadCount,
       uint32_t());
   MOCK_CONST_METHOD0(getSlotCount,
@@ -23,6 +25,8 @@ class MockRegistry : public Registry {
   MOCK_CONST_METHOD0(getMaxHashCount,
       size_t());
   MOCK_CONST_METHOD0(getMaxBatchCount,
+      size_t());
+  MOCK_CONST_METHOD0(getMaxPostingThreshold,
       size_t());
   MOCK_CONST_METHOD0(getMaxDistance,
       size_t());

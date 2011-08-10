@@ -41,9 +41,10 @@ TEST(DocumentTest,ConstructorTest){
 }
 
 TEST(DocumentTest, CleanTextTest){
-  Document* doc = new Document(1,1,"text=This+a+test+with+*+*++***&^$%$#@@<>?lots+of+whitespace",&registry);
+  MockRegistry registry;
+  Document* doc = new Document(1,1,"text=This+a+test+with+*+*++***^$$#@@<>lots+of+whitespace",&registry);
   EXPECT_EQ(doc->text().size(),doc->getCleanText().size());
-  EXPECT_EQ("this a test with                    lots of whitespace",doc->getCleanText());
+  EXPECT_EQ("this a test with                 lots of whitespace",doc->getCleanText());
 }
 
 int main(int argc, char** argv) {

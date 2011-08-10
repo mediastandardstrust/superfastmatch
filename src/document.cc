@@ -215,7 +215,7 @@ namespace superfastmatch
       if (bloom_==0){
         bloom_ = new hashes_bloom();
       }
-      uint32_t length = text().length()-registry_->getWindowSize();
+      uint32_t length = getCleanText().length()-registry_->getWindowSize();
       hashes_->resize(length);
       const char* data=getCleanText().data();
       hash_t hash;
@@ -247,11 +247,15 @@ namespace superfastmatch
     return *unique_sorted_hashes_;
   }
   
+  bool isPunctuation(char c){
+    return std::isalnum(c)==0;
+  }
+
   string& Document::getCleanText(){
     if (clean_text_==0){
-      clean_text_=new string(text());
-      //TODO look at http://code.google.com/p/stringencoders/source/browse/trunk/src/modp_ascii.c
-      std::transform(clean_text_->begin(), clean_text_->end(), clean_text_->begin(), ::tolower);
+      clean_text_=new string(text().size(),' ');
+      replace_copy_if(text().begin(),text().end(),clean_text_->begin(),isPunctuation,' ');
+      transform(clean_text_->begin(), clean_text_->end(), clean_text_->begin(), ::tolower);     
     }
     return *clean_text_;
   }

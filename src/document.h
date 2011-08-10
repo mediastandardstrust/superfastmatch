@@ -6,6 +6,7 @@
 #include <map>
 #include <algorithm>
 #include <string>
+#include <cctype>
 #include <common.h>
 #include <registry.h>
 #include <association.h>

@@ -100,7 +100,7 @@ gmock-gtest.a : $(GTEST_DIR)/gmock-gtest-all.o
 tests/postline-unittest.o : src/postline.cc tests/postline-unittest.cc gmock-gtest.a 
 	$(CXX) -lpthread $(CXXFLAGS) $^ -o $* 
 
-tests/document-unittest.o : src/document.cc tests/document-unittest.cc gmock-gtest.a
+tests/document-unittest.o : src/document.cc src/association.cc tests/document-unittest.cc gmock-gtest.a
 	$(CXX) $(INCLUDES) -lpthread -lkyotocabinet -lctemplate $(CXXFLAGS) $^ -o $*
 
 tests/association-unittest.o : src/document.cc src/association.cc tests/association-unittest.cc gmock-gtest.a
