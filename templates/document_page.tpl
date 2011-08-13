@@ -20,7 +20,7 @@
 		</tbody>
 	</table>
 	<h2>Associations</h2>
-	{{>ASSOCIATION}}
+{{>ASSOCIATION}}
 	<h2>Text</h2>
 	<pre>{{TEXT}}</pre>
 	

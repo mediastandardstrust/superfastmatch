@@ -2,6 +2,8 @@
 	<h1>Status</h1>
 	<h2>Index:</h2>
 	<ul>
+		<li>{{WINDOW_SIZE}} characters per window</li>
+		<li>{{WHITE_SPACE_THRESHOLD}} whitespace characters in a  window classified as whitespace</li>
 		<li>{{HASH_WIDTH}} bits per hash</li>
 		<li>{{SLOT_COUNT}} slots in index</li>
 		<li>{{DOC_COUNT}} docs in index</li>

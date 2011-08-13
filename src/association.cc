@@ -94,28 +94,31 @@ namespace superfastmatch
     to_hashes=to_document_->hashes();
     uint32_t from_hashes_count = from_hashes.size();
     uint32_t to_hashes_count = to_hashes.size();
+    string original_text = from_document_->text();
     string from_text = from_document_->getCleanText();
     string to_text = to_document_->getCleanText();
     uint32_t window_size=registry_->getWindowSize();
     hash_t white_space=registry_->getWhiteSpaceHash(false);
 
     //Find from_document hashes set
+    hash_t from_hash;
     hashes_set from_hashes_set;
     for (size_t i=0;i<from_hashes_count;i++){
-      if ((bloom->test(from_hashes[i]&0xFFFFFF))&&(from_hashes[i]!=white_space)){
-        from_hashes_set.insert(from_hashes[i]);
+      from_hash=from_hashes[i];
+      if ((bloom->test(from_hash&0xFFFFFF))&&(from_hash!=white_space)){
+        from_hashes_set.insert(from_hash);
       }
     }
 
     //Find to_document hashes map
+    hash_t to_hash;
     matches_map to_matches;
     hashes_set::iterator from_hashes_set_end=from_hashes_set.end();
-    hash_t hash;
     for (size_t i=0;i<to_hashes_count;i++){
-      hash=to_hashes[i];
-      if ((bloom->test(hash&0xFFFFFF))&&(hash!=white_space)){
-        if (from_hashes_set.find(hash)!=from_hashes_set_end){
-          to_matches[hash].insert(i);   
+      to_hash=to_hashes[i];
+      if ((bloom->test(to_hash&0xFFFFFF))&&(to_hash!=white_space)){
+        if (from_hashes_set.find(to_hash)!=from_hashes_set_end){
+          to_matches[to_hash].insert(i);
         }
       }
     }
@@ -129,6 +132,7 @@ namespace superfastmatch
         positions_set checked_matches(to_match->second);
         for (positions_set::iterator it=checked_matches.begin();it!=checked_matches.end();++it){
           if (from_text.compare(i,window_size,to_text,*it,window_size)){
+            // cout << "Bad Match: \"" << from_text.substr(i,window_size) << "\" : \"" << to_text.substr(*it,window_size) << "\"" << endl;
             checked_matches.erase(it);
           }
         }
@@ -162,7 +166,8 @@ namespace superfastmatch
              break;
           }
        }
-       results_->push_back(Result(first->left,first_right,from_text.substr(first->left,counter+window_size),counter+window_size));
+       results_->push_back(Result(first->left,first_right,original_text.substr(first->left,counter+window_size),counter+window_size));
+       cout << "Match: \""<< original_text.substr(first->left,counter+window_size) << "\"" << endl;
     }
     sort(results_->begin(),results_->end(),result_sorter);
     delete bloom;
@@ -202,20 +207,20 @@ namespace superfastmatch
     TemplateDictionary* left_dict;
     TemplateDictionary* right_dict;
     for (size_t i=0;i<results_->size();i++){
-      text=from_document_->text().substr(results_->at(i).left,results_->at(i).length);
+      text=from_document_->getCleanText().substr(results_->at(i).left,results_->at(i).length);
       if (text.compare(previous_text)!=0){
         fragment_dict=dict->AddSectionDictionary("FRAGMENT");
         fragment_dict->SetValue("TITLE",to_document_->title());
         fragment_dict->SetIntValue("DOC_TYPE",to_document_->doctype());
         fragment_dict->SetIntValue("DOC_ID",to_document_->docid());
         fragment_dict->SetIntValue("LENGTH",results_->at(i).length);
-        fragment_dict->SetValue("TEXT",text);
+        fragment_dict->SetValue("TEXT",from_document_->text().substr(results_->at(i).left,results_->at(i).length));
       }
-      if (previous_left!=results_->at(i).left){
+      if (previous_left!=results_->at(i).left || previous_length!=results_->at(i).length){
         left_dict=fragment_dict->AddSectionDictionary("LEFT_POSITIONS");
         left_dict->SetIntValue("LEFT_POSITION",results_->at(i).left);
       }
-      if(previous_right!=results_->at(i).right){
+      if(previous_right!=results_->at(i).right || previous_length!=results_->at(i).length){
         right_dict=fragment_dict->AddSectionDictionary("RIGHT_POSITIONS");
         right_dict->SetIntValue("RIGHT_POSITION",results_->at(i).right);
       }

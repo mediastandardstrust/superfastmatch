@@ -216,45 +216,46 @@ namespace superfastmatch
         bloom_ = new hashes_bloom();
       }
       uint32_t length = getCleanText().length()-registry_->getWindowSize();
+      hash_t white_space = registry_->getWhiteSpaceHash(false);
+      uint32_t window_size=registry_->getWindowSize();
+      uint32_t white_space_threshold=registry_->getWhiteSpaceThreshold();
       hashes_->resize(length);
-      const char* data=getCleanText().data();
       hash_t hash;
-      for (uint32_t i=0;i<length;i++){
-        hash = hashmurmur(data+i,registry_->getWindowSize()+1);
+      uint32_t i=0;
+      string::const_iterator it=getCleanText().begin(),ite=getCleanText().end()-registry_->getWindowSize();
+      for (;it!=ite;++it){
+        // if ((count(it,it+white_space_threshold,' ')+count(it+window_size-white_space_threshold,it+window_size,' '))>white_space_threshold){
+        if (count(it,it+window_size,' ')>white_space_threshold){
+          hash=white_space;
+        }else{
+          hash=hashmurmur(&(*it),window_size+1);
+        }
         (*hashes_)[i]=hash;
         bloom_->set(hash&0xFFFFFF);
+        i++;
       }
     }
     return *hashes_;
   }
   
-  //TODO use hashes method!
   Document::hashes_vector& Document::unique_sorted_hashes(){
     if (unique_sorted_hashes_==0){
-      unique_sorted_hashes_=new hashes_vector();
-      uint32_t length = text().length()-registry_->getWindowSize();
-      unique_sorted_hashes_->resize(length);
-      const char* data=getCleanText().data();
-      hash_t hash;
-      for (uint32_t i=0;i<length;i++){
-        hash = hashmurmur(data+i,registry_->getWindowSize()+1);
-        (*unique_sorted_hashes_)[i]=hash;
-      }
-      std::sort(unique_sorted_hashes_->begin(),unique_sorted_hashes_->end());
-      hashes_vector::iterator it = unique (unique_sorted_hashes_->begin(), unique_sorted_hashes_->end());
-      unique_sorted_hashes_->resize(it-unique_sorted_hashes_->begin());
+      unique_sorted_hashes_=new hashes_vector(hashes());
+      sort(unique_sorted_hashes_->begin(),unique_sorted_hashes_->end());
+      hashes_vector::iterator end = unique (unique_sorted_hashes_->begin(), unique_sorted_hashes_->end());
+      unique_sorted_hashes_->resize(end-unique_sorted_hashes_->begin());
     }
     return *unique_sorted_hashes_;
   }
   
-  bool isPunctuation(char c){
+  bool notAlphaNumeric(char c){
     return std::isalnum(c)==0;
   }
 
   string& Document::getCleanText(){
     if (clean_text_==0){
       clean_text_=new string(text().size(),' ');
-      replace_copy_if(text().begin(),text().end(),clean_text_->begin(),isPunctuation,' ');
+      replace_copy_if(text().begin(),text().end(),clean_text_->begin(),notAlphaNumeric,' ');
       transform(clean_text_->begin(), clean_text_->end(), clean_text_->begin(), ::tolower);     
     }
     return *clean_text_;

@@ -22,6 +22,9 @@ namespace superfastmatch{
 
   DEFINE_int32(window_size,15,"Number of characters to use as a window of text for hashing");
   static const bool window_size_dummy = google::RegisterFlagValidator(&FLAGS_window_size, &ValidateWindowSize);
+  
+  DEFINE_double(white_space_threshold,0.5,"Percentage of non alphanumeric characters in a window above which window is considered whitespace");
+  static const bool white_space_threshold_dummy = google::RegisterFlagValidator(&FLAGS_white_space_threshold,&ValidateWhiteSpaceThreshold);
     
   DEFINE_int32(max_posting_threshold,100,"Number of entries for a hash above which are ignored for search");
  
@@ -47,6 +50,10 @@ namespace superfastmatch{
     if (masked)
       return((hash>>getHashWidth())^(hash&getHashMask()));
     return hash;
+  }
+  
+  uint32_t FlagsRegistry::getWhiteSpaceThreshold() const{
+    return getWindowSize()*FLAGS_white_space_threshold; 
   }
   
   uint32_t FlagsRegistry::getWindowSize() const{

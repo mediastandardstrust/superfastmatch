@@ -39,7 +39,13 @@ static bool ValidateWindowSize(const char* flagname, int32_t value){
     return true;
   printf("Invalid value for --%s: %d\n", flagname, (int)value);
   return false;
+}
 
+static bool ValidateWhiteSpaceThreshold(const char* flagname,double value){
+  if (value>=0.0 && value <=1.0)
+    return true;
+  printf("Invalid value for --%s: %f\n", flagname, (double)value);
+  return false;
 }
 
 #endif

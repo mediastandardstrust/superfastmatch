@@ -148,6 +148,7 @@ namespace superfastmatch
     uint32_t doctype=doc->doctype();    
     uint32_t docid=doc->docid();
     hash_t hash_mask=registry_->getHashMask();
+    hash_t white_space=registry_->getWhiteSpaceHash()-offset_;
     uint32_t hash_width=registry_->getHashWidth();
     uint32_t threshold=registry_->getMaxPostingThreshold();
     vector<uint32_t> docids;
@@ -160,27 +161,27 @@ namespace superfastmatch
     index_lock_.lock_reader();
     for (vector<hash_t>::const_iterator it=doc->hashes().begin(),ite=doc->hashes().end();it!=ite;++it){
       hash = ((*it>>hash_width)^(*it&hash_mask))-offset_;
-      if ((hash<span_) && (index_.test(hash))){
+      if ((hash<span_) && (hash!=white_space) && (index_.test(hash))){
         line_.load(index_.unsafe_get(hash));  
         line_.getDocTypes(doctypes);
         for (vector<uint32_t>::const_iterator it2=doctypes.begin(),ite2=doctypes.end();it2!=ite2;++it2){
           line_.getDocIds(*it2,docids);
           doc_count=docids.size();
-	  if (doc_count<=threshold){
-	    for (vector<uint32_t>::const_iterator it3=docids.begin(),ite3=docids.end();it3!=ite3;++it3){
-	      pair.doc_type=*it2;
-	      pair.doc_id=*it3;
-	      if (!(pair.doc_id==docid)&&(pair.doc_type==doctype)){
-		tally=&results[pair];
-		// cout << results.bucket_count() << ":" << results.load_factor() << ":" << results.size() <<endl; 
-		if ((position-tally->last_seen)<max_distance){
-		  tally->count++;
-		  tally->total+=doc_count;
-		}
-		tally->last_seen=position;
-	      }
-	    }
-	  }
+          if (doc_count<=threshold){
+            for (vector<uint32_t>::const_iterator it3=docids.begin(),ite3=docids.end();it3!=ite3;++it3){
+              pair.doc_type=*it2;
+              pair.doc_id=*it3;
+              if (!(pair.doc_id==docid)&&(pair.doc_type==doctype)){
+                tally=&results[pair];
+                // cout << results.bucket_count() << ":" << results.load_factor() << ":" << results.size() <<endl; 
+                if ((position-tally->last_seen)<max_distance){
+                  tally->count++;
+                  tally->total+=doc_count;
+                }
+                tally->last_seen=position;
+              }
+            }
+          }
         }
       }
       position++;
@@ -422,6 +423,8 @@ namespace superfastmatch
   }
   
   void Posting::fill_status_dictionary(TemplateDictionary* dict){
+    dict->SetIntValue("WINDOW_SIZE",registry_->getWindowSize());
+    dict->SetIntValue("WHITE_SPACE_THRESHOLD",registry_->getWhiteSpaceThreshold());
     dict->SetIntValue("HASH_WIDTH",registry_->getHashWidth());
     dict->SetIntValue("SLOT_COUNT",registry_->getSlotCount());
     dict->SetIntValue("DOC_COUNT",doc_count_);

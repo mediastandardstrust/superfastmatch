@@ -20,6 +20,7 @@ namespace superfastmatch{
     virtual uint32_t getHashWidth() const=0;
     virtual hash_t getHashMask() const=0;
     virtual uint32_t getWindowSize() const=0;
+    virtual uint32_t getWhiteSpaceThreshold() const=0;
     virtual hash_t getWhiteSpaceHash(bool masked=true) const=0;
     virtual uint32_t getThreadCount() const=0;
     virtual uint32_t getSlotCount() const=0;
@@ -73,6 +74,7 @@ namespace superfastmatch{
     uint32_t getHashWidth() const;
     hash_t getHashMask() const;
     uint32_t getWindowSize() const;
+    uint32_t getWhiteSpaceThreshold() const;
     hash_t getWhiteSpaceHash(bool masked=true) const;
     uint32_t getThreadCount() const;
     uint32_t getSlotCount() const;
