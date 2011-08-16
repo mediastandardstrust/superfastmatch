@@ -119,7 +119,7 @@ namespace superfastmatch
     memcpy(key+4,&di,4);
     key_ = new string(key,8);;
     content_ = new string();
-    load();    
+    load();
   }
   
   Document::Document(string& key,Registry* registry):
@@ -175,12 +175,12 @@ namespace superfastmatch
     uint64_t hash;
     uint64_t previous=0;;
     offset+=kc::readvarnum(hashes.data()+offset,hashes.size()-offset,&length);
-    unique_sorted_hashes_=new hashes_vector();
-    unique_sorted_hashes_->reserve(length);
+    hashes_=new hashes_vector();
+    hashes_->reserve(length);
     bloom_=new hashes_bloom();
     while (offset<hashes.size()){
       offset+=kc::readvarnum(hashes.data()+offset,hashes.size()-offset,&hash);
-      unique_sorted_hashes_->push_back(hash+previous);
+      hashes_->push_back(hash+previous);
       bloom_->set((hash+previous)&0xFFFFFF);
       previous+=hash;
     }
@@ -189,13 +189,13 @@ namespace superfastmatch
   
   bool Document::save(){
     // Maximum size of hashes given maximum hash value
-    char* h = new char[(unique_sorted_hashes().size()*kc::sizevarnum(MAX_HASH))+kc::sizevarnum(unique_sorted_hashes().size())];
+    char* h = new char[(hashes().size()*kc::sizevarnum(MAX_HASH))+kc::sizevarnum(hashes().size())];
     uint32_t offset=0;
     hash_t previous=0;
     // Write the length first so that the read vector can be sized correctly
-    offset+=kc::writevarnum(h,unique_sorted_hashes().size());
+    offset+=kc::writevarnum(h,hashes().size());
     // Write deltas, knowing that the hashes are sorted
-    for (hashes_vector::const_iterator it=unique_sorted_hashes().begin(),ite=unique_sorted_hashes().end();it!=ite;++it){
+    for (hashes_vector::const_iterator it=hashes().begin(),ite=hashes().end();it!=ite;++it){
       offset+=kc::writevarnum(h+offset,*it-previous);
       previous=*it;
     }

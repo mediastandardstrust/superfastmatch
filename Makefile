@@ -83,7 +83,7 @@ profile : all
 debug : CXXFLAGS += -O0 
 debug : all
 	mkdir -p data
-	$(DEBUGENV) superfastmatch -reset -debug
+	$(DEBUGENV) superfastmatch
 
 # pull in dependency info for *existing* .o files
 -include $(OBJS:.o=.d)

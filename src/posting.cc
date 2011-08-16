@@ -112,7 +112,7 @@ namespace superfastmatch
     size_t outgoing_length;
     // Where hash width is below 32 we will get duplicates per document
     // We discard them with a no operation 
-    for (Document::hashes_vector::const_iterator it=doc->unique_sorted_hashes().begin(),ite=doc->unique_sorted_hashes().end();it!=ite;++it){
+    for (Document::hashes_vector::const_iterator it=doc->hashes().begin(),ite=doc->hashes().end();it!=ite;++it){
       hash = ((*it>>hash_width)^(*it&hash_mask))-offset_;
       uint32_t doctype=doc->doctype();
       uint32_t docid=doc->docid();
