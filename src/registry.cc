@@ -35,6 +35,8 @@ namespace superfastmatch{
   DEFINE_string(template_path,"templates","Path where HTML/JSON templates are located");
 
   DEFINE_bool(debug_templates,false,"Forces template reload for every template file change");
+  
+  DEFINE_bool(debug,false,"Outputs debug information to debug.log");
 
   uint32_t FlagsRegistry::getHashWidth() const{
     return FLAGS_hash_width;
@@ -204,7 +206,9 @@ namespace superfastmatch{
   Logger* FlagsRegistry::getLogger(){
     if (logger_==0){
       logger_ = new Logger();
-      logger_->open("-");
+      if (FLAGS_debug){
+        logger_->open("debug.log");
+      }
     }
     return logger_;
   };

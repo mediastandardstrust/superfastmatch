@@ -94,6 +94,14 @@ namespace superfastmatch
     queue_.finish();
     index_.clear();
   }
+  
+  size_t PostingSlot::getHashCount(){
+    size_t hash_count;
+    index_lock_.lock_reader();
+    hash_count=index_.num_nonempty();
+    index_lock_.unlock();
+    return hash_count;
+  }
 
   bool PostingSlot::alterIndex(Document* doc,TaskPayload::TaskOperation operation){
     index_lock_.lock_writer();
@@ -273,7 +281,7 @@ namespace superfastmatch
   // ---------------
   
   Posting::Posting(Registry* registry):
-  registry_(registry),doc_count_(0),hash_count_(0),ready_(false)
+  registry_(registry),doc_count_(0),ready_(false)
   {
     for (uint32_t i=0;i<registry->getSlotCount();i++){
       slots_.push_back(new PostingSlot(registry,i));
@@ -292,9 +300,9 @@ namespace superfastmatch
         kc::Thread::sleep(0.2);       
       }
     }
-    cout << "Releasing Memory" << endl;
+    registry_->getLogger()->log(Logger::DEBUG,"Releasing Memory");
     MallocExtension::instance()->ReleaseFreeMemory();
-    cout << "Done!" << endl;
+    registry_->getLogger()->log(Logger::DEBUG,"Done!");
   }
   
   bool Posting::init(){
@@ -307,12 +315,16 @@ namespace superfastmatch
     }
     delete cursor;
     wait();
-    cout << "Posting initialisation finished in: " << setiosflags(ios::fixed) << setprecision(4) << kc::time()-start << " secs" << endl;
+    stringstream message;
+    message << "Posting initialisation finished in: " << setiosflags(ios::fixed) << setprecision(4) << kc::time()-start << " secs";
+    registry_->getLogger()->log(Logger::DEBUG,&message);
     ready_=true;
     return ready_;
   }
   
   uint64_t Posting::alterIndex(Document* doc,TaskPayload::TaskOperation operation){
+    Logger* logger=registry_->getLogger();
+    stringstream message;
     uint64_t queue_length=0;
     TaskPayload* task = new TaskPayload(doc,operation,slots_.size());
     for (size_t i=0;i<slots_.size();i++){
@@ -320,7 +332,8 @@ namespace superfastmatch
     }
     if (queue_length>slots_.size()*40){
       kc::Thread::sleep(0.05);
-      cout << "Sleeping for 0.05 secs with queue length: " << queue_length << endl;
+      message << "Sleeping for 0.05 secs with queue length: " << queue_length;
+      logger->log(Logger::DEBUG,&message);
     }
     return queue_length;
   }
@@ -337,16 +350,18 @@ namespace superfastmatch
   }
   
   uint64_t Posting::addDocument(Document* doc){
-    cout << "Adding: " << *doc << endl;
-    hash_count_+=doc->unique_sorted_hashes().size();
+    stringstream message;
+    message << "Adding: " << *doc;
+    registry_->getLogger()->log(Logger::DEBUG,&message);
     doc_count_++;
     uint64_t queue_length=alterIndex(doc,TaskPayload::AddDocument);
     return queue_length;
   }
   
   uint64_t Posting::deleteDocument(Document* doc){
-    cout << "Deleting: " << *doc << endl;
-    hash_count_-=doc->unique_sorted_hashes().size();
+    stringstream message;
+    message << "Deleting: " << *doc;
+    registry_->getLogger()->log(Logger::DEBUG,&message);
     doc_count_--;
     uint64_t queue_length=alterIndex(doc,TaskPayload::DeleteDocument);
     return queue_length;
@@ -369,6 +384,8 @@ namespace superfastmatch
   }
   
   bool Posting::addAssociations(vector<Command*> commands){
+    stringstream message;
+    Logger* logger=registry_->getLogger();
     ProfilerStart("/tmp/superfastmatch");
     search_t results;
     inverted_search_t pruned_results;
@@ -380,7 +397,8 @@ namespace superfastmatch
       results.clear();
       pruned_results.clear();
       doc=(*it)->getDocument();
-      cout << "Associating: " << *doc << endl;
+      message << "Associating: " << *doc;
+      logger->log(Logger::DEBUG,&message);
       searchIndex(doc,results,pruned_results);
       for(inverted_search_t::iterator it2=pruned_results.begin(),ite2=pruned_results.end();it2!=ite2 && count<num_results;++it2){
         Document other(it2->second.doc_type,it2->second.doc_id,registry_);
@@ -423,13 +441,17 @@ namespace superfastmatch
   }
   
   void Posting::fill_status_dictionary(TemplateDictionary* dict){
+    size_t hash_count=0;
+    for (size_t i=0;i<slots_.size();i++){
+      hash_count+=slots_[i]->getHashCount();
+    }
     dict->SetIntValue("WINDOW_SIZE",registry_->getWindowSize());
     dict->SetIntValue("WHITE_SPACE_THRESHOLD",registry_->getWhiteSpaceThreshold());
     dict->SetIntValue("HASH_WIDTH",registry_->getHashWidth());
     dict->SetIntValue("SLOT_COUNT",registry_->getSlotCount());
     dict->SetIntValue("DOC_COUNT",doc_count_);
-    dict->SetIntValue("HASH_COUNT",hash_count_);
-    dict->SetIntValue("AVERAGE_DOC_LENGTH",(doc_count_>0)?hash_count_/doc_count_:0);
+    dict->SetIntValue("HASH_COUNT",hash_count);
+    dict->SetIntValue("AVERAGE_DOC_LENGTH",(doc_count_>0)?hash_count/doc_count_:0);
   }
   
   void Posting::fill_list_dictionary(TemplateDictionary* dict,hash_t start){

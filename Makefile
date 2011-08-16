@@ -74,16 +74,16 @@ check : $(TESTS)
 
 run : all
 	mkdir -p $(DATA)
-	$(RUNENV) ./superfastmatch -reset
+	$(RUNENV) ./superfastmatch -reset -debug
 
 profile : all
 	mkdir -p $(DATA)
-	$(PROFILEENV) ./superfastmatch -reset
+	$(PROFILEENV) ./superfastmatch -reset -debug
 
 debug : CXXFLAGS += -O0 
 debug : all
 	mkdir -p data
-	$(DEBUGENV) superfastmatch
+	$(DEBUGENV) superfastmatch -reset -debug
 
 # pull in dependency info for *existing* .o files
 -include $(OBJS:.o=.d)
@@ -103,8 +103,8 @@ tests/postline-unittest.o : src/postline.cc tests/postline-unittest.cc gmock-gte
 tests/document-unittest.o : src/document.cc src/association.cc tests/document-unittest.cc gmock-gtest.a
 	$(CXX) $(INCLUDES) -lpthread -lkyotocabinet -lctemplate $(CXXFLAGS) $^ -o $*
 
-tests/association-unittest.o : src/document.cc src/association.cc tests/association-unittest.cc gmock-gtest.a
-	$(CXX) $(INCLUDES) -lpthread -lkyotocabinet -lctemplate $(CXXFLAGS) $^ -o $*
+tests/association-unittest.o : src/document.cc src/association.cc src/logger.cc tests/association-unittest.cc gmock-gtest.a
+	$(CXX) $(INCLUDES) -lpthread -lkyotocabinet -lkyototycoon -lctemplate $(CXXFLAGS) $^ -o $*
 
 #================================================================
 # Building binaries

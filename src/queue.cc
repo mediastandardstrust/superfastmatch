@@ -18,6 +18,8 @@ namespace superfastmatch{
   }
   
   bool Queue::process(){
+    Logger* logger=registry_->getLogger();
+    stringstream message;
     bool workDone=false;
     CommandType batchType=Invalid;
     deque<Command*> batch;
@@ -30,14 +32,15 @@ namespace superfastmatch{
             Document* doc = batch.front()->getDocument();
             //Check if document exists and insert drop if it does
             if (doc->save()){
-              cout << "Saved: " << *doc <<endl;
+              message << "Saved: " << *doc;
               work.push_back(batch.front());
               batch.pop_front();  
             }else{
-              cout << "Inserting drop for: " << *doc << endl;
+              message << "Inserting drop for: " << *doc;
               CommandFactory::insertDropDocument(registry_,batch.front());
               break;
             }
+            logger->log(Logger::DEBUG,&message);
             delete doc;
           }
           registry_->getPostings()->addDocuments(work);
@@ -46,7 +49,8 @@ namespace superfastmatch{
           }
           break;  
         case DropDocument:
-          cout << "Dropping Document(s)" <<endl;
+          message << "Dropping Document(s)";
+          logger->log(Logger::DEBUG,&message);
           while(!batch.empty()){
             work.push_back(batch.front());
             batch.pop_front();  
@@ -63,7 +67,8 @@ namespace superfastmatch{
           }
           break;
         case AddAssociation:
-          cout << "Adding Association(s)" <<endl;
+          message << "Adding Association(s)";
+          logger->log(Logger::DEBUG,&message);
           while(!batch.empty()){;
             work.push_back(batch.front());
             batch.pop_front();
@@ -85,7 +90,8 @@ namespace superfastmatch{
           }
           break;
         case DropAssociation:
-          cout << "Dropping Association(s)" <<endl;
+          message << "Dropping Association(s)";
+          logger->log(Logger::DEBUG,&message);
           while(!batch.empty()){
             work.push_back(batch.front());
             batch.pop_front();

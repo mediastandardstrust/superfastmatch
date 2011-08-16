@@ -20,6 +20,10 @@ TEST(DocumentTest,ConstructorTest){
     .WillRepeatedly(Return(hashesDB));
   EXPECT_CALL(registry,getDocumentDB())
     .WillRepeatedly(Return(hashesDB));
+  EXPECT_CALL(registry,getWhiteSpaceThreshold())
+    .WillRepeatedly(Return(4));
+  EXPECT_CALL(registry,getWhiteSpaceHash(false))
+    .WillRepeatedly(Return(0));
   Document* doc1 = new Document(1,1,"text=This+is+a+test&title=Also+a+test&filename=test.txt",&registry);
   Document* doc2 = new Document(1,2,"text=Another+test&title=Also+a+test&filename=test2.txt",&registry);
   EXPECT_EQ(14U,doc1->text().size());

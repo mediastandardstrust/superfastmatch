@@ -85,7 +85,8 @@ namespace superfastmatch
   
   void Association::match(){
     // TODO Optimise for shorter document
-    // if (from_document->text().length()<to_document->text().length()){
+    // if (from_document->text().length()<to_document->text().length())
+    Logger* logger = registry_->getLogger();
     Document::hashes_bloom* bloom = new Document::hashes_bloom();
     Document::hashes_vector from_hashes,to_hashes;
     *bloom|=from_document_->bloom();
@@ -132,7 +133,7 @@ namespace superfastmatch
         positions_set checked_matches(to_match->second);
         for (positions_set::iterator it=checked_matches.begin();it!=checked_matches.end();++it){
           if (from_text.compare(i,window_size,to_text,*it,window_size)){
-            // cout << "Bad Match: \"" << from_text.substr(i,window_size) << "\" : \"" << to_text.substr(*it,window_size) << "\"" << endl;
+            logger->log(Logger::DEBUG,kc::strprintf("Bad Match: \"%s\" : \"%s\"",from_text.substr(i,window_size).c_str(),to_text.substr(*it,window_size).c_str()).c_str());
             checked_matches.erase(it);
           }
         }
@@ -167,7 +168,7 @@ namespace superfastmatch
           }
        }
        results_->push_back(Result(first->left,first_right,original_text.substr(first->left,counter+window_size),counter+window_size));
-       cout << "Match: \""<< original_text.substr(first->left,counter+window_size) << "\"" << endl;
+       logger->log(Logger::DEBUG,kc::strprintf("Match: \"%s\"",original_text.substr(first->left,counter+window_size).c_str()).c_str());
     }
     sort(results_->begin(),results_->end(),result_sorter);
     delete bloom;

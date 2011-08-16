@@ -128,6 +128,7 @@ namespace superfastmatch
 
     uint64_t addTask(TaskPayload* payload);
     uint32_t getTaskCount();
+    size_t getHashCount();
 
     uint32_t fill_list_dictionary(TemplateDictionary* dict,hash_t start);
     void fillHistograms(histogram_t& hash_hist,histogram_t& gaps_hist);
@@ -138,7 +139,6 @@ namespace superfastmatch
     Registry* registry_;
     vector<PostingSlot*> slots_;
     uint32_t doc_count_;
-    uint32_t hash_count_;
     bool ready_;
     
     void searchIndex(Document* doc,search_t& results,inverted_search_t& pruned_results);
