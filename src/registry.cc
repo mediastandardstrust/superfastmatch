@@ -115,35 +115,14 @@ namespace superfastmatch{
   };
   
   uint32_t FlagsRegistry::getMode(){
-    return kc::BasicDB::OWRITER|kc::BasicDB::OCREATE|(FLAGS_reset?(kc::BasicDB::OTRUNCATE):0);
+    return kc::PolyDB::OWRITER|kc::PolyDB::OCREATE|(FLAGS_reset?(kc::PolyDB::OTRUNCATE):0);
   };
   
-  // TODO make a parameterised function for opening DB
-  kc::BasicDB* FlagsRegistry::getQueueDB(){
-    if (queueDB_==0){
-      string path = getDataPath()+"/queue.kcf";
-      queueDB_ = new kc::ForestDB();
-      queueDB_->tune_options(kc::ForestDB::TLINEAR|kc::ForestDB::TCOMPRESS);
-      queueDB_->tune_page_cache(1LL<< 28);
-      queueDB_->tune_page(524288);
-      queueDB_->tune_compressor(comp_);
-      if (not queueDB_->open(path,getMode())){
-        cout << "problem opening: " << path <<endl;
-      }
-    }
+  kc::PolyDB* FlagsRegistry::getQueueDB(){
     return queueDB_;
   };
   
-  kc::BasicDB* FlagsRegistry::getDocumentDB(){
-    if (documentDB_==0){
-      string path = getDataPath()+"/document.kcf";
-      documentDB_ = new kc::ForestDB();
-      documentDB_->tune_options(kc::ForestDB::TLINEAR|kc::ForestDB::TCOMPRESS);
-      documentDB_->tune_page_cache(1LL<< 28);
-      documentDB_->tune_page(524288);
-      documentDB_->tune_compressor(comp_);
-      documentDB_->open(path,getMode());
-    }
+  kc::PolyDB* FlagsRegistry::getDocumentDB(){
     return documentDB_;
   };
 
@@ -151,31 +130,15 @@ namespace superfastmatch{
     return metaDB_;
   };
 
-  kc::BasicDB* FlagsRegistry::getAssociationDB(){
-    if (associationDB_==0){ 
-      string path = getDataPath()+"/associations.kcf";
-      associationDB_ = new kc::ForestDB();
-      associationDB_->tune_options(kc::ForestDB::TLINEAR|kc::ForestDB::TCOMPRESS);
-      associationDB_->tune_compressor(comp_);
-      associationDB_->open(path,getMode());
-    }
+  kc::PolyDB* FlagsRegistry::getAssociationDB(){
     return associationDB_;
   };
 
-  kc::BasicDB* FlagsRegistry::getMiscDB(){
-    if (miscDB_==0){
-      string path = getDataPath()+"/misc.kch";
-      miscDB_ = new kc::PolyDB();
-      miscDB_->open(path,getMode());
-    }
+  kc::PolyDB* FlagsRegistry::getMiscDB(){
     return miscDB_;
   };
 
   TemplateCache* FlagsRegistry::getTemplateCache(){
-    if (templates_==0){
-      templates_ = mutable_default_template_cache();
-      templates_->SetTemplateRootDirectory(FLAGS_template_path);
-    }
     if (FLAGS_debug_templates){
       templates_->ReloadAllIfChanged(TemplateCache::LAZY_RELOAD); 
     }
@@ -183,34 +146,35 @@ namespace superfastmatch{
   };
 
   Logger* FlagsRegistry::getLogger(){
-    if (logger_==0){
-      logger_ = new Logger();
-      if (FLAGS_debug){
-        logger_->open("debug.log");
-      }
-    }
     return logger_;
   };
 
   Posting* FlagsRegistry::getPostings(){
-    if (postings_==0){
-      postings_ = new Posting(this);
-    }
     return postings_;
   };
 
   FlagsRegistry::FlagsRegistry():
-  comp_(new kc::ZLIBCompressor<kc::ZLIB::RAW>),
-  queueDB_(0),
-  documentDB_(0),
+  queueDB_(new kc::PolyDB()),
+  documentDB_(new kc::PolyDB()),
   metaDB_(new kc::PolyDB()),
-  associationDB_(0),
-  miscDB_(0),
-  templates_(0),
-  logger_(0),
+  associationDB_(new kc::PolyDB()),
+  miscDB_(new kc::PolyDB()),
+  templates_(mutable_default_template_cache()),
+  logger_(new Logger()),
   postings_(0)
   {
-    metaDB_->open(getDataPath()+"/meta.kcf#pccap=256m#psiz=524288#zcomp=zlib",getMode());
+    if (FLAGS_debug){
+      logger_->open("debug.log");
+    }
+    if (not(documentDB_->open(getDataPath()+"/document.kcf#opts=lc#pccap=256m#psiz=524288#zcomp=zlib",getMode()) && \
+            queueDB_->open(getDataPath()+"/queue.kcf#opts=lc#pccap=256m#psiz=524288#zcomp=zlib",getMode()) && \
+            metaDB_->open(getDataPath()+"/meta.kcf#opts=lc#pccap=256m#psiz=524288#zcomp=zlib",getMode()) && \
+            associationDB_->open(getDataPath()+"/association.kcf#opts=lc#pccap=256m#psiz=524288#zcomp=zlib",getMode()) && \
+            miscDB_->open(getDataPath()+"/misc.kch",getMode()))){
+      cout << "Error opening databases" << endl;
+    }
+    postings_ = new Posting(this);
+    templates_->SetTemplateRootDirectory(FLAGS_template_path);
   }
 
   FlagsRegistry::~FlagsRegistry(){
@@ -238,11 +202,10 @@ namespace superfastmatch{
     delete queueDB_;
     delete miscDB_;
     delete postings_;
-    delete comp_;
     delete logger_;
   }
   
-  void FlagsRegistry::fill_db_dictionary(TemplateDictionary* dict, kc::BasicDB* db, const string name){
+  void FlagsRegistry::fill_db_dictionary(TemplateDictionary* dict, kc::PolyDB* db, const string name){
     stringstream s;
     status(s,db);
     TemplateDictionary* db_dict = dict->AddSectionDictionary("DB");
@@ -258,7 +221,7 @@ namespace superfastmatch{
     fill_db_dictionary(dict,getMiscDB(),"Misc DB");
   }
   
-  void FlagsRegistry::status(std::ostream& s, kc::BasicDB* db){
+  void FlagsRegistry::status(std::ostream& s, kc::PolyDB* db){
     std::map<std::string, std::string> status;
     status["opaque"] = "";
     status["fbpnum_used"] = "";
@@ -271,15 +234,15 @@ namespace superfastmatch{
     db->status(&status);
     uint32_t type = kc::atoi(status["realtype"].c_str());
     oprintf(s,"type: %s (type=0x%02X) (%s)\n",
-          status["type"].c_str(), type, kc::BasicDB::typestring(type));
+          status["type"].c_str(), type, kc::PolyDB::typestring(type));
     uint32_t chksum = kc::atoi(status["chksum"].c_str());
     oprintf(s,"format version: %s (libver=%s.%s) (chksum=0x%02X)\n", status["fmtver"].c_str(),
           status["libver"].c_str(), status["librev"].c_str(), chksum);
     oprintf(s,"path: %s\n", status["path"].c_str());
     int32_t flags = kc::atoi(status["flags"].c_str());
     oprintf(s,"status flags:");
-    if (flags & kc::ForestDB::FOPEN) oprintf(s," open");
-    if (flags & kc::ForestDB::FFATAL) oprintf(s," fatal");
+    if (flags & kc::TreeDB::FOPEN) oprintf(s," open");
+    if (flags & kc::TreeDB::FFATAL) oprintf(s," fatal");
     oprintf(s," (flags=%d)", flags);
     if (kc::atoi(status["recovered"].c_str()) > 0) oprintf(s," (recovered)");
     if (kc::atoi(status["reorganized"].c_str()) > 0) oprintf(s," (reorganized)");
@@ -295,9 +258,9 @@ namespace superfastmatch{
           fbpnum, fpow, fbpused, (long long)frgcnt);
     int32_t opts = kc::atoi(status["opts"].c_str());
     oprintf(s,"options:");
-    if (opts & kc::ForestDB::TSMALL) oprintf(s," small");
-    if (opts & kc::ForestDB::TLINEAR) oprintf(s," linear");
-    if (opts & kc::ForestDB::TCOMPRESS) oprintf(s," compress");
+    if (opts & kc::TreeDB::TSMALL) oprintf(s," small");
+    if (opts & kc::TreeDB::TLINEAR) oprintf(s," linear");
+    if (opts & kc::TreeDB::TCOMPRESS) oprintf(s," compress");
     oprintf(s," (opts=%d)\n", opts);
     oprintf(s,"comparator: %s\n", status["rcomp"].c_str());
     if (status["opaque"].size() >= 16) {
@@ -323,7 +286,7 @@ namespace superfastmatch{
     double load = 0;
     if (pnum > 0 && bnumused > 0) {
       load = (double)pnum / bnumused;
-      if (!(opts & kc::ForestDB::TLINEAR)) load = std::log(load + 1) / std::log(2.0);
+      if (!(opts & kc::TreeDB::TLINEAR)) load = std::log(load + 1) / std::log(2.0);
     }
     oprintf(s,"buckets: %lld (used=%lld) (load=%.2f)\n",
           (long long)bnum, (long long)bnumused, load);

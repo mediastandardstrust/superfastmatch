@@ -38,11 +38,11 @@ namespace superfastmatch{
 
     // DB's
     virtual uint32_t getMode()=0;
-    virtual kc::BasicDB* getQueueDB()=0;
-    virtual kc::BasicDB* getDocumentDB()=0;
+    virtual kc::PolyDB* getQueueDB()=0;
+    virtual kc::PolyDB* getDocumentDB()=0;
     virtual kc::PolyDB* getMetaDB()=0;
-    virtual kc::BasicDB* getAssociationDB()=0;
-    virtual kc::BasicDB* getMiscDB()=0;
+    virtual kc::PolyDB* getAssociationDB()=0;
+    virtual kc::PolyDB* getMiscDB()=0;
 
     // Common bits - these might not belong here!
     virtual TemplateCache* getTemplateCache()=0;
@@ -55,11 +55,10 @@ namespace superfastmatch{
   class FlagsRegistry : public Registry
   {
   private:
-    kc::Compressor* comp_;
-    kc::ForestDB* queueDB_;
-    kc::ForestDB* documentDB_;
+    kc::PolyDB* queueDB_;
+    kc::PolyDB* documentDB_;
     kc::PolyDB* metaDB_;
-    kc::ForestDB* associationDB_;
+    kc::PolyDB* associationDB_;
     kc::PolyDB* miscDB_;
     TemplateCache* templates_;
     Logger* logger_;
@@ -89,11 +88,11 @@ namespace superfastmatch{
     double getTimeout() const;
 
     uint32_t getMode();
-    kc::BasicDB* getQueueDB();
-    kc::BasicDB* getDocumentDB();
+    kc::PolyDB* getQueueDB();
+    kc::PolyDB* getDocumentDB();
     kc::PolyDB* getMetaDB();
-    kc::BasicDB* getAssociationDB();
-    kc::BasicDB* getMiscDB();
+    kc::PolyDB* getAssociationDB();
+    kc::PolyDB* getMiscDB();
     TemplateCache* getTemplateCache();
     Logger* getLogger();
     Posting* getPostings();
@@ -101,8 +100,8 @@ namespace superfastmatch{
     void fill_status_dictionary(TemplateDictionary* dict);
       
   private:
-    void fill_db_dictionary(TemplateDictionary* dict, kc::BasicDB* db, const string name);
-    void status(std::ostream& s, kc::BasicDB* db);
+    void fill_db_dictionary(TemplateDictionary* dict, kc::PolyDB* db, const string name);
+    void status(std::ostream& s, kc::PolyDB* db);
   };
 }
 #endif

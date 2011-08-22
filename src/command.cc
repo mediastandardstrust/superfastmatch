@@ -191,7 +191,7 @@ namespace superfastmatch{
   }
   
   void CommandFactory::getAllCommands(Registry* registry_,vector<Command*>& commands){
-    kc::BasicDB::Cursor* cur = registry_->getQueueDB()->cursor();
+    kc::PolyDB::Cursor* cur = registry_->getQueueDB()->cursor();
     cur->jump();
     string key;
     while (cur->get_key(&key,true)){
@@ -204,7 +204,7 @@ namespace superfastmatch{
   bool CommandFactory::getNextBatch(Registry* registry_,deque<Command*>& batch,CommandType& batchType){
     string key;
     uint32_t batch_count=0;
-    kc::BasicDB::Cursor* cur = registry_->getQueueDB()->cursor();
+    kc::PolyDB::Cursor* cur = registry_->getQueueDB()->cursor();
     cur->jump();
     while (batch_count<registry_->getMaxBatchCount() && cur->get_key(&key,true)){
       batch_count++;

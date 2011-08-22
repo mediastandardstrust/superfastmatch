@@ -19,7 +19,7 @@ namespace superfastmatch
   {
   private:
     Registry* registry_;
-    kc::BasicDB::Cursor* cursor_;
+    kc::PolyDB::Cursor* cursor_;
     
   public:
     DocumentCursor(Registry* registry);

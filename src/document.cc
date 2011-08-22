@@ -343,7 +343,7 @@ namespace superfastmatch
     association_dict->SetFilename(ASSOCIATION);
     // This belongs in Association Cursor
     // And need a key based Association Constructor
-    kc::BasicDB::Cursor* cursor=registry_->getAssociationDB()->cursor();
+    kc::PolyDB::Cursor* cursor=registry_->getAssociationDB()->cursor();
     cursor->jump(getKey().data(),8);
     string next;
     string other_key;
