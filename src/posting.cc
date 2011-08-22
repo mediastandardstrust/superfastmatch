@@ -5,7 +5,6 @@
 #include "command.h"
 #include "registry.h"
 #include "association.h"
-#include <google/profiler.h>
 
 namespace superfastmatch
 {
@@ -153,7 +152,7 @@ namespace superfastmatch
   
   bool PostingSlot::searchIndex(Document* doc,search_t& results){
     hash_t hash;
-    uint32_t doctype=doc->doctype();    
+    uint32_t doctype=doc->doctype();
     uint32_t docid=doc->docid();
     hash_t hash_mask=registry_->getHashMask();
     hash_t white_space=registry_->getWhiteSpaceHash()-offset_;
@@ -179,7 +178,7 @@ namespace superfastmatch
             for (vector<uint32_t>::const_iterator it3=docids.begin(),ite3=docids.end();it3!=ite3;++it3){
               pair.doc_type=*it2;
               pair.doc_id=*it3;
-              if (!(pair.doc_id==docid)&&(pair.doc_type==doctype)){
+              if (!((pair.doc_id==docid)&&(pair.doc_type==doctype))){
                 tally=&results[pair];
                 // cout << results.bucket_count() << ":" << results.load_factor() << ":" << results.size() <<endl; 
                 if ((position-tally->last_seen)<max_distance){
@@ -296,13 +295,10 @@ namespace superfastmatch
   
   void Posting::wait(){
     for (size_t i=0;i<slots_.size();i++){
-      if (slots_[i]->getTaskCount()!=0){
-        kc::Thread::sleep(0.2);       
+      while (slots_[i]->getTaskCount()!=0){
+        kc::Thread::sleep(0.2);
       }
     }
-    registry_->getLogger()->log(Logger::DEBUG,"Releasing Memory");
-    MallocExtension::instance()->ReleaseFreeMemory();
-    registry_->getLogger()->log(Logger::DEBUG,"Done!");
   }
   
   bool Posting::init(){
@@ -311,6 +307,7 @@ namespace superfastmatch
     DocumentCursor* cursor = new DocumentCursor(registry_);
     Document* doc;
     while ((doc=cursor->getNext())!=NULL){
+      doc->hashes();
       addDocument(doc);
     }
     delete cursor;
@@ -386,7 +383,6 @@ namespace superfastmatch
   bool Posting::addAssociations(vector<Command*> commands){
     stringstream message;
     Logger* logger=registry_->getLogger();
-    ProfilerStart("/tmp/superfastmatch");
     search_t results;
     inverted_search_t pruned_results;
     Document* doc;
@@ -408,7 +404,6 @@ namespace superfastmatch
       } 
       delete doc;
     }
-    ProfilerStop();
     return true;
   }
   
@@ -419,6 +414,7 @@ namespace superfastmatch
   void Posting::fill_search_dictionary(Document* doc,TemplateDictionary* dict){
     search_t results;
     inverted_search_t pruned_results;
+    doc->hashes();
     searchIndex(doc,results,pruned_results);
     size_t count=0;
     size_t num_results=registry_->getNumResults();

@@ -27,8 +27,8 @@ TEST(AssociationTest,ConstructorTest){
     .WillRepeatedly(Return(associationDB));
   Document* doc1 = new Document(1,1,"text=This+is+a+long+sentence+where+the+phrase+Always+Look+On+The+Bright+Side+Of+Life&title=Doc1",&registry);
   Document* doc2 = new Document(1,2,"text=Always+Look+On+The+Bright+Side+Of+Life+and+this+is+a+long+sentence&title=Doc2",&registry);
-  EXPECT_STREQ("This is a long sentence where the phrase Always Look On The Bright Side Of Life",doc1->text().c_str());
-  EXPECT_STREQ("Always Look On The Bright Side Of Life and this is a long sentence",doc2->text().c_str());
+  EXPECT_STREQ("This is a long sentence where the phrase Always Look On The Bright Side Of Life",doc1->getText().c_str());
+  EXPECT_STREQ("Always Look On The Bright Side Of Life and this is a long sentence",doc2->getText().c_str());
   Association* association = new Association(&registry,doc1,doc2);
   EXPECT_EQ(2U,association->getResultCount());
   EXPECT_EQ(38U,association->getLength(0));

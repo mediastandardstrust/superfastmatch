@@ -71,12 +71,19 @@ namespace superfastmatch{
   }
   
   Document* Command::getDocument(){
+    Document* doc;
     string payload;
     getPayload(&payload);
-    Document* doc = new Document(doc_type_,doc_id_,payload.c_str(),registry_);
-    // This may return false, ignore.
-    // Important for drop document case
-    doc->load();
+    switch (getType()){
+      case AddDocument:
+        doc = new Document(doc_type_,doc_id_,payload,registry_);
+        break;
+      default:
+        doc = new Document(doc_type_,doc_id_,registry_);
+        break;
+    }
+    // This should be in a factory method
+    doc->hashes();
     return doc;
   }
   

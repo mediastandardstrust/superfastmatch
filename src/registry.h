@@ -40,8 +40,7 @@ namespace superfastmatch{
     virtual uint32_t getMode()=0;
     virtual kc::BasicDB* getQueueDB()=0;
     virtual kc::BasicDB* getDocumentDB()=0;
-    virtual kc::BasicDB* getMetaDB()=0;
-    virtual kc::BasicDB* getHashesDB()=0;
+    virtual kc::PolyDB* getMetaDB()=0;
     virtual kc::BasicDB* getAssociationDB()=0;
     virtual kc::BasicDB* getMiscDB()=0;
 
@@ -59,8 +58,7 @@ namespace superfastmatch{
     kc::Compressor* comp_;
     kc::ForestDB* queueDB_;
     kc::ForestDB* documentDB_;
-    kc::ForestDB* metaDB_;
-    kc::ForestDB* hashesDB_;
+    kc::PolyDB* metaDB_;
     kc::ForestDB* associationDB_;
     kc::PolyDB* miscDB_;
     TemplateCache* templates_;
@@ -93,8 +91,7 @@ namespace superfastmatch{
     uint32_t getMode();
     kc::BasicDB* getQueueDB();
     kc::BasicDB* getDocumentDB();
-    kc::BasicDB* getMetaDB();
-    kc::BasicDB* getHashesDB();
+    kc::PolyDB* getMetaDB();
     kc::BasicDB* getAssociationDB();
     kc::BasicDB* getMiscDB();
     TemplateCache* getTemplateCache();

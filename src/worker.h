@@ -4,7 +4,7 @@
 #include <map>
 #include <sstream>
 #include <cstdlib>
-#include <google/malloc_extension.h>
+// #include <google/malloc_extension.h>
 #include <kthttp.h>
 #include <kcthread.h>
 #include <registry.h>

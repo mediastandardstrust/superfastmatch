@@ -17,3 +17,5 @@ TODO
 * Full curl test of REST API
 * Adopt Google C++ Coding standards (eg, getMethods())
 * Implement unicode using ICU
+* Use MurmurHash3
+* Ask Austin Appleby about rolling MurmurHash

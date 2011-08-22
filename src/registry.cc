@@ -147,29 +147,8 @@ namespace superfastmatch{
     return documentDB_;
   };
 
-  kc::BasicDB* FlagsRegistry::getMetaDB(){
-    if (metaDB_==0){
-      string path = getDataPath()+"/meta.kcf";
-      metaDB_ = new kc::ForestDB();
-      metaDB_->tune_page_cache(1LL<<28);
-      metaDB_->tune_page(524288);
-      metaDB_->tune_compressor(comp_);
-      metaDB_->open(path,getMode());
-    }
+  kc::PolyDB* FlagsRegistry::getMetaDB(){
     return metaDB_;
-  };
-
-  kc::BasicDB* FlagsRegistry::getHashesDB(){
-    if (hashesDB_==0){
-      string path = getDataPath()+"/hashes.kcf";
-      hashesDB_ = new kc::ForestDB();
-      hashesDB_->tune_options(kc::ForestDB::TLINEAR|kc::ForestDB::TCOMPRESS);
-      hashesDB_->tune_page_cache(1LL<< 28);
-      hashesDB_->tune_page(524288);
-      hashesDB_->tune_compressor(comp_);
-      hashesDB_->open(path,getMode());
-    }
-    return hashesDB_;
   };
 
   kc::BasicDB* FlagsRegistry::getAssociationDB(){
@@ -177,7 +156,7 @@ namespace superfastmatch{
       string path = getDataPath()+"/associations.kcf";
       associationDB_ = new kc::ForestDB();
       associationDB_->tune_options(kc::ForestDB::TLINEAR|kc::ForestDB::TCOMPRESS);
-      hashesDB_->tune_compressor(comp_);
+      associationDB_->tune_compressor(comp_);
       associationDB_->open(path,getMode());
     }
     return associationDB_;
@@ -224,14 +203,15 @@ namespace superfastmatch{
   comp_(new kc::ZLIBCompressor<kc::ZLIB::RAW>),
   queueDB_(0),
   documentDB_(0),
-  metaDB_(0),
-  hashesDB_(0),
+  metaDB_(new kc::PolyDB()),
   associationDB_(0),
   miscDB_(0),
   templates_(0),
   logger_(0),
   postings_(0)
-  {}
+  {
+    metaDB_->open(getDataPath()+"/meta.kcf#pccap=256m#psiz=524288#zcomp=zlib",getMode());
+  }
 
   FlagsRegistry::~FlagsRegistry(){
     if (queueDB_!=0){
@@ -240,8 +220,8 @@ namespace superfastmatch{
     if (documentDB_!=0){
       documentDB_->close(); 
     }
-    if (hashesDB_!=0){
-      hashesDB_->close(); 
+    if (metaDB_!=0){
+      metaDB_->close(); 
     }
     if (associationDB_!=0){
       associationDB_->close(); 
@@ -253,7 +233,7 @@ namespace superfastmatch{
       logger_->close(); 
     }
     delete documentDB_;
-    delete hashesDB_;
+    delete metaDB_;
     delete associationDB_;
     delete queueDB_;
     delete miscDB_;
@@ -273,7 +253,7 @@ namespace superfastmatch{
   void FlagsRegistry::fill_status_dictionary(TemplateDictionary* dict){
     fill_db_dictionary(dict,getQueueDB(),"Queue DB");
     fill_db_dictionary(dict,getDocumentDB(),"Document DB");
-    fill_db_dictionary(dict,getHashesDB(),"Hashes DB");
+    fill_db_dictionary(dict,getMetaDB(),"Meta DB");
     fill_db_dictionary(dict,getAssociationDB(),"Association DB");
     fill_db_dictionary(dict,getMiscDB(),"Misc DB");
   }

@@ -59,7 +59,7 @@ namespace superfastmatch
       offset+=kc::readvarnum(value.data()+offset,5,flip?&right:&left);
       offset+=kc::readvarnum(value.data()+offset,5,flip?&left:&right);
       offset+=kc::readvarnum(value.data()+offset,5,&length);
-      results_->push_back(Result(left,right,from_document_->text().substr(left,length),length));
+      results_->push_back(Result(left,right,from_document_->getText().substr(left,length),length));
     }
     return true;
   }
@@ -85,7 +85,7 @@ namespace superfastmatch
   
   void Association::match(){
     // TODO Optimise for shorter document
-    // if (from_document->text().length()<to_document->text().length())
+    // if (from_document->getText().length()<to_document->getText().length())
     Logger* logger = registry_->getLogger();
     Document::hashes_bloom* bloom = new Document::hashes_bloom();
     Document::hashes_vector from_hashes,to_hashes;
@@ -95,7 +95,7 @@ namespace superfastmatch
     to_hashes=to_document_->hashes();
     uint32_t from_hashes_count = from_hashes.size();
     uint32_t to_hashes_count = to_hashes.size();
-    string original_text = from_document_->text();
+    string original_text = from_document_->getText();
     string from_text = from_document_->getCleanText();
     string to_text = to_document_->getCleanText();
     uint32_t window_size=registry_->getWindowSize();
@@ -187,11 +187,11 @@ namespace superfastmatch
   }
   
   string Association::getFromResult(size_t index){
-    return from_document_->text().substr(results_->at(index).left,results_->at(index).length);
+    return from_document_->getText().substr(results_->at(index).left,results_->at(index).length);
   }
   
   string Association::getToResult(size_t index){
-    return to_document_->text().substr(results_->at(index).right,results_->at(index).length);
+    return to_document_->getText().substr(results_->at(index).right,results_->at(index).length);
   }
   
   size_t Association::getLength(size_t index){
@@ -211,11 +211,11 @@ namespace superfastmatch
       text=from_document_->getCleanText().substr(results_->at(i).left,results_->at(i).length);
       if (text.compare(previous_text)!=0){
         fragment_dict=dict->AddSectionDictionary("FRAGMENT");
-        fragment_dict->SetValue("TITLE",to_document_->title());
+        fragment_dict->SetValue("TITLE",to_document_->getMeta("title"));
         fragment_dict->SetIntValue("DOC_TYPE",to_document_->doctype());
         fragment_dict->SetIntValue("DOC_ID",to_document_->docid());
         fragment_dict->SetIntValue("LENGTH",results_->at(i).length);
-        fragment_dict->SetValue("TEXT",from_document_->text().substr(results_->at(i).left,results_->at(i).length));
+        fragment_dict->SetValue("TEXT",from_document_->getText().substr(results_->at(i).left,results_->at(i).length));
       }
       if (previous_left!=results_->at(i).left || previous_length!=results_->at(i).length){
         left_dict=fragment_dict->AddSectionDictionary("LEFT_POSITIONS");

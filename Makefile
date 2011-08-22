@@ -19,11 +19,12 @@ INCLUDES = -I./src -I./tests -I/usr/local/include/ -Itests/utils/
 #LDFLAGS = -Wl,-no_pie
 CXXFLAGS = -Wall -Wextra -funsigned-char -m64 -march=core2 -O3 -g
 #CXXFLAGS = -Wall -Wextra -funsigned-char -fno-omit-frame-pointer -fno-builtin-malloc -fno-builtin-calloc -fno-builtin-realloc -fno-builtin-free -m64 -march=core2 -O3 -g
-LIBS = -lkyototycoon -lkyotocabinet -lstdc++ -lz -lpthread -lm -lc -lctemplate -lgflags -ltcmalloc -lprofiler
+LIBS = -lkyototycoon -lkyotocabinet -lstdc++ -lz -lpthread -lm -lc -lctemplate -lgflags
+# LIBS = -lkyototycoon -lkyotocabinet -lstdc++ -lz -lpthread -lm -lc -lctemplate -lgflags -ltcmalloc -lprofiler
 CXX = g++ $(INCLUDES)
 
 # Enviroments
-RUNENV = TCMALLOC_SAMPLE_PARAMETER=524288
+# RUNENV = TCMALLOC_SAMPLE_PARAMETER=524288
 PROFILEENV = HEAPPROFILE=/tmp/superfastmatch.hprof 
 DEBUGENV = gdb 
 
@@ -31,7 +32,7 @@ DEBUGENV = gdb
 # Test variables
 #================================================================
 
-TESTS = tests/postline-unittest.o tests/document-unittest.o tests/association-unittest.o
+TESTS = tests/postline-unittest.o tests/document-unittest.o tests/association-unittest.o tests/posting-unittest.o
 GTEST_DIR = tests/utils
 
 #================================================================
@@ -104,6 +105,9 @@ tests/document-unittest.o : src/document.cc src/association.cc tests/document-un
 	$(CXX) $(INCLUDES) -lpthread -lkyotocabinet -lctemplate $(CXXFLAGS) $^ -o $*
 
 tests/association-unittest.o : src/document.cc src/association.cc src/logger.cc tests/association-unittest.cc gmock-gtest.a
+	$(CXX) $(INCLUDES) -lpthread -lkyotocabinet -lkyototycoon -lctemplate $(CXXFLAGS) $^ -o $*
+
+tests/posting-unittest.o : src/document.cc src/posting.cc src/logger.cc src/association.cc src/postline.cc src/command.cc tests/posting-unittest.cc gmock-gtest.a
 	$(CXX) $(INCLUDES) -lpthread -lkyotocabinet -lkyototycoon -lctemplate $(CXXFLAGS) $^ -o $*
 
 #================================================================

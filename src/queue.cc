@@ -38,6 +38,7 @@ namespace superfastmatch{
             }else{
               message << "Inserting drop for: " << *doc;
               CommandFactory::insertDropDocument(registry_,batch.front());
+              delete doc;
               break;
             }
             logger->log(Logger::DEBUG,&message);

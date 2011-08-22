@@ -8,13 +8,12 @@
 #include <tr1/unordered_map>
 #include <google/sparsetable>
 #include <google/sparse_hash_map>
-#include <google/malloc_extension.h>
 #include <kcthread.h>
 #include <common.h>
 #include <templates.h>
 #include <postline.h>
 
-using google::sparsetable;  
+using google::sparsetable;
 using namespace std;
 
 namespace superfastmatch
@@ -140,20 +139,19 @@ namespace superfastmatch
     vector<PostingSlot*> slots_;
     uint32_t doc_count_;
     bool ready_;
+        
+  public:
+    Posting(Registry* registry);
+    ~Posting();
     
+    bool init();
+    void wait();
     void searchIndex(Document* doc,search_t& results,inverted_search_t& pruned_results);
     // Folling three methods return the current queue length for all slots combined   
     uint64_t alterIndex(Document* doc,TaskPayload::TaskOperation operation);
     uint64_t addDocument(Document* doc);
     uint64_t deleteDocument(Document* doc);
     uint64_t associateDocument(Document* doc);
-    void wait();
-    
-  public:
-    Posting(Registry* registry);
-    ~Posting();
-    
-    bool init();
     bool addDocuments(vector<Command*> commands);
     bool deleteDocuments(vector<Command*> commands);
     bool addAssociations(vector<Command*> commands);

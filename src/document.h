@@ -7,9 +7,11 @@
 #include <algorithm>
 #include <string>
 #include <cctype>
+#include <tr1/memory>
 #include <common.h>
 #include <registry.h>
 #include <association.h>
+
 
 namespace superfastmatch
 {   
@@ -33,54 +35,71 @@ namespace superfastmatch
     void fill_list_dictionary(TemplateDictionary* dict,uint32_t doctype,uint32_t docid);
   };
   
+  class DocumentManager; // Forward Declaration
+  
   class Document
   {
+  friend class DocumentManager;
   public:
     typedef std::vector<hash_t> hashes_vector;
     typedef std::bitset<(1<<24)> hashes_bloom;
-    typedef std::map<std::string,std::string> content_map;
+    typedef std::map<std::string,std::string> metadata_map;
     
   private:
     uint32_t doctype_;
     uint32_t docid_;
+    string* empty_meta_;
     Registry* registry_;
-    std::string* key_;
-    std::string* content_;
-    std::string* clean_text_;
-    content_map* content_map_;
+    string* key_;
+    string* text_;
+    string* clean_text_;
+    metadata_map* metadata_;
     hashes_vector* hashes_;
-    hashes_vector* unique_sorted_hashes_;
     hashes_bloom* bloom_;
   
   public:
-    Document(const uint32_t doctype,const uint32_t docid,const char* content,Registry* registry);
+    Document(const uint32_t doctype,const uint32_t docid,const string& content,Registry* registry);
     Document(const uint32_t doctype,const uint32_t docid,Registry* registry);
     Document(string& key,Registry* registry);
     
     ~Document();
     
-    //Returns false if document already exists
+    // Returns false if document already exists
     bool load();
     bool save();
     bool remove();
     
     hashes_vector& hashes();
-    hashes_vector& unique_sorted_hashes();
     hashes_bloom& bloom();
-    content_map& content();
-    string& text();
+    string& getMeta(const char* key);
+    bool setMeta(const char* key, const char* value);
+    bool getMetaKeys(vector<string>& keys);
+    string& getText();
     string& getCleanText();
     string& getKey();
-    string& title();
-    uint64_t index_key();
-    uint32_t doctype();
-    uint32_t docid();
+    const uint32_t doctype();
+    const uint32_t docid();
     
     void fill_document_dictionary(TemplateDictionary* dict);
     
     friend std::ostream& operator<< (std::ostream& stream, Document& document);
-    
     friend bool operator< (Document& lhs,Document& rhs);
+  };
+  
+  typedef std::tr1::shared_ptr<Document> DocumentPtr;
+  class DocumentManager
+  {
+  private:
+    Registry* registry_;
+  public:
+    DocumentManager(Registry* registry);
+    ~DocumentManager();
+    
+    DocumentPtr createDocument(const uint32_t doctype, const uint32_t docid,const string& content);
+    DocumentPtr getDocument(const uint32_t doctype, const uint32_t docid);
+    
+  private:
+    DISALLOW_COPY_AND_ASSIGN(DocumentManager);
   };
   
 }//namespace Superfastmatch

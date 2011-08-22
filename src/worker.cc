@@ -154,7 +154,7 @@ namespace superfastmatch{
     res.dict.SetTemplateGlobalValue("TITLE","Search");
     switch (req.verb){
       case HTTPClient::MPOST:{
-          Document doc(0,0,req.reqbody.c_str(),registry_);
+          Document doc(0,0,req.reqbody,registry_);
           registry_->getPostings()->fill_search_dictionary(&doc,&res.dict); 
           res.code=200;
           res.template_name=RESULTS_PAGE;
@@ -171,38 +171,34 @@ namespace superfastmatch{
     }
   }
 
-  void Worker::process_help(const RESTRequest& req,RESTResponse& res){
-    res.dict.SetTemplateGlobalValue("TITLE","Help");
-    res.template_name=HELP_PAGE;
-    res.code=200;
-  }
-
   void Worker::process_document(const RESTRequest& req,RESTResponse& res){
     res.dict.SetTemplateGlobalValue("TITLE","Document");
     if (req.first_is_numeric && req.second_is_numeric){
       uint32_t doctype = kc::atoi(req.first_id.data());
       uint32_t docid = kc::atoi(req.second_id.data());
-      Document doc(doctype,docid,req.reqbody.c_str(),registry_);
       Queue queue(registry_);
       switch(req.verb){
         case HTTPClient::MGET:
         case HTTPClient::MHEAD:
-          if (doc.load()){
-            res.message << "Getting document: " << doc;
-            if(req.verb==HTTPClient::MGET){
-              res.template_name=DOCUMENT_PAGE;
-              doc.fill_document_dictionary(&res.dict);
-            }
-            res.code=200;
-          }else{
-            res.message << "Error getting document: " << doc;
-            res.code=404;
+          {
+            Document doc(doctype,docid,registry_);
+            if (doc.load()){
+              res.message << "Getting document: " << doc;
+              if(req.verb==HTTPClient::MGET){
+                res.template_name=DOCUMENT_PAGE;
+                doc.fill_document_dictionary(&res.dict);
+              }
+              res.code=200;
+            }else{
+              res.message << "Error getting document: " << doc;
+              res.code=404;
+            } 
           }
           break;          
         case HTTPClient::MPUT:
         case HTTPClient::MPOST:{
             uint64_t queue_id = queue.add_document(doctype,docid,req.reqbody,req.verb==HTTPClient::MPUT);
-            res.message << "Queued document: " << doc << " for indexing queue id:"<< queue_id;
+            res.message << "Queued document: (" << doctype << "," << docid << ") for indexing queue id:"<< queue_id;
             res.dict.SetIntValue("QUEUE_ID",queue_id);
             res.dict.SetIntValue("DOC_TYPE",doctype);
             res.dict.SetIntValue("DOC_ID",docid);
@@ -213,7 +209,7 @@ namespace superfastmatch{
           break;
         case HTTPClient::MDELETE:{
             uint64_t queue_id = queue.delete_document(doctype,docid);
-            res.message << "Queued document: " << doc << " for deleting with queue id:" << queue_id;
+            res.message << "Queued document: (" << doctype << "," << docid << ") for deleting with queue id:" << queue_id;
             res.dict.SetIntValue("QUEUE_ID",queue_id);
             res.dict.SetIntValue("DOC_TYPE",doctype);
             res.dict.SetIntValue("DOC_ID",docid);
@@ -222,7 +218,7 @@ namespace superfastmatch{
           }
           break;
         default:
-          res.message << "Unknown command on: " << doc;
+          res.template_name=ERROR_PAGE;
           res.code=500;
           break;
       }
@@ -248,6 +244,12 @@ namespace superfastmatch{
       res.template_name=DOCUMENTS_PAGE;
       res.code=200;
     }
+  }
+  
+  void Worker::process_help(const RESTRequest& req,RESTResponse& res){
+    res.dict.SetTemplateGlobalValue("TITLE","Help");
+    res.template_name=HELP_PAGE;
+    res.code=200;
   }
   
   void Worker::process_association(const RESTRequest& req, RESTResponse& res){
@@ -299,9 +301,9 @@ namespace superfastmatch{
   }
   
   void Worker::process_heap(const RESTRequest& req, RESTResponse& res){
-    MallocExtensionWriter out;
-    MallocExtension::instance()->GetHeapSample(&out);
-    res.dict.SetValue("BODY",out);
+    // MallocExtensionWriter out;
+    // MallocExtension::instance()->GetHeapSample(&out);
+    // res.dict.SetValue("BODY",out);
     res.template_name=EMPTY_PAGE;
     res.code=200;
   }
@@ -330,8 +332,8 @@ namespace superfastmatch{
     size_t memory;
     const int kBufferSize = 16 << 12;
     char* buffer = new char[kBufferSize];
-    MallocExtension::instance()->GetNumericProperty("generic.current_allocated_bytes",&memory);
-    MallocExtension::instance()->GetStats(buffer,kBufferSize);
+    // MallocExtension::instance()->GetNumericProperty("generic.current_allocated_bytes",&memory);
+    // MallocExtension::instance()->GetStats(buffer,kBufferSize);
     res.dict.SetFormattedValue("MEMORY","%.4f",double(memory)/1024/1024/1024);
     res.dict.SetValue("MEMORY_STATS",string(buffer));
     res.dict.SetIntValue("WHITESPACE_HASH",registry_->getWhiteSpaceHash());

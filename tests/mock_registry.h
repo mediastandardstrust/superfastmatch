@@ -47,9 +47,7 @@ class MockRegistry : public Registry {
   MOCK_METHOD0(getDocumentDB,
       kc::BasicDB*());
   MOCK_METHOD0(getMetaDB,
-      kc::BasicDB*());
-  MOCK_METHOD0(getHashesDB,
-      kc::BasicDB*());
+      kc::PolyDB*());
   MOCK_METHOD0(getAssociationDB,
       kc::BasicDB*());
   MOCK_METHOD0(getMiscDB,
