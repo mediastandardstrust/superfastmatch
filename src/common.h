@@ -129,6 +129,10 @@ namespace superfastmatch{
     s << number;
     return s.str();
   }
+  
+  inline bool notAlphaNumeric(char c){
+    return std::isalnum(c)==0;
+  }
 }
 
 #endif

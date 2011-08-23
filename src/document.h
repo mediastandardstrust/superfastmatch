@@ -84,21 +84,40 @@ namespace superfastmatch
     
     friend std::ostream& operator<< (std::ostream& stream, Document& document);
     friend bool operator< (Document& lhs,Document& rhs);
+    
+  private:
+    bool initMeta();
+    bool initText();
+    bool initCleanText();
+    bool initHashes();
+    bool initBloom();
   };
   
+
   typedef std::tr1::shared_ptr<Document> DocumentPtr;
   class DocumentManager
   {
+  public:
+    enum DocumentState{
+      META        = 1 << 0,
+      TEXT        = 1 << 1,
+      CLEAN_TEXT  = 1 << 2,   // CLEAN_TEXT depends on TEXT 
+      HASHES      = 1 << 3,   // HASHES depends on CLEAN_TEXT
+      BLOOM       = 1 << 4    // BLOOM depends on HASHES
+    };
   private:
     Registry* registry_;
+    static const int32_t DEFAULT_STATE = META|TEXT|CLEAN_TEXT|HASHES|BLOOM;
   public:
     DocumentManager(Registry* registry);
     ~DocumentManager();
     
-    DocumentPtr createDocument(const uint32_t doctype, const uint32_t docid,const string& content);
-    DocumentPtr getDocument(const uint32_t doctype, const uint32_t docid);
+    DocumentPtr createTemporaryDocument(const string& content,const int32_t state=DEFAULT_STATE);
+    DocumentPtr createPermanentDocument(const uint32_t doctype, const uint32_t docid,const string& content,const int32_t state=DEFAULT_STATE);
+    DocumentPtr getDocument(const uint32_t doctype, const uint32_t docid,const int32_t state=DEFAULT_STATE);
     
   private:
+    bool initDoc(const DocumentPtr doc,const int32_t state);
     DISALLOW_COPY_AND_ASSIGN(DocumentManager);
   };
   

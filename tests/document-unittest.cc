@@ -93,7 +93,22 @@ TEST_F(DocumentTest, MetaTest){
 }
 
 TEST_F(DocumentTest,ManagerTest){
-  
+  DocumentManager docManager(&registry_);
+  DocumentPtr tempDoc=docManager.createTemporaryDocument("text=some+short+text+with_metadata&title=Title");
+  DocumentPtr permDoc=docManager.createPermanentDocument(1,1,"text=some+short+text+with_metadata&title=Title");
+  DocumentPtr savedDoc=docManager.getDocument(1,1);
+  EXPECT_STREQ("Title",tempDoc->getMeta("title").c_str());
+  EXPECT_STREQ("Title",permDoc->getMeta("title").c_str());
+  EXPECT_STREQ("Title",savedDoc->getMeta("title").c_str());
+  EXPECT_EQ(0U,tempDoc->doctype());
+  EXPECT_EQ(0U,tempDoc->docid());
+  EXPECT_EQ(1U,permDoc->doctype());
+  EXPECT_EQ(1U,permDoc->docid());
+  EXPECT_EQ(1U,savedDoc->doctype());
+  EXPECT_EQ(1U,savedDoc->docid());
+  EXPECT_NE(0U,permDoc->hashes().size());
+  EXPECT_NE(0U,savedDoc->hashes().size());
+  EXPECT_NE(0U,savedDoc->hashes().size());
 }
 
 int main(int argc, char** argv) {

@@ -2,6 +2,11 @@
 
 namespace superfastmatch
 {
+  
+  // -----------------------
+  // DocumentCursor members
+  // -----------------------
+  
   DocumentCursor::DocumentCursor(Registry* registry):
   registry_(registry){
     cursor_=registry->getDocumentDB()->cursor();
@@ -130,6 +135,10 @@ namespace superfastmatch
     FreeClear(docs);
   }
 
+  // -----------------------
+  // Document members
+  // -----------------------
+
   Document::Document(const uint32_t doctype,const uint32_t docid,const string& content,Registry* registry):
   doctype_(doctype),docid_(docid),empty_meta_(new string()),registry_(registry),key_(0),text_(0),clean_text_(0),metadata_(new metadata_map()),hashes_(0),bloom_(0)
   {
@@ -200,6 +209,77 @@ namespace superfastmatch
       empty_meta_=0;
     }
   }
+  
+  bool Document::initMeta(){
+    if (metadata_==0){
+      metadata_map* tempMap = new metadata_map();
+      vector<string> meta_keys;
+      string meta_value;
+      registry_->getMetaDB()->match_prefix(getKey(),&meta_keys);
+      for (vector<string>::const_iterator it=meta_keys.begin(),ite=meta_keys.end();it!=ite;++it){
+        if (not registry_->getMetaDB()->get(*it,&meta_value)){
+          return false;
+        };
+        (*tempMap)[(*it).substr(8)]=meta_value;
+      }      
+      metadata_=tempMap;
+    }
+    return true;
+  }
+
+  bool Document::initText(){
+    if (text_==0){
+      return registry_->getDocumentDB()->get(*key_,text_);
+    }
+    return true;
+  }
+  
+  bool Document::initCleanText(){
+    if (clean_text_==0){
+      string* tempClean=new string(getText().size(),' ');
+      replace_copy_if(getText().begin(),getText().end(),tempClean->begin(),notAlphaNumeric,' ');
+      transform(tempClean->begin(), tempClean->end(), tempClean->begin(), ::tolower);
+      clean_text_=tempClean;
+    }
+    return true;
+  }
+
+  bool Document::initHashes(){
+    if (hashes_==0){
+      hashes_vector* tempHashes = new hashes_vector();
+      uint32_t length = getCleanText().length()-registry_->getWindowSize();
+      hash_t white_space = registry_->getWhiteSpaceHash(false);
+      uint32_t window_size=registry_->getWindowSize();
+      uint32_t white_space_threshold=registry_->getWhiteSpaceThreshold();
+      tempHashes->resize(length);
+      hash_t hash;
+      uint32_t i=0;
+      string::const_iterator it=getCleanText().begin(),ite=getCleanText().end()-registry_->getWindowSize();
+      for (;it!=ite;++it){
+        // if ((count(it,it+white_space_threshold,' ')+count(it+window_size-white_space_threshold,it+window_size,' '))>white_space_threshold){
+        if (count(it,it+window_size,' ')>white_space_threshold){
+          hash=white_space;
+        }else{
+          hash=hashmurmur(&(*it),window_size+1);
+        }
+        (*tempHashes)[i]=hash;
+        i++;
+      }
+      hashes_=tempHashes;
+    }
+    return true;
+  }
+  
+  bool Document::initBloom(){
+    if (bloom_==0){
+      hashes_bloom* tempBloom = new hashes_bloom();
+      for (hashes_vector::const_iterator it=hashes().begin(),ite=hashes().end();it!=ite;++it){
+        tempBloom->set(*it&0xFFFFFF);
+      }
+      bloom_=tempBloom;
+    }
+    return true;
+  }
 
   bool Document::load(){
     vector<string> meta_keys;
@@ -260,10 +340,6 @@ namespace superfastmatch
       }
     }
     return *hashes_;
-  }
-
-  bool notAlphaNumeric(char c){
-    return std::isalnum(c)==0;
   }
 
   string& Document::getCleanText(){
@@ -361,6 +437,52 @@ namespace superfastmatch
       return lhs.docid() < rhs.docid();
     } 
     return lhs.doctype() < rhs.doctype();
+  }
+
+  // -----------------------
+  // DocumentManager members
+  // -----------------------
+  
+  DocumentManager::DocumentManager(Registry* registry):
+  registry_(registry){}
+
+  DocumentManager::~DocumentManager(){}
+  
+  DocumentPtr DocumentManager::createTemporaryDocument(const string& content,const int32_t state){
+    DocumentPtr doc(new Document(0,0,content,registry_));
+    initDoc(doc,state);
+    return doc;
+  }
+  
+  DocumentPtr DocumentManager::createPermanentDocument(const uint32_t doctype, const uint32_t docid,const string& content,const int32_t state){
+    assert((doctype>0) && (docid>0));
+    DocumentPtr doc(new Document(doctype,docid,content,registry_));
+    initDoc(doc,state);
+    doc->save();
+    return doc;
+  }
+
+  DocumentPtr DocumentManager::getDocument(const uint32_t doctype, const uint32_t docid,const int32_t state){
+    assert((doctype>0) && (docid>0));
+    DocumentPtr doc(new Document(doctype,docid,registry_));
+    doc->load();
+    initDoc(doc,state);
+    return doc;
+  }
+  
+  bool DocumentManager::initDoc(const DocumentPtr doc,const int32_t state){
+    bool success=true;
+    if (state&META)
+      success&=doc->initMeta();
+    if (state&TEXT)
+      success&=doc->initText();
+    if (state&CLEAN_TEXT)
+      success&=doc->initCleanText();
+    if (state&HASHES)
+      success&=doc->initHashes();
+    if (state&BLOOM)
+      success&=doc->initBloom();
+    return success;
   }
 
 }//namespace superfastmatch

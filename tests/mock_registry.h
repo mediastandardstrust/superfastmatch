@@ -43,15 +43,15 @@ class MockRegistry : public Registry {
   MOCK_METHOD0(getMode,
       uint32_t());
   MOCK_METHOD0(getQueueDB,
-      kc::BasicDB*());
+      kc::PolyDB*());
   MOCK_METHOD0(getDocumentDB,
-      kc::BasicDB*());
+      kc::PolyDB*());
   MOCK_METHOD0(getMetaDB,
       kc::PolyDB*());
   MOCK_METHOD0(getAssociationDB,
-      kc::BasicDB*());
+      kc::PolyDB*());
   MOCK_METHOD0(getMiscDB,
-      kc::BasicDB*());
+      kc::PolyDB*());
   MOCK_METHOD0(getTemplateCache,
       TemplateCache*());
   MOCK_METHOD0(getLogger,
