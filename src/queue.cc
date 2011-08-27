@@ -29,20 +29,18 @@ namespace superfastmatch{
       switch (batchType){
         case AddDocument:
           while(!batch.empty()){
-            Document* doc = batch.front()->getDocument();
+            DocumentPtr doc = batch.front()->createDocument();
             //Check if document exists and insert drop if it does
-            if (doc->save()){
+            if (doc){
               message << "Saved: " << *doc;
               work.push_back(batch.front());
               batch.pop_front();  
             }else{
-              message << "Inserting drop for: " << *doc;
+              message << "Inserting drop for: (" << batch.front()->getDocType() << "," << batch.front()->getDocId() << ")";
               CommandFactory::insertDropDocument(registry_,batch.front());
-              delete doc;
               break;
             }
             logger->log(Logger::DEBUG,&message);
-            delete doc;
           }
           registry_->getPostings()->addDocuments(work);
           for(vector<Command*>::iterator it=work.begin(),ite=work.end();it!=ite;++it){
@@ -58,13 +56,12 @@ namespace superfastmatch{
           }
           registry_->getPostings()->deleteDocuments(work);
           for (vector<Command*>::iterator it=work.begin(),ite=work.end();it!=ite;++it){
-            Document* doc = (*it)->getDocument();
-            if (not(doc->remove())){
+            DocumentPtr doc = (*it)->getDocument();
+            if (registry_->getDocumentManager()->removePermanentDocument(doc)){
               (*it)->setFailed();
             }else{
               (*it)->setFinished();
             }
-            delete doc;
           }
           break;
         case AddAssociation:
@@ -81,10 +78,9 @@ namespace superfastmatch{
           break;
         case AddAssociations:{
             DocumentCursor* cursor = new DocumentCursor(registry_);
-            Document* doc;
-            while((doc=cursor->getNext())!=NULL){
+            DocumentPtr doc;
+            while(doc=cursor->getNext()){
               CommandFactory::insertAddAssociation(registry_,doc->doctype(),doc->docid(),batch.front());
-              delete doc;
             }
             delete cursor;
             batch.front()->setFinished();

@@ -1,6 +1,8 @@
 #include "registry.h"
 #include <gflags/gflags.h>
 #include <validators.h>
+#include <posting.h>
+#include <document.h>
 
 namespace superfastmatch{
 
@@ -152,6 +154,10 @@ namespace superfastmatch{
   Posting* FlagsRegistry::getPostings(){
     return postings_;
   };
+  
+  DocumentManager* FlagsRegistry::getDocumentManager(){
+    return documentManager_;
+  }
 
   FlagsRegistry::FlagsRegistry():
   queueDB_(new kc::PolyDB()),
@@ -161,7 +167,8 @@ namespace superfastmatch{
   miscDB_(new kc::PolyDB()),
   templates_(mutable_default_template_cache()),
   logger_(new Logger()),
-  postings_(0)
+  postings_(0),
+  documentManager_(0)
   {
     if (FLAGS_debug){
       logger_->open("debug.log");
@@ -174,6 +181,7 @@ namespace superfastmatch{
       cout << "Error opening databases" << endl;
     }
     postings_ = new Posting(this);
+    documentManager_ = new DocumentManager(this);
     templates_->SetTemplateRootDirectory(FLAGS_template_path);
   }
 
@@ -182,19 +190,19 @@ namespace superfastmatch{
       queueDB_->close(); 
     }
     if (documentDB_!=0){
-      documentDB_->close(); 
+      documentDB_->close();
     }
     if (metaDB_!=0){
-      metaDB_->close(); 
+      metaDB_->close();
     }
     if (associationDB_!=0){
-      associationDB_->close(); 
+      associationDB_->close();
     }
     if (miscDB_!=0){
-      miscDB_->close(); 
+      miscDB_->close();
     }
     if (logger_!=0){
-      logger_->close(); 
+      logger_->close();
     }
     delete documentDB_;
     delete metaDB_;
@@ -202,6 +210,7 @@ namespace superfastmatch{
     delete queueDB_;
     delete miscDB_;
     delete postings_;
+    delete documentManager_;
     delete logger_;
   }
   

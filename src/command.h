@@ -54,8 +54,8 @@ namespace superfastmatch{
     bool setFinished();
     bool setFailed();
     
-    // The user of this reference is responsible for it's deletion
-    Document* getDocument();
+    DocumentPtr getDocument();
+    DocumentPtr createDocument();
     
     void fill_list_dictionary(TemplateDictionary* dict);
   };

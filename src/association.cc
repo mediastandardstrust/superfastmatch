@@ -12,7 +12,7 @@ namespace superfastmatch
     return lhs.right < rhs.right;
   }
   
-  Association::Association(Registry* registry,Document* from_document,Document* to_document):
+  Association::Association(Registry* registry,DocumentPtr from_document,DocumentPtr to_document):
   registry_(registry),
   from_document_(from_document),
   to_document_(to_document),
@@ -65,6 +65,8 @@ namespace superfastmatch
   }
   
   bool Association::save(){
+    assert((from_document_->doctype()!=0)&&(from_document_->docid()!=0));
+    assert((to_document_->doctype()!=0)&&(to_document_->docid()!=0));
     bool success=true;
     char* value=new char[getResultCount()*5*3];
     size_t offset=0;
@@ -87,12 +89,12 @@ namespace superfastmatch
     // TODO Optimise for shorter document
     // if (from_document->getText().length()<to_document->getText().length())
     Logger* logger = registry_->getLogger();
-    Document::hashes_bloom* bloom = new Document::hashes_bloom();
-    Document::hashes_vector from_hashes,to_hashes;
-    *bloom|=from_document_->bloom();
-    *bloom&=to_document_->bloom();
-    from_hashes=from_document_->hashes();
-    to_hashes=to_document_->hashes();
+    hashes_bloom* bloom = new hashes_bloom();
+    hashes_vector from_hashes,to_hashes;
+    *bloom|=from_document_->getBloom();
+    *bloom&=to_document_->getBloom();
+    from_hashes=from_document_->getHashes();
+    to_hashes=to_document_->getHashes();
     uint32_t from_hashes_count = from_hashes.size();
     uint32_t to_hashes_count = to_hashes.size();
     string original_text = from_document_->getText();

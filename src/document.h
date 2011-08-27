@@ -7,14 +7,16 @@
 #include <algorithm>
 #include <string>
 #include <cctype>
-#include <tr1/memory>
 #include <common.h>
 #include <registry.h>
 #include <association.h>
 
-
 namespace superfastmatch
-{   
+{ 
+  typedef std::vector<hash_t> hashes_vector;
+  typedef std::bitset<(1<<24)> hashes_bloom;
+  typedef std::map<std::string,std::string> metadata_map;
+  
   class DocumentCursor
   {
   private:
@@ -28,8 +30,8 @@ namespace superfastmatch
     bool jumpFirst();
     bool jumpLast();
     bool jump(string& key);
-    Document* getNext();
-    Document* getPrevious();
+    DocumentPtr getNext();
+    DocumentPtr getPrevious();
     uint32_t getCount();
     
     void fill_list_dictionary(TemplateDictionary* dict,uint32_t doctype,uint32_t docid);
@@ -37,17 +39,13 @@ namespace superfastmatch
   
   class DocumentManager; // Forward Declaration
   
-  class Document
+  class Document : public std::tr1::enable_shared_from_this<Document>
   {
   friend class DocumentManager;
-  public:
-    typedef std::vector<hash_t> hashes_vector;
-    typedef std::bitset<(1<<24)> hashes_bloom;
-    typedef std::map<std::string,std::string> metadata_map;
-    
   private:
     uint32_t doctype_;
     uint32_t docid_;
+    bool permanent_;
     string* empty_meta_;
     Registry* registry_;
     string* key_;
@@ -57,22 +55,23 @@ namespace superfastmatch
     hashes_vector* hashes_;
     hashes_bloom* bloom_;
   
-  public:
-    Document(const uint32_t doctype,const uint32_t docid,const string& content,Registry* registry);
-    Document(const uint32_t doctype,const uint32_t docid,Registry* registry);
-    Document(string& key,Registry* registry);
-    
-    ~Document();
-    
-    // Returns false if document already exists
-    bool load();
-    bool save();
+  private:
+    explicit Document(const uint32_t doctype,const uint32_t docid,const bool permanent,Registry* registry);
+    explicit Document(const string& key,const bool permanent,Registry* registry);
     bool remove();
-    
-    hashes_vector& hashes();
-    hashes_bloom& bloom();
-    string& getMeta(const char* key);
-    bool setMeta(const char* key, const char* value);
+    bool setText(const string& text);
+    bool initMeta();
+    bool initText();
+    bool initCleanText();
+    bool initHashes();
+    bool initBloom();
+  
+  public:
+    ~Document();
+    hashes_vector& getHashes();
+    hashes_bloom& getBloom();
+    string& getMeta(const string& key);
+    bool setMeta(const string& key, const string& value);
     bool getMetaKeys(vector<string>& keys);
     string& getText();
     string& getCleanText();
@@ -84,17 +83,8 @@ namespace superfastmatch
     
     friend std::ostream& operator<< (std::ostream& stream, Document& document);
     friend bool operator< (Document& lhs,Document& rhs);
-    
-  private:
-    bool initMeta();
-    bool initText();
-    bool initCleanText();
-    bool initHashes();
-    bool initBloom();
   };
   
-
-  typedef std::tr1::shared_ptr<Document> DocumentPtr;
   class DocumentManager
   {
   public:
@@ -109,15 +99,18 @@ namespace superfastmatch
     Registry* registry_;
     static const int32_t DEFAULT_STATE = META|TEXT|CLEAN_TEXT|HASHES|BLOOM;
   public:
-    DocumentManager(Registry* registry);
+    explicit DocumentManager(Registry* registry);
     ~DocumentManager();
     
     DocumentPtr createTemporaryDocument(const string& content,const int32_t state=DEFAULT_STATE);
     DocumentPtr createPermanentDocument(const uint32_t doctype, const uint32_t docid,const string& content,const int32_t state=DEFAULT_STATE);
+    bool removePermanentDocument(DocumentPtr doc);
     DocumentPtr getDocument(const uint32_t doctype, const uint32_t docid,const int32_t state=DEFAULT_STATE);
+    DocumentPtr getDocument(const string& key,const int32_t state=DEFAULT_STATE);
     
   private:
-    bool initDoc(const DocumentPtr doc,const int32_t state);
+    void initDoc(const DocumentPtr doc,const int32_t state);
+    DocumentPtr createDocument(const uint32_t doctype, const uint32_t docid,const string& content,const int32_t state,const bool commit);
     DISALLOW_COPY_AND_ASSIGN(DocumentManager);
   };
   

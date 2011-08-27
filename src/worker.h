@@ -9,6 +9,7 @@
 #include <kcthread.h>
 #include <registry.h>
 #include <logger.h>
+#include <posting.h>
 #include <queue.h>
 #include <document.h>
 #include <queue.h>

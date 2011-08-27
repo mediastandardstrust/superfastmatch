@@ -5,13 +5,18 @@
 #include <common.h>
 #include <kcplantdb.h>
 #include <kccompress.h>
-#include <posting.h>
 #include <logger.h>
+#include <templates.h>
 
 using namespace std;
 using namespace kyototycoon;
 
 namespace superfastmatch{
+
+  //Forward Declarations
+  class Posting;
+  class DocumentManager;
+  
 
   // Interface class for easy mocking in tests
   class Registry{
@@ -47,7 +52,8 @@ namespace superfastmatch{
     // Common bits - these might not belong here!
     virtual TemplateCache* getTemplateCache()=0;
     virtual Logger* getLogger()=0;
-    virtual Posting* getPostings()=0;    
+    virtual Posting* getPostings()=0;
+    virtual DocumentManager* getDocumentManager()=0;
     
     virtual void fill_status_dictionary(TemplateDictionary* dict)=0;
   };
@@ -63,6 +69,7 @@ namespace superfastmatch{
     TemplateCache* templates_;
     Logger* logger_;
     Posting* postings_;
+    DocumentManager* documentManager_;
 
   public:
     FlagsRegistry();
@@ -93,9 +100,11 @@ namespace superfastmatch{
     kc::PolyDB* getMetaDB();
     kc::PolyDB* getAssociationDB();
     kc::PolyDB* getMiscDB();
+    
     TemplateCache* getTemplateCache();
     Logger* getLogger();
     Posting* getPostings();
+    DocumentManager* getDocumentManager();
 
     void fill_status_dictionary(TemplateDictionary* dict);
       

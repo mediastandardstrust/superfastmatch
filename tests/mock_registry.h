@@ -58,6 +58,8 @@ class MockRegistry : public Registry {
       Logger*());
   MOCK_METHOD0(getPostings,
       Posting*());
+  MOCK_METHOD0(getDocumentManager,
+      DocumentManager*());
   MOCK_METHOD1(fill_status_dictionary,
       void(TemplateDictionary* dict));
 };

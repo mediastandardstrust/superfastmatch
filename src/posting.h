@@ -75,16 +75,16 @@ namespace superfastmatch
       DeleteDocument
     };
   private:
-    Document* document_;
+    DocumentPtr document_;
     TaskOperation operation_;
     kc::AtomicInt64 slots_left_;
   public:
-    TaskPayload(Document* document,TaskOperation operation,uint32_t slots);
+    TaskPayload(DocumentPtr document,TaskOperation operation,uint32_t slots);
     ~TaskPayload();
     
     uint64_t markSlotFinished();
     TaskOperation getTaskOperation();
-    Document* getDocument();
+    DocumentPtr getDocument();
   };
 
   class PostingTaskQueue : public kc::TaskQueue{
@@ -122,8 +122,8 @@ namespace superfastmatch
     PostingSlot(Registry* registry,uint32_t slot_number);
     ~PostingSlot();
     
-    bool alterIndex(Document* doc,TaskPayload::TaskOperation operation);
-    bool searchIndex(Document* doc,search_t& results);
+    bool alterIndex(DocumentPtr doc,TaskPayload::TaskOperation operation);
+    bool searchIndex(DocumentPtr doc,search_t& results);
 
     uint64_t addTask(TaskPayload* payload);
     uint32_t getTaskCount();
@@ -146,18 +146,18 @@ namespace superfastmatch
     
     bool init();
     void wait();
-    void searchIndex(Document* doc,search_t& results,inverted_search_t& pruned_results);
+    void searchIndex(DocumentPtr doc,search_t& results,inverted_search_t& pruned_results);
     // Folling three methods return the current queue length for all slots combined   
-    uint64_t alterIndex(Document* doc,TaskPayload::TaskOperation operation);
-    uint64_t addDocument(Document* doc);
-    uint64_t deleteDocument(Document* doc);
-    uint64_t associateDocument(Document* doc);
+    uint64_t alterIndex(DocumentPtr doc,TaskPayload::TaskOperation operation);
+    uint64_t addDocument(DocumentPtr doc);
+    uint64_t deleteDocument(DocumentPtr doc);
+    uint64_t associateDocument(DocumentPtr doc);
     bool addDocuments(vector<Command*> commands);
     bool deleteDocuments(vector<Command*> commands);
     bool addAssociations(vector<Command*> commands);
     bool isReady();
 
-    void fill_search_dictionary(Document* doc,TemplateDictionary* dict);
+    void fill_search_dictionary(DocumentPtr doc,TemplateDictionary* dict);
     void fill_status_dictionary(TemplateDictionary* dict);
     void fill_list_dictionary(TemplateDictionary* dict,hash_t start);
     void fill_histogram_dictionary(TemplateDictionary* dict);

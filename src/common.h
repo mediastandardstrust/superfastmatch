@@ -15,6 +15,7 @@ typedef unsigned __int64 uint64_t;
 #include <string>
 #include <kcutil.h>
 #include <ktutil.h>
+#include <tr1/memory>
 
 #define DISALLOW_COPY_AND_ASSIGN(TypeName) \
   TypeName(const TypeName&);               \
@@ -25,9 +26,17 @@ namespace superfastmatch{
   namespace kt=kyototycoon;
   namespace kc=kyotocabinet;
 
+  // Global Forward Declarations
+  class Document;
+
+  // Global Typedefs
   typedef uint32_t hash_t;
+  typedef std::tr1::shared_ptr<Document> DocumentPtr;
+
+  // Global consts
   const uint64_t MAX_HASH=(1L<<32)-1;
   
+  //Global utility functions
   inline hash_t hashmurmur(const void* buf, size_t size) {
     const uint64_t mul = 0xc6a4a7935bd1e995ULL;
     const int32_t rtt = 47;

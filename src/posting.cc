@@ -12,13 +12,11 @@ namespace superfastmatch
   // TaskPayload members
   // -------------------
   
-  TaskPayload::TaskPayload(Document* document,TaskOperation operation,uint32_t slots):
+  TaskPayload::TaskPayload(DocumentPtr document,TaskOperation operation,uint32_t slots):
   document_(document),operation_(operation),slots_left_(slots)
   {}
   
-  TaskPayload::~TaskPayload(){
-    delete document_;
-  }
+  TaskPayload::~TaskPayload(){}
     
   uint64_t TaskPayload::markSlotFinished(){
     uint64_t o_slots=slots_left_;
@@ -32,7 +30,7 @@ namespace superfastmatch
     return operation_;
   }
   
-  Document* TaskPayload::getDocument(){
+  DocumentPtr TaskPayload::getDocument(){
     return document_;
   }
   
@@ -67,7 +65,7 @@ namespace superfastmatch
   
   void PostingTaskQueue::do_task(Task* task) {
     PostingTask* ptask = (PostingTask*)task;
-    Document* doc = ptask->getPayload()->getDocument();
+    DocumentPtr doc = ptask->getPayload()->getDocument();
     PostingSlot* slot = ptask->getSlot();
     slot->alterIndex(doc,ptask->getPayload()->getTaskOperation());
     delete ptask;
@@ -102,7 +100,7 @@ namespace superfastmatch
     return hash_count;
   }
 
-  bool PostingSlot::alterIndex(Document* doc,TaskPayload::TaskOperation operation){
+  bool PostingSlot::alterIndex(DocumentPtr doc,TaskPayload::TaskOperation operation){
     index_lock_.lock_writer();
     hash_t hash;
     hash_t hash_mask=registry_->getHashMask();
@@ -111,7 +109,7 @@ namespace superfastmatch
     size_t outgoing_length;
     // Where hash width is below 32 we will get duplicates per document
     // We discard them with a no operation 
-    for (Document::hashes_vector::const_iterator it=doc->hashes().begin(),ite=doc->hashes().end();it!=ite;++it){
+    for (hashes_vector::const_iterator it=doc->getHashes().begin(),ite=doc->getHashes().end();it!=ite;++it){
       hash = ((*it>>hash_width)^(*it&hash_mask))-offset_;
       uint32_t doctype=doc->doctype();
       uint32_t docid=doc->docid();
@@ -150,7 +148,7 @@ namespace superfastmatch
     return true;
   }
   
-  bool PostingSlot::searchIndex(Document* doc,search_t& results){
+  bool PostingSlot::searchIndex(DocumentPtr doc,search_t& results){
     hash_t hash;
     uint32_t doctype=doc->doctype();
     uint32_t docid=doc->docid();
@@ -166,7 +164,7 @@ namespace superfastmatch
     size_t doc_count;
     size_t max_distance=registry_->getMaxDistance();
     index_lock_.lock_reader();
-    for (vector<hash_t>::const_iterator it=doc->hashes().begin(),ite=doc->hashes().end();it!=ite;++it){
+    for (vector<hash_t>::const_iterator it=doc->getHashes().begin(),ite=doc->getHashes().end();it!=ite;++it){
       hash = ((*it>>hash_width)^(*it&hash_mask))-offset_;
       if ((hash<span_) && (hash!=white_space) && (index_.test(hash))){
         line_.load(index_.unsafe_get(hash));  
@@ -305,9 +303,9 @@ namespace superfastmatch
     // Load the stored docs
     double start = kc::time();
     DocumentCursor* cursor = new DocumentCursor(registry_);
-    Document* doc;
-    while ((doc=cursor->getNext())!=NULL){
-      doc->hashes();
+    DocumentPtr doc;
+    while ((doc=cursor->getNext())){
+      doc->getHashes();
       addDocument(doc);
     }
     delete cursor;
@@ -319,7 +317,7 @@ namespace superfastmatch
     return ready_;
   }
   
-  uint64_t Posting::alterIndex(Document* doc,TaskPayload::TaskOperation operation){
+  uint64_t Posting::alterIndex(DocumentPtr doc,TaskPayload::TaskOperation operation){
     Logger* logger=registry_->getLogger();
     stringstream message;
     uint64_t queue_length=0;
@@ -335,7 +333,7 @@ namespace superfastmatch
     return queue_length;
   }
   
-  void Posting::searchIndex(Document* doc,search_t& results,inverted_search_t& pruned_results){
+  void Posting::searchIndex(DocumentPtr doc,search_t& results,inverted_search_t& pruned_results){
     for (size_t i=0;i<slots_.size();i++){
       slots_[i]->searchIndex(doc,results);
     }
@@ -346,7 +344,7 @@ namespace superfastmatch
     }
   }
   
-  uint64_t Posting::addDocument(Document* doc){
+  uint64_t Posting::addDocument(DocumentPtr doc){
     stringstream message;
     message << "Adding: " << *doc;
     registry_->getLogger()->log(Logger::DEBUG,&message);
@@ -355,7 +353,7 @@ namespace superfastmatch
     return queue_length;
   }
   
-  uint64_t Posting::deleteDocument(Document* doc){
+  uint64_t Posting::deleteDocument(DocumentPtr doc){
     stringstream message;
     message << "Deleting: " << *doc;
     registry_->getLogger()->log(Logger::DEBUG,&message);
@@ -383,9 +381,10 @@ namespace superfastmatch
   bool Posting::addAssociations(vector<Command*> commands){
     stringstream message;
     Logger* logger=registry_->getLogger();
+    DocumentManager* docManager=registry_->getDocumentManager();
     search_t results;
     inverted_search_t pruned_results;
-    Document* doc;
+    DocumentPtr doc;
     size_t num_results=registry_->getNumResults();
     size_t count;
     for (vector<Command*>::iterator it=commands.begin(),ite=commands.end();it!=ite;++it){
@@ -397,12 +396,11 @@ namespace superfastmatch
       logger->log(Logger::DEBUG,&message);
       searchIndex(doc,results,pruned_results);
       for(inverted_search_t::iterator it2=pruned_results.begin(),ite2=pruned_results.end();it2!=ite2 && count<num_results;++it2){
-        Document other(it2->second.doc_type,it2->second.doc_id,registry_);
-        Association association(registry_,doc,&other);
+        DocumentPtr other=docManager->getDocument(it2->second.doc_type,it2->second.doc_id);
+        Association association(registry_,doc,other);
         association.save();
         count++;
       } 
-      delete doc;
     }
     return true;
   }
@@ -411,10 +409,10 @@ namespace superfastmatch
     return ready_;
   }
   
-  void Posting::fill_search_dictionary(Document* doc,TemplateDictionary* dict){
+  void Posting::fill_search_dictionary(DocumentPtr doc,TemplateDictionary* dict){
     search_t results;
     inverted_search_t pruned_results;
-    doc->hashes();
+    doc->getHashes();
     searchIndex(doc,results,pruned_results);
     size_t count=0;
     size_t num_results=registry_->getNumResults();
@@ -428,8 +426,8 @@ namespace superfastmatch
       result_dict->SetIntValue("COUNT",it->first.count);
       result_dict->SetIntValue("TOTAL",it->first.total);
       result_dict->SetFormattedValue("HEAT","%.2f",double(it->first.total)/it->first.count);
-      Document other(it->second.doc_type,it->second.doc_id,registry_);
-      Association association(registry_,doc,&other);
+      DocumentPtr other=registry_->getDocumentManager()->getDocument(it->second.doc_type,it->second.doc_id);
+      Association association(registry_,doc,other);
       association.fill_item_dictionary(association_dict);
       count++;
       it++;

@@ -70,21 +70,14 @@ namespace superfastmatch{
     return update();
   }
   
-  Document* Command::getDocument(){
-    Document* doc;
+  DocumentPtr Command::getDocument(){
+    return registry_->getDocumentManager()->getDocument(doc_type_,doc_id_);
+  }
+  
+  DocumentPtr Command::createDocument(){
     string payload;
     getPayload(&payload);
-    switch (getType()){
-      case AddDocument:
-        doc = new Document(doc_type_,doc_id_,payload,registry_);
-        break;
-      default:
-        doc = new Document(doc_type_,doc_id_,registry_);
-        break;
-    }
-    // This should be in a factory method
-    doc->hashes();
-    return doc;
+    return registry_->getDocumentManager()->createPermanentDocument(doc_type_,doc_id_,payload);
   }
   
   void Command::fill_list_dictionary(TemplateDictionary* dict){

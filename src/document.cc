@@ -29,17 +29,16 @@ namespace superfastmatch
     return cursor_->jump(key);
   };
 
-  Document* DocumentCursor::getNext(){
+  DocumentPtr DocumentCursor::getNext(){
     string key;
     if (cursor_->get_key(&key,true)){
-      Document* doc = new Document(key,registry_);
-      return doc;
+      return registry_->getDocumentManager()->getDocument(key);
     };
-    return NULL;
+    return DocumentPtr();
   };
 
-  Document* DocumentCursor::getPrevious(){
-    return NULL;
+  DocumentPtr DocumentCursor::getPrevious(){
+    return DocumentPtr();
   };
 
   uint32_t DocumentCursor::getCount(){
@@ -67,7 +66,7 @@ namespace superfastmatch
     TemplateDictionary* page_dict=dict->AddIncludeDictionary("PAGING");
     page_dict->SetFilename(PAGING);
     uint32_t count=0;
-    Document* doc;
+    DocumentPtr doc;
     char* key=new char[8];
     size_t key_length;
     uint32_t di;
@@ -89,10 +88,10 @@ namespace superfastmatch
       cursor_->jump(key,8);
     }
     delete[] key;
-    vector<Document*> docs;
+    vector<DocumentPtr> docs;
     vector<string> keys;
     set<string,MetaKeyComparator> keys_set;
-    while (((doc=getNext())!=NULL)&&(count<registry_->getPageSize())){
+    while (((doc=getNext()))&&(count<registry_->getPageSize())){
       if ((doctype!=0) && (doctype!=doc->doctype())){
         break;
       }
@@ -108,7 +107,7 @@ namespace superfastmatch
       TemplateDictionary* keys_dict=dict->AddSectionDictionary("KEYS");
       keys_dict->SetValue("KEY",*it);
     }
-    for (vector<Document*>::iterator it=docs.begin(),ite=docs.end();it!=ite;++it){
+    for (vector<DocumentPtr>::iterator it=docs.begin(),ite=docs.end();it!=ite;++it){
       TemplateDictionary* doc_dict = dict->AddSectionDictionary("DOCUMENT");
       doc_dict->SetIntValue("DOC_TYPE",(*it)->doctype());
       doc_dict->SetIntValue("DOC_ID",(*it)->docid()); 
@@ -132,15 +131,14 @@ namespace superfastmatch
       page_dict->SetValueAndShowSection("PAGE",toString(di),"LAST");
       delete[] key;
     }
-    FreeClear(docs);
   }
 
   // -----------------------
   // Document members
   // -----------------------
 
-  Document::Document(const uint32_t doctype,const uint32_t docid,const string& content,Registry* registry):
-  doctype_(doctype),docid_(docid),empty_meta_(new string()),registry_(registry),key_(0),text_(0),clean_text_(0),metadata_(new metadata_map()),hashes_(0),bloom_(0)
+  Document::Document(const uint32_t doctype,const uint32_t docid, const bool permanent,Registry* registry):
+  doctype_(doctype),docid_(docid),permanent_(permanent),empty_meta_(new string()),registry_(registry),key_(0),text_(0),clean_text_(0),metadata_(),hashes_(0),bloom_(0)
   {
     char key[8];
     uint32_t dt=kc::hton32(doctype_);
@@ -148,38 +146,20 @@ namespace superfastmatch
     memcpy(key,&dt,4);
     memcpy(key+4,&di,4);
     key_ = new string(key,8);
-    kt::wwwformtomap(content,metadata_);
-    text_ = new string((*metadata_)["text"]);
-    metadata_->erase("text");
-    setMeta("characters",toString(text_->size()).c_str());
   }
   
-  Document::Document(const uint32_t doctype,const uint32_t docid,Registry* registry):
-  doctype_(doctype),docid_(docid),empty_meta_(new string()),registry_(registry),key_(0),text_(0),clean_text_(0),metadata_(new metadata_map()),hashes_(0),bloom_(0)
-  {
-    char key[8];
-    uint32_t dt=kc::hton32(doctype_);
-    uint32_t di=kc::hton32(docid_);
-    memcpy(key,&dt,4);
-    memcpy(key+4,&di,4);
-    key_ = new string(key,8);
-    text_ = new string();
-    load();
-  }
-  
-  Document::Document(string& key,Registry* registry):
-  empty_meta_(new string()),registry_(registry),key_(0),text_(0),clean_text_(0),metadata_(new metadata_map()),hashes_(0),bloom_(0)
+  Document::Document(const string& key,const bool permanent,Registry* registry):
+  permanent_(permanent),empty_meta_(new string()),registry_(registry),key_(0),text_(0),clean_text_(0),metadata_(0),hashes_(0),bloom_(0)
   {
     key_= new string(key);
     memcpy(&doctype_,key.data(),4);
     memcpy(&docid_,key.data()+4,4);
     doctype_=kc::ntoh32(doctype_);
     docid_=kc::ntoh32(docid_);
-    text_ = new string();
-    load();
   }
   
   Document::~Document(){
+    // cout << "Deleting " << *this <<endl;;
     if (clean_text_!=0){
       delete clean_text_;
       clean_text_=0;
@@ -229,7 +209,8 @@ namespace superfastmatch
 
   bool Document::initText(){
     if (text_==0){
-      return registry_->getDocumentDB()->get(*key_,text_);
+      text_ = new string();
+      return registry_->getDocumentDB()->get(getKey(),text_);
     }
     return true;
   }
@@ -273,34 +254,12 @@ namespace superfastmatch
   bool Document::initBloom(){
     if (bloom_==0){
       hashes_bloom* tempBloom = new hashes_bloom();
-      for (hashes_vector::const_iterator it=hashes().begin(),ite=hashes().end();it!=ite;++it){
+      for (hashes_vector::const_iterator it=getHashes().begin(),ite=getHashes().end();it!=ite;++it){
         tempBloom->set(*it&0xFFFFFF);
       }
       bloom_=tempBloom;
     }
     return true;
-  }
-
-  bool Document::load(){
-    vector<string> meta_keys;
-    string meta_value;
-    registry_->getMetaDB()->match_prefix(getKey(),&meta_keys);
-    for (vector<string>::const_iterator it=meta_keys.begin(),ite=meta_keys.end();it!=ite;++it){
-      if (not registry_->getMetaDB()->get(*it,&meta_value)){
-        return false;
-      };
-      (*metadata_)[(*it).substr(8)]=meta_value;
-    }
-    return registry_->getDocumentDB()->get(*key_,text_);
-  }
-  
-  bool Document::save(){
-    bool success = registry_->getDocumentDB()->cas(key_->data(),key_->size(),NULL,0,text_->data(),text_->size());
-    for (metadata_map::const_iterator it=metadata_->begin(),ite=metadata_->end();it!=ite;++it){
-      string meta_key(getKey()+it->first);
-      success = success && registry_->getMetaDB()->cas(meta_key.data(),meta_key.size(),NULL,0,it->second.data(),it->second.size());
-    }
-    return success;
   }
   
   bool Document::remove(){
@@ -313,64 +272,43 @@ namespace superfastmatch
     return success;
   }
   
-  Document::hashes_vector& Document::hashes(){
+  hashes_vector& Document::getHashes(){
     if (hashes_==0){
-      hashes_ = new hashes_vector();
-      if (bloom_==0){
-        bloom_ = new hashes_bloom();
-      }
-      uint32_t length = getCleanText().length()-registry_->getWindowSize();
-      hash_t white_space = registry_->getWhiteSpaceHash(false);
-      uint32_t window_size=registry_->getWindowSize();
-      uint32_t white_space_threshold=registry_->getWhiteSpaceThreshold();
-      hashes_->resize(length);
-      hash_t hash;
-      uint32_t i=0;
-      string::const_iterator it=getCleanText().begin(),ite=getCleanText().end()-registry_->getWindowSize();
-      for (;it!=ite;++it){
-        // if ((count(it,it+white_space_threshold,' ')+count(it+window_size-white_space_threshold,it+window_size,' '))>white_space_threshold){
-        if (count(it,it+window_size,' ')>white_space_threshold){
-          hash=white_space;
-        }else{
-          hash=hashmurmur(&(*it),window_size+1);
-        }
-        (*hashes_)[i]=hash;
-        bloom_->set(hash&0xFFFFFF);
-        i++;
-      }
+      throw runtime_error("Hashes not initialised");
     }
     return *hashes_;
   }
 
   string& Document::getCleanText(){
     if (clean_text_==0){
-      clean_text_=new string(getText().size(),' ');
-      replace_copy_if(getText().begin(),getText().end(),clean_text_->begin(),notAlphaNumeric,' ');
-      transform(clean_text_->begin(), clean_text_->end(), clean_text_->begin(), ::tolower);
+      throw runtime_error("Clean Text not initialised");
     }
     return *clean_text_;
   }
   
-  Document::hashes_bloom& Document::bloom(){
+  hashes_bloom& Document::getBloom(){
     if (bloom_==0){
-      hashes(); 
+      throw runtime_error("Bloom not initialised");
     }
     return *bloom_;
   }
 
-  string& Document::getMeta(const char* key){
-    if ((metadata_!=0) && (metadata_->find(key)!=metadata_->end())){
+  string& Document::getMeta(const string& key){
+    if (metadata_==0){
+      throw runtime_error("Meta not initialised");
+    }
+    if (metadata_->find(key)!=metadata_->end()){
       return (*metadata_)[key];
     }
     return *empty_meta_;
   }
   
-  bool Document::setMeta(const char* key, const char* value){
-    if (metadata_!=0){
-      (*metadata_)[key]=value;
-      return true;
+  bool Document::setMeta(const string& key, const string& value){
+    if (metadata_==0){
+      throw runtime_error("Meta not initialised");
     }
-    return false;
+    (*metadata_)[key]=value;
+    return permanent_?registry_->getMetaDB()->set(getKey()+key,value):true;
   }
   
   bool Document::getMetaKeys(vector<string>& keys){
@@ -384,7 +322,15 @@ namespace superfastmatch
     return false;
   }
   
+  bool Document::setText(const string& text){
+    text_=new string(text);
+    return permanent_?registry_->getDocumentDB()->cas(getKey().data(),getKey().size(),NULL,0,text_->data(),text_->size()):true;
+  }
+  
   string& Document::getText(){
+    if (text_==0){
+      throw runtime_error("Text not initialised");
+    }
     return *text_;
   }
   
@@ -425,8 +371,8 @@ namespace superfastmatch
     string other_key;
     while((cursor->get_key(&next,true))&&(getKey().compare(next.substr(0,8))==0)){
       other_key=next.substr(8,8);
-      Document other(other_key,registry_);
-      Association association(registry_,this,&other);
+      DocumentPtr other = registry_->getDocumentManager()->getDocument(other_key);
+      Association association(registry_,shared_from_this(),other);
       association.fill_item_dictionary(association_dict);
     }
     delete cursor;
@@ -449,40 +395,60 @@ namespace superfastmatch
   DocumentManager::~DocumentManager(){}
   
   DocumentPtr DocumentManager::createTemporaryDocument(const string& content,const int32_t state){
-    DocumentPtr doc(new Document(0,0,content,registry_));
-    initDoc(doc,state);
-    return doc;
+    return createDocument(0,0,content,state,false);;
   }
   
   DocumentPtr DocumentManager::createPermanentDocument(const uint32_t doctype, const uint32_t docid,const string& content,const int32_t state){
     assert((doctype>0) && (docid>0));
-    DocumentPtr doc(new Document(doctype,docid,content,registry_));
-    initDoc(doc,state);
-    doc->save();
+    DocumentPtr doc = createDocument(doctype,docid,content,state,true);
     return doc;
+  }
+
+  bool DocumentManager::removePermanentDocument(DocumentPtr doc){
+    assert((doc->doctype()>0) && (doc->docid()>0));
+    return doc->remove();
   }
 
   DocumentPtr DocumentManager::getDocument(const uint32_t doctype, const uint32_t docid,const int32_t state){
     assert((doctype>0) && (docid>0));
-    DocumentPtr doc(new Document(doctype,docid,registry_));
-    doc->load();
+    DocumentPtr doc(new Document(doctype,docid,true,registry_));
     initDoc(doc,state);
     return doc;
   }
   
-  bool DocumentManager::initDoc(const DocumentPtr doc,const int32_t state){
-    bool success=true;
+  DocumentPtr DocumentManager::getDocument(const string& key,const int32_t state){
+    DocumentPtr doc(new Document(key,true,registry_));
+    initDoc(doc,state);
+    return doc;
+  }
+  
+  DocumentPtr DocumentManager::createDocument(const uint32_t doctype, const uint32_t docid,const string& content,const int32_t state,const bool permanent){
+    DocumentPtr doc(new Document(doctype,docid,permanent,registry_));
+    metadata_map content_map;
+    kt::wwwformtomap(content,&content_map);
+    if (not doc->setText(content_map["text"])){
+      return DocumentPtr();
+    }
+    content_map.erase("text");
+    initDoc(doc,state|META);
+    assert(doc->setMeta("characters",toString(doc->getText().size()).c_str()));
+    for(metadata_map::const_iterator it=content_map.begin(),ite=content_map.end();it!=ite;++it){
+      assert(doc->setMeta(it->first.c_str(),it->second.c_str()));
+    }
+    return doc;
+  }
+  
+  void DocumentManager::initDoc(const DocumentPtr doc,const int32_t state){
     if (state&META)
-      success&=doc->initMeta();
+      assert(doc->initMeta());
     if (state&TEXT)
-      success&=doc->initText();
+      assert(doc->initText());
     if (state&CLEAN_TEXT)
-      success&=doc->initCleanText();
+       assert(doc->initCleanText());
     if (state&HASHES)
-      success&=doc->initHashes();
+      assert(doc->initHashes());
     if (state&BLOOM)
-      success&=doc->initBloom();
-    return success;
+      assert(doc->initBloom());
   }
 
 }//namespace superfastmatch

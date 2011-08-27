@@ -3,8 +3,8 @@
 
 #include "common.h"
 #include "registry.h"
-#include "document.h"
 #include "templates.h"
+#include "document.h"
 
 namespace superfastmatch
 {
@@ -44,14 +44,14 @@ namespace superfastmatch
   {
   private:
     Registry* registry_;
-    Document* from_document_;
-    Document* to_document_;
+    DocumentPtr from_document_;
+    DocumentPtr to_document_;
     string* key_;
     string* reverse_key_;
     vector<Result>* results_;
     
   public:
-    Association(Registry* registry,Document* from_document,Document* to_document);
+    Association(Registry* registry,DocumentPtr from_document,DocumentPtr to_document);
     ~Association();
     
     bool save();
