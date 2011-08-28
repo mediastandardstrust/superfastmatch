@@ -32,6 +32,7 @@ namespace superfastmatch
     uint32_t right;
     string text;
     uint32_t length;
+    
     Result(uint32_t left,uint32_t right,string text,uint32_t length):
     left(left),
     right(right),

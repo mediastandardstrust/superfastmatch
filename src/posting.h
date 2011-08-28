@@ -37,7 +37,7 @@ namespace superfastmatch
     
   typedef struct{
     size_t operator() (const DocPair& k) const { 
-      return (static_cast<uint64_t>(k.doc_type)<<32)&k.doc_id;
+      return (static_cast<uint64_t>(k.doc_type)<<32)|k.doc_id;
     }
   } DocPairHash;
 

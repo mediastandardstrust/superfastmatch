@@ -234,16 +234,22 @@ namespace superfastmatch
       uint32_t white_space_threshold=registry_->getWhiteSpaceThreshold();
       tempHashes->resize(length);
       hash_t hash;
-      uint32_t i=0;
+      size_t i=0;
       string::const_iterator it=getCleanText().begin(),ite=getCleanText().end()-registry_->getWindowSize();
+      size_t whitespace_count=count(it,it+window_size,' ');
       for (;it!=ite;++it){
-        // if ((count(it,it+white_space_threshold,' ')+count(it+window_size-white_space_threshold,it+window_size,' '))>white_space_threshold){
-        if (count(it,it+window_size,' ')>white_space_threshold){
+        if (*(it+window_size)==' '){
+          whitespace_count++;
+        }
+        if (whitespace_count>white_space_threshold){
           hash=white_space;
         }else{
           hash=hashmurmur(&(*it),window_size+1);
         }
         (*tempHashes)[i]=hash;
+        if (*it==' '){
+          whitespace_count--;
+        }
         i++;
       }
       hashes_=tempHashes;

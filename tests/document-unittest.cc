@@ -124,6 +124,14 @@ TEST_F(DocumentDeathTest,RemovalTest){
   EXPECT_DEATH(registry_.getDocumentManager()->getDocument(1,1),"^Assertion failed");
 }
 
+TEST_F(DocumentTest,DuplicatePermanentTest){
+  DocumentPtr permDoc=registry_.getDocumentManager()->createPermanentDocument(1,1,"text=some+short+text+with_metadata&title=Title");
+  EXPECT_EQ(1U,permDoc->doctype());
+  EXPECT_EQ(1U,permDoc->docid());
+  EXPECT_STREQ("Title",permDoc->getMeta("title").c_str());
+  EXPECT_FALSE(registry_.getDocumentManager()->createPermanentDocument(1,1,"text=some+short+text+with_metadata&title=Title"));
+}
+
 TEST_F(DocumentTest,InitTest){
   DocumentPtr tempDoc=registry_.getDocumentManager()->createTemporaryDocument("text=Some+short+text+with+metadata&title=Title",NULL);
   EXPECT_STREQ("Some short text with metadata",tempDoc->getText().c_str());

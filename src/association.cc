@@ -169,8 +169,24 @@ namespace superfastmatch
              break;
           }
        }
-       results_->push_back(Result(first->left,first_right,original_text.substr(first->left,counter+window_size),counter+window_size));
-       logger->log(Logger::DEBUG,kc::strprintf("Match: \"%s\"",original_text.substr(first->left,counter+window_size).c_str()).c_str());
+       
+       // Trim leading and following whitespace
+       uint32_t length=counter+window_size;
+       string text=from_text.substr(first->left,length);
+       text.erase(text.begin(), std::find_if(text.begin(),text.end(),std::not1(std::ptr_fun<int, int>(std::isspace))));
+       uint32_t left=first->left+length-text.size();
+       uint32_t right=first_right+length-text.size();
+       text.erase(std::find_if(text.rbegin(),text.rend(),std::not1(std::ptr_fun<int, int>(std::isspace))).base(), text.end());
+       length=text.size();
+
+       // Keep if text is as long as window size
+       if (length>=window_size){
+         Result result(left,right,original_text.substr(left,length),length);
+         results_->push_back(result);
+         logger->log(Logger::DEBUG,kc::strprintf("Match: \"%s\"",result.text.c_str()).c_str()); 
+       }else{
+         logger->log(Logger::DEBUG,kc::strprintf("Match too short: \"%s\"",text.c_str()).c_str());
+       }
     }
     sort(results_->begin(),results_->end(),result_sorter);
     delete bloom;

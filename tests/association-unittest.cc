@@ -90,7 +90,7 @@ TEST_F(AssociationTest, WhitespaceTest){
   DocumentPtr doc1 = registry_.getDocumentManager()->createTemporaryDocument("text=++++++++++++++++++++whitespace+test+with+a+long+sentence+*+*+*+*+*+*+*+*+*+*+*+*+");
   DocumentPtr doc2 = registry_.getDocumentManager()->createTemporaryDocument("text=++++++++++++++++++++whitespace+test+with+a+long+sentence+*+*+*+*+*+*+*+*+*+*+*+*+");
   Association* association = new Association(&registry_,doc1,doc2);
-  EXPECT_STREQ("   whitespace test with a long sentence * *",association->getToResult(0).c_str());
+  EXPECT_STREQ("whitespace test with a long sentence",association->getToResult(0).c_str());
 }
 
 TEST_F(AssociationTest, EndingTest){
