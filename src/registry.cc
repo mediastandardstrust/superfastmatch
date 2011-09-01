@@ -49,7 +49,7 @@ namespace superfastmatch{
   };
 
   hash_t FlagsRegistry::getWhiteSpaceHash(bool masked) const{
-    string white_space(getWindowSize()+1,' ');
+    string white_space(getWindowSize(),' ');
     hash_t hash = kc::hashmurmur(white_space.data(),white_space.size());
     if (masked)
       return((hash>>getHashWidth())^(hash&getHashMask()));
@@ -124,6 +124,10 @@ namespace superfastmatch{
     return queueDB_;
   };
   
+  kc::PolyDB* FlagsRegistry::getPayloadDB(){
+    return payloadDB_;
+  };
+  
   kc::PolyDB* FlagsRegistry::getDocumentDB(){
     return documentDB_;
   };
@@ -161,6 +165,7 @@ namespace superfastmatch{
 
   FlagsRegistry::FlagsRegistry():
   queueDB_(new kc::PolyDB()),
+  payloadDB_(new kc::PolyDB()),
   documentDB_(new kc::PolyDB()),
   metaDB_(new kc::PolyDB()),
   associationDB_(new kc::PolyDB()),
@@ -175,6 +180,7 @@ namespace superfastmatch{
     }
     if (not(documentDB_->open(getDataPath()+"/document.kcf#opts=lc#pccap=256m#psiz=524288#zcomp=zlib",getMode()) && \
             queueDB_->open(getDataPath()+"/queue.kcf#opts=lc#pccap=256m#psiz=524288#zcomp=zlib",getMode()) && \
+            payloadDB_->open(getDataPath()+"/payload.kcf#opts=lc#pccap=256m#psiz=524288#zcomp=zlib",getMode()) && \
             metaDB_->open(getDataPath()+"/meta.kcf#opts=lc#pccap=256m#psiz=524288#zcomp=zlib",getMode()) && \
             associationDB_->open(getDataPath()+"/association.kcf#opts=lc#pccap=256m#psiz=524288#zcomp=zlib",getMode()) && \
             miscDB_->open(getDataPath()+"/misc.kch",getMode()))){
@@ -188,6 +194,9 @@ namespace superfastmatch{
   FlagsRegistry::~FlagsRegistry(){
     if (queueDB_!=0){
       queueDB_->close(); 
+    }
+    if (payloadDB_!=0){
+      payloadDB_->close(); 
     }
     if (documentDB_!=0){
       documentDB_->close();
@@ -208,6 +217,7 @@ namespace superfastmatch{
     delete metaDB_;
     delete associationDB_;
     delete queueDB_;
+    delete payloadDB_;
     delete miscDB_;
     delete postings_;
     delete documentManager_;
@@ -224,6 +234,7 @@ namespace superfastmatch{
   
   void FlagsRegistry::fill_status_dictionary(TemplateDictionary* dict){
     fill_db_dictionary(dict,getQueueDB(),"Queue DB");
+    fill_db_dictionary(dict,getPayloadDB(),"Payload DB");
     fill_db_dictionary(dict,getDocumentDB(),"Document DB");
     fill_db_dictionary(dict,getMetaDB(),"Meta DB");
     fill_db_dictionary(dict,getAssociationDB(),"Association DB");

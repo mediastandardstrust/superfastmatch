@@ -212,7 +212,7 @@ namespace superfastmatch{
         batchType=command->getType();
       }
       else if (command->getType()==batch.back()->getType()){
-        batch.push_back(command); 
+        batch.push_back(command);
       }
       else{
         delete command;

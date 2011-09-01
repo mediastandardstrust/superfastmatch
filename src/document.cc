@@ -228,14 +228,14 @@ namespace superfastmatch
   bool Document::initHashes(){
     if (hashes_==0){
       hashes_vector* tempHashes = new hashes_vector();
-      uint32_t length = getCleanText().length()-registry_->getWindowSize();
+      uint32_t length = getCleanText().length()-registry_->getWindowSize()+1;
       hash_t white_space = registry_->getWhiteSpaceHash(false);
       uint32_t window_size=registry_->getWindowSize();
       uint32_t white_space_threshold=registry_->getWhiteSpaceThreshold();
       tempHashes->resize(length);
       hash_t hash;
       size_t i=0;
-      string::const_iterator it=getCleanText().begin(),ite=getCleanText().end()-registry_->getWindowSize();
+      string::const_iterator it=getCleanText().begin(),ite=(it+length);
       size_t whitespace_count=count(it,it+window_size,' ');
       for (;it!=ite;++it){
         if (*(it+window_size)==' '){
@@ -244,7 +244,7 @@ namespace superfastmatch
         if (whitespace_count>white_space_threshold){
           hash=white_space;
         }else{
-          hash=hashmurmur(&(*it),window_size+1);
+          hash=hashmurmur(&(*it),window_size);
         }
         (*tempHashes)[i]=hash;
         if (*it==' '){

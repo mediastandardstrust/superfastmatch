@@ -171,7 +171,7 @@ namespace superfastmatch
        }
        
        // Trim leading and following whitespace
-       uint32_t length=counter+window_size;
+       uint32_t length=counter-1+window_size;
        string text=from_text.substr(first->left,length);
        text.erase(text.begin(), std::find_if(text.begin(),text.end(),std::not1(std::ptr_fun<int, int>(std::isspace))));
        uint32_t left=first->left+length-text.size();

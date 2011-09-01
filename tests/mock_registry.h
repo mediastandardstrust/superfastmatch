@@ -44,6 +44,8 @@ class MockRegistry : public Registry {
       uint32_t());
   MOCK_METHOD0(getQueueDB,
       kc::PolyDB*());
+  MOCK_METHOD0(getPayloadDB,
+      kc::PolyDB*());
   MOCK_METHOD0(getDocumentDB,
       kc::PolyDB*());
   MOCK_METHOD0(getMetaDB,

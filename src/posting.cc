@@ -2,7 +2,7 @@
 
 //Is this naughty?
 #include "document.h"
-#include "command.h"
+// #include "command.h"
 #include "registry.h"
 #include "association.h"
 
@@ -305,7 +305,6 @@ namespace superfastmatch
     DocumentCursor* cursor = new DocumentCursor(registry_);
     DocumentPtr doc;
     while ((doc=cursor->getNext())){
-      doc->getHashes();
       addDocument(doc);
     }
     delete cursor;
@@ -315,6 +314,14 @@ namespace superfastmatch
     registry_->getLogger()->log(Logger::DEBUG,&message);
     ready_=true;
     return ready_;
+  }
+  
+  size_t Posting::getHashCount(){
+    size_t hash_count=0;
+    for (size_t i=0;i<slots_.size();i++){
+      hash_count+=slots_[i]->getHashCount();
+    }
+    return hash_count;
   }
   
   uint64_t Posting::alterIndex(DocumentPtr doc,TaskPayload::TaskOperation operation){
@@ -362,48 +369,48 @@ namespace superfastmatch
     return queue_length;
   }
   
-  bool Posting::addDocuments(vector<Command*> commands){
-    for (vector<Command*>::iterator it=commands.begin(),ite=commands.end();it!=ite;++it){
-      addDocument((*it)->getDocument());
-    }
-    wait();
-    return true;
-  }
-  
-  bool Posting::deleteDocuments(vector<Command*> commands){
-    for (vector<Command*>::iterator it=commands.begin(),ite=commands.end();it!=ite;++it){
-      deleteDocument((*it)->getDocument());
-    }
-    wait();
-    return true;
-  }
-  
-  bool Posting::addAssociations(vector<Command*> commands){
-    stringstream message;
-    Logger* logger=registry_->getLogger();
-    DocumentManager* docManager=registry_->getDocumentManager();
-    search_t results;
-    inverted_search_t pruned_results;
-    DocumentPtr doc;
-    size_t num_results=registry_->getNumResults();
-    size_t count;
-    for (vector<Command*>::iterator it=commands.begin(),ite=commands.end();it!=ite;++it){
-      count=0;
-      results.clear();
-      pruned_results.clear();
-      doc=(*it)->getDocument();
-      message << "Associating: " << *doc;
-      logger->log(Logger::DEBUG,&message);
-      searchIndex(doc,results,pruned_results);
-      for(inverted_search_t::iterator it2=pruned_results.begin(),ite2=pruned_results.end();it2!=ite2 && count<num_results;++it2){
-        DocumentPtr other=docManager->getDocument(it2->second.doc_type,it2->second.doc_id);
-        Association association(registry_,doc,other);
-        association.save();
-        count++;
-      } 
-    }
-    return true;
-  }
+  // bool Posting::addDocuments(vector<Command*> commands){
+  //   for (vector<Command*>::iterator it=commands.begin(),ite=commands.end();it!=ite;++it){
+  //     addDocument((*it)->getDocument());
+  //   }
+  //   wait();
+  //   return true;
+  // }
+  // 
+  // bool Posting::deleteDocuments(vector<Command*> commands){
+  //   for (vector<Command*>::iterator it=commands.begin(),ite=commands.end();it!=ite;++it){
+  //     deleteDocument((*it)->getDocument());
+  //   }
+  //   wait();
+  //   return true;
+  // }
+  // 
+  // bool Posting::addAssociations(vector<Command*> commands){
+  //   stringstream message;
+  //   Logger* logger=registry_->getLogger();
+  //   DocumentManager* docManager=registry_->getDocumentManager();
+  //   search_t results;
+  //   inverted_search_t pruned_results;
+  //   DocumentPtr doc;
+  //   size_t num_results=registry_->getNumResults();
+  //   size_t count;
+  //   for (vector<Command*>::iterator it=commands.begin(),ite=commands.end();it!=ite;++it){
+  //     count=0;
+  //     results.clear();
+  //     pruned_results.clear();
+  //     doc=(*it)->getDocument();
+  //     message << "Associating: " << *doc;
+  //     logger->log(Logger::DEBUG,&message);
+  //     searchIndex(doc,results,pruned_results);
+  //     for(inverted_search_t::iterator it2=pruned_results.begin(),ite2=pruned_results.end();it2!=ite2 && count<num_results;++it2){
+  //       DocumentPtr other=docManager->getDocument(it2->second.doc_type,it2->second.doc_id);
+  //       Association association(registry_,doc,other);
+  //       association.save();
+  //       count++;
+  //     } 
+  //   }
+  //   return true;
+  // }
   
   bool Posting::isReady(){
     return ready_;
@@ -412,7 +419,6 @@ namespace superfastmatch
   void Posting::fill_search_dictionary(DocumentPtr doc,TemplateDictionary* dict){
     search_t results;
     inverted_search_t pruned_results;
-    doc->getHashes();
     searchIndex(doc,results,pruned_results);
     size_t count=0;
     size_t num_results=registry_->getNumResults();

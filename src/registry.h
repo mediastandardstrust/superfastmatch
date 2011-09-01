@@ -44,6 +44,7 @@ namespace superfastmatch{
     // DB's
     virtual uint32_t getMode()=0;
     virtual kc::PolyDB* getQueueDB()=0;
+    virtual kc::PolyDB* getPayloadDB()=0;
     virtual kc::PolyDB* getDocumentDB()=0;
     virtual kc::PolyDB* getMetaDB()=0;
     virtual kc::PolyDB* getAssociationDB()=0;
@@ -62,6 +63,7 @@ namespace superfastmatch{
   {
   private:
     kc::PolyDB* queueDB_;
+    kc::PolyDB* payloadDB_;
     kc::PolyDB* documentDB_;
     kc::PolyDB* metaDB_;
     kc::PolyDB* associationDB_;
@@ -96,6 +98,7 @@ namespace superfastmatch{
 
     uint32_t getMode();
     kc::PolyDB* getQueueDB();
+    kc::PolyDB* getPayloadDB();
     kc::PolyDB* getDocumentDB();
     kc::PolyDB* getMetaDB();
     kc::PolyDB* getAssociationDB();

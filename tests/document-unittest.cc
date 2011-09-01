@@ -61,7 +61,7 @@ TEST_F(DocumentTest,ConstructorTest){
   EXPECT_STREQ("test.txt",doc1->getMeta("filename").c_str());
   DocumentPtr doc3 =registry_.getDocumentManager()->getDocument(1,1);
   EXPECT_STREQ("test.txt",doc3->getMeta("filename").c_str());
-  EXPECT_EQ(doc3->getText().size()-4,doc3->getHashes().size());
+  EXPECT_EQ(doc3->getText().size()-registry_.getWindowSize()+1,doc3->getHashes().size());
   EXPECT_STREQ("Also a test",doc3->getMeta("title").c_str());
   EXPECT_STREQ("This is a test",doc3->getText().c_str());
 }

@@ -32,7 +32,7 @@ DEBUGENV = gdb
 # Test variables
 #================================================================
 
-TESTS = tests/postline-unittest.o tests/document-unittest.o tests/association-unittest.o tests/posting-unittest.o tests/benchmark.o
+TESTS = tests/command-unittest.o tests/postline-unittest.o tests/document-unittest.o tests/association-unittest.o tests/posting-unittest.o tests/benchmark.o 
 GTEST_DIR = tests/utils
 
 #================================================================
@@ -108,6 +108,9 @@ tests/association-unittest.o : src/document.cc src/association.cc src/logger.cc 
 	$(CXX) $(INCLUDES) -lpthread -lkyotocabinet -lkyototycoon -lctemplate $(CXXFLAGS) $^ -o $*
 
 tests/posting-unittest.o : src/document.cc src/posting.cc src/logger.cc src/association.cc src/postline.cc src/command.cc tests/posting-unittest.cc gmock-gtest.a
+	$(CXX) $(INCLUDES) -lpthread -lkyotocabinet -lkyototycoon -lctemplate $(CXXFLAGS) $^ -o $*
+
+tests/command-unittest.o : src/document.cc src/association.cc src/posting.cc src/postline.cc src/logger.cc tests/command-unittest.cc gmock-gtest.a
 	$(CXX) $(INCLUDES) -lpthread -lkyotocabinet -lkyototycoon -lctemplate $(CXXFLAGS) $^ -o $*
 
 tests/benchmark.o : src/document.cc src/posting.cc src/logger.cc src/association.cc src/postline.cc src/command.cc tests/benchmark.cc gmock-gtest.a

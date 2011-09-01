@@ -145,6 +145,7 @@ namespace superfastmatch
     ~Posting();
     
     bool init();
+    size_t getHashCount();
     void wait();
     void searchIndex(DocumentPtr doc,search_t& results,inverted_search_t& pruned_results);
     // Folling three methods return the current queue length for all slots combined   

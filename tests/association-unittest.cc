@@ -59,6 +59,17 @@ protected:
   }
 };
 
+TEST_F(AssociationTest,ShortTest){
+  EXPECT_CALL(registry_,getWindowSize())
+    .WillRepeatedly(Return(4));
+  DocumentPtr doc1 = registry_.getDocumentManager()->createPermanentDocument(1,1,"text=This1");
+  DocumentPtr doc2 = registry_.getDocumentManager()->createPermanentDocument(1,2,"text=This2");
+  Association* association = new Association(&registry_,doc1,doc2);
+  EXPECT_EQ(1U,association->getResultCount());
+  EXPECT_EQ(4U,association->getLength(0));
+  EXPECT_STREQ("This",association->getToResult(0).c_str());
+}
+
 TEST_F(AssociationTest,ConstructorTest){
   DocumentPtr doc1 = registry_.getDocumentManager()->createPermanentDocument(1,1,"text=This+is+a+long+sentence+where+the+phrase+Always+Look+On+The+Bright+Side+Of+Life&title=Doc1");
   DocumentPtr doc2 = registry_.getDocumentManager()->createPermanentDocument(1,2,"text=Always+Look+On+The+Bright+Side+Of+Life+and+this+is+a+long+sentence&title=Doc2");
