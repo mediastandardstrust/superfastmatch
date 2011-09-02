@@ -66,4 +66,28 @@ Visit http://127.0.0.1:8080 to test the interface.
 Data
 ----
 
-Of course you need something to load. Have a look at fixtures.sh and load.sh for some inspiration!
+For a quick introduction to what can be found with superfastmatch try this:
+
+If you have a machine with less than 8GB of memory run and less than 4 cores:
+
+    ./superfastmatch -debug -hash_width 24 -reset -slot_count 2 -thread_count 2 -window_size 30
+
+otherwise this will be much faster:
+
+    ./superfastmatch -debug -reset -window_size 30
+
+in another terminal window run:
+
+    tail -f debug.log
+    
+to see what is happening. And then finally, in another terminal window, run:
+
+    ./scripts/gutenberg.sh
+    
+to load some example documents and associate them with each other. You can view the results in the browser at:
+
+    http://127.0.0.1:8080/document/
+
+
+
+
