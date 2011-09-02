@@ -68,7 +68,7 @@ Data
 
 For a quick introduction to what can be found with superfastmatch try this:
 
-If you have a machine with less than 8GB of memory run and less than 4 cores:
+If you have a machine with less than 8GB of memory and less than 4 cores run:
 
     ./superfastmatch -debug -hash_width 24 -reset -slot_count 2 -thread_count 2 -window_size 30
 
