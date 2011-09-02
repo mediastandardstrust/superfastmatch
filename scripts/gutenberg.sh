@@ -9,4 +9,4 @@ curl -X POST -H "Expect:" --data-urlencode "text@../fixtures/gutenberg/david_cop
 curl -X POST -H "Expect:" --data-urlencode "text@../fixtures/gutenberg/oliver_twist.txt" -d "title=Oliver+Twist" 127.0.0.1:8080/document/1/9/
 curl -X POST -H "Expect:" --data-urlencode "text@../fixtures/gutenberg/koran.txt" -d "title=Koran" 127.0.0.1:8080/document/1/10/
 curl -X POST -H "Expect:" --data-urlencode "text@../fixtures/gutenberg/bible.txt" -d "title=Bible" 127.0.0.1:8080/document/1/11/
-curl -X POST 127.0.0.1:8080/association
+curl -X POST -H "Expect:" 127.0.0.1:8080/association
