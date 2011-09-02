@@ -262,7 +262,7 @@ namespace superfastmatch{
         break;
       }
       default:
-         res.code=500;
+        res.code=500;
         break;
     }
   }
