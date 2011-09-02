@@ -258,9 +258,11 @@ namespace superfastmatch{
     switch (req.verb){
       case HTTPClient::MPOST:{
         queue.addAssociations();
+        res.code=200;
         break;
       }
       default:
+         res.code=500;
         break;
     }
   }
