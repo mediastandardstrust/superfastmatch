@@ -43,6 +43,19 @@ Which is a dependency for perftools. And you might also need a:
 
 after the script has finished.
 
+On Fedora/Amazon AMI this will to allow bootstrap.sh to complete:
+
+    sudo yum update
+    sudo yum install git
+    sudo yum install svn
+    sudo yum install gcc
+    sudo yum install gcc-c++
+    sudo yum install zlib-devel
+    wget http://download.savannah.gnu.org/releases/libunwind/libunwind-0.99.tar.gz
+    tar xzf libunwind-0.99.tar.gz
+    cd libunwind-0.99
+    ./configure && make && sudo make install
+
 Test
 ----
 
@@ -50,7 +63,7 @@ After the libraries are installed, you can run:
 
     make check
 
-to run the currently lonely unit test for the index code.
+to run the unit tests for the code.
 
 Build
 -----
