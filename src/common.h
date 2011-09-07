@@ -29,11 +29,13 @@ namespace superfastmatch{
   // Global Forward Declarations
   class Document;
   class Association;
+  class Command;
 
   // Global Typedefs
   typedef uint32_t hash_t;
   typedef std::tr1::shared_ptr<Document> DocumentPtr;
   typedef std::tr1::shared_ptr<Association> AssociationPtr;
+  typedef std::tr1::shared_ptr<Command> CommandPtr;
 
   // Global consts
   const uint64_t MAX_HASH=(1L<<32)-1;

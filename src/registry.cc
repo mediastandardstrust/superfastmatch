@@ -3,6 +3,7 @@
 #include <validators.h>
 #include <posting.h>
 #include <document.h>
+#include <queue.h>
 
 namespace superfastmatch{
 
@@ -162,6 +163,14 @@ namespace superfastmatch{
   DocumentManager* FlagsRegistry::getDocumentManager(){
     return documentManager_;
   }
+  
+  AssociationManager* FlagsRegistry::getAssociationManager(){
+    return associationManager_;
+  }
+  
+  QueueManager* FlagsRegistry::getQueueManager(){
+    return queueManager_;
+  }
 
   FlagsRegistry::FlagsRegistry():
   queueDB_(new kc::PolyDB()),
@@ -175,14 +184,15 @@ namespace superfastmatch{
   postings_(0),
   documentManager_(0),
   associationManager_(0),
+  queueManager_(0)
   {
     if (FLAGS_debug){
       logger_->open("debug.log");
     }
     if (not(documentDB_->open(getDataPath()+"/document.kcf#opts=lc#pccap=256m#psiz=524288#zcomp=zlib",getMode()) && \
-            queueDB_->open(getDataPath()+"/queue.kcf#opts=lc#pccap=256m#psiz=524288#zcomp=zlib",getMode()) && \
+            queueDB_->open(getDataPath()+"/queue.kcf#opts=lc",getMode()) && \
             payloadDB_->open(getDataPath()+"/payload.kcf#opts=lc#pccap=256m#psiz=524288#zcomp=zlib",getMode()) && \
-            metaDB_->open(getDataPath()+"/meta.kcf#opts=lc#pccap=256m#psiz=524288#zcomp=zlib",getMode()) && \
+            metaDB_->open(getDataPath()+"/meta.kcf#opts=lc",getMode()) && \
             associationDB_->open(getDataPath()+"/association.kcf#opts=lc#pccap=256m#psiz=524288#zcomp=zlib",getMode()) && \
             miscDB_->open(getDataPath()+"/misc.kch",getMode()))){
       cout << "Error opening databases" << endl;
@@ -190,6 +200,7 @@ namespace superfastmatch{
     postings_ = new Posting(this);
     documentManager_ = new DocumentManager(this);
     associationManager_ = new AssociationManager(this);
+    queueManager_ = new QueueManager(this);
     templates_->SetTemplateRootDirectory(FLAGS_template_path);
   }
 
@@ -223,7 +234,8 @@ namespace superfastmatch{
     delete miscDB_;
     delete postings_;
     delete documentManager_;
-    delete AssociationManager_;
+    delete associationManager_;
+    delete queueManager_;
     delete logger_;
   }
   

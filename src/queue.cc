@@ -1,128 +1,125 @@
 #include "queue.h"
 
 namespace superfastmatch{
-  
-  Queue::Queue(Registry* registry):
+  QueueManager::QueueManager(Registry* registry):
   registry_(registry){}
 
-  uint64_t Queue::add_document(const uint32_t doc_type,const uint32_t doc_id,const string& content,bool associate){
-    return CommandFactory::addDocument(registry_,doc_type,doc_id,content,associate);
+  QueueManager::~QueueManager(){}
+
+  CommandPtr QueueManager::createCommand(const CommandAction action,const uint32_t doc_type,const uint32_t doc_id,const string& payload){
+    uint64_t queue_id=registry_->getMiscDB()->increment("QueueCounter",1);
+    uint64_t payload_id=registry_->getMiscDB()->increment("PayloadCounter",1);
+    return CommandPtr(new Command(registry_,action,queue_id,payload_id,doc_type,doc_id,payload));
   }
 
-  uint64_t Queue::delete_document(const uint32_t& doc_type,const uint32_t& doc_id){
-    return CommandFactory::dropDocument(registry_,doc_type,doc_id);
+  CommandPtr QueueManager::insertCommand(const CommandAction action,CommandPtr source){
+    uint64_t payload_id=registry_->getMiscDB()->increment("PayloadCounter",1);
+    return CommandPtr(new Command(registry_,action,source->getQueueId(),payload_id,source->getDocType(),source->getDocId(),""));
   }
-  
-  uint64_t Queue::addAssociations(const uint32_t& doc_type){
-    return CommandFactory::addAssociations(registry_,doc_type);
+
+  CommandPtr QueueManager::getQueuedCommand(){
+    CommandPtr command = CommandPtr();
+    vector<string> keys;
+    string value;
+    if (registry_->getQueueDB()->match_prefix(toString(Queued),&keys,1)==1){
+      registry_->getQueueDB()->get(keys[0],&value);
+      command=getCommand(keys[0],value);
+    }
+    return command;
   }
-  
-  bool Queue::process(){
-    Logger* logger=registry_->getLogger();
-    stringstream message;
-    bool workDone=false;
-    CommandType batchType=Invalid;
-    deque<Command*> batch;
-    vector<Command*> work;
-    while(CommandFactory::getNextBatch(registry_,batch,batchType)){
-      workDone=true;
-      switch (batchType){
-        case AddDocument:
-          while(!batch.empty()){
-            DocumentPtr doc = batch.front()->createDocument();
-            //Check if document exists and insert drop if it does
-            if (doc){
-              message << "Saved: " << *doc;
-              work.push_back(batch.front());
-              batch.pop_front();  
-            }else{
-              message << "Inserting drop for: (" << batch.front()->getDocType() << "," << batch.front()->getDocId() << ")";
-              CommandFactory::insertDropDocument(registry_,batch.front());
-              break;
-            }
-            logger->log(Logger::DEBUG,&message);
-          }
-          registry_->getPostings()->addDocuments(work);
-          for(vector<Command*>::iterator it=work.begin(),ite=work.end();it!=ite;++it){
-            (*it)->setFinished();
-          }
-          break;  
-        case DropDocument:
-          message << "Dropping Document(s)";
-          logger->log(Logger::DEBUG,&message);
-          while(!batch.empty()){
-            work.push_back(batch.front());
-            batch.pop_front();  
-          }
-          registry_->getPostings()->deleteDocuments(work);
-          for (vector<Command*>::iterator it=work.begin(),ite=work.end();it!=ite;++it){
-            DocumentPtr doc = (*it)->getDocument();
-            if (registry_->getDocumentManager()->removePermanentDocument(doc)){
-              (*it)->setFailed();
-            }else{
-              (*it)->setFinished();
-            }
-          }
-          break;
-        case AddAssociation:
-          message << "Adding Association(s)";
-          logger->log(Logger::DEBUG,&message);
-          while(!batch.empty()){;
-            work.push_back(batch.front());
-            batch.pop_front();
-          }
-          registry_->getPostings()->addAssociations(work);
-          for(vector<Command*>::iterator it=work.begin(),ite=work.end();it!=ite;++it){
-            (*it)->setFinished();
-          }
-          break;
-        case AddAssociations:{
-            DocumentCursor* cursor = new DocumentCursor(registry_);
-            DocumentPtr doc;
-            while(doc=cursor->getNext()){
-              CommandFactory::insertAddAssociation(registry_,doc->doctype(),doc->docid(),batch.front());
-            }
-            delete cursor;
-            batch.front()->setFinished();
-          }
-          break;
-        case DropAssociation:
-          message << "Dropping Association(s)";
-          logger->log(Logger::DEBUG,&message);
-          while(!batch.empty()){
-            work.push_back(batch.front());
-            batch.pop_front();
-          }
-          //Do Drop Association
-          for(vector<Command*>::iterator it=work.begin(),ite=work.end();it!=ite;++it){
-            (*it)->setFinished();
-          }
-          break;
-        case Invalid:
-          throw("Bad batch type");
-          break;
+
+  CommandPtr QueueManager::getCommand(const string& key,const string& value){
+    return CommandPtr(new Command(registry_,key,value));
+  }
+
+  size_t QueueManager::processQueue(){
+    size_t count=0;
+    CommandAction previousAction=NullAction;
+    CommandPtr command = getQueuedCommand();
+    while (command){
+      if (not command->execute()){
+        assert(command->changeStatus(Queued));
+      }else{
+        count++;
+        assert(command->changeStatus(Finished));
       }
-      FreeClear(batch);
-      FreeClear(work);
+      if((previousAction!=NullAction)&&(previousAction!=command->getAction())){
+        registry_->getPostings()->wait();
+      }
+      // debug();
+      previousAction=command->getAction();
+      command = getQueuedCommand();
     }
-    return workDone;
+    registry_->getPostings()->wait();
+    return count;
   }
-  
-  bool Queue::purge(){
-    return true;
-  }
-  
-  void Queue::fill_list_dictionary(TemplateDictionary* dict){
-    vector<Command*> commands;
-    CommandFactory::getAllCommands(registry_,commands);
-    for (vector<Command*>::iterator it=commands.begin(),ite=commands.end();it!=ite;++it){
-      TemplateDictionary* command_dict=dict->AddSectionDictionary("COMMAND");
-      (*it)->fill_list_dictionary(command_dict);
+
+  void QueueManager::fillDictionary(TemplateDictionary* dict,const uint64_t cursor){
+    TemplateDictionary* pager_dict=dict->AddIncludeDictionary("PAGING");
+    pager_dict->SetFilename(PAGING);
+    kc::PolyDB::Cursor* queue_cursor=registry_->getQueueDB()->cursor();
+    size_t count;
+    string start;
+    vector<string> keys;
+    string key;
+    string value;
+    CommandPtr command;
+    if(queue_cursor->jump() && queue_cursor->get(&key,&value)){
+      command = getCommand(key,value);
+      pager_dict->SetValueAndShowSection("PAGE",toString(command->getQueueId()),"FIRST");
     }
-    FreeClear(commands);
+    if(queue_cursor->jump_back()){
+      count=registry_->getPageSize()-1;
+      while(count--){ 
+        queue_cursor->step_back();
+      }
+      if (queue_cursor->get(&key,&value)){
+        command = getCommand(key,value);
+        pager_dict->SetValueAndShowSection("PAGE",toString(command->getQueueId()),"LAST");
+        start=key; 
+      }
+    }
+    if (cursor && (registry_->getQueueDB()->match_prefix(kc::strprintf("%u:%020lu",Queued,cursor),&keys,1)==1 ||\
+                   registry_->getQueueDB()->match_prefix(kc::strprintf("%u:%020lu",Active,cursor),&keys,1)==1 ||\
+                   registry_->getQueueDB()->match_prefix(kc::strprintf("%u:%020lu",Failed,cursor),&keys,1)==1 ||\
+                   registry_->getQueueDB()->match_prefix(kc::strprintf("%u:%020lu",Finished,cursor),&keys,1)==1 ||\
+                   registry_->getQueueDB()->match_prefix(kc::strprintf("%u",Active),&keys,1)==1 ||\
+                   registry_->getQueueDB()->match_prefix(kc::strprintf("%u",Queued),&keys,1)==1))
+    {   
+      start=keys[0];
+    }
+    queue_cursor->jump(start);
+    count=registry_->getPageSize();
+    while(count--){
+      queue_cursor->step_back();
+    }
+    if(queue_cursor->get(&key,&value)){
+      command = getCommand(key,value);
+      pager_dict->SetValueAndShowSection("PAGE",toString(command->getQueueId()),"PREVIOUS");
+    }
+    queue_cursor->jump(start);
+    count=registry_->getPageSize();
+    while(count>0 && queue_cursor->get(&key,&value,true)){
+      command = getCommand(key,value);
+      command->fillDictionary(dict);
+      count--;
+    }
+    if(queue_cursor->get(&key,&value)){
+      command = getCommand(key,value);
+      pager_dict->SetValueAndShowSection("PAGE",toString(command->getQueueId()),"NEXT");
+    }
+    delete queue_cursor;
   }
-  
-  void Queue::fill_item_dictionary(TemplateDictionary* dict,const uint64_t queue_id){
-    
+
+  void QueueManager::debug(){
+    string key;
+    string value;
+    kc::PolyDB::Cursor* cursor=registry_->getQueueDB()->cursor();
+    cursor->jump();
+    while(cursor->get(&key,&value,true)){
+      cout << getCommand(key,value)->getKey() << endl;
+    }
+    cout << "--------------------------------------------------" <<endl;
+    delete cursor;
   }
 }

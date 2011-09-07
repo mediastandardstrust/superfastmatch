@@ -107,13 +107,13 @@ tests/document-unittest.o : src/document.cc src/association.cc src/posting.cc sr
 tests/association-unittest.o : src/document.cc src/association.cc src/posting.cc src/logger.cc src/postline.cc tests/association-unittest.cc gmock-gtest.a
 	$(CXX) $(INCLUDES) -lpthread -lkyotocabinet -lkyototycoon -lctemplate $(CXXFLAGS) $^ -o $*
 
-tests/posting-unittest.o : src/document.cc src/posting.cc src/logger.cc src/association.cc src/postline.cc src/command.cc tests/posting-unittest.cc gmock-gtest.a
+tests/posting-unittest.o : src/document.cc src/posting.cc src/logger.cc src/association.cc src/postline.cc src/command.cc src/queue.cc tests/posting-unittest.cc gmock-gtest.a
 	$(CXX) $(INCLUDES) -lpthread -lkyotocabinet -lkyototycoon -lctemplate $(CXXFLAGS) $^ -o $*
 
-tests/command-unittest.o : src/document.cc src/association.cc src/posting.cc src/postline.cc src/logger.cc tests/command-unittest.cc gmock-gtest.a
+tests/command-unittest.o : src/command.cc src/queue.cc src/document.cc src/association.cc src/posting.cc src/postline.cc src/logger.cc tests/command-unittest.cc gmock-gtest.a
 	$(CXX) $(INCLUDES) -lpthread -lkyotocabinet -lkyototycoon -lctemplate $(CXXFLAGS) $^ -o $*
 
-tests/benchmark.o : src/document.cc src/posting.cc src/logger.cc src/association.cc src/postline.cc src/command.cc tests/benchmark.cc gmock-gtest.a
+tests/benchmark.o : src/document.cc src/posting.cc src/logger.cc src/association.cc src/postline.cc src/command.cc src/queue.cc tests/benchmark.cc gmock-gtest.a
 	$(CXX) $(INCLUDES) -lpthread -lkyotocabinet -lkyototycoon -lctemplate $(CXXFLAGS) $^ -o $*
 
 #================================================================

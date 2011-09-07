@@ -11,8 +11,8 @@
 #include <logger.h>
 #include <posting.h>
 #include <queue.h>
+#include <command.h>
 #include <document.h>
-#include <queue.h>
 #include <templates.h>
 
 using namespace std;

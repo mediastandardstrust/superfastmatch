@@ -1,6 +1,7 @@
 {{>HEADER}}
 	<h1>Queue</h1>
 	<table>
+		<caption>{{>PAGING}}</caption>
 		<thead>
 			<th>Status</th>
 			<th>ID</th>

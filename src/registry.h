@@ -17,6 +17,7 @@ namespace superfastmatch{
   class Posting;
   class DocumentManager;
   class AssociationManager;
+  class QueueManager;
 
   // Interface class for easy mocking in tests
   class Registry{
@@ -56,6 +57,7 @@ namespace superfastmatch{
     virtual Posting* getPostings()=0;
     virtual DocumentManager* getDocumentManager()=0;
     virtual AssociationManager* getAssociationManager()=0;
+    virtual QueueManager* getQueueManager()=0;
     
     virtual void fill_status_dictionary(TemplateDictionary* dict)=0;
   };
@@ -74,6 +76,7 @@ namespace superfastmatch{
     Posting* postings_;
     DocumentManager* documentManager_;
     AssociationManager* associationManager_;
+    QueueManager* queueManager_;
 
   public:
     FlagsRegistry();
@@ -111,6 +114,7 @@ namespace superfastmatch{
     Posting* getPostings();
     DocumentManager* getDocumentManager();
     AssociationManager* getAssociationManager();
+    QueueManager* getQueueManager();
 
     void fill_status_dictionary(TemplateDictionary* dict);
       

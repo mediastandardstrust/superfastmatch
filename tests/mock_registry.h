@@ -64,6 +64,8 @@ class MockRegistry : public Registry {
       DocumentManager*());
   MOCK_METHOD0(getAssociationManager,
       AssociationManager*());
+  MOCK_METHOD0(getQueueManager,
+      QueueManager*());
   MOCK_METHOD1(fill_status_dictionary,
       void(TemplateDictionary* dict));
 };

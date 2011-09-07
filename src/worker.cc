@@ -82,15 +82,14 @@ namespace superfastmatch{
     // serv->log(Logger::INFO,"Idle");
   }
       
-    void Worker::process_timer(HTTPServer* serv) {
-    Queue queue(registry_);
+  void Worker::process_timer(HTTPServer* serv) {
     if(!registry_->getPostings()->isReady()){
       registry_->getPostings()->init();
     }
-    else if (queue.process()){
+    else if (registry_->getQueueManager()->processQueue()>0){
       serv->log(Logger::INFO,"Finished processing command queue");
     };
-    }
+  }
 
   int32_t Worker::process(HTTPServer* serv, HTTPServer::Session* sess,
                     const string& path, HTTPClient::Method method,
@@ -176,7 +175,6 @@ namespace superfastmatch{
     if (req.first_is_numeric && req.second_is_numeric){
       uint32_t doctype = kc::atoi(req.first_id.data());
       uint32_t docid = kc::atoi(req.second_id.data());
-      Queue queue(registry_);
       switch(req.verb){
         case HTTPClient::MGET:
         case HTTPClient::MHEAD:
@@ -197,23 +195,21 @@ namespace superfastmatch{
           break;          
         case HTTPClient::MPUT:
         case HTTPClient::MPOST:{
-            uint64_t queue_id = queue.add_document(doctype,docid,req.reqbody,req.verb==HTTPClient::MPUT);
-            res.message << "Queued document: (" << doctype << "," << docid << ") for indexing queue id:"<< queue_id;
-            res.dict.SetIntValue("QUEUE_ID",queue_id);
-            res.dict.SetIntValue("DOC_TYPE",doctype);
-            res.dict.SetIntValue("DOC_ID",docid);
-            res.dict.SetValue("ACTION","insertion into index");
+            CommandPtr addCommand = registry_->getQueueManager()->createCommand(AddDocument,doctype,docid,req.reqbody);
+            addCommand->fillDictionary(&res.dict);
+            if (req.verb==HTTPClient::MPUT){
+              CommandPtr associateCommand = registry_->getQueueManager()->createCommand(AddAssociation,doctype,docid,"");
+              associateCommand->fillDictionary(&res.dict);
+            }
+            res.message << "Queued document: (" << doctype << "," << docid << ") for indexing";
             res.template_name=QUEUED_PAGE;
             res.code=202;
           }
           break;
         case HTTPClient::MDELETE:{
-            uint64_t queue_id = queue.delete_document(doctype,docid);
-            res.message << "Queued document: (" << doctype << "," << docid << ") for deleting with queue id:" << queue_id;
-            res.dict.SetIntValue("QUEUE_ID",queue_id);
-            res.dict.SetIntValue("DOC_TYPE",doctype);
-            res.dict.SetIntValue("DOC_ID",docid);
-            res.dict.SetValue("ACTION","deletion from index");
+            CommandPtr deleteCommand = registry_->getQueueManager()->createCommand(DropDocument,doctype,docid,"");
+            deleteCommand->fillDictionary(&res.dict);
+            res.message << "Queued document: (" << doctype << "," << docid << ") for deleting";
             res.code=202;
           }
           break;
@@ -254,10 +250,21 @@ namespace superfastmatch{
   
   void Worker::process_association(const RESTRequest& req, RESTResponse& res){
     res.dict.SetTemplateGlobalValue("TITLE","Association");
-    Queue queue(registry_);
+    uint32_t doctype=0;
+    uint32_t docid=0;
+    if (req.first_is_numeric){
+      doctype = kc::atoi(req.first_id.data());
+    }
+    if(req.second_is_numeric){
+      docid = kc::atoi(req.second_id.data());
+    }
     switch (req.verb){
       case HTTPClient::MPOST:{
-        queue.addAssociations();
+        CommandPtr associateCommand = registry_->getQueueManager()->createCommand(AddAssociations,doctype,docid,"");
+        associateCommand->fillDictionary(&res.dict);
+        res.message << "Queued Association Task";
+        res.template_name=QUEUED_PAGE;
+        res.code=202;
         break;
       }
       default:
@@ -285,11 +292,14 @@ namespace superfastmatch{
   }
   
   void Worker::process_queue(const RESTRequest& req,RESTResponse& res){
-    Queue queue(registry_);
     res.dict.SetTemplateGlobalValue("TITLE","Queue");
     switch (req.verb){
       case HTTPClient::MGET:
-        queue.fill_list_dictionary(&res.dict);
+        if (req.cursor_is_numeric){
+          registry_->getQueueManager()->fillDictionary(&res.dict,kc::atoi(req.cursor.c_str()));
+        }else{
+          registry_->getQueueManager()->fillDictionary(&res.dict);
+        }
         res.template_name=QUEUE_PAGE;
         res.code=200;
         break;
