@@ -10,6 +10,7 @@
 #include <common.h>
 #include <registry.h>
 #include <association.h>
+#include <posting.h>
 
 namespace superfastmatch
 { 
@@ -107,6 +108,7 @@ namespace superfastmatch
     bool removePermanentDocument(DocumentPtr doc);
     DocumentPtr getDocument(const uint32_t doctype, const uint32_t docid,const int32_t state=DEFAULT_STATE);
     DocumentPtr getDocument(const string& key,const int32_t state=DEFAULT_STATE);
+    bool associateDocument(DocumentPtr doc);
     
   private:
     void initDoc(const DocumentPtr doc,const int32_t state);

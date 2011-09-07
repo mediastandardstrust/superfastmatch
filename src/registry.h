@@ -16,7 +16,7 @@ namespace superfastmatch{
   //Forward Declarations
   class Posting;
   class DocumentManager;
-  
+  class AssociationManager;
 
   // Interface class for easy mocking in tests
   class Registry{
@@ -55,6 +55,7 @@ namespace superfastmatch{
     virtual Logger* getLogger()=0;
     virtual Posting* getPostings()=0;
     virtual DocumentManager* getDocumentManager()=0;
+    virtual AssociationManager* getAssociationManager()=0;
     
     virtual void fill_status_dictionary(TemplateDictionary* dict)=0;
   };
@@ -72,6 +73,7 @@ namespace superfastmatch{
     Logger* logger_;
     Posting* postings_;
     DocumentManager* documentManager_;
+    AssociationManager* associationManager_;
 
   public:
     FlagsRegistry();
@@ -108,6 +110,7 @@ namespace superfastmatch{
     Logger* getLogger();
     Posting* getPostings();
     DocumentManager* getDocumentManager();
+    AssociationManager* getAssociationManager();
 
     void fill_status_dictionary(TemplateDictionary* dict);
       

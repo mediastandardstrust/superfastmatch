@@ -21,8 +21,8 @@ protected:
   virtual void SetUp(){
     documentDB_ = new PolyDB();
     metaDB_ = new PolyDB();
-    documentDB_->open();
-    metaDB_->open();
+    documentDB_->open("%");
+    metaDB_->open("%");
     EXPECT_CALL(registry_,getWindowSize())
       .WillRepeatedly(Return(10));
     EXPECT_CALL(registry_,getDocumentDB())

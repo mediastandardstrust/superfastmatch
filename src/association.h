@@ -43,6 +43,7 @@ namespace superfastmatch
 
   class Association
   {
+  friend class AssociationManager;
   private:
     Registry* registry_;
     DocumentPtr from_document_;
@@ -56,6 +57,7 @@ namespace superfastmatch
     ~Association();
     
     bool save();
+    bool remove();
     string& getKey();
     string& getReverseKey();
     size_t getTotalLength();
@@ -69,6 +71,25 @@ namespace superfastmatch
   private:
     bool load();
     void match();
+  };
+  
+  class AssociationManager
+  {
+  private:
+    Registry* registry_;
+    
+  public:
+    explicit AssociationManager(Registry* registry);
+    ~AssociationManager();
+    
+    vector<AssociationPtr> createPermanentAssociations(DocumentPtr doc);
+    vector<AssociationPtr> createTemporaryAssociations(DocumentPtr doc);
+    vector<AssociationPtr> getAssociations(DocumentPtr doc);
+    bool removeAssociations(DocumentPtr doc);
+    
+  private:
+    vector<AssociationPtr> createAssociations(DocumentPtr doc);
+    DISALLOW_COPY_AND_ASSIGN(AssociationManager);
   };
 }//namespace Superfastmatch
 

@@ -153,9 +153,9 @@ namespace superfastmatch
     uint64_t addDocument(DocumentPtr doc);
     uint64_t deleteDocument(DocumentPtr doc);
     uint64_t associateDocument(DocumentPtr doc);
-    bool addDocuments(vector<Command*> commands);
-    bool deleteDocuments(vector<Command*> commands);
-    bool addAssociations(vector<Command*> commands);
+    // bool addDocuments(vector<Command*> commands);
+    // bool deleteDocuments(vector<Command*> commands);
+    // bool addAssociations(vector<Command*> commands);
     bool isReady();
 
     void fill_search_dictionary(DocumentPtr doc,TemplateDictionary* dict);

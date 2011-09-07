@@ -384,7 +384,7 @@ namespace superfastmatch
   //   wait();
   //   return true;
   // }
-  // 
+  
   // bool Posting::addAssociations(vector<Command*> commands){
   //   stringstream message;
   //   Logger* logger=registry_->getLogger();

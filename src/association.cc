@@ -85,6 +85,11 @@ namespace superfastmatch
     return success;
   }
   
+  bool Association::remove(){
+    return (registry_->getAssociationDB()->remove(getKey())&&
+            registry_->getAssociationDB()->remove(getReverseKey()));
+  }
+  
   void Association::match(){
     // TODO Optimise for shorter document
     // if (from_document->getText().length()<to_document->getText().length())
@@ -253,4 +258,66 @@ namespace superfastmatch
   void Association::fill_list_dictionary(TemplateDictionary* dict){
     
   }
+  
+  // Association Manager
+  // -------------------
+  
+  AssociationManager::AssociationManager(Registry* registry):
+  registry_(registry){}
+  
+  AssociationManager::~AssociationManager(){}
+
+  vector<AssociationPtr> AssociationManager::createTemporaryAssociations(DocumentPtr doc){
+    assert((doc->doctype()==0)&&(doc->docid()==0));
+    return createAssociations(doc);
+  }
+  
+  vector<AssociationPtr> AssociationManager::createPermanentAssociations(DocumentPtr doc){
+    assert((doc->doctype()!=0)&&(doc->docid()!=0));
+    vector<AssociationPtr> associations=createAssociations(doc);
+    for (vector<AssociationPtr>::iterator it=associations.begin(),ite=associations.end();it!=ite;++it){
+      assert((*it)->save());
+    }
+    return associations;
+  }
+  
+  vector<AssociationPtr> AssociationManager::createAssociations(DocumentPtr doc){
+    vector<AssociationPtr> associations;
+    stringstream message;
+    message << "Creating Associations for: " << *doc;
+    registry_->getLogger()->log(Logger::DEBUG,&message);
+    search_t results;
+    inverted_search_t pruned_results;
+    registry_->getPostings()->searchIndex(doc,results,pruned_results);
+    size_t num_results=registry_->getNumResults();
+    size_t count=0;
+    for(inverted_search_t::iterator it2=pruned_results.begin(),ite2=pruned_results.end();it2!=ite2 && count<num_results;++it2){
+      DocumentPtr other=registry_->getDocumentManager()->getDocument(it2->second.doc_type,it2->second.doc_id);
+      AssociationPtr association(new Association(registry_,doc,other));
+      associations.push_back(association);
+      count++;
+    }
+    return associations;
+  }
+  
+  bool AssociationManager::removeAssociations(DocumentPtr doc){
+    bool success=true;
+    vector<AssociationPtr> associations=getAssociations(doc);
+    for (vector<AssociationPtr>::iterator it=associations.begin(),ite=associations.end();it!=ite;++it){
+      success&=(*it)->remove();
+    }
+    return success;
+  }
+  
+  vector<AssociationPtr> AssociationManager::getAssociations(DocumentPtr doc){
+    vector<AssociationPtr> associations;
+    vector<string> keys;
+    registry_->getAssociationDB()->match_prefix(doc->getKey().substr(0,8),&keys);
+    for(vector<string>::const_iterator it=keys.begin(),ite=keys.end();it!=ite;++it){
+      DocumentPtr other = registry_->getDocumentManager()->getDocument((*it).substr(8,8));
+      associations.push_back(AssociationPtr(new Association(registry_,doc,other)));
+    }
+    return associations;
+  }
+  
 }

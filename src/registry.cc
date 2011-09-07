@@ -173,7 +173,8 @@ namespace superfastmatch{
   templates_(mutable_default_template_cache()),
   logger_(new Logger()),
   postings_(0),
-  documentManager_(0)
+  documentManager_(0),
+  associationManager_(0),
   {
     if (FLAGS_debug){
       logger_->open("debug.log");
@@ -188,6 +189,7 @@ namespace superfastmatch{
     }
     postings_ = new Posting(this);
     documentManager_ = new DocumentManager(this);
+    associationManager_ = new AssociationManager(this);
     templates_->SetTemplateRootDirectory(FLAGS_template_path);
   }
 
@@ -221,6 +223,7 @@ namespace superfastmatch{
     delete miscDB_;
     delete postings_;
     delete documentManager_;
+    delete AssociationManager_;
     delete logger_;
   }
   
