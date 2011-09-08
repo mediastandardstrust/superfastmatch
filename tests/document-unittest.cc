@@ -115,6 +115,16 @@ TEST_F(DocumentTest,ManagerTest){
   EXPECT_NE(0U,savedDocFromKey->getHashes().size());
 }
 
+TEST_F(DocumentTest,GetDocumentsTest){
+  DocumentPtr doc1=registry_.getDocumentManager()->createPermanentDocument(1,1,"text=This+is+a+test&title=Also+a+test&filename=test.txt");
+  DocumentPtr doc2=registry_.getDocumentManager()->createPermanentDocument(1,2,"text=Another+test&title=Also+a+test&filename=test2.txt");
+  DocumentPtr doc3=registry_.getDocumentManager()->createPermanentDocument(2,1,"text=This+is+a+test&title=Also+a+test&filename=test.txt");
+  DocumentPtr doc4=registry_.getDocumentManager()->createPermanentDocument(2,2,"text=Another+test&title=Also+a+test&filename=test2.txt");
+  EXPECT_EQ(4U,registry_.getDocumentManager()->getDocuments().size());
+  EXPECT_EQ(2U,registry_.getDocumentManager()->getDocuments(1).size());
+  EXPECT_EQ(2U,registry_.getDocumentManager()->getDocuments(2).size());
+}
+
 TEST_F(DocumentDeathTest,RemovalTest){
   DocumentPtr permDoc=registry_.getDocumentManager()->createPermanentDocument(1,1,"text=some+short+text+with_metadata&title=Title");
   EXPECT_EQ(1U,permDoc->doctype());

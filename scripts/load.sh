@@ -40,8 +40,8 @@ function send_doc {
 # 
 # echo "Test batch indexing"
 # curl -X POST -H "Expect:" 127.0.0.1:8080/association/
-
-echo "Test POST-ing documents"
+# 
+# echo "Test POST-ing documents"
 send_doc POST 1 "fixtures/pan11-external/source-documents/" ".txt"
 
 # echo "Test POST-ing documents"

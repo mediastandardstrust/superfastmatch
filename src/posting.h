@@ -146,16 +146,13 @@ namespace superfastmatch
     
     bool init();
     size_t getHashCount();
-    void wait();
+    void wait(size_t queue_length);
     void searchIndex(DocumentPtr doc,search_t& results,inverted_search_t& pruned_results);
-    // Folling three methods return the current queue length for all slots combined   
+    // Following three methods return the current queue length for all slots combined   
     uint64_t alterIndex(DocumentPtr doc,TaskPayload::TaskOperation operation);
     uint64_t addDocument(DocumentPtr doc);
     uint64_t deleteDocument(DocumentPtr doc);
     uint64_t associateDocument(DocumentPtr doc);
-    // bool addDocuments(vector<Command*> commands);
-    // bool deleteDocuments(vector<Command*> commands);
-    // bool addAssociations(vector<Command*> commands);
     bool isReady();
 
     void fill_search_dictionary(DocumentPtr doc,TemplateDictionary* dict);

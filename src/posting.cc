@@ -104,6 +104,8 @@ namespace superfastmatch
     index_lock_.lock_writer();
     hash_t hash;
     hash_t hash_mask=registry_->getHashMask();
+    hash_t white_space=registry_->getWhiteSpaceHash()-offset_;
+    bool white_space_seen=false;
     uint32_t hash_width=registry_->getHashWidth();
     size_t incoming_length;
     size_t outgoing_length;
@@ -114,6 +116,13 @@ namespace superfastmatch
       uint32_t doctype=doc->doctype();
       uint32_t docid=doc->docid();
       if (hash<span_){
+        if (hash==white_space){
+          if (white_space_seen){
+            //Shortcut!
+            continue;
+          }
+          white_space_seen=true;
+        }
         unsigned char* entry=NULL;
         bool noop=false;
         if (!index_.test(hash)){
@@ -291,29 +300,42 @@ namespace superfastmatch
     }
   }
   
-  void Posting::wait(){
-    for (size_t i=0;i<slots_.size();i++){
-      while (slots_[i]->getTaskCount()!=0){
-        kc::Thread::sleep(0.2);
-      }
-    }
-  }
-  
   bool Posting::init(){
     // Load the stored docs
     double start = kc::time();
     DocumentCursor* cursor = new DocumentCursor(registry_);
     DocumentPtr doc;
-    while ((doc=cursor->getNext())){
+    while ((doc=cursor->getNext(DocumentManager::TEXT|DocumentManager::CLEAN_TEXT|DocumentManager::HASHES))){
       addDocument(doc);
     }
     delete cursor;
-    wait();
+    wait(0);
     stringstream message;
     message << "Posting initialisation finished in: " << setiosflags(ios::fixed) << setprecision(4) << kc::time()-start << " secs";
     registry_->getLogger()->log(Logger::DEBUG,&message);
     ready_=true;
     return ready_;
+  }
+  
+  void Posting::wait(size_t queue_length){
+    Logger* logger=registry_->getLogger();
+    stringstream message;
+    while(true){
+      message << "Slots: ";
+      size_t current_length=0;
+      for (size_t i=0;i<slots_.size();i++){
+        size_t slot_queue_length=slots_[i]->getTaskCount();
+        message << i << ":" << slot_queue_length << " ";
+        current_length+=slot_queue_length;
+      }
+      if (current_length>queue_length){
+        message << " Total: " << current_length << " Limit: " << queue_length;
+        logger->log(Logger::DEBUG,&message);
+        kc::Thread::sleep(1);
+      }else{
+        break;
+      }
+    }
   }
   
   size_t Posting::getHashCount(){
@@ -325,17 +347,14 @@ namespace superfastmatch
   }
   
   uint64_t Posting::alterIndex(DocumentPtr doc,TaskPayload::TaskOperation operation){
-    Logger* logger=registry_->getLogger();
     stringstream message;
     uint64_t queue_length=0;
     TaskPayload* task = new TaskPayload(doc,operation,slots_.size());
     for (size_t i=0;i<slots_.size();i++){
       queue_length+=slots_[i]->addTask(task);
     }
-    if (queue_length>slots_.size()*40){
-      kc::Thread::sleep(0.05);
-      message << "Sleeping for 0.05 secs with queue length: " << queue_length;
-      logger->log(Logger::DEBUG,&message);
+    if (queue_length>(slots_.size()*40)){
+      wait(40); 
     }
     return queue_length;
   }
@@ -355,8 +374,8 @@ namespace superfastmatch
     stringstream message;
     message << "Adding: " << *doc;
     registry_->getLogger()->log(Logger::DEBUG,&message);
-    doc_count_++;
     uint64_t queue_length=alterIndex(doc,TaskPayload::AddDocument);
+    doc_count_++;
     return queue_length;
   }
   
@@ -364,53 +383,10 @@ namespace superfastmatch
     stringstream message;
     message << "Deleting: " << *doc;
     registry_->getLogger()->log(Logger::DEBUG,&message);
-    doc_count_--;
     uint64_t queue_length=alterIndex(doc,TaskPayload::DeleteDocument);
+    doc_count_--;
     return queue_length;
   }
-  
-  // bool Posting::addDocuments(vector<Command*> commands){
-  //   for (vector<Command*>::iterator it=commands.begin(),ite=commands.end();it!=ite;++it){
-  //     addDocument((*it)->getDocument());
-  //   }
-  //   wait();
-  //   return true;
-  // }
-  // 
-  // bool Posting::deleteDocuments(vector<Command*> commands){
-  //   for (vector<Command*>::iterator it=commands.begin(),ite=commands.end();it!=ite;++it){
-  //     deleteDocument((*it)->getDocument());
-  //   }
-  //   wait();
-  //   return true;
-  // }
-  
-  // bool Posting::addAssociations(vector<Command*> commands){
-  //   stringstream message;
-  //   Logger* logger=registry_->getLogger();
-  //   DocumentManager* docManager=registry_->getDocumentManager();
-  //   search_t results;
-  //   inverted_search_t pruned_results;
-  //   DocumentPtr doc;
-  //   size_t num_results=registry_->getNumResults();
-  //   size_t count;
-  //   for (vector<Command*>::iterator it=commands.begin(),ite=commands.end();it!=ite;++it){
-  //     count=0;
-  //     results.clear();
-  //     pruned_results.clear();
-  //     doc=(*it)->getDocument();
-  //     message << "Associating: " << *doc;
-  //     logger->log(Logger::DEBUG,&message);
-  //     searchIndex(doc,results,pruned_results);
-  //     for(inverted_search_t::iterator it2=pruned_results.begin(),ite2=pruned_results.end();it2!=ite2 && count<num_results;++it2){
-  //       DocumentPtr other=docManager->getDocument(it2->second.doc_type,it2->second.doc_id);
-  //       Association association(registry_,doc,other);
-  //       association.save();
-  //       count++;
-  //     } 
-  //   }
-  //   return true;
-  // }
   
   bool Posting::isReady(){
     return ready_;

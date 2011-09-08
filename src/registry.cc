@@ -17,13 +17,13 @@ namespace superfastmatch{
   DEFINE_int32(thread_count,8,"Number of threads for serving requests");
   static const bool thread_count__dummy = google::RegisterFlagValidator(&FLAGS_thread_count, &ValidateThreads);
 
-  DEFINE_int32(slot_count,8,"Number of slots to divide the index into (one thread per slot)");
+  DEFINE_int32(slot_count,4,"Number of slots to divide the index into (one thread per slot)");
   static const bool slot_count_dummy = google::RegisterFlagValidator(&FLAGS_slot_count, &ValidateThreads);
 
-  DEFINE_int32(hash_width,28,"Number of bits to use to hash windows of text");
+  DEFINE_int32(hash_width,26,"Number of bits to use to hash windows of text");
   static const bool hash_width_dummy = google::RegisterFlagValidator(&FLAGS_hash_width, &ValidateHashWidth);
 
-  DEFINE_int32(window_size,15,"Number of characters to use as a window of text for hashing");
+  DEFINE_int32(window_size,20,"Number of characters to use as a window of text for hashing");
   static const bool window_size_dummy = google::RegisterFlagValidator(&FLAGS_window_size, &ValidateWindowSize);
   
   DEFINE_double(white_space_threshold,0.5,"Percentage of non alphanumeric characters in a window above which window is considered whitespace");

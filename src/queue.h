@@ -16,7 +16,7 @@ namespace superfastmatch
   public:
     QueueManager(Registry* registry);
     ~QueueManager();
-    CommandPtr insertCommand(const CommandAction action,CommandPtr source);
+    CommandPtr insertCommand(const CommandAction action,const uint64_t queue_id,const uint32_t doc_type,const uint32_t doc_id,const string& payload);
     CommandPtr createCommand(const CommandAction action,const uint32_t doc_type,const uint32_t doc_id,const string& payload);
     CommandPtr getQueuedCommand();
     size_t processQueue();

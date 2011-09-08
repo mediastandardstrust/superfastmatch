@@ -18,26 +18,6 @@ namespace superfastmatch
   typedef std::bitset<(1<<24)> hashes_bloom;
   typedef std::map<std::string,std::string> metadata_map;
   
-  class DocumentCursor
-  {
-  private:
-    Registry* registry_;
-    kc::PolyDB::Cursor* cursor_;
-    
-  public:
-    DocumentCursor(Registry* registry);
-    ~DocumentCursor();
-    
-    bool jumpFirst();
-    bool jumpLast();
-    bool jump(string& key);
-    DocumentPtr getNext();
-    DocumentPtr getPrevious();
-    uint32_t getCount();
-    
-    void fill_list_dictionary(TemplateDictionary* dict,uint32_t doctype,uint32_t docid);
-  };
-  
   class DocumentManager; // Forward Declaration
   
   class Document : public std::tr1::enable_shared_from_this<Document>
@@ -90,6 +70,7 @@ namespace superfastmatch
   {
   public:
     enum DocumentState{
+      NONE        = 0,
       META        = 1 << 0,
       TEXT        = 1 << 1,
       CLEAN_TEXT  = 1 << 2,   // CLEAN_TEXT depends on TEXT 
@@ -108,12 +89,33 @@ namespace superfastmatch
     bool removePermanentDocument(DocumentPtr doc);
     DocumentPtr getDocument(const uint32_t doctype, const uint32_t docid,const int32_t state=DEFAULT_STATE);
     DocumentPtr getDocument(const string& key,const int32_t state=DEFAULT_STATE);
+    vector<DocumentPtr> getDocuments(const uint32_t doctype=0,const int32_t state=DEFAULT_STATE);
     bool associateDocument(DocumentPtr doc);
     
   private:
     void initDoc(const DocumentPtr doc,const int32_t state);
     DocumentPtr createDocument(const uint32_t doctype, const uint32_t docid,const string& content,const int32_t state,const bool commit);
     DISALLOW_COPY_AND_ASSIGN(DocumentManager);
+  };
+  
+  class DocumentCursor
+  {
+  private:
+    Registry* registry_;
+    kc::PolyDB::Cursor* cursor_;
+    
+  public:
+    DocumentCursor(Registry* registry);
+    ~DocumentCursor();
+    
+    bool jumpFirst();
+    bool jumpLast();
+    bool jump(string& key);
+    DocumentPtr getNext(const int32_t state=DocumentManager::NONE);
+    DocumentPtr getPrevious();
+    uint32_t getCount();
+    
+    void fill_list_dictionary(TemplateDictionary* dict,uint32_t doctype,uint32_t docid);
   };
   
 }//namespace Superfastmatch

@@ -29,10 +29,10 @@ namespace superfastmatch
     return cursor_->jump(key);
   };
 
-  DocumentPtr DocumentCursor::getNext(){
+  DocumentPtr DocumentCursor::getNext(const int32_t state){
     string key;
     if (cursor_->get_key(&key,true)){
-      return registry_->getDocumentManager()->getDocument(key);
+      return registry_->getDocumentManager()->getDocument(key,state);
     };
     return DocumentPtr();
   };
@@ -91,7 +91,7 @@ namespace superfastmatch
     vector<DocumentPtr> docs;
     vector<string> keys;
     set<string,MetaKeyComparator> keys_set;
-    while (((doc=getNext()))&&(count<registry_->getPageSize())){
+    while (((doc=getNext(DocumentManager::META)))&&(count<registry_->getPageSize())){
       if ((doctype!=0) && (doctype!=doc->doctype())){
         break;
       }
@@ -426,6 +426,30 @@ namespace superfastmatch
     DocumentPtr doc(new Document(key,true,registry_));
     initDoc(doc,state);
     return doc;
+  }
+  
+  bool stripMeta(string lhs,string rhs){
+    return lhs.substr(0,8).compare(rhs.substr(0,8))==0;
+  }
+  
+  vector<DocumentPtr> DocumentManager::getDocuments(const uint32_t doctype,const int32_t state){
+    vector<DocumentPtr> documents;
+    vector<string> keys;
+    if (doctype!=0){
+      char key[4];
+      uint32_t dt=kc::hton32(doctype);
+      memcpy(key,&dt,4);
+      string match(key,4);
+      registry_->getMetaDB()->match_prefix(match,&keys);
+    }else{
+      registry_->getMetaDB()->match_prefix("",&keys);
+    }
+    vector<string>::iterator end=std::unique(keys.begin(),keys.end(),stripMeta);
+    keys.resize(end-keys.begin());
+    for(vector<string>::iterator it=keys.begin(),ite=keys.end();it!=ite;++it){
+      documents.push_back(getDocument((*it).substr(0,8),state));
+    }
+    return documents;
   }
   
   DocumentPtr DocumentManager::createDocument(const uint32_t doctype, const uint32_t docid,const string& content,const int32_t state,const bool permanent){

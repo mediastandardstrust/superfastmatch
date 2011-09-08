@@ -12,9 +12,9 @@ namespace superfastmatch{
     return CommandPtr(new Command(registry_,action,queue_id,payload_id,doc_type,doc_id,payload));
   }
 
-  CommandPtr QueueManager::insertCommand(const CommandAction action,CommandPtr source){
+  CommandPtr QueueManager::insertCommand(const CommandAction action,const uint64_t queue_id,const uint32_t doc_type,const uint32_t doc_id,const string& payload){
     uint64_t payload_id=registry_->getMiscDB()->increment("PayloadCounter",1);
-    return CommandPtr(new Command(registry_,action,source->getQueueId(),payload_id,source->getDocType(),source->getDocId(),""));
+    return CommandPtr(new Command(registry_,action,queue_id,payload_id,doc_type,doc_id,payload));
   }
 
   CommandPtr QueueManager::getQueuedCommand(){
@@ -44,13 +44,13 @@ namespace superfastmatch{
         assert(command->changeStatus(Finished));
       }
       if((previousAction!=NullAction)&&(previousAction!=command->getAction())){
-        registry_->getPostings()->wait();
+        registry_->getPostings()->wait(0);
       }
       // debug();
       previousAction=command->getAction();
       command = getQueuedCommand();
     }
-    registry_->getPostings()->wait();
+    registry_->getPostings()->wait(0);
     return count;
   }
 

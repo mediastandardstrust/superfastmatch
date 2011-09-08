@@ -85,7 +85,7 @@ namespace superfastmatch{
       registry_->getPostings()->addDocument(doc);
       return true;
     }
-    registry_->getQueueManager()->insertCommand(DropDocument,shared_from_this());
+    registry_->getQueueManager()->insertCommand(DropDocument,getQueueId(),getDocType(),getDocId(),"");
     return false;
   }
   
@@ -96,10 +96,10 @@ namespace superfastmatch{
   }
 
   bool Command::addAssociations(){
-    // vector<DocumentPtr> documents=registry_->getDocumentManager()->getDocuments(getDocType(),getDocId());
-    // for(vector<DocumentPtr>::iterator it=documents.begin(),ite=documents.end();it!=ite;++it){
-    //   registry_->getQueueManager()->insertCommand(AssociateDocument,(*it)->getQueueId(),(*it)->getDocType(),(*it)->getDocid());
-    // }
+    vector<DocumentPtr> documents=registry_->getDocumentManager()->getDocuments(getDocType(),DocumentManager::META);
+    for(vector<DocumentPtr>::iterator it=documents.begin(),ite=documents.end();it!=ite;++it){
+      registry_->getQueueManager()->insertCommand(AddAssociation,getQueueId(),(*it)->doctype(),(*it)->docid(),"");
+    }
     return true;
   }
   

@@ -79,7 +79,7 @@ TEST_F(PostingTest,SearchTest){
   DocumentPtr doc2=registry_.getDocumentManager()->createPermanentDocument(1,2,"text=Another+test+with+the+same+sentence");
   registry_.getPostings()->addDocument(doc1);
   registry_.getPostings()->addDocument(doc2);
-  registry_.getPostings()->wait();
+  registry_.getPostings()->wait(0);
   DocumentPtr searchDoc=registry_.getDocumentManager()->createTemporaryDocument("text=the+same+sentence");
   EXPECT_EQ(0U,searchDoc->docid());
   EXPECT_EQ(0U,searchDoc->doctype());

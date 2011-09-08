@@ -145,7 +145,7 @@ TEST_F(AssociationDeathTest, ManagerPermanentTest){
   DocumentPtr doc2 = registry_.getDocumentManager()->createPermanentDocument(1,2,"text=Always+Look+On+The+Bright+Side+Of+Life+and+this+is+a+long+sentence&title=Doc2");
   registry_.getPostings()->addDocument(doc1);
   registry_.getPostings()->addDocument(doc2);
-  registry_.getPostings()->wait();
+  registry_.getPostings()->wait(0);
   EXPECT_NE(0U,registry_.getPostings()->getHashCount());
   vector<AssociationPtr> associations = registry_.getAssociationManager()->createPermanentAssociations(doc1);
   EXPECT_EQ(1U,associations.size());
@@ -163,7 +163,7 @@ TEST_F(AssociationDeathTest, ManagerTemporaryTest){
   ::testing::FLAGS_gtest_death_test_style = "threadsafe";
   DocumentPtr doc1 = registry_.getDocumentManager()->createPermanentDocument(1,1,"text=This+is+a+long+sentence+where+the+phrase+Always+Look+On+The+Bright+Side+Of+Life&title=Doc1");
   registry_.getPostings()->addDocument(doc1);
-  registry_.getPostings()->wait();
+  registry_.getPostings()->wait(0);
   EXPECT_NE(0U,registry_.getPostings()->getHashCount());
   DocumentPtr doc2 = registry_.getDocumentManager()->createTemporaryDocument("text=Always+Look+On+The+Bright+Side+Of+Life+and+this+is+a+long+sentence&title=Doc2");
   vector<AssociationPtr> associations = registry_.getAssociationManager()->createTemporaryAssociations(doc2);
