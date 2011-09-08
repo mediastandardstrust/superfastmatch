@@ -101,6 +101,10 @@ to load some example documents and associate them with each other. You can view 
 
     http://127.0.0.1:8080/document/
 
+Feedback
+--------
+
+All feedback welcome. Either create an issue [here](https://github.com/mediastandardstrust/superfastmatch/issues) or ask a question on the [mailing list](http://groups.google.com/group/superfastmatch).
 
 
 
