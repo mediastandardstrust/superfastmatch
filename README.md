@@ -43,6 +43,19 @@ Which is a dependency for perftools. And you might also need a:
 
 after the script has finished.
 
+On Fedora/Amazon AMI this will to allow bootstrap.sh to complete:
+
+    sudo yum update
+    sudo yum install git
+    sudo yum install svn
+    sudo yum install gcc
+    sudo yum install gcc-c++
+    sudo yum install zlib-devel
+    wget http://download.savannah.gnu.org/releases/libunwind/libunwind-0.99.tar.gz
+    tar xzf libunwind-0.99.tar.gz
+    cd libunwind-0.99
+    ./configure && make && sudo make install
+
 Test
 ----
 
@@ -50,7 +63,7 @@ After the libraries are installed, you can run:
 
     make check
 
-to run the currently lonely unit test for the index code.
+to run the unit tests for the code.
 
 Build
 -----
@@ -66,4 +79,28 @@ Visit http://127.0.0.1:8080 to test the interface.
 Data
 ----
 
-Of course you need something to load. Have a look at fixtures.sh and load.sh for some inspiration!
+For a quick introduction to what can be found with superfastmatch try this:
+
+If you have a machine with less than 8GB of memory and less than 4 cores run:
+
+    ./superfastmatch -debug -hash_width 24 -reset -slot_count 2 -thread_count 2 -window_size 30
+
+otherwise this will be much faster:
+
+    ./superfastmatch -debug -reset -window_size 30
+
+in another terminal window run:
+
+    tail -f debug.log
+    
+to see what is happening. And then finally, in another terminal window, run:
+
+    ./scripts/gutenberg.sh
+    
+to load some example documents and associate them with each other. You can view the results in the browser at:
+
+    http://127.0.0.1:8080/document/
+
+
+
+

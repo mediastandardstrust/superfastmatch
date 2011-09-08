@@ -260,14 +260,20 @@ namespace superfastmatch{
     }
     switch (req.verb){
       case HTTPClient::MPOST:{
+<<<<<<< HEAD
         CommandPtr associateCommand = registry_->getQueueManager()->createCommand(AddAssociations,doctype,docid,"");
         associateCommand->fillDictionary(&res.dict);
         res.message << "Queued Association Task";
         res.template_name=QUEUED_PAGE;
         res.code=202;
+=======
+        queue.addAssociations();
+        res.code=200;
+>>>>>>> 851ba63f74a78c65495d639dcc58f578c9c41770
         break;
       }
       default:
+        res.code=500;
         break;
     }
   }
