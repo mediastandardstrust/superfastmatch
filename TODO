@@ -3,7 +3,6 @@ TODO
 
 * Write test for massive search documents
 * Make association task work for specified doctypes
-* Separate queue payload out to speed up queue page and refactor Command to be polymorphic
 * Allow ordering of documents by metadata
 * Make association task multithreaded
 * Better ordering of search results and fragments within an association
@@ -16,6 +15,7 @@ TODO
 DONE
 ----
 
+* ~~Separate queue payload out to speed up queue page and refactor Command to be polymorphic~~
 * ~~Implement search page~~
 * ~~Implement association task~~
 * ~~Create a DocumentSharedPtr and AssociationSharedPtr and pass them around instead~~
