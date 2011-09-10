@@ -331,7 +331,7 @@ namespace superfastmatch
       if (current_length>queue_length){
         message << " Total: " << current_length << " Limit: " << queue_length;
         logger->log(Logger::DEBUG,&message);
-        kc::Thread::sleep(1);
+        kc::Thread::sleep(0.05);
       }else{
         break;
       }

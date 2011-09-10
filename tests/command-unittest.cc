@@ -190,7 +190,7 @@ TEST_F(CommandTest,DocumentTest){
   registry_.getPostings()->wait(0);
   EXPECT_EQ(11U,registry_.getPostings()->getHashCount());
   EXPECT_EQ(1U,registry_.getDocumentDB()->count());
-  EXPECT_EQ(1U,registry_.getMetaDB()->count());
+  EXPECT_EQ(3U,registry_.getMetaDB()->count());
   CommandPtr dropDoc = registry_.getQueueManager()->createCommand(DropDocument,1,1,"");
   EXPECT_TRUE(dropDoc->execute());
   registry_.getPostings()->wait(0);

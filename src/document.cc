@@ -2,137 +2,6 @@
 
 namespace superfastmatch
 {
-  
-  // -----------------------
-  // DocumentCursor members
-  // -----------------------
-  
-  DocumentCursor::DocumentCursor(Registry* registry):
-  registry_(registry){
-    cursor_=registry->getDocumentDB()->cursor();
-    cursor_->jump();
-  };
-
-  DocumentCursor::~DocumentCursor(){
-    delete cursor_;
-  }
-
-  bool DocumentCursor::jumpFirst(){
-    return cursor_->jump();
-  }
-
-  bool DocumentCursor::jumpLast(){
-    return cursor_->jump_back();
-  };
-
-  bool DocumentCursor::jump(string& key){
-    return cursor_->jump(key);
-  };
-
-  DocumentPtr DocumentCursor::getNext(const int32_t state){
-    string key;
-    if (cursor_->get_key(&key,true)){
-      return registry_->getDocumentManager()->getDocument(key,state);
-    };
-    return DocumentPtr();
-  };
-
-  DocumentPtr DocumentCursor::getPrevious(){
-    return DocumentPtr();
-  };
-
-  uint32_t DocumentCursor::getCount(){
-    return registry_->getDocumentDB()->count();
-  };
-
-  struct MetaKeyComparator {
-    bool operator() (const string& lhs, const string& rhs) const{
-      if (lhs==rhs)
-        return false;
-      if ((lhs=="title"))
-        return true;
-      if ((lhs=="characters") && (rhs=="title"))
-        return false;
-      if (lhs=="characters")
-        return true;
-      return lhs<rhs;
-    }
-  };
-
-  void DocumentCursor::fill_list_dictionary(TemplateDictionary* dict,uint32_t doctype,uint32_t docid){
-    if (getCount()==0){
-      return;
-    }
-    TemplateDictionary* page_dict=dict->AddIncludeDictionary("PAGING");
-    page_dict->SetFilename(PAGING);
-    uint32_t count=0;
-    DocumentPtr doc;
-    char* key=new char[8];
-    size_t key_length;
-    uint32_t di;
-    if (doctype!=0){
-      uint32_t dt=kc::hton32(doctype);
-      memcpy(key,&dt,4);
-      cursor_->jump(key,4);
-    }
-    delete[] key;
-    key=cursor_->get_key(&key_length,false);
-    if (key!=NULL){
-      memcpy(&di,key+4,4);
-      di=kc::ntoh32(di);
-      page_dict->SetValueAndShowSection("PAGE",toString(di),"FIRST");
-    }
-    if (docid!=0){
-      di=kc::hton32(docid);
-      memcpy(key+4,&di,4);
-      cursor_->jump(key,8);
-    }
-    delete[] key;
-    vector<DocumentPtr> docs;
-    vector<string> keys;
-    set<string,MetaKeyComparator> keys_set;
-    while (((doc=getNext(DocumentManager::META)))&&(count<registry_->getPageSize())){
-      if ((doctype!=0) && (doctype!=doc->doctype())){
-        break;
-      }
-      docs.push_back(doc);
-      if (doc->getMetaKeys(keys)){
-        for (vector<string>::iterator it=keys.begin();it!=keys.end();it++){
-          keys_set.insert(*it);
-        } 
-      }
-      count++;
-    }
-    for (set<string>::const_iterator it=keys_set.begin(),ite=keys_set.end();it!=ite;++it){
-      TemplateDictionary* keys_dict=dict->AddSectionDictionary("KEYS");
-      keys_dict->SetValue("KEY",*it);
-    }
-    for (vector<DocumentPtr>::iterator it=docs.begin(),ite=docs.end();it!=ite;++it){
-      TemplateDictionary* doc_dict = dict->AddSectionDictionary("DOCUMENT");
-      doc_dict->SetIntValue("DOC_TYPE",(*it)->doctype());
-      doc_dict->SetIntValue("DOC_ID",(*it)->docid()); 
-      for (set<string>::const_iterator it2=keys_set.begin(),ite2=keys_set.end();it2!=ite2;++it2){
-        TemplateDictionary* values_dict=doc_dict->AddSectionDictionary("VALUES");
-        values_dict->SetValue("VALUE",(*it)->getMeta(&(*it2->c_str())));
-      }
-    }
-  
-    if (doc!=NULL){
-      key=cursor_->get_key(&key_length,false);
-      memcpy(&di,key+4,4);
-      di=kc::ntoh32(di);
-      page_dict->SetValueAndShowSection("PAGE",toString(di),"NEXT");
-      delete[] key;
-    }
-    if ((doctype==0)&&(cursor_->jump_back())){
-      key=cursor_->get_key(&key_length,false);
-      memcpy(&di,key+4,4);
-      di=kc::ntoh32(di);
-      page_dict->SetValueAndShowSection("PAGE",toString(di),"LAST");
-      delete[] key;
-    }
-  }
-
   // -----------------------
   // Document members
   // -----------------------
@@ -190,17 +59,52 @@ namespace superfastmatch
     }
   }
   
+  string Document::generateMetaKey(const DocumentOrder order,const string& key,const string& value){
+    string meta_key;
+    string padded_value=padIfNumber(value);
+    switch(order){
+      case DEFAULT:
+        meta_key=toString(order)+getKey()+key;
+        break;
+      case FORWARD:
+        meta_key=toString(order)+key+padded_value+getKey();
+        break;
+      case REVERSE:
+        string reverse_value=padded_value;
+        for (size_t i=0;i<reverse_value.size();i++){
+          reverse_value[i]=~reverse_value[i];
+        }
+        meta_key=toString(order)+key+reverse_value+getKey();
+        break;
+    }
+    return meta_key;
+  }
+
+  bool Document::setMeta(const string& key, const string& value){
+    if (metadata_==0){
+      throw runtime_error("Meta not initialised");
+    }
+    (*metadata_)[key]=value;
+    if (permanent_){
+      return registry_->getMetaDB()->set(generateMetaKey(DEFAULT,key,""),value) &&\
+             registry_->getMetaDB()->set(generateMetaKey(FORWARD,key,value),"") &&\
+             registry_->getMetaDB()->set(generateMetaKey(REVERSE,key,value),"");
+    }
+    return true;
+  }
+
+  
   bool Document::initMeta(){
     if (metadata_==0){
       metadata_map* tempMap = new metadata_map();
       vector<string> meta_keys;
       string meta_value;
-      registry_->getMetaDB()->match_prefix(getKey(),&meta_keys);
+      registry_->getMetaDB()->match_prefix(generateMetaKey(DEFAULT,"",""),&meta_keys);
       for (vector<string>::const_iterator it=meta_keys.begin(),ite=meta_keys.end();it!=ite;++it){
         if (not registry_->getMetaDB()->get(*it,&meta_value)){
           return false;
         };
-        (*tempMap)[(*it).substr(8)]=meta_value;
+        (*tempMap)[(*it).substr(9)]=meta_value;
       }      
       metadata_=tempMap;
     }
@@ -270,11 +174,15 @@ namespace superfastmatch
   
   bool Document::remove(){
     bool success=registry_->getDocumentDB()->remove(*key_);
+    vector<string> db_keys;
     vector<string> meta_keys;
-    registry_->getMetaDB()->match_prefix(getKey(),&meta_keys);
-    for (vector<string>::const_iterator it=meta_keys.begin(),ite=meta_keys.end();it!=ite;++it){
-      success = success && registry_->getMetaDB()->remove(*it);
+    assert(getMetaKeys(meta_keys));
+    for (vector<string>::iterator it=meta_keys.begin(),ite=meta_keys.end();it!=ite;++it){
+      db_keys.push_back(generateMetaKey(DEFAULT,*it,getMeta(*it)));
+      db_keys.push_back(generateMetaKey(FORWARD,*it,getMeta(*it)));
+      db_keys.push_back(generateMetaKey(REVERSE,*it,getMeta(*it)));
     }
+    success = success && (registry_->getMetaDB()->remove_bulk(db_keys)!=-1);
     return success;
   }
   
@@ -307,14 +215,6 @@ namespace superfastmatch
       return (*metadata_)[key];
     }
     return *empty_meta_;
-  }
-  
-  bool Document::setMeta(const string& key, const string& value){
-    if (metadata_==0){
-      throw runtime_error("Meta not initialised");
-    }
-    (*metadata_)[key]=value;
-    return permanent_?registry_->getMetaDB()->set(getKey()+key,value):true;
   }
   
   bool Document::getMetaKeys(vector<string>& keys){
@@ -429,7 +329,7 @@ namespace superfastmatch
   }
   
   bool stripMeta(string lhs,string rhs){
-    return lhs.substr(0,8).compare(rhs.substr(0,8))==0;
+    return lhs.substr(1,8).compare(rhs.substr(1,8))==0;
   }
   
   vector<DocumentPtr> DocumentManager::getDocuments(const uint32_t doctype,const int32_t state){
@@ -440,14 +340,14 @@ namespace superfastmatch
       uint32_t dt=kc::hton32(doctype);
       memcpy(key,&dt,4);
       string match(key,4);
-      registry_->getMetaDB()->match_prefix(match,&keys);
+      registry_->getMetaDB()->match_prefix(toString(Document::DEFAULT)+match,&keys);
     }else{
-      registry_->getMetaDB()->match_prefix("",&keys);
+      registry_->getMetaDB()->match_prefix(toString(Document::DEFAULT),&keys);
     }
     vector<string>::iterator end=std::unique(keys.begin(),keys.end(),stripMeta);
     keys.resize(end-keys.begin());
     for(vector<string>::iterator it=keys.begin(),ite=keys.end();it!=ite;++it){
-      documents.push_back(getDocument((*it).substr(0,8),state));
+      documents.push_back(getDocument((*it).substr(1,8),state));
     }
     return documents;
   }
@@ -461,9 +361,9 @@ namespace superfastmatch
     }
     content_map.erase("text");
     initDoc(doc,state|META);
-    assert(doc->setMeta("characters",toString(doc->getText().size()).c_str()));
+    assert(doc->setMeta("characters",toString(doc->getText().size())));
     for(metadata_map::const_iterator it=content_map.begin(),ite=content_map.end();it!=ite;++it){
-      assert(doc->setMeta(it->first.c_str(),it->second.c_str()));
+      assert(doc->setMeta(it->first,it->second));
     }
     return doc;
   }
@@ -497,6 +397,146 @@ namespace superfastmatch
       assert(doc->initHashes());
     if (state&BLOOM)
       assert(doc->initBloom());
+  }
+  
+  // -----------------------
+  // DocumentCursor members
+  // -----------------------
+  
+  DocumentCursor::DocumentCursor(Registry* registry,const string& meta_key,const Document::DocumentOrder order):
+  registry_(registry),
+  order_(order),
+  meta_key_(meta_key),
+  previous_key_("0",9)
+  {
+    assert(meta_key==""||order!=Document::DEFAULT);
+    cursor_=registry->getMetaDB()->cursor();
+    cursor_->jump(toString(order)+meta_key);
+  };
+
+  DocumentCursor::~DocumentCursor(){
+    delete cursor_;
+  }
+
+  bool DocumentCursor::jumpFirst(){
+    return cursor_->jump();
+  }
+
+  bool DocumentCursor::jumpLast(){
+    return cursor_->jump_back();
+  };
+
+  bool DocumentCursor::jump(string& key){
+    return cursor_->jump(key);
+  };
+
+  DocumentPtr DocumentCursor::getNext(const int32_t state){
+    string key;
+    while(cursor_->get_key(&key,true)&&(key.compare(0,1,toString(order_))==0)){
+      if ((order_==Document::DEFAULT)&&(key.substr(1,8)!=previous_key_.substr(1,8))){
+        previous_key_=key;
+        return registry_->getDocumentManager()->getDocument(key.substr(1,8),state);
+      }else if((order_!=Document::DEFAULT)&&(key.compare(1,meta_key_.size(),meta_key_)==0)){
+        return registry_->getDocumentManager()->getDocument(key.substr(key.size()-8),state);
+      }
+    }
+    return DocumentPtr();
+  };
+
+  DocumentPtr DocumentCursor::getPrevious(){
+    return DocumentPtr();
+  };
+
+  uint32_t DocumentCursor::getCount(){
+    return registry_->getDocumentDB()->count();
+  };
+
+  struct MetaKeyComparator {
+    bool operator() (const string& lhs, const string& rhs) const{
+      if (lhs==rhs)
+        return false;
+      if ((lhs=="title"))
+        return true;
+      if ((lhs=="characters") && (rhs=="title"))
+        return false;
+      if (lhs=="characters")
+        return true;
+      return lhs<rhs;
+    }
+  };
+
+  void DocumentCursor::fill_list_dictionary(TemplateDictionary* dict,uint32_t doctype,uint32_t docid){
+    if (getCount()==0){
+      return;
+    }
+    TemplateDictionary* page_dict=dict->AddIncludeDictionary("PAGING");
+    page_dict->SetFilename(PAGING);
+    uint32_t count=0;
+    DocumentPtr doc;
+    char* key=new char[8];
+    size_t key_length;
+    uint32_t di;
+    if (doctype!=0){
+      uint32_t dt=kc::hton32(doctype);
+      memcpy(key,&dt,4);
+      cursor_->jump(key,4);
+    }
+    delete[] key;
+    key=cursor_->get_key(&key_length,false);
+    if (key!=NULL){
+      memcpy(&di,key+4,4);
+      di=kc::ntoh32(di);
+      page_dict->SetValueAndShowSection("PAGE",toString(di),"FIRST");
+    }
+    if (docid!=0){
+      di=kc::hton32(docid);
+      memcpy(key+4,&di,4);
+      cursor_->jump(key,8);
+    }
+    delete[] key;
+    vector<DocumentPtr> docs;
+    vector<string> keys;
+    set<string,MetaKeyComparator> keys_set;
+    while (((doc=getNext(DocumentManager::META)))&&(count<registry_->getPageSize())){
+      if ((doctype!=0) && (doctype!=doc->doctype())){
+        break;
+      }
+      docs.push_back(doc);
+      if (doc->getMetaKeys(keys)){
+        for (vector<string>::iterator it=keys.begin();it!=keys.end();it++){
+          keys_set.insert(*it);
+        } 
+      }
+      count++;
+    }
+    for (set<string>::const_iterator it=keys_set.begin(),ite=keys_set.end();it!=ite;++it){
+      TemplateDictionary* keys_dict=dict->AddSectionDictionary("KEYS");
+      keys_dict->SetValue("KEY",*it);
+    }
+    for (vector<DocumentPtr>::iterator it=docs.begin(),ite=docs.end();it!=ite;++it){
+      TemplateDictionary* doc_dict = dict->AddSectionDictionary("DOCUMENT");
+      doc_dict->SetIntValue("DOC_TYPE",(*it)->doctype());
+      doc_dict->SetIntValue("DOC_ID",(*it)->docid()); 
+      for (set<string>::const_iterator it2=keys_set.begin(),ite2=keys_set.end();it2!=ite2;++it2){
+        TemplateDictionary* values_dict=doc_dict->AddSectionDictionary("VALUES");
+        values_dict->SetValue("VALUE",(*it)->getMeta(&(*it2->c_str())));
+      }
+    }
+  
+    if (doc!=NULL){
+      key=cursor_->get_key(&key_length,false);
+      memcpy(&di,key+4,4);
+      di=kc::ntoh32(di);
+      page_dict->SetValueAndShowSection("PAGE",toString(di),"NEXT");
+      delete[] key;
+    }
+    if ((doctype==0)&&(cursor_->jump_back())){
+      key=cursor_->get_key(&key_length,false);
+      memcpy(&di,key+4,4);
+      di=kc::ntoh32(di);
+      page_dict->SetValueAndShowSection("PAGE",toString(di),"LAST");
+      delete[] key;
+    }
   }
 
 }//namespace superfastmatch

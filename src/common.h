@@ -131,7 +131,7 @@ namespace superfastmatch{
     cntr.clear();
   }
   
-  inline bool isNumeric(string& input){
+  inline bool isNumeric(const string& input){
     float f; 
     istringstream s(input); 
     return(s >> f);
@@ -141,6 +141,21 @@ namespace superfastmatch{
     stringstream s;
     s << number;
     return s.str();
+  }
+  
+  inline string padIfNumber(const string& input){
+    if (isNumeric(input)){
+      stringstream s;
+      s << setw(10) << kc::atoi(input.c_str());
+      return s.str();
+    }
+    return input;
+  }
+  
+  inline string removePadding(const string& input){
+    string output(input);
+    output.erase(output.begin(), std::find_if(output.begin(),output.end(),std::not1(std::ptr_fun<int, int>(std::isspace))));
+    return output;
   }
   
   inline bool notAlphaNumeric(char c){

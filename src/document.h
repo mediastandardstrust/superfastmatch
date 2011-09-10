@@ -35,19 +35,13 @@ namespace superfastmatch
     metadata_map* metadata_;
     hashes_vector* hashes_;
     hashes_bloom* bloom_;
-  
-  private:
-    explicit Document(const uint32_t doctype,const uint32_t docid,const bool permanent,Registry* registry);
-    explicit Document(const string& key,const bool permanent,Registry* registry);
-    bool remove();
-    bool setText(const string& text);
-    bool initMeta();
-    bool initText();
-    bool initCleanText();
-    bool initHashes();
-    bool initBloom();
-  
+
   public:
+    enum DocumentOrder{
+      DEFAULT,
+      FORWARD,
+      REVERSE
+    };
     ~Document();
     hashes_vector& getHashes();
     hashes_bloom& getBloom();
@@ -64,6 +58,18 @@ namespace superfastmatch
     
     friend std::ostream& operator<< (std::ostream& stream, Document& document);
     friend bool operator< (Document& lhs,Document& rhs);
+    
+  private:
+    explicit Document(const uint32_t doctype,const uint32_t docid,const bool permanent,Registry* registry);
+    explicit Document(const string& key,const bool permanent,Registry* registry);
+    string generateMetaKey(const DocumentOrder order,const string& meta,const string& value);
+    bool remove();
+    bool setText(const string& text);
+    bool initMeta();
+    bool initText();
+    bool initCleanText();
+    bool initHashes();
+    bool initBloom();
   };
   
   class DocumentManager
@@ -102,16 +108,19 @@ namespace superfastmatch
   {
   private:
     Registry* registry_;
+    const Document::DocumentOrder order_;
+    const string meta_key_;
+    string previous_key_;
     kc::PolyDB::Cursor* cursor_;
     
   public:
-    DocumentCursor(Registry* registry);
+    DocumentCursor(Registry* registry, const string& meta_key="",const Document::DocumentOrder order=Document::DEFAULT);
     ~DocumentCursor();
     
     bool jumpFirst();
     bool jumpLast();
     bool jump(string& key);
-    DocumentPtr getNext(const int32_t state=DocumentManager::NONE);
+    DocumentPtr getNext(const int32_t state=DocumentManager::META);
     DocumentPtr getPrevious();
     uint32_t getCount();
     
