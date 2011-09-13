@@ -31,5 +31,4 @@ V2
 * Use sparsetable<char[BLOCK]> rather than sparsetable<char*>
 * Full curl test of REST API
 * Implement unicode using ICU
-* Use MurmurHash3
-* Ask Austin Appleby about rolling MurmurHash
+
