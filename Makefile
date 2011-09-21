@@ -15,13 +15,15 @@ MYBINS = superfastmatch
 OBJS = src/superfastmatch.o src/worker.o src/queue.o src/posting.o src/document.o src/logger.o src/registry.o src/command.o src/postline.o src/association.o
 
 # Building binaries
-INCLUDES = -I./src -I./tests -I/usr/local/include/ -Itests/utils/
+INCLUDES = -I./src -I./tests -I/usr/local/include/ -I/usr/local/lib/gcc/ -Itests/utils/
 #LDFLAGS = -Wl,-no_pie
 CXXFLAGS = -Wall -Wextra -funsigned-char -m64 -march=core2 -O3 -g
+# CXXFLAGS = -Wall -Wextra -funsigned-char -msse4.1 -ftree-vectorize -O3 -g
 #CXXFLAGS = -Wall -Wextra -funsigned-char -fno-omit-frame-pointer -fno-builtin-malloc -fno-builtin-calloc -fno-builtin-realloc -fno-builtin-free -m64 -march=core2 -O3 -g
 LIBS = -lkyototycoon -lkyotocabinet -lstdc++ -lz -lpthread -lm -lc -lctemplate -lgflags
 # LIBS = -lkyototycoon -lkyotocabinet -lstdc++ -lz -lpthread -lm -lc -lctemplate -lgflags -ltcmalloc -lprofiler
 CXX = g++ $(INCLUDES)
+# CXX = icc $(INCLUDES)
 
 # Enviroments
 # RUNENV = TCMALLOC_SAMPLE_PARAMETER=524288
@@ -32,7 +34,7 @@ DEBUGENV = gdb
 # Test variables
 #================================================================
 
-TESTS = tests/command-unittest.o tests/postline-unittest.o tests/document-unittest.o tests/association-unittest.o tests/posting-unittest.o tests/benchmark.o 
+TESTS = tests/command-unittest.o tests/postline-unittest.o tests/document-unittest.o tests/association-unittest.o tests/posting-unittest.o tests/benchmark.o tests/hash-unittest.o
 GTEST_DIR = tests/utils
 
 #================================================================
@@ -112,6 +114,9 @@ tests/posting-unittest.o : src/document.cc src/posting.cc src/logger.cc src/asso
 
 tests/command-unittest.o : src/command.cc src/queue.cc src/document.cc src/association.cc src/posting.cc src/postline.cc src/logger.cc tests/command-unittest.cc gmock-gtest.a
 	$(CXX) $(INCLUDES) -lpthread -lkyotocabinet -lkyototycoon -lctemplate $(CXXFLAGS) $^ -o $*
+
+tests/hash-unittest.o : tests/hash-unittest.cc gmock-gtest.a
+	$(CXX) $(INCLUDES) $(CXXFLAGS) $^ -o $*
 
 tests/benchmark.o : src/document.cc src/posting.cc src/logger.cc src/association.cc src/postline.cc src/command.cc src/queue.cc tests/benchmark.cc gmock-gtest.a
 	$(CXX) $(INCLUDES) -lpthread -lkyotocabinet -lkyototycoon -lctemplate $(CXXFLAGS) $^ -o $*

@@ -6,10 +6,16 @@
 *.d
 *.zip
 *.rar
+*.tmproj
+test_detail.xml
+gmon.out
 gmock-gtest.a
 tests/postline-unittest
 external/
 data/
 fixtures/federal
 fixtures/pan*
+fixtures/con*
 superfastmatch
+cachegrind.out*
+
