@@ -7,7 +7,7 @@ namespace superfastmatch
   // -----------------------
 
   Document::Document(const uint32_t doctype,const uint32_t docid, const bool permanent,Registry* registry):
-  doctype_(doctype),docid_(docid),permanent_(permanent),empty_meta_(new string()),registry_(registry),key_(0),text_(0),clean_text_(0),metadata_(),hashes_(0),bloom_(0)
+  doctype_(doctype),docid_(docid),permanent_(permanent),empty_meta_(new string()),registry_(registry),key_(0),text_(0),metadata_(),hashes_(0),bloom_(0)
   {
     char key[8];
     uint32_t dt=kc::hton32(doctype_);
@@ -18,7 +18,7 @@ namespace superfastmatch
   }
   
   Document::Document(const string& key,const bool permanent,Registry* registry):
-  permanent_(permanent),empty_meta_(new string()),registry_(registry),key_(0),text_(0),clean_text_(0),metadata_(0),hashes_(0),bloom_(0)
+  permanent_(permanent),empty_meta_(new string()),registry_(registry),key_(0),text_(0),metadata_(0),hashes_(0),bloom_(0)
   {
     key_= new string(key);
     memcpy(&doctype_,key.data(),4);
@@ -29,10 +29,6 @@ namespace superfastmatch
   
   Document::~Document(){
     // cout << "Deleting " << *this <<endl;;
-    if (clean_text_!=0){
-      delete clean_text_;
-      clean_text_=0;
-    }
     if (metadata_!=0){
       delete metadata_;
       metadata_=0;
@@ -118,49 +114,16 @@ namespace superfastmatch
     }
     return true;
   }
-  
-  bool Document::initCleanText(){
-    if (clean_text_==0){
-      string* tempClean=new string(getText().size(),' ');
-      replace_copy_if(getText().begin(),getText().end(),tempClean->begin(),notAlphaNumeric,' ');
-      transform(tempClean->begin(), tempClean->end(), tempClean->begin(), ::tolower);
-      clean_text_=tempClean;
-    }
-    return true;
-  }
 
   bool Document::initHashes(){
     if (hashes_==0){
       hashes_vector* tempHashes = new hashes_vector();
-      uint32_t length = getCleanText().length()-registry_->getWindowSize()+1;
-      hash_t white_space = registry_->getWhiteSpaceHash(false);
-      uint32_t window_size=registry_->getWindowSize();
-      uint32_t white_space_threshold=registry_->getWhiteSpaceThreshold();
-      tempHashes->resize(length);
-      hash_t hash;
-      size_t i=0;
-      string::const_iterator it=getCleanText().begin(),ite=(it+length);
-      size_t whitespace_count=count(it,it+window_size,' ');
-      for (;it!=ite;++it){
-        if (*(it+window_size)==' '){
-          whitespace_count++;
-        }
-        if (whitespace_count>white_space_threshold){
-          hash=white_space;
-        }else{
-          hash=hashmurmur(&(*it),window_size);
-        }
-        (*tempHashes)[i]=hash;
-        if (*it==' '){
-          whitespace_count--;
-        }
-        i++;
-      }
+      UpperCaseRabinKarp(getText(),registry_->getWindowSize(),registry_->getWhiteSpaceThreshold(),*tempHashes);
       hashes_=tempHashes;
     }
     return true;
   }
-  
+
   bool Document::initBloom(){
     if (bloom_==0){
       hashes_bloom* tempBloom = new hashes_bloom();
@@ -193,11 +156,16 @@ namespace superfastmatch
     return *hashes_;
   }
 
-  string& Document::getCleanText(){
-    if (clean_text_==0){
-      throw runtime_error("Clean Text not initialised");
-    }
-    return *clean_text_;
+  string Document::getCleanText(const uint32_t position,const uint32_t length){
+    string clean_text=getText().substr(position,length);
+    transform(clean_text.begin(),clean_text.end(),clean_text.begin(), ::toupper);
+    replace_if(clean_text.begin(),clean_text.end(),notAlphaNumeric,' ');
+    transform(clean_text.begin(),clean_text.end(),clean_text.begin(), ::tolower);
+    return clean_text;
+  }
+
+  string Document::getCleanText(){
+    return getCleanText(0,getText().size());
   }
   
   hashes_bloom& Document::getBloom(){
@@ -244,11 +212,11 @@ namespace superfastmatch
     return *key_;
   }
   
-  const uint32_t Document::doctype(){
+  uint32_t Document::doctype(){
     return doctype_;
   }
       
-  const uint32_t Document::docid(){
+  uint32_t Document::docid(){
     return docid_;
   } 
     
@@ -391,12 +359,98 @@ namespace superfastmatch
       assert(doc->initMeta());
     if (state&TEXT)
       assert(doc->initText());
-    if (state&CLEAN_TEXT)
-       assert(doc->initCleanText());
     if (state&HASHES)
       assert(doc->initHashes());
     if (state&BLOOM)
       assert(doc->initBloom());
+  }
+  
+  struct MetaKeyComparator {
+    bool operator() (const string& lhs, const string& rhs) const{
+      if (lhs==rhs)
+        return false;
+      if ((lhs=="title"))
+        return true;
+      if ((lhs=="characters") && (rhs=="title"))
+        return false;
+      if (lhs=="characters")
+        return true;
+      return lhs<rhs;
+    }
+  };
+
+  void DocumentManager::fillListDictionary(TemplateDictionary* dict,const uint32_t doctype,const uint32_t docid){
+    // if (getCount()==0){
+    //   return;
+    // }
+    // TemplateDictionary* page_dict=dict->AddIncludeDictionary("PAGING");
+    // page_dict->SetFilename(PAGING);
+    // uint32_t count=0;
+    // DocumentPtr doc;
+    // char* key=new char[8];
+    // size_t key_length;
+    // uint32_t di;
+    // if (doctype!=0){
+    //   uint32_t dt=kc::hton32(doctype);
+    //   memcpy(key,&dt,4);
+    //   cursor_->jump(key,4);
+    // }
+    // delete[] key;
+    // key=cursor_->get_key(&key_length,false);
+    // if (key!=NULL){
+    //   memcpy(&di,key+4,4);
+    //   di=kc::ntoh32(di);
+    //   page_dict->SetValueAndShowSection("PAGE",toString(di),"FIRST");
+    // }
+    // if (docid!=0){
+    //   di=kc::hton32(docid);
+    //   memcpy(key+4,&di,4);
+    //   cursor_->jump(key,8);
+    // }
+    // delete[] key;
+    // vector<DocumentPtr> docs;
+    // vector<string> keys;
+    // set<string,MetaKeyComparator> keys_set;
+    // while (((doc=getNext(DocumentManager::META)))&&(count<registry_->getPageSize())){
+    //   if ((doctype!=0) && (doctype!=doc->doctype())){
+    //     break;
+    //   }
+    //   docs.push_back(doc);
+    //   if (doc->getMetaKeys(keys)){
+    //     for (vector<string>::iterator it=keys.begin();it!=keys.end();it++){
+    //       keys_set.insert(*it);
+    //     } 
+    //   }
+    //   count++;
+    // }
+    // for (set<string>::const_iterator it=keys_set.begin(),ite=keys_set.end();it!=ite;++it){
+    //   TemplateDictionary* keys_dict=dict->AddSectionDictionary("KEYS");
+    //   keys_dict->SetValue("KEY",*it);
+    // }
+    // for (vector<DocumentPtr>::iterator it=docs.begin(),ite=docs.end();it!=ite;++it){
+    //   TemplateDictionary* doc_dict = dict->AddSectionDictionary("DOCUMENT");
+    //   doc_dict->SetIntValue("DOC_TYPE",(*it)->doctype());
+    //   doc_dict->SetIntValue("DOC_ID",(*it)->docid()); 
+    //   for (set<string>::const_iterator it2=keys_set.begin(),ite2=keys_set.end();it2!=ite2;++it2){
+    //     TemplateDictionary* values_dict=doc_dict->AddSectionDictionary("VALUES");
+    //     values_dict->SetValue("VALUE",(*it)->getMeta(&(*it2->c_str())));
+    //   }
+    // }
+    //   
+    // if (doc!=NULL){
+    //   key=cursor_->get_key(&key_length,false);
+    //   memcpy(&di,key+4,4);
+    //   di=kc::ntoh32(di);
+    //   page_dict->SetValueAndShowSection("PAGE",toString(di),"NEXT");
+    //   delete[] key;
+    // }
+    // if ((doctype==0)&&(cursor_->jump_back())){
+    //   key=cursor_->get_key(&key_length,false);
+    //   memcpy(&di,key+4,4);
+    //   di=kc::ntoh32(di);
+    //   page_dict->SetValueAndShowSection("PAGE",toString(di),"LAST");
+    //   delete[] key;
+    // }
   }
   
   // -----------------------
@@ -450,93 +504,4 @@ namespace superfastmatch
   uint32_t DocumentCursor::getCount(){
     return registry_->getDocumentDB()->count();
   };
-
-  struct MetaKeyComparator {
-    bool operator() (const string& lhs, const string& rhs) const{
-      if (lhs==rhs)
-        return false;
-      if ((lhs=="title"))
-        return true;
-      if ((lhs=="characters") && (rhs=="title"))
-        return false;
-      if (lhs=="characters")
-        return true;
-      return lhs<rhs;
-    }
-  };
-
-  void DocumentCursor::fill_list_dictionary(TemplateDictionary* dict,uint32_t doctype,uint32_t docid){
-    if (getCount()==0){
-      return;
-    }
-    TemplateDictionary* page_dict=dict->AddIncludeDictionary("PAGING");
-    page_dict->SetFilename(PAGING);
-    uint32_t count=0;
-    DocumentPtr doc;
-    char* key=new char[8];
-    size_t key_length;
-    uint32_t di;
-    if (doctype!=0){
-      uint32_t dt=kc::hton32(doctype);
-      memcpy(key,&dt,4);
-      cursor_->jump(key,4);
-    }
-    delete[] key;
-    key=cursor_->get_key(&key_length,false);
-    if (key!=NULL){
-      memcpy(&di,key+4,4);
-      di=kc::ntoh32(di);
-      page_dict->SetValueAndShowSection("PAGE",toString(di),"FIRST");
-    }
-    if (docid!=0){
-      di=kc::hton32(docid);
-      memcpy(key+4,&di,4);
-      cursor_->jump(key,8);
-    }
-    delete[] key;
-    vector<DocumentPtr> docs;
-    vector<string> keys;
-    set<string,MetaKeyComparator> keys_set;
-    while (((doc=getNext(DocumentManager::META)))&&(count<registry_->getPageSize())){
-      if ((doctype!=0) && (doctype!=doc->doctype())){
-        break;
-      }
-      docs.push_back(doc);
-      if (doc->getMetaKeys(keys)){
-        for (vector<string>::iterator it=keys.begin();it!=keys.end();it++){
-          keys_set.insert(*it);
-        } 
-      }
-      count++;
-    }
-    for (set<string>::const_iterator it=keys_set.begin(),ite=keys_set.end();it!=ite;++it){
-      TemplateDictionary* keys_dict=dict->AddSectionDictionary("KEYS");
-      keys_dict->SetValue("KEY",*it);
-    }
-    for (vector<DocumentPtr>::iterator it=docs.begin(),ite=docs.end();it!=ite;++it){
-      TemplateDictionary* doc_dict = dict->AddSectionDictionary("DOCUMENT");
-      doc_dict->SetIntValue("DOC_TYPE",(*it)->doctype());
-      doc_dict->SetIntValue("DOC_ID",(*it)->docid()); 
-      for (set<string>::const_iterator it2=keys_set.begin(),ite2=keys_set.end();it2!=ite2;++it2){
-        TemplateDictionary* values_dict=doc_dict->AddSectionDictionary("VALUES");
-        values_dict->SetValue("VALUE",(*it)->getMeta(&(*it2->c_str())));
-      }
-    }
-  
-    if (doc!=NULL){
-      key=cursor_->get_key(&key_length,false);
-      memcpy(&di,key+4,4);
-      di=kc::ntoh32(di);
-      page_dict->SetValueAndShowSection("PAGE",toString(di),"NEXT");
-      delete[] key;
-    }
-    if ((doctype==0)&&(cursor_->jump_back())){
-      key=cursor_->get_key(&key_length,false);
-      memcpy(&di,key+4,4);
-      di=kc::ntoh32(di);
-      page_dict->SetValueAndShowSection("PAGE",toString(di),"LAST");
-      delete[] key;
-    }
-  }
-
 }//namespace superfastmatch

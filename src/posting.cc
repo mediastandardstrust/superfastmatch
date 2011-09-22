@@ -305,7 +305,7 @@ namespace superfastmatch
     double start = kc::time();
     DocumentCursor* cursor = new DocumentCursor(registry_);
     DocumentPtr doc;
-    while ((doc=cursor->getNext(DocumentManager::TEXT|DocumentManager::CLEAN_TEXT|DocumentManager::HASHES))){
+    while ((doc=cursor->getNext(DocumentManager::TEXT|DocumentManager::HASHES))){
       addDocument(doc);
     }
     delete cursor;

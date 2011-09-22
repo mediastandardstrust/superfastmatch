@@ -41,6 +41,111 @@ namespace superfastmatch{
   const uint64_t MAX_HASH=(1L<<32)-1;
   
   //Global utility functions
+  
+  #define IsWhiteSpace(ch)((1ULL<<(ch-47))&0x2FFFFFFC07FE)==0
+  
+  inline bool notAlphaNumeric(char c){
+    return IsWhiteSpace(c);
+    // return std::isalnum(c)==0;
+  }
+  
+  // Taken from http://www.azillionmonkeys.com/qed/asmexample.html
+  inline uint64_t UpperCase(uint64_t upper){
+    uint64_t u1 = 0x8080808080808080ul | upper;
+    uint64_t u2 = u1-0x6161616161616161ul;
+    uint64_t u3 = ~(u1-0x7b7b7b7b7b7b7b7bul);
+    uint64_t u4 = (u2 & u3) & (~upper & 0x8080808080808080ul);
+    return upper-=(u4 >> 2); 
+  }
+  
+  inline uint64_t fmix ( uint64_t h )
+  {
+    h ^= h >> 16;
+    h *= 0x85ebca6b;
+    h ^= h >> 13;
+    h *= 0xc2b2ae35;
+    h ^= h >> 16;
+    return h;
+    // h ^= h >> 33;
+    // h *= 0xff51afd7ed558ccd;
+    // h ^= h >> 33;
+    // h *= 0xc4ceb9fe1a85ec53;
+    // h ^= h >> 33;
+    // return h;
+    return h*= 0xff51afd7ed558ccd;
+  }
+
+  inline uint32_t WhiteSpaceHash(const size_t window_size){
+    const uint64_t base=37;
+    uint64_t whitespace=0;
+    uint64_t highBase=1;
+    for (size_t i=0;i<window_size;i++){
+      highBase=(i==0)?1:highBase*base;
+      whitespace+=32*highBase;
+    }
+    return fmix(whitespace);
+  }
+
+  inline void UpperCaseRabinKarp(const string& text,const size_t window_size,const size_t whitespace_threshold,vector<uint32_t>& hashes){
+    const uint64_t base=37;
+    const size_t limit=text.size()-window_size+1;
+    uint64_t* f=(uint64_t*)text.data();
+    uint64_t* b=(uint64_t*)(text.data()+window_size);
+    hashes.clear();
+    hashes.resize(limit);
+    uint64_t highBase=1;
+    uint64_t hash=0;
+    uint64_t whitespace=0;
+    uint64_t whitespaceHash=0;
+    for (size_t i=0;i<window_size;i++){
+      highBase=(i==0)?1:highBase*base;
+      char c=toupper(text[window_size-i-1]);
+      hash+=c*highBase;
+      whitespaceHash+=32*highBase;
+      whitespace+=IsWhiteSpace(c);
+    }
+    const uint64_t high=highBase;
+    whitespaceHash=fmix(whitespaceHash);
+    hashes[0]=(whitespace<whitespace_threshold)?(fmix(hash)):whitespaceHash;
+    // cout << text.substr(0,window_size) << ":" << text[0] << ":" << int(IsWhiteSpace(text[0])) << ":" << char(text[window_size]) << ":" << int(IsWhiteSpace(text[window_size])) << ":" << hash  << ":" << hashes[0] << ":" << whitespace << endl; 
+    vector<uint32_t>::iterator it=hashes.begin()+1;
+    vector<uint32_t>::iterator ite=hashes.end();
+    size_t split=(limit-1)/8;
+    for (size_t i=split;i>0;i--){
+      uint64_t uf=UpperCase(*f++);
+      uint64_t ub=UpperCase(*b++);
+      for (size_t j=8;j>0;j--){
+        uint32_t front=uf&0xFF;
+        uint32_t back=ub&0xFF;
+        uf>>=8;
+        ub>>=8;
+        whitespace-=IsWhiteSpace(front);
+        whitespace+=IsWhiteSpace(back);
+        uint32_t mask=((whitespace<whitespace_threshold)-1);
+        hash-=front*high;
+        hash*=base;
+        hash+=back;
+        *it=(fmix(hash)&~mask)|(whitespaceHash&mask);
+        // cout << text.substr(it-hashes.begin(),window_size) << ":" << char(front) << ":" << int(IsWhiteSpace(front)) << ":" << char(back) << ":" << int(IsWhiteSpace(back)) << ":" << hash  << ":" << *it << ":" << mask << ":" << whitespace << endl; 
+        assert(it!=ite);
+        ++it;
+      }
+    }
+    for (size_t i=split*8+1;i<limit;i++){
+      char front=toupper(text[i-1]);
+      char back=toupper(text[i+window_size-1]);
+      hash-=front*high;
+      hash*=base;
+      hash+=back;
+      whitespace-=IsWhiteSpace(front);
+      whitespace+=IsWhiteSpace(back);
+      *it=(whitespace<whitespace_threshold)?(fmix(hash)):whitespaceHash;
+      // cout << text.substr(i,window_size) << ":" << char(front) << ":" << int(IsWhiteSpace(front)) << ":" << char(back) << ":" << int(IsWhiteSpace(back)) << ":" << hash  << ":" << *it << ":" << whitespace << "!" << endl; 
+      assert(it!=ite);
+      ++it;
+    }
+  }
+  
   inline hash_t hashmurmur(const void* buf, size_t size) {
     const uint64_t mul = 0xc6a4a7935bd1e995ULL;
     const int32_t rtt = 47;
@@ -156,10 +261,6 @@ namespace superfastmatch{
     string output(input);
     output.erase(output.begin(), std::find_if(output.begin(),output.end(),std::not1(std::ptr_fun<int, int>(std::isspace))));
     return output;
-  }
-  
-  inline bool notAlphaNumeric(char c){
-    return std::isalnum(c)==0;
   }
   
   template <typename T, typename U>

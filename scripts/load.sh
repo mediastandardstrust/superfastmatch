@@ -6,9 +6,9 @@ function send_doc {
 	filemask=$4
 	
 	# Smallest first
-	for file in `ls -ASr $dir | grep $filemask`
+	# for file in `ls -ASr $dir | grep $filemask`
 	# Largest first
-	# for file in `ls -AS $dir | grep $filemask`
+	for file in `ls -AS $dir | grep $filemask`
 	# Unsorted
 	# for file in `ls -A $dir | grep $filemask`
 	do

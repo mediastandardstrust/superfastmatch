@@ -103,8 +103,6 @@ namespace superfastmatch
     uint32_t from_hashes_count = from_hashes.size();
     uint32_t to_hashes_count = to_hashes.size();
     string original_text = from_document_->getText();
-    string from_text = from_document_->getCleanText();
-    string to_text = to_document_->getCleanText();
     uint32_t window_size=registry_->getWindowSize();
     hash_t white_space=registry_->getWhiteSpaceHash(false);
 
@@ -139,8 +137,8 @@ namespace superfastmatch
       if (to_match!=to_matches_end){
         positions_set checked_matches(to_match->second);
         for (positions_set::iterator it=checked_matches.begin();it!=checked_matches.end();++it){
-          if (from_text.compare(i,window_size,to_text,*it,window_size)){
-            logger->log(Logger::DEBUG,kc::strprintf("Bad Match: \"%s\" : \"%s\"",from_text.substr(i,window_size).c_str(),to_text.substr(*it,window_size).c_str()).c_str());
+          if (from_document_->getCleanText(i,window_size)!=to_document_->getCleanText(*it,window_size)){
+            // logger->log(Logger::DEBUG,kc::strprintf("Bad Match: \"%s\" : \"%s\"",from_document_->getCleanText(i,window_size).c_str(),to_document_->getCleanText(*it,window_size).c_str()).c_str());
             checked_matches.erase(it);
           }
         }
@@ -177,7 +175,7 @@ namespace superfastmatch
        
        // Trim leading and following whitespace
        uint32_t length=counter-1+window_size;
-       string text=from_text.substr(first->left,length);
+       string text=from_document_->getCleanText(first->left,length);
        text.erase(text.begin(), std::find_if(text.begin(),text.end(),std::not1(std::ptr_fun<int, int>(std::isspace))));
        uint32_t left=first->left+length-text.size();
        uint32_t right=first_right+length-text.size();
@@ -188,9 +186,9 @@ namespace superfastmatch
        if (length>=window_size){
          Result result(left,right,original_text.substr(left,length),length);
          results_->push_back(result);
-         logger->log(Logger::DEBUG,kc::strprintf("Match: \"%s\"",result.text.c_str()).c_str()); 
+         // logger->log(Logger::DEBUG,kc::strprintf("Match: \"%s\"",result.text.c_str()).c_str()); 
        }else{
-         logger->log(Logger::DEBUG,kc::strprintf("Match too short: \"%s\"",text.c_str()).c_str());
+         // logger->log(Logger::DEBUG,kc::strprintf("Match too short: \"%s\"",text.c_str()).c_str());
        }
     }
     sort(results_->begin(),results_->end(),result_sorter);
@@ -231,7 +229,7 @@ namespace superfastmatch
     TemplateDictionary* left_dict;
     TemplateDictionary* right_dict;
     for (size_t i=0;i<results_->size();i++){
-      text=from_document_->getCleanText().substr(results_->at(i).left,results_->at(i).length);
+      text=from_document_->getCleanText(results_->at(i).left,results_->at(i).length);
       if (text.compare(previous_text)!=0){
         fragment_dict=dict->AddSectionDictionary("FRAGMENT");
         fragment_dict->SetValue("TITLE",to_document_->getMeta("title"));

@@ -11,6 +11,7 @@ TODO
 * Update init.d with correct settings and paths
 * JSON versions of appropriate templates
 * Implement Document caching
+* Make tests build faster
 
 DONE
 ----

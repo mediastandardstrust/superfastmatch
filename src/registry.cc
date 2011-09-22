@@ -50,8 +50,7 @@ namespace superfastmatch{
   };
 
   hash_t FlagsRegistry::getWhiteSpaceHash(bool masked) const{
-    string white_space(getWindowSize(),' ');
-    hash_t hash = kc::hashmurmur(white_space.data(),white_space.size());
+    hash_t hash= WhiteSpaceHash(getWindowSize());
     if (masked)
       return((hash>>getHashWidth())^(hash&getHashMask()));
     return hash;
@@ -189,9 +188,9 @@ namespace superfastmatch{
     if (FLAGS_debug){
       logger_->open("debug.log");
     }
-    if (not(documentDB_->open(getDataPath()+"/document.kcf#opts=lc#pccap=256m#psiz=524288#zcomp=zlib",getMode()) && \
+    if (not(documentDB_->open(getDataPath()+"/document.kcd#bnum=20m#msiz=2g#opts=c#zcomp=zlib",getMode()) && \
             queueDB_->open(getDataPath()+"/queue.kcf#opts=lc",getMode()) && \
-            payloadDB_->open(getDataPath()+"/payload.kcf#opts=lc#pccap=256m#psiz=524288#zcomp=zlib",getMode()) && \
+            payloadDB_->open(getDataPath()+"/payload.kcd#bnum=20m#msiz=128m#opts=c#zcomp=zlib",getMode()) && \
             metaDB_->open(getDataPath()+"/meta.kcf#opts=lc",getMode()) && \
             associationDB_->open(getDataPath()+"/association.kcf#opts=lc#pccap=256m#psiz=524288#zcomp=zlib",getMode()) && \
             miscDB_->open(getDataPath()+"/misc.kch",getMode()))){

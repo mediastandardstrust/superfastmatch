@@ -190,28 +190,37 @@ TEST_F(DocumentTest,InitTest){
   DocumentPtr tempDoc=registry_.getDocumentManager()->createTemporaryDocument("text=Some+short+text+with+metadata&title=Title",NULL);
   EXPECT_STREQ("Some short text with metadata",tempDoc->getText().c_str());
   EXPECT_STREQ("Title",tempDoc->getMeta("title").c_str());
-  ASSERT_THROW(tempDoc->getCleanText(),std::runtime_error);
+  ASSERT_NO_THROW(tempDoc->getCleanText());
   ASSERT_THROW(tempDoc->getHashes(),std::runtime_error);
   ASSERT_THROW(tempDoc->getBloom(),std::runtime_error);
-  tempDoc=registry_.getDocumentManager()->createTemporaryDocument("text=Some+short+text+with+metadata&title=Title",DocumentManager::CLEAN_TEXT);
+  tempDoc=registry_.getDocumentManager()->createTemporaryDocument("text=Some+short+text+with+metadata&title=Title",DocumentManager::TEXT);
   EXPECT_STREQ("Some short text with metadata",tempDoc->getText().c_str());
   EXPECT_STREQ("Title",tempDoc->getMeta("title").c_str());
   EXPECT_STREQ("some short text with metadata",tempDoc->getCleanText().c_str());
   ASSERT_THROW(tempDoc->getHashes(),std::runtime_error);
   ASSERT_THROW(tempDoc->getBloom(),std::runtime_error);
-  tempDoc=registry_.getDocumentManager()->createTemporaryDocument("text=Some+short+text+with+metadata&title=Title",DocumentManager::CLEAN_TEXT|DocumentManager::HASHES);
+  tempDoc=registry_.getDocumentManager()->createTemporaryDocument("text=Some+short+text+with+metadata&title=Title",DocumentManager::TEXT|DocumentManager::HASHES);
   EXPECT_STREQ("Some short text with metadata",tempDoc->getText().c_str());
   EXPECT_STREQ("Title",tempDoc->getMeta("title").c_str());
   EXPECT_STREQ("some short text with metadata",tempDoc->getCleanText().c_str());
   EXPECT_GT(tempDoc->getHashes().size(),0U);
   ASSERT_THROW(tempDoc->getBloom(),std::runtime_error);
-  tempDoc=registry_.getDocumentManager()->createTemporaryDocument("text=Some+short+text+with+metadata&title=Title",DocumentManager::CLEAN_TEXT|DocumentManager::HASHES|DocumentManager::BLOOM);
+  tempDoc=registry_.getDocumentManager()->createTemporaryDocument("text=Some+short+text+with+metadata&title=Title",DocumentManager::TEXT|DocumentManager::HASHES|DocumentManager::BLOOM);
   EXPECT_STREQ("Some short text with metadata",tempDoc->getText().c_str());
   EXPECT_STREQ("Title",tempDoc->getMeta("title").c_str());
   EXPECT_STREQ("some short text with metadata",tempDoc->getCleanText().c_str());
   EXPECT_GT(tempDoc->getHashes().size(),0U);
   EXPECT_GT(tempDoc->getBloom().size(),0U);
   ASSERT_THROW(registry_.getDocumentManager()->createTemporaryDocument("text=Some+short+text+with+metadata&title=Title",DocumentManager::BLOOM),std::runtime_error);
+}
+
+TEST_F(DocumentTest,DocumentListTest){
+  DocumentPtr doc1=registry_.getDocumentManager()->createPermanentDocument(1,1,"text=This+is+a+test&title=Also+a+test&filename=test.txt");
+  DocumentPtr doc2=registry_.getDocumentManager()->createPermanentDocument(1,2,"text=Another+test&title=Also+a+test&filename=test2.txt");
+  DocumentPtr doc3=registry_.getDocumentManager()->createPermanentDocument(2,1,"text=This+is+a+test&title=Also+a+test&filename=test.txt");
+  DocumentPtr doc4=registry_.getDocumentManager()->createPermanentDocument(2,2,"text=Another+test&title=Also+a+test&filename=test2.txt");
+  // TemplateDictionary dict;
+  // registry_.getDocumentManager()->fillListDictionary(&dict,1,0);
 }
 
 int main(int argc, char** argv) {

@@ -31,7 +31,6 @@ namespace superfastmatch
     Registry* registry_;
     string* key_;
     string* text_;
-    string* clean_text_;
     metadata_map* metadata_;
     hashes_vector* hashes_;
     hashes_bloom* bloom_;
@@ -49,10 +48,11 @@ namespace superfastmatch
     bool setMeta(const string& key, const string& value);
     bool getMetaKeys(vector<string>& keys);
     string& getText();
-    string& getCleanText();
+    string getCleanText();
+    string getCleanText(const uint32_t position,const uint32_t length);
     string& getKey();
-    const uint32_t doctype();
-    const uint32_t docid();
+    uint32_t doctype();
+    uint32_t docid();
     
     void fill_document_dictionary(TemplateDictionary* dict);
     
@@ -72,6 +72,29 @@ namespace superfastmatch
     bool initBloom();
   };
   
+  class DocumentQuery
+  {
+  private:
+    typedef unordered_set<uint32_t>* set_t;
+    Registry* registry_;
+    const set_t left_doc_types_;
+    const set_t left_doc_ids;
+    const set_t right_doc_types_;
+    const set_t right_doc_ids;
+    const string cursor_;
+    const string order_by_;
+    const size_t offset;
+    const size_t limit;
+    const Document::DocumentOrder order_;
+    const bool valid_;
+    
+    DocumentQuery(Registry& registry, const string& command="",const size_t limit=0);
+    ~DocumentQuery();
+    
+    bool getOrderedDocPairs(vector<DocPair>& pairs);
+    bool getUnorderedDocPairs(unordered_set<DocPair>& pairs);
+  };
+  
   class DocumentManager
   {
   public:
@@ -79,13 +102,12 @@ namespace superfastmatch
       NONE        = 0,
       META        = 1 << 0,
       TEXT        = 1 << 1,
-      CLEAN_TEXT  = 1 << 2,   // CLEAN_TEXT depends on TEXT 
-      HASHES      = 1 << 3,   // HASHES depends on CLEAN_TEXT
+      HASHES      = 1 << 3,   // HASHES depends on TEXT
       BLOOM       = 1 << 4    // BLOOM depends on HASHES
     };
   private:
     Registry* registry_;
-    static const int32_t DEFAULT_STATE = META|TEXT|CLEAN_TEXT|HASHES|BLOOM;
+    static const int32_t DEFAULT_STATE = META|TEXT|HASHES|BLOOM;
   public:
     explicit DocumentManager(Registry* registry);
     ~DocumentManager();
@@ -97,6 +119,7 @@ namespace superfastmatch
     DocumentPtr getDocument(const string& key,const int32_t state=DEFAULT_STATE);
     vector<DocumentPtr> getDocuments(const uint32_t doctype=0,const int32_t state=DEFAULT_STATE);
     bool associateDocument(DocumentPtr doc);
+    void fillListDictionary(TemplateDictionary* dict,const uint32_t doctype,const uint32_t docid);
     
   private:
     void initDoc(const DocumentPtr doc,const int32_t state);
@@ -123,8 +146,6 @@ namespace superfastmatch
     DocumentPtr getNext(const int32_t state=DocumentManager::META);
     DocumentPtr getPrevious();
     uint32_t getCount();
-    
-    void fill_list_dictionary(TemplateDictionary* dict,uint32_t doctype,uint32_t docid);
   };
   
 }//namespace Superfastmatch
