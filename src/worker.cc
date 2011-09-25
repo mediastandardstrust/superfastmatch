@@ -205,6 +205,9 @@ namespace superfastmatch{
             }
             res.message << "Queued document: (" << doctype << "," << docid << ") for indexing";
             res.template_name=QUEUED_PAGE;
+            res.dict.SetIntValue("QUEUE_ID",addCommand->getQueueId());
+            res.dict.SetIntValue("DOC_TYPE",doctype);
+            res.dict.SetIntValue("DOC_ID",docid);
             res.code=202;
           }
           break;

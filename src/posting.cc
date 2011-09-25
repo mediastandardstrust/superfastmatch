@@ -364,7 +364,7 @@ namespace superfastmatch
         pruned_results.insert(pair<DocTally,DocPair>(it->second,it->first));
       }
     }
-    size_t count=0;
+    // size_t count=0;
     // for (inverted_search_t::iterator it=pruned_results.begin(),ite=pruned_results.end();it!=ite && count<200;++it){
     //   count++;
     //   double heat =(it->first.total>0?double(it->first.count)/it->first.total:0.0f);
@@ -412,7 +412,7 @@ namespace superfastmatch
       result_dict->SetIntValue("COUNT",it->first.count);
       result_dict->SetIntValue("TOTAL",it->first.total);
       result_dict->SetFormattedValue("HEAT","%.2f",double(it->first.total)/it->first.count);
-      DocumentPtr other=registry_->getDocumentManager()->getDocument(it->second.doc_type,it->second.doc_id,DocumentManager::TEXT|DocumentManager::META);
+      DocumentPtr other=registry_->getDocumentManager()->getDocument(it->second.doc_type,it->second.doc_id);
       Association association(registry_,doc,other);
       association.fill_item_dictionary(association_dict);
       count++;
