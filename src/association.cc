@@ -104,30 +104,35 @@ namespace superfastmatch
     uint32_t to_hashes_count = to_hashes.size();
     string original_text = from_document_->getText();
     uint32_t window_size=registry_->getWindowSize();
-    hash_t white_space=registry_->getWhiteSpaceHash(false);
+    uint32_t white_space=registry_->getWhiteSpaceHash(false);
+
+    // cout << "From length: " << from_document_->getText().size() << " To length: " << to_document_->getText().size() << " Bloom: " << bloom->count() << " From: " << from_document_->getBloom().count() << " To: " << to_document_->getBloom().count() << endl;
 
     //Find from_document hashes set
-    hash_t from_hash;
+    uint32_t from_hash;
     hashes_set from_hashes_set;
+    // from_hashes_set.rehash(from_hashes_count);
     for (size_t i=0;i<from_hashes_count;i++){
       from_hash=from_hashes[i];
-      if ((bloom->test(from_hash&0xFFFFFF))&&(from_hash!=white_space)){
+      if ((bloom->test(from_hash&0x3FFFFFF))&&(from_hash!=white_space)){ 
         from_hashes_set.insert(from_hash);
       }
     }
-
+    // cout << from_hashes_set.bucket_count() << ":" << from_hashes_set.load_factor() << ":" << from_hashes_set.max_load_factor() << ":" << from_hashes_set.size() << ":" << from_hashes_count << endl;
     //Find to_document hashes map
-    hash_t to_hash;
+    uint32_t to_hash;
     matches_map to_matches;
+    // to_matches.rehash(to_hashes_count);
     hashes_set::iterator from_hashes_set_end=from_hashes_set.end();
     for (size_t i=0;i<to_hashes_count;i++){
       to_hash=to_hashes[i];
-      if ((bloom->test(to_hash&0xFFFFFF))&&(to_hash!=white_space)){
+      if ((bloom->test(to_hash&0x3FFFFFF))&&(to_hash!=white_space)){ 
         if (from_hashes_set.find(to_hash)!=from_hashes_set_end){
           to_matches[to_hash].insert(i);
         }
       }
     }
+    // cout << to_matches.bucket_count() << ":" << to_matches.load_factor() << ":" << to_matches.max_load_factor() << ":" << to_matches.size() << ":" << to_hashes_count << endl;
 
     //Build matches
     matches_deque matches;
@@ -300,19 +305,19 @@ namespace superfastmatch
   
   bool AssociationManager::removeAssociations(DocumentPtr doc){
     bool success=true;
-    vector<AssociationPtr> associations=getAssociations(doc);
+    vector<AssociationPtr> associations=getAssociations(doc,DocumentManager::NONE);
     for (vector<AssociationPtr>::iterator it=associations.begin(),ite=associations.end();it!=ite;++it){
       success&=(*it)->remove();
     }
     return success;
   }
   
-  vector<AssociationPtr> AssociationManager::getAssociations(DocumentPtr doc){
+  vector<AssociationPtr> AssociationManager::getAssociations(DocumentPtr doc, const int32_t state){
     vector<AssociationPtr> associations;
     vector<string> keys;
     registry_->getAssociationDB()->match_prefix(doc->getKey().substr(0,8),&keys);
     for(vector<string>::const_iterator it=keys.begin(),ite=keys.end();it!=ite;++it){
-      DocumentPtr other = registry_->getDocumentManager()->getDocument((*it).substr(8,8));
+      DocumentPtr other = registry_->getDocumentManager()->getDocument((*it).substr(8,8),state);
       associations.push_back(AssociationPtr(new Association(registry_,doc,other)));
     }
     return associations;

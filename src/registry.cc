@@ -45,12 +45,12 @@ namespace superfastmatch{
     return FLAGS_hash_width;
   }
 
-  hash_t FlagsRegistry::getHashMask() const{
+  uint32_t FlagsRegistry::getHashMask() const{
     return (1L<<getHashWidth())-1;
   };
 
-  hash_t FlagsRegistry::getWhiteSpaceHash(bool masked) const{
-    hash_t hash= WhiteSpaceHash(getWindowSize());
+  uint32_t FlagsRegistry::getWhiteSpaceHash(bool masked) const{
+    uint32_t hash= WhiteSpaceHash(getWindowSize());
     if (masked)
       return((hash>>getHashWidth())^(hash&getHashMask()));
     return hash;
@@ -97,7 +97,7 @@ namespace superfastmatch{
   }
   
   size_t FlagsRegistry::getMaxDistance() const{
-    return 100;
+    return 1;
   };
   
   double FlagsRegistry::getTimeout() const{

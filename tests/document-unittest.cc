@@ -52,9 +52,9 @@ TEST_F(DocumentTest,ConstructorTest){
   DocumentPtr doc2=registry_.getDocumentManager()->createPermanentDocument(1,2,"text=Another+test&title=Also+a+test&filename=test2.txt");
   EXPECT_EQ(14U,doc1->getText().size());
   EXPECT_STREQ("This is a test",doc1->getText().c_str());
-  EXPECT_STREQ("this is a test",doc1->getCleanText().c_str());
+  EXPECT_STREQ("THIS IS A TEST",doc1->getCleanText().c_str());
   EXPECT_STREQ("Another test",doc2->getText().c_str());
-  EXPECT_STREQ("another test",doc2->getCleanText().c_str());
+  EXPECT_STREQ("ANOTHER TEST",doc2->getCleanText().c_str());
   EXPECT_EQ(11U,doc1->getMeta("title").size());
   EXPECT_STREQ("Also a test",doc1->getMeta("title").c_str());
   EXPECT_EQ(8U,doc1->getMeta("filename").size());
@@ -67,9 +67,9 @@ TEST_F(DocumentTest,ConstructorTest){
 }
 
 TEST_F(DocumentTest, CleanTextTest){
-  DocumentPtr doc=registry_.getDocumentManager()->createTemporaryDocument("text=This+a+test+with+*+*++***^$$#@@<>lots+of+whitespace");
+  DocumentPtr doc=registry_.getDocumentManager()->createTemporaryDocument("text=This+is+a+test+with+*+*++***^$$#@@<>lots+of+whitespace");
   EXPECT_EQ(doc->getText().size(),doc->getCleanText().size());
-  EXPECT_EQ("this a test with                 lots of whitespace",doc->getCleanText());
+  EXPECT_EQ("THIS IS A TEST WITH                 LOTS OF WHITESPACE",doc->getCleanText());
 }
 
 TEST_F(DocumentTest, MetaTest){
@@ -175,7 +175,7 @@ TEST_F(DocumentDeathTest,RemovalTest){
   EXPECT_EQ(1U,permDoc->docid());
   EXPECT_STREQ("Title",permDoc->getMeta("title").c_str());
   EXPECT_TRUE(registry_.getDocumentManager()->removePermanentDocument(permDoc));
-  EXPECT_DEATH(registry_.getDocumentManager()->getDocument(1,1),"^Assertion failed");
+  EXPECT_FALSE(registry_.getDocumentManager()->getDocument(1,1));
 }
 
 TEST_F(DocumentTest,DuplicatePermanentTest){
@@ -196,19 +196,19 @@ TEST_F(DocumentTest,InitTest){
   tempDoc=registry_.getDocumentManager()->createTemporaryDocument("text=Some+short+text+with+metadata&title=Title",DocumentManager::TEXT);
   EXPECT_STREQ("Some short text with metadata",tempDoc->getText().c_str());
   EXPECT_STREQ("Title",tempDoc->getMeta("title").c_str());
-  EXPECT_STREQ("some short text with metadata",tempDoc->getCleanText().c_str());
+  EXPECT_STREQ("SOME SHORT TEXT WITH METADATA",tempDoc->getCleanText().c_str());
   ASSERT_THROW(tempDoc->getHashes(),std::runtime_error);
   ASSERT_THROW(tempDoc->getBloom(),std::runtime_error);
   tempDoc=registry_.getDocumentManager()->createTemporaryDocument("text=Some+short+text+with+metadata&title=Title",DocumentManager::TEXT|DocumentManager::HASHES);
   EXPECT_STREQ("Some short text with metadata",tempDoc->getText().c_str());
   EXPECT_STREQ("Title",tempDoc->getMeta("title").c_str());
-  EXPECT_STREQ("some short text with metadata",tempDoc->getCleanText().c_str());
+  EXPECT_STREQ("SOME SHORT TEXT WITH METADATA",tempDoc->getCleanText().c_str());
   EXPECT_GT(tempDoc->getHashes().size(),0U);
   ASSERT_THROW(tempDoc->getBloom(),std::runtime_error);
   tempDoc=registry_.getDocumentManager()->createTemporaryDocument("text=Some+short+text+with+metadata&title=Title",DocumentManager::TEXT|DocumentManager::HASHES|DocumentManager::BLOOM);
   EXPECT_STREQ("Some short text with metadata",tempDoc->getText().c_str());
   EXPECT_STREQ("Title",tempDoc->getMeta("title").c_str());
-  EXPECT_STREQ("some short text with metadata",tempDoc->getCleanText().c_str());
+  EXPECT_STREQ("SOME SHORT TEXT WITH METADATA",tempDoc->getCleanText().c_str());
   EXPECT_GT(tempDoc->getHashes().size(),0U);
   EXPECT_GT(tempDoc->getBloom().size(),0U);
   ASSERT_THROW(registry_.getDocumentManager()->createTemporaryDocument("text=Some+short+text+with+metadata&title=Title",DocumentManager::BLOOM),std::runtime_error);

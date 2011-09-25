@@ -179,9 +179,9 @@ namespace superfastmatch{
         case HTTPClient::MGET:
         case HTTPClient::MHEAD:
           {
-            DocumentPtr doc=registry_->getDocumentManager()->getDocument(doctype,docid);
+            DocumentPtr doc=registry_->getDocumentManager()->getDocument(doctype,docid,DocumentManager::TEXT|DocumentManager::META);
             if (doc){
-              res.message << "Getting document: " << doc;
+              res.message << "Getting document: " << *doc;
               if(req.verb==HTTPClient::MGET){
                 res.template_name=DOCUMENT_PAGE;
                 doc->fill_document_dictionary(&res.dict);
@@ -189,6 +189,8 @@ namespace superfastmatch{
               res.code=200;
             }else{
               res.message << "Error getting document: " << doc;
+              res.template_name=NOT_FOUND_PAGE;
+              res.dict.SetValue("ITEM","Document");
               res.code=404;
             } 
           }

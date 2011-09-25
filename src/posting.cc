@@ -102,9 +102,9 @@ namespace superfastmatch
 
   bool PostingSlot::alterIndex(DocumentPtr doc,TaskPayload::TaskOperation operation){
     index_lock_.lock_writer();
-    hash_t hash;
-    hash_t hash_mask=registry_->getHashMask();
-    hash_t white_space=registry_->getWhiteSpaceHash()-offset_;
+    uint32_t hash;
+    uint32_t hash_mask=registry_->getHashMask();
+    uint32_t white_space=registry_->getWhiteSpaceHash()-offset_;
     bool white_space_seen=false;
     uint32_t hash_width=registry_->getHashWidth();
     size_t incoming_length;
@@ -158,11 +158,11 @@ namespace superfastmatch
   }
   
   bool PostingSlot::searchIndex(DocumentPtr doc,search_t& results){
-    hash_t hash;
+    uint32_t hash;
     uint32_t doctype=doc->doctype();
     uint32_t docid=doc->docid();
-    hash_t hash_mask=registry_->getHashMask();
-    hash_t white_space=registry_->getWhiteSpaceHash()-offset_;
+    uint32_t hash_mask=registry_->getHashMask();
+    uint32_t white_space=registry_->getWhiteSpaceHash()-offset_;
     uint32_t hash_width=registry_->getHashWidth();
     uint32_t threshold=registry_->getMaxPostingThreshold();
     vector<uint32_t> docids;
@@ -173,7 +173,7 @@ namespace superfastmatch
     size_t doc_count;
     size_t max_distance=registry_->getMaxDistance();
     index_lock_.lock_reader();
-    for (vector<hash_t>::const_iterator it=doc->getHashes().begin(),ite=doc->getHashes().end();it!=ite;++it){
+    for (vector<uint32_t>::const_iterator it=doc->getHashes().begin(),ite=doc->getHashes().end();it!=ite;++it){
       hash = ((*it>>hash_width)^(*it&hash_mask))-offset_;
       if ((hash<span_) && (hash!=white_space) && (index_.test(hash))){
         line_.load(index_.unsafe_get(hash));  
@@ -185,15 +185,11 @@ namespace superfastmatch
             for (vector<uint32_t>::const_iterator it3=docids.begin(),ite3=docids.end();it3!=ite3;++it3){
               pair.doc_type=*it2;
               pair.doc_id=*it3;
-              if (!((pair.doc_id==docid)&&(pair.doc_type==doctype))){
-                tally=&results[pair];
-                // cout << results.bucket_count() << ":" << results.load_factor() << ":" << results.size() <<endl; 
-                if ((position-tally->last_seen)<max_distance){
-                  tally->count++;
-                  tally->total+=doc_count;
-                }
-                tally->last_seen=position;
-              }
+              tally=&results[pair];
+              uint32_t mask=(((*it3!=docid)||(*it2!=doctype))&&(position-tally->last_seen<=max_distance))-1;
+              tally->count+=(1&~mask)|(0&mask);
+              tally->total+=(doc_count&~mask)|(0&mask);
+              tally->last_seen=position;
             }
           }
         }
@@ -213,10 +209,10 @@ namespace superfastmatch
     return queue_.count();
   }
   
-  uint32_t PostingSlot::fill_list_dictionary(TemplateDictionary* dict,hash_t start){
+  uint32_t PostingSlot::fill_list_dictionary(TemplateDictionary* dict,uint32_t start){
     index_lock_.lock_reader();
     uint32_t count=0;
-    hash_t hash=(offset_>start)?0:start-offset_;
+    uint32_t hash=(offset_>start)?0:start-offset_;
     // Find first hash
     while (hash<span_ && !index_.test(hash)){    
       hash++;
@@ -368,6 +364,14 @@ namespace superfastmatch
         pruned_results.insert(pair<DocTally,DocPair>(it->second,it->first));
       }
     }
+    size_t count=0;
+    // for (inverted_search_t::iterator it=pruned_results.begin(),ite=pruned_results.end();it!=ite && count<200;++it){
+    //   count++;
+    //   double heat =(it->first.total>0?double(it->first.count)/it->first.total:0.0f);
+    //   cout << "Search for: " << *doc << " with text length: " << doc->getText().size() << " found : (" << it->second.doc_type << "," << it->second.doc_id << ")";
+    //   cout << "Count: " << it->first.count << " Total: " << it->first.total;
+    //   cout << " Heat: " << setprecision(3) << heat  << " Score: " << it->first.count*heat << endl; 
+    // }
   }
   
   uint64_t Posting::addDocument(DocumentPtr doc){
@@ -408,7 +412,7 @@ namespace superfastmatch
       result_dict->SetIntValue("COUNT",it->first.count);
       result_dict->SetIntValue("TOTAL",it->first.total);
       result_dict->SetFormattedValue("HEAT","%.2f",double(it->first.total)/it->first.count);
-      DocumentPtr other=registry_->getDocumentManager()->getDocument(it->second.doc_type,it->second.doc_id);
+      DocumentPtr other=registry_->getDocumentManager()->getDocument(it->second.doc_type,it->second.doc_id,DocumentManager::TEXT|DocumentManager::META);
       Association association(registry_,doc,other);
       association.fill_item_dictionary(association_dict);
       count++;
@@ -430,7 +434,7 @@ namespace superfastmatch
     dict->SetIntValue("AVERAGE_DOC_LENGTH",(doc_count_>0)?hash_count/doc_count_:0);
   }
   
-  void Posting::fill_list_dictionary(TemplateDictionary* dict,hash_t start){
+  void Posting::fill_list_dictionary(TemplateDictionary* dict,uint32_t start){
     uint32_t count=0;
     for (size_t i=0;i<slots_.size();i++){
       count+=slots_[i]->fill_list_dictionary(dict,start);

@@ -32,7 +32,6 @@ namespace superfastmatch{
   class Command;
 
   // Global Typedefs
-  typedef uint32_t hash_t;
   typedef std::tr1::shared_ptr<Document> DocumentPtr;
   typedef std::tr1::shared_ptr<Association> AssociationPtr;
   typedef std::tr1::shared_ptr<Command> CommandPtr;
@@ -146,7 +145,7 @@ namespace superfastmatch{
     }
   }
   
-  inline hash_t hashmurmur(const void* buf, size_t size) {
+  inline uint32_t hashmurmur(const void* buf, size_t size) {
     const uint64_t mul = 0xc6a4a7935bd1e995ULL;
     const int32_t rtt = 47;
     uint64_t hash = 19780211ULL ^ (size * mul);

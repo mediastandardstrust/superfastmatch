@@ -128,7 +128,7 @@ namespace superfastmatch
     if (bloom_==0){
       hashes_bloom* tempBloom = new hashes_bloom();
       for (hashes_vector::const_iterator it=getHashes().begin(),ite=getHashes().end();it!=ite;++it){
-        tempBloom->set(*it&0xFFFFFF);
+        tempBloom->set((*it)&0x3FFFFFF);
       }
       bloom_=tempBloom;
     }
@@ -160,7 +160,6 @@ namespace superfastmatch
     string clean_text=getText().substr(position,length);
     transform(clean_text.begin(),clean_text.end(),clean_text.begin(), ::toupper);
     replace_if(clean_text.begin(),clean_text.end(),notAlphaNumeric,' ');
-    transform(clean_text.begin(),clean_text.end(),clean_text.begin(), ::tolower);
     return clean_text;
   }
 
@@ -237,19 +236,10 @@ namespace superfastmatch
     dict->SetValue("TEXT",getText());
     TemplateDictionary* association_dict=dict->AddIncludeDictionary("ASSOCIATION");
     association_dict->SetFilename(ASSOCIATION);
-    // This belongs in Association Cursor
-    // And need a key based Association Constructor
-    kc::PolyDB::Cursor* cursor=registry_->getAssociationDB()->cursor();
-    cursor->jump(getKey().data(),8);
-    string next;
-    string other_key;
-    while((cursor->get_key(&next,true))&&(getKey().compare(next.substr(0,8))==0)){
-      other_key=next.substr(8,8);
-      DocumentPtr other = registry_->getDocumentManager()->getDocument(other_key);
-      Association association(registry_,shared_from_this(),other);
-      association.fill_item_dictionary(association_dict);
+    vector<AssociationPtr> associations=registry_->getAssociationManager()->getAssociations(shared_from_this(),DocumentManager::META);
+    for (vector<AssociationPtr>::iterator it=associations.begin(),ite=associations.end();it!=ite;++it){
+      (*it)->fill_item_dictionary(association_dict);
     }
-    delete cursor;
   }
   
   bool operator< (Document& lhs,Document& rhs){
@@ -282,17 +272,19 @@ namespace superfastmatch
     assert((doc->doctype()>0) && (doc->docid()>0));
     return doc->remove();
   }
+  
 
   DocumentPtr DocumentManager::getDocument(const uint32_t doctype, const uint32_t docid,const int32_t state){
     assert((doctype>0) && (docid>0));
     DocumentPtr doc(new Document(doctype,docid,true,registry_));
-    initDoc(doc,state);
-    return doc;
+    if (initDoc(doc,state))
+      return doc;
+    return DocumentPtr();
   }
   
   DocumentPtr DocumentManager::getDocument(const string& key,const int32_t state){
     DocumentPtr doc(new Document(key,true,registry_));
-    initDoc(doc,state);
+    assert(initDoc(doc,state));
     return doc;
   }
   
@@ -328,7 +320,7 @@ namespace superfastmatch
       return DocumentPtr();
     }
     content_map.erase("text");
-    initDoc(doc,state|META);
+    assert(initDoc(doc,state|META));
     assert(doc->setMeta("characters",toString(doc->getText().size())));
     for(metadata_map::const_iterator it=content_map.begin(),ite=content_map.end();it!=ite;++it){
       assert(doc->setMeta(it->first,it->second));
@@ -354,15 +346,16 @@ namespace superfastmatch
     return true;
   }
   
-  void DocumentManager::initDoc(const DocumentPtr doc,const int32_t state){
-    if (state&META)
-      assert(doc->initMeta());
-    if (state&TEXT)
-      assert(doc->initText());
-    if (state&HASHES)
-      assert(doc->initHashes());
-    if (state&BLOOM)
-      assert(doc->initBloom());
+  bool DocumentManager::initDoc(const DocumentPtr doc,const int32_t state){
+    if ((state&META) && (not doc->initMeta()))
+      return false;
+    if ((state&TEXT) && (not doc->initText()))
+      return false;
+    if ((state&HASHES) && (not doc->initHashes()))
+      return false;
+    if ((state&BLOOM) && (not doc->initBloom()))
+      return false;
+    return true;
   }
   
   struct MetaKeyComparator {

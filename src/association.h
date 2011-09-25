@@ -11,9 +11,9 @@ namespace superfastmatch
   struct Match;
   struct Result;
   
-  typedef std::tr1::unordered_set<hash_t> hashes_set;
+  typedef std::tr1::unordered_set<uint32_t> hashes_set;
   typedef std::tr1::unordered_set<uint32_t> positions_set;
-  typedef std::tr1::unordered_map<hash_t,positions_set> matches_map;
+  typedef std::tr1::unordered_map<uint32_t,positions_set> matches_map;
   typedef std::pair<uint32_t,positions_set> match_pair;
   typedef std::deque<Match> matches_deque;
   typedef std::deque<Result> results_deque;
@@ -84,7 +84,7 @@ namespace superfastmatch
     
     vector<AssociationPtr> createPermanentAssociations(DocumentPtr doc);
     vector<AssociationPtr> createTemporaryAssociations(DocumentPtr doc);
-    vector<AssociationPtr> getAssociations(DocumentPtr doc);
+    vector<AssociationPtr> getAssociations(DocumentPtr doc,const int32_t state);
     bool removeAssociations(DocumentPtr doc);
     
   private:

@@ -152,7 +152,7 @@ TEST_F(AssociationDeathTest, ManagerPermanentTest){
   EXPECT_EQ(2U,registry_.getAssociationDB()->count());
   DocumentPtr doc3 = registry_.getDocumentManager()->getDocument(1,1);
   EXPECT_NE(0U,doc3->getText().size());
-  vector<AssociationPtr> savedAssociations = registry_.getAssociationManager()->getAssociations(doc3);
+  vector<AssociationPtr> savedAssociations = registry_.getAssociationManager()->getAssociations(doc3,DocumentManager::NONE);
   EXPECT_EQ(1U,savedAssociations.size());
   EXPECT_TRUE(registry_.getAssociationManager()->removeAssociations(doc3));
   EXPECT_EQ(0U,registry_.getAssociationDB()->count());

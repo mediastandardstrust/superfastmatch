@@ -8,7 +8,7 @@
 #include <sstream>
 #include <string>
 #include <stdint.h>
-#include <sys/time.h>  
+#include <sys/time.h>
 #include <cctype>
 
 using namespace testing;

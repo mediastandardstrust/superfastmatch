@@ -7,13 +7,13 @@ class MockRegistry : public Registry {
   MOCK_CONST_METHOD0(getHashWidth,
       uint32_t());
   MOCK_CONST_METHOD0(getHashMask,
-      hash_t());
+      uint32_t());
   MOCK_CONST_METHOD0(getWindowSize,
       uint32_t());
   MOCK_CONST_METHOD0(getWhiteSpaceThreshold,
       uint32_t());
   MOCK_CONST_METHOD1(getWhiteSpaceHash,
-      hash_t(bool));
+      uint32_t(bool));
   MOCK_CONST_METHOD0(getThreadCount,
       uint32_t());
   MOCK_CONST_METHOD0(getSlotCount,

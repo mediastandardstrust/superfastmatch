@@ -14,8 +14,8 @@
 
 namespace superfastmatch
 { 
-  typedef std::vector<hash_t> hashes_vector;
-  typedef std::bitset<(1<<24)> hashes_bloom;
+  typedef std::vector<uint32_t> hashes_vector;
+  typedef std::bitset<(1<<26)> hashes_bloom;
   typedef std::map<std::string,std::string> metadata_map;
   
   class DocumentManager; // Forward Declaration
@@ -122,7 +122,7 @@ namespace superfastmatch
     void fillListDictionary(TemplateDictionary* dict,const uint32_t doctype,const uint32_t docid);
     
   private:
-    void initDoc(const DocumentPtr doc,const int32_t state);
+    bool initDoc(const DocumentPtr doc,const int32_t state);
     DocumentPtr createDocument(const uint32_t doctype, const uint32_t docid,const string& content,const int32_t state,const bool commit);
     DISALLOW_COPY_AND_ASSIGN(DocumentManager);
   };

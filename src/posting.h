@@ -59,7 +59,10 @@ namespace superfastmatch
   
   typedef struct
   {
-    bool operator()(const DocTally &lhs, const DocTally &rhs) const { return lhs.count > rhs.count;}
+    bool operator()(const DocTally &lhs, const DocTally &rhs) const { 
+      return (lhs.count*lhs.count)/double(lhs.total)> (rhs.count*rhs.count)/double(rhs.total);
+      // return lhs.count > rhs.count;
+    }
   } DocTallyEq;
     
   typedef sparsetable<unsigned char*,48> index_t;
@@ -110,8 +113,8 @@ namespace superfastmatch
   private:
     Registry* registry_;
     const uint32_t slot_number_;
-    const hash_t offset_;
-    const hash_t span_;
+    const uint32_t offset_;
+    const uint32_t span_;
     PostLineCodec* codec_;
     PostLine line_;
     index_t index_;
@@ -129,7 +132,7 @@ namespace superfastmatch
     uint32_t getTaskCount();
     size_t getHashCount();
 
-    uint32_t fill_list_dictionary(TemplateDictionary* dict,hash_t start);
+    uint32_t fill_list_dictionary(TemplateDictionary* dict,uint32_t start);
     void fillHistograms(histogram_t& hash_hist,histogram_t& gaps_hist);
   };
 
@@ -157,7 +160,7 @@ namespace superfastmatch
 
     void fill_search_dictionary(DocumentPtr doc,TemplateDictionary* dict);
     void fill_status_dictionary(TemplateDictionary* dict);
-    void fill_list_dictionary(TemplateDictionary* dict,hash_t start);
+    void fill_list_dictionary(TemplateDictionary* dict,uint32_t start);
     void fill_histogram_dictionary(TemplateDictionary* dict);
   };
 }
