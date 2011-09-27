@@ -1,5 +1,4 @@
 #include <tests.h>
-#include <document.h>
 
 class DocumentTest :public ::testing::Test{
 protected:

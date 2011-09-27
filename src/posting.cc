@@ -8,6 +8,8 @@
 
 namespace superfastmatch
 {
+  RegisterTemplateFilename(HISTOGRAM, "histogram.tpl");
+  
   // -------------------
   // TaskPayload members
   // -------------------
@@ -405,8 +407,6 @@ namespace superfastmatch
     size_t count=0;
     size_t num_results=registry_->getNumResults();
     inverted_search_t::iterator it=pruned_results.begin();
-    TemplateDictionary* association_dict=dict->AddIncludeDictionary("ASSOCIATION");
-    association_dict->SetFilename(ASSOCIATION);
     while(it!=pruned_results.end() && count<num_results){
       TemplateDictionary* result_dict=dict->AddSectionDictionary("RESULT");
       result_dict->SetIntValue("DOC_TYPE",it->second.doc_type);
@@ -415,8 +415,7 @@ namespace superfastmatch
       result_dict->SetIntValue("TOTAL",it->first.total);
       result_dict->SetFormattedValue("HEAT","%.2f",double(it->first.total)/it->first.count);
       DocumentPtr other=registry_->getDocumentManager()->getDocument(it->second.doc_type,it->second.doc_id);
-      Association association(registry_,doc,other);
-      association.fill_item_dictionary(association_dict);
+      registry_->getAssociationManager()->fillSearchDictionary(doc,other,dict);
       count++;
       it++;
     }

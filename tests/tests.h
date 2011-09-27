@@ -12,7 +12,7 @@
 #include <posting.h>
 #include <registry.h>
 #include <queue.h>
-#include <templates.h>
+#include <query.h>
 #include <mock_registry.h>
 
 using namespace testing;

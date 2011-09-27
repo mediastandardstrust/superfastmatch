@@ -17,11 +17,13 @@ typedef unsigned __int64 uint64_t;
 #include <ktutil.h>
 #include <tr1/memory>
 #include <tr1/unordered_set>
+#include <ctemplate/template.h>
 
 #define DISALLOW_COPY_AND_ASSIGN(TypeName) \
   TypeName(const TypeName&);               \
   void operator=(const TypeName&)
 
+using namespace ctemplate;
 using namespace std;
 namespace superfastmatch{
   namespace kt=kyototycoon;

@@ -65,9 +65,8 @@ namespace superfastmatch
     string getFromResult(size_t index);
     string getToResult(size_t index);
     size_t getLength(size_t index);
-
-    void fill_item_dictionary(TemplateDictionary* dict);
-    void fill_list_dictionary(TemplateDictionary* dict);
+    void fillItemDictionary(TemplateDictionary* dict);
+    
   private:
     bool load();
     void match();
@@ -86,6 +85,8 @@ namespace superfastmatch
     vector<AssociationPtr> createTemporaryAssociations(DocumentPtr doc);
     vector<AssociationPtr> getAssociations(DocumentPtr doc,const int32_t state);
     bool removeAssociations(DocumentPtr doc);
+    void fillListDictionary(DocumentPtr doc,TemplateDictionary* dict);
+    void fillSearchDictionary(DocumentPtr doc,DocumentPtr other, TemplateDictionary* dict);
     
   private:
     vector<AssociationPtr> createAssociations(DocumentPtr doc);

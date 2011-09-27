@@ -234,12 +234,7 @@ namespace superfastmatch
       } 
     }
     dict->SetValue("TEXT",getText());
-    TemplateDictionary* association_dict=dict->AddIncludeDictionary("ASSOCIATION");
-    association_dict->SetFilename(ASSOCIATION);
-    vector<AssociationPtr> associations=registry_->getAssociationManager()->getAssociations(shared_from_this(),DocumentManager::META);
-    for (vector<AssociationPtr>::iterator it=associations.begin(),ite=associations.end();it!=ite;++it){
-      (*it)->fill_item_dictionary(association_dict);
-    }
+    registry_->getAssociationManager()->fillListDictionary(shared_from_this(),dict);
   }
   
   bool operator< (Document& lhs,Document& rhs){

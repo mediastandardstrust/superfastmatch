@@ -2,6 +2,8 @@
 
 namespace superfastmatch
 {
+  RegisterTemplateFilename(ASSOCIATION, "association.tpl");
+  
   bool result_sorter(Result const& lhs,Result const& rhs ){
     if (lhs.length!=rhs.length)
       return lhs.length > rhs.length;
@@ -224,7 +226,7 @@ namespace superfastmatch
     return results_->at(index).length;
   }
   
-  void Association::fill_item_dictionary(TemplateDictionary* dict){
+  void Association::fillItemDictionary(TemplateDictionary* dict){
     uint32_t previous_left=numeric_limits<uint32_t>::max();
     uint32_t previous_right=numeric_limits<uint32_t>::max();
     uint32_t previous_length=0;
@@ -256,10 +258,6 @@ namespace superfastmatch
       previous_right=results_->at(i).right;
       previous_length=results_->at(i).length;
     }
-  }
-  
-  void Association::fill_list_dictionary(TemplateDictionary* dict){
-    
   }
   
   // Association Manager
@@ -323,4 +321,19 @@ namespace superfastmatch
     return associations;
   }
   
+  void AssociationManager::fillListDictionary(DocumentPtr doc,TemplateDictionary* dict){
+    TemplateDictionary* association_dict=dict->AddIncludeDictionary("ASSOCIATION");
+    association_dict->SetFilename(ASSOCIATION);
+    vector<AssociationPtr> associations=registry_->getAssociationManager()->getAssociations(doc,DocumentManager::META);
+    for (vector<AssociationPtr>::iterator it=associations.begin(),ite=associations.end();it!=ite;++it){
+      (*it)->fillItemDictionary(association_dict);
+    } 
+  }
+  
+  void AssociationManager::fillSearchDictionary(DocumentPtr doc,DocumentPtr other, TemplateDictionary* dict){
+    TemplateDictionary* association_dict=dict->AddIncludeDictionary("ASSOCIATION");
+    association_dict->SetFilename(ASSOCIATION);
+    Association association(registry_,doc,other);
+    association.fillItemDictionary(association_dict);
+  }
 }

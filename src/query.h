@@ -29,26 +29,35 @@ namespace superfastmatch
     bool operator() (const DocPair& x, const DocPair &y) const { return (x.doc_type==y.doc_type) && (x.doc_id==y.doc_id); }
   } DocPairEq;
 
+  class DocTypeRange{
+    set<uint32_t> doctypes_;
+    
+    public:
+      explicit DocTypeRange(const string& range);
+      bool isInRange(uint32_t doctype);
+      void fillItemDictionary(TemplateDictionary* dict);
+  };
+
   class DocumentQuery
   {
   private:
-    typedef unordered_set<uint32_t>* set_t;
     Registry* registry_;
-    set_t left_doc_types_;
-    set_t left_doc_ids_;
-    set_t right_doc_types_;
-    set_t right_doc_ids_;
+    DocTypeRange source_;
+    DocTypeRange target_;
     string cursor_;
     string order_by_;
-    size_t offset;
-    size_t limit;
+    size_t offset_;
+    size_t limit_;
     // const Document::DocumentOrder order_;
-  
-    DocumentQuery(Registry& registry, const string& command="",const size_t limit=0);
-    ~DocumentQuery();
+
+  public:
+    explicit DocumentQuery(Registry* registry, const string& command="");
   
     bool getOrderedDocPairs(vector<DocPair>& pairs);
     bool getUnorderedDocPairs(unordered_set<DocPair>& pairs);
+  
+  private:
+    DISALLOW_COPY_AND_ASSIGN(DocumentQuery);
   };
 }
 #endif
