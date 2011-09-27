@@ -1,13 +1,6 @@
-#include <kcprotodb.h>
-#include <gtest/gtest.h>
-#include <gmock/gmock.h>
+#include <tests.h>
 #include <association.h>
 #include <document.h>
-#include <mock_registry.h>
-
-using namespace testing;
-using namespace superfastmatch;
-using namespace kyotocabinet;
 
 class AssociationTest :public ::testing::Test{
 protected:
@@ -170,9 +163,4 @@ TEST_F(AssociationDeathTest, ManagerTemporaryTest){
   EXPECT_EQ(1U,associations.size());
   EXPECT_EQ(0U,registry_.getAssociationDB()->count());
   EXPECT_DEATH(registry_.getAssociationManager()->createPermanentAssociations(doc2),"^Assertion failed");
-}
-
-int main(int argc, char** argv) {
-  ::testing::InitGoogleMock(&argc, argv);
-  return RUN_ALL_TESTS();
 }

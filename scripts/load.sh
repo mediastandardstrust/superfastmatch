@@ -6,9 +6,9 @@ function send_doc {
 	filemask=$4
 	
 	# Smallest first
-	# for file in `ls -ASr $dir | grep $filemask`
+	for file in `ls -ASr $dir | grep $filemask`
 	# Largest first
-	for file in `ls -AS $dir | grep $filemask`
+	# for file in `ls -AS $dir | grep $filemask`
 	# Unsorted
 	# for file in `ls -A $dir | grep $filemask`
 	do
@@ -41,7 +41,12 @@ function send_doc {
 # echo "Test batch indexing"
 # curl -X POST -H "Expect:" 127.0.0.1:8080/association/
 # 
+
 # echo "Test POST-ing documents"
+# send_doc POST 1 "fixtures/congressional-record/" ".txt"
+
+
+# # echo "Test POST-ing documents"
 send_doc POST 1 "fixtures/pan11-external/source-documents/" ".txt"
 
 # echo "Test POST-ing documents"

@@ -1,13 +1,5 @@
-#include <stdexcept>
+#include <tests.h>
 #include <document.h>
-#include <mock_registry.h>
-#include <kcprotodb.h>
-#include <gtest/gtest.h>
-#include <gmock/gmock.h>
-
-using namespace testing;
-using namespace superfastmatch;
-using namespace kyotocabinet;
 
 class DocumentTest :public ::testing::Test{
 protected:
@@ -221,9 +213,4 @@ TEST_F(DocumentTest,DocumentListTest){
   DocumentPtr doc4=registry_.getDocumentManager()->createPermanentDocument(2,2,"text=Another+test&title=Also+a+test&filename=test2.txt");
   // TemplateDictionary dict;
   // registry_.getDocumentManager()->fillListDictionary(&dict,1,0);
-}
-
-int main(int argc, char** argv) {
-  ::testing::InitGoogleMock(&argc, argv);
-  return RUN_ALL_TESTS();
 }

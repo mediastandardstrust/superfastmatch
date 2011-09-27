@@ -373,6 +373,7 @@ namespace superfastmatch
   };
 
   void DocumentManager::fillListDictionary(TemplateDictionary* dict,const uint32_t doctype,const uint32_t docid){
+    // DocumentCursor cursor(registry_,"",Document::DEFAULT);
     // if (getCount()==0){
     //   return;
     // }
@@ -389,7 +390,7 @@ namespace superfastmatch
     //   cursor_->jump(key,4);
     // }
     // delete[] key;
-    // key=cursor_->get_key(&key_length,false);
+    // key=cursor->get_key(&key_length,false);
     // if (key!=NULL){
     //   memcpy(&di,key+4,4);
     //   di=kc::ntoh32(di);
@@ -398,7 +399,7 @@ namespace superfastmatch
     // if (docid!=0){
     //   di=kc::hton32(docid);
     //   memcpy(key+4,&di,4);
-    //   cursor_->jump(key,8);
+    //   cursor->jump(key,8);
     // }
     // delete[] key;
     // vector<DocumentPtr> docs;
@@ -431,14 +432,14 @@ namespace superfastmatch
     // }
     //   
     // if (doc!=NULL){
-    //   key=cursor_->get_key(&key_length,false);
+    //   key=cursor->get_key(&key_length,false);
     //   memcpy(&di,key+4,4);
     //   di=kc::ntoh32(di);
     //   page_dict->SetValueAndShowSection("PAGE",toString(di),"NEXT");
     //   delete[] key;
     // }
     // if ((doctype==0)&&(cursor_->jump_back())){
-    //   key=cursor_->get_key(&key_length,false);
+    //   key=cursor->get_key(&key_length,false);
     //   memcpy(&di,key+4,4);
     //   di=kc::ntoh32(di);
     //   page_dict->SetValueAndShowSection("PAGE",toString(di),"LAST");

@@ -1,10 +1,6 @@
+#include <tests.h>
 #include <postline.h>
 #include <vector>
-#include <gtest/gtest.h>
-#include <gmock/gmock.h>
-
-using namespace testing;
-using namespace superfastmatch;
 
 TEST(PostLineTest,VarIntCodecHeaderTest){
   std::vector<PostLineHeader> header;
@@ -243,9 +239,4 @@ TEST(PostLineTest,BigPostLineTest){
   }
   delete[] forwards;
   delete[] backwards;
-}
-
-int main(int argc, char** argv) {
-  ::testing::InitGoogleMock(&argc, argv);
-  return RUN_ALL_TESTS();
 }

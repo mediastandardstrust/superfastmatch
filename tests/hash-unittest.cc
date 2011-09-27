@@ -203,7 +203,7 @@ public:
 
 class CorrectnessTest : public TestWithParam<tuple<string,HasherFun> > {};
 
-TEST_P(HashTest,CollisionTest){
+TEST_P(HashTest,SlowCollisionTest){
   vector<uint32_t>hashes;
   vector<uint32_t>distribution(16);
   const uint32_t divisor=(1<<28);
@@ -288,8 +288,3 @@ INSTANTIATE_TEST_CASE_P(RangeTests,
 INSTANTIATE_TEST_CASE_P(CorrectnessTests,
                         CorrectnessTest,
                         ValuesIn(getHashers()));
-
-int main(int argc, char** argv) {
-  ::testing::InitGoogleMock(&argc, argv);
-  return RUN_ALL_TESTS();
-}

@@ -1,15 +1,4 @@
-#include <gtest/gtest.h>
-#include <gmock/gmock.h>
-#include <document.h>
-#include <posting.h>
-#include <queue.h>
-#include <kcprotodb.h>
-#include <mock_registry.h>
-#include <templates.h>
-
-using namespace testing;
-using namespace superfastmatch;
-using namespace kyotocabinet;
+#include <tests.h>
 
 class CommandTest :public ::testing::Test{
 protected:
@@ -216,9 +205,4 @@ TEST_F(CommandTest,AssociationTest){
   EXPECT_TRUE(dropDoc1->execute());
   EXPECT_EQ(1U,registry_.getDocumentDB()->count());
   EXPECT_EQ(0U,registry_.getAssociationDB()->count());
-}
-
-int main(int argc, char** argv) {
-  ::testing::InitGoogleMock(&argc, argv);
-  return RUN_ALL_TESTS();
 }

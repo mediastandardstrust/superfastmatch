@@ -16,6 +16,7 @@ typedef unsigned __int64 uint64_t;
 #include <kcutil.h>
 #include <ktutil.h>
 #include <tr1/memory>
+#include <tr1/unordered_set>
 
 #define DISALLOW_COPY_AND_ASSIGN(TypeName) \
   TypeName(const TypeName&);               \

@@ -1,4 +1,7 @@
-#include <gmock/gmock.h>
+#ifndef _SFMMOCKREGISTRY_H                       // duplication check
+#define _SFMMOCKREGISTRY_H
+
+#include <tests.h>
 
 namespace superfastmatch {
 
@@ -71,3 +74,5 @@ class MockRegistry : public Registry {
 };
 
 }  // namespace superfastmatch
+
+#endif

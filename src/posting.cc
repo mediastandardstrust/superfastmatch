@@ -364,14 +364,14 @@ namespace superfastmatch
         pruned_results.insert(pair<DocTally,DocPair>(it->second,it->first));
       }
     }
-    // size_t count=0;
-    // for (inverted_search_t::iterator it=pruned_results.begin(),ite=pruned_results.end();it!=ite && count<200;++it){
-    //   count++;
-    //   double heat =(it->first.total>0?double(it->first.count)/it->first.total:0.0f);
-    //   cout << "Search for: " << *doc << " with text length: " << doc->getText().size() << " found : (" << it->second.doc_type << "," << it->second.doc_id << ")";
-    //   cout << "Count: " << it->first.count << " Total: " << it->first.total;
-    //   cout << " Heat: " << setprecision(3) << heat  << " Score: " << it->first.count*heat << endl; 
-    // }
+    size_t count=0;
+    for (inverted_search_t::iterator it=pruned_results.begin(),ite=pruned_results.end();it!=ite && count<200;++it){
+      count++;
+      double heat =(it->first.total>0?double(it->first.count)/it->first.total:0.0f);
+      cout << "Search for: " << *doc << " with text length: " << doc->getText().size() << " found : (" << it->second.doc_type << "," << it->second.doc_id << ")";
+      cout << "Count: " << it->first.count << " Total: " << it->first.total;
+      cout << " Heat: " << setprecision(3) << heat  << " Score: " << it->first.getScore() << endl; 
+    }
   }
   
   uint64_t Posting::addDocument(DocumentPtr doc){
@@ -380,6 +380,7 @@ namespace superfastmatch
     registry_->getLogger()->log(Logger::DEBUG,&message);
     uint64_t queue_length=alterIndex(doc,TaskPayload::AddDocument);
     doc_count_++;
+    total_doc_length_+=doc->getText().size();
     return queue_length;
   }
   
@@ -389,6 +390,7 @@ namespace superfastmatch
     registry_->getLogger()->log(Logger::DEBUG,&message);
     uint64_t queue_length=alterIndex(doc,TaskPayload::DeleteDocument);
     doc_count_--;
+    total_doc_length_-=doc->getText().size();
     return queue_length;
   }
   
@@ -431,7 +433,8 @@ namespace superfastmatch
     dict->SetIntValue("SLOT_COUNT",registry_->getSlotCount());
     dict->SetIntValue("DOC_COUNT",doc_count_);
     dict->SetIntValue("HASH_COUNT",hash_count);
-    dict->SetIntValue("AVERAGE_DOC_LENGTH",(doc_count_>0)?hash_count/doc_count_:0);
+    dict->SetIntValue("AVERAGE_HASHES",(doc_count_>0)?hash_count/doc_count_:0);
+    dict->SetIntValue("AVERAGE_DOC_LENGTH",(doc_count_>0)?total_doc_length_/doc_count_:0);
   }
   
   void Posting::fill_list_dictionary(TemplateDictionary* dict,uint32_t start){

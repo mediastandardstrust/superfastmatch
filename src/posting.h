@@ -12,6 +12,7 @@
 #include <common.h>
 #include <templates.h>
 #include <postline.h>
+#include <query.h>
 
 using google::sparsetable;
 using namespace std;
@@ -20,32 +21,11 @@ namespace superfastmatch
 {
 
   // Forward Declarations
-  class Document;
   class Registry;
   class Command;
   class PostingSlot;
   class Association;
-  
-  struct DocPair{
-    uint32_t doc_type;
-    uint32_t doc_id;
-    DocPair(uint32_t doc_type,uint32_t doc_id):
-    doc_type(doc_type),
-    doc_id(doc_id)
-    {}
-  };
     
-  typedef struct{
-    size_t operator() (const DocPair& k) const { 
-      return (static_cast<uint64_t>(k.doc_type)<<32)|k.doc_id;
-    }
-  } DocPairHash;
-
-  typedef struct
-  {
-    bool operator() (const DocPair& x, const DocPair &y) const { return (x.doc_type==y.doc_type) && (x.doc_id==y.doc_id); }
-  } DocPairEq;
-  
   struct DocTally{
     uint64_t count;
     uint64_t total;
@@ -55,13 +35,16 @@ namespace superfastmatch
     total(0),
     last_seen(0)
     {}
+    
+    double getScore() const{
+      return (count*count)/double(total);
+    }
   };
   
   typedef struct
   {
     bool operator()(const DocTally &lhs, const DocTally &rhs) const { 
-      return (lhs.count*lhs.count)/double(lhs.total)> (rhs.count*rhs.count)/double(rhs.total);
-      // return lhs.count > rhs.count;
+      return lhs.getScore()>rhs.getScore();
     }
   } DocTallyEq;
     
@@ -141,6 +124,7 @@ namespace superfastmatch
     Registry* registry_;
     vector<PostingSlot*> slots_;
     uint32_t doc_count_;
+    uint64_t total_doc_length_;
     bool ready_;
         
   public:

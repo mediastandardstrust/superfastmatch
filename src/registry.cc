@@ -30,6 +30,8 @@ namespace superfastmatch{
   static const bool white_space_threshold_dummy = google::RegisterFlagValidator(&FLAGS_white_space_threshold,&ValidateWhiteSpaceThreshold);
     
   DEFINE_int32(max_posting_threshold,100,"Number of entries for a hash above which are ignored for search");
+
+  DEFINE_int32(num_results,10,"Minimum number of documents to associate with");
  
   DEFINE_string(data_path,"data","Path to store data files");
   
@@ -77,7 +79,7 @@ namespace superfastmatch{
   };
   
   size_t FlagsRegistry::getNumResults() const{
-    return 20;
+    return FLAGS_num_results;
   };
   
   size_t FlagsRegistry::getMaxLineLength() const{

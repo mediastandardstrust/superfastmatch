@@ -72,29 +72,6 @@ namespace superfastmatch
     bool initBloom();
   };
   
-  class DocumentQuery
-  {
-  private:
-    typedef unordered_set<uint32_t>* set_t;
-    Registry* registry_;
-    const set_t left_doc_types_;
-    const set_t left_doc_ids;
-    const set_t right_doc_types_;
-    const set_t right_doc_ids;
-    const string cursor_;
-    const string order_by_;
-    const size_t offset;
-    const size_t limit;
-    const Document::DocumentOrder order_;
-    const bool valid_;
-    
-    DocumentQuery(Registry& registry, const string& command="",const size_t limit=0);
-    ~DocumentQuery();
-    
-    bool getOrderedDocPairs(vector<DocPair>& pairs);
-    bool getUnorderedDocPairs(unordered_set<DocPair>& pairs);
-  };
-  
   class DocumentManager
   {
   public:

@@ -1,13 +1,6 @@
+#include <tests.h>
 #include <document.h>
 #include <posting.h>
-#include <mock_registry.h>
-#include <kcprotodb.h>
-#include <gtest/gtest.h>
-#include <gmock/gmock.h>
-
-using namespace testing;
-using namespace superfastmatch;
-using namespace kyotocabinet;
 
 class PostingTest : public ::testing::Test{
 protected:
@@ -89,9 +82,4 @@ TEST_F(PostingTest,SearchTest){
   EXPECT_EQ(0U,searchDoc->docid());
   EXPECT_EQ(0U,searchDoc->doctype());
   EXPECT_EQ(2U,results.size());
-}
-
-int main(int argc, char** argv) {
-  ::testing::InitGoogleMock(&argc, argv);
-  return RUN_ALL_TESTS();
 }

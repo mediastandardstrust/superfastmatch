@@ -12,7 +12,8 @@ DATA = ./data
 
 # Targets
 MYBINS = superfastmatch
-OBJS = src/superfastmatch.o src/worker.o src/queue.o src/posting.o src/document.o src/logger.o src/registry.o src/command.o src/postline.o src/association.o
+OBJS =  src/worker.o src/queue.o src/posting.o src/document.o src/logger.o src/registry.o src/command.o src/postline.o src/association.o src/query.o
+MAIN = src/superfastmatch.o
 
 # Building binaries
 INCLUDES = -I./src -I./tests -I/usr/local/include/ -I/usr/local/lib/gcc/ -Itests/utils/
@@ -34,7 +35,7 @@ DEBUGENV = gdb
 # Test variables
 #================================================================
 
-TESTS = tests/command-unittest.o tests/postline-unittest.o tests/document-unittest.o tests/association-unittest.o tests/posting-unittest.o tests/benchmark.o tests/hash-unittest.o
+TESTS = tests/command-unittest.o tests/postline-unittest.o tests/document-unittest.o tests/association-unittest.o tests/posting-unittest.o tests/benchmark.o tests/hash-unittest.o tests/query-unittest.o
 GTEST_DIR = tests/utils
 
 #================================================================
@@ -71,13 +72,12 @@ clean :
 	rm -rf $(MYBINS) $(DATA) tests/*.o $(GTEST_DIR)/*.o $(GTEST_DIR)/*.a *.a *.o *.exe src/*.o src/*.d
 	mkdir -p $(DATA)
 
-check : CXXFLAGS += -O0
-check : $(TESTS)
-	$(TESTS:.o=;)
-
 run : all
 	mkdir -p $(DATA)
 	$(RUNENV) ./superfastmatch -reset -debug
+
+check : tests/all-tests
+	tests/all-tests --gtest_filter=-*Slow*
 
 profile : all
 	mkdir -p $(DATA)
@@ -97,36 +97,18 @@ debug : all
 # Building Tests
 #================================================================
 
-gmock-gtest.a : $(GTEST_DIR)/gmock-gtest-all.o
+tests/gmock-gtest.a : $(GTEST_DIR)/gmock-gtest-all.o
 	$(AR) $(ARFLAGS) $@ $^
 
-tests/postline-unittest.o : src/postline.cc tests/postline-unittest.cc gmock-gtest.a 
-	$(CXX) -lpthread $(CXXFLAGS) $^ -o $* 
-
-tests/document-unittest.o : src/document.cc src/association.cc src/posting.cc src/logger.cc src/postline.cc tests/document-unittest.cc gmock-gtest.a
-	$(CXX) $(INCLUDES) -lpthread -lkyotocabinet -lkyototycoon -lctemplate $(CXXFLAGS) $^ -o $*
-
-tests/association-unittest.o : src/document.cc src/association.cc src/posting.cc src/logger.cc src/postline.cc tests/association-unittest.cc gmock-gtest.a
-	$(CXX) $(INCLUDES) -lpthread -lkyotocabinet -lkyototycoon -lctemplate $(CXXFLAGS) $^ -o $*
-
-tests/posting-unittest.o : src/document.cc src/posting.cc src/logger.cc src/association.cc src/postline.cc src/command.cc src/queue.cc tests/posting-unittest.cc gmock-gtest.a
-	$(CXX) $(INCLUDES) -lpthread -lkyotocabinet -lkyototycoon -lctemplate $(CXXFLAGS) $^ -o $*
-
-tests/command-unittest.o : src/command.cc src/queue.cc src/document.cc src/association.cc src/posting.cc src/postline.cc src/logger.cc tests/command-unittest.cc gmock-gtest.a
-	$(CXX) $(INCLUDES) -lpthread -lkyotocabinet -lkyototycoon -lctemplate $(CXXFLAGS) $^ -o $*
-
-tests/hash-unittest.o : tests/hash-unittest.cc gmock-gtest.a
-	$(CXX) $(INCLUDES) $(CXXFLAGS) $^ -o $*
-
-tests/benchmark.o : src/document.cc src/posting.cc src/logger.cc src/association.cc src/postline.cc src/command.cc src/queue.cc tests/benchmark.cc gmock-gtest.a
-	$(CXX) $(INCLUDES) -lpthread -lkyotocabinet -lkyototycoon -lctemplate $(CXXFLAGS) $^ -o $*
+tests/all-tests : $(TESTS) $(OBJS) tests/all-tests.cc tests/gmock-gtest.a
+	$(CXX) $(INCLUDES) $(LIBS) $(CXXFLAGS) -o $@ $^
 
 #================================================================
 # Building binaries
 #================================================================
 
-superfastmatch : $(OBJS) 
-	$(CXX) $(LDFLAGS) $(LIBS) $(OBJS) -o $@ 
+superfastmatch : $(OBJS) $(MAIN)
+	$(CXX) $(LDFLAGS) $(LIBS) $(OBJS) $(MAIN) -o $@ 
 
 # END OF FILE
 # DO NOT DELETE
