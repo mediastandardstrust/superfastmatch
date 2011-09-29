@@ -1,12 +1,17 @@
 #ifndef _SFMMOCKREGISTRY_H                       // duplication check
 #define _SFMMOCKREGISTRY_H
 
-#include <tests.h>
+#include <gtest/gtest.h>
+#include <gmock/gmock.h>
+#include <registry.h>
 
 namespace superfastmatch {
 
 class MockRegistry : public Registry {
  public:
+   MockRegistry();
+   virtual ~MockRegistry();
+   
   MOCK_CONST_METHOD0(getHashWidth,
       uint32_t());
   MOCK_CONST_METHOD0(getHashMask,

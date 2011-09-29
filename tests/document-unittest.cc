@@ -1,41 +1,6 @@
 #include <tests.h>
 
-class DocumentTest :public ::testing::Test{
-protected:
-  PolyDB* documentDB_;
-  PolyDB* metaDB_;
-  DocumentManager* documentManager_;
-  MockRegistry registry_;
-  
-  virtual void SetUp(){
-    documentDB_ = new PolyDB();
-    metaDB_ = new PolyDB();
-    documentManager_ = new DocumentManager(&registry_);
-    documentDB_->open("%");
-    metaDB_->open("%");
-    EXPECT_CALL(registry_,getWindowSize())
-      .WillRepeatedly(Return(4));
-    EXPECT_CALL(registry_,getDocumentDB())
-      .WillRepeatedly(Return(documentDB_));
-    EXPECT_CALL(registry_,getDocumentManager())
-      .WillRepeatedly(Return(documentManager_));
-    EXPECT_CALL(registry_,getMetaDB())
-      .WillRepeatedly(Return(metaDB_));
-    EXPECT_CALL(registry_,getWhiteSpaceThreshold())
-      .WillRepeatedly(Return(4));
-    EXPECT_CALL(registry_,getWhiteSpaceHash(false))
-      .WillRepeatedly(Return(0));  
-  }
-  
-  virtual void TearDown(){
-    metaDB_->close();
-    documentDB_->close();
-    delete metaDB_;
-    delete documentDB_;
-    delete documentManager_;
-  }
-};
-
+typedef BaseTest DocumentTest;
 typedef DocumentTest DocumentDeathTest;
 
 TEST_F(DocumentTest,ConstructorTest){

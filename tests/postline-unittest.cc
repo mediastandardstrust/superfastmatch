@@ -1,5 +1,4 @@
 #include <tests.h>
-#include <postline.h>
 #include <vector>
 
 TEST(PostLineTest,VarIntCodecHeaderTest){
@@ -8,7 +7,7 @@ TEST(PostLineTest,VarIntCodecHeaderTest){
   for (size_t i=1;i<=100;i++){
     item.doc_type=i;
     item.length=i;
-    header.push_back(item);    
+    header.push_back(item);
   }
   unsigned char* out = new unsigned char[1024];
   PostLineCodec* codec = new VarIntCodec();

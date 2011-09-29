@@ -50,7 +50,7 @@ namespace superfastmatch{
         wwwformtomap(reqbody,&values);
       }
       vector<string> sections,queries,parts;
-                kc::strsplit(path, '/', &sections);
+      kc::strsplit(path, '/', &sections);
       if (sections.size()>1){
         resource = sections[1];
       }

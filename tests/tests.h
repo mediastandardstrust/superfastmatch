@@ -10,7 +10,6 @@
 #include <association.h>
 #include <postline.h>
 #include <posting.h>
-#include <registry.h>
 #include <queue.h>
 #include <query.h>
 #include <mock_registry.h>
@@ -18,5 +17,25 @@
 using namespace testing;
 using namespace superfastmatch;
 using namespace kyotocabinet;
+
+class BaseTest :public ::testing::Test{
+protected:
+  PolyDB* associationDB_;
+  PolyDB* documentDB_;
+  PolyDB* metaDB_;
+  PolyDB* queueDB_;
+  PolyDB* payloadDB_;
+  PolyDB* miscDB_;
+  DocumentManager* documentManager_;
+  AssociationManager* associationManager_;
+  QueueManager* queueManager_;
+  Posting* postings_;
+  MockRegistry registry_;
+  Logger* logger_;
+  
+  virtual void SetUp();
+  virtual void TearDown();
+
+};
 
 #endif

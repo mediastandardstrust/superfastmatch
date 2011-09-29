@@ -31,10 +31,12 @@ namespace superfastmatch
 
   class DocTypeRange{
     set<uint32_t> doctypes_;
-    
+
     public:
-      explicit DocTypeRange(const string& range);
+      explicit DocTypeRange();
+      bool parse(const string& range);
       bool isInRange(uint32_t doctype);
+      set<uint32_t> getDocTypes();
       void fillItemDictionary(TemplateDictionary* dict);
   };
 
@@ -48,15 +50,18 @@ namespace superfastmatch
     string order_by_;
     size_t offset_;
     size_t limit_;
+    bool valid_;
     // const Document::DocumentOrder order_;
 
   public:
     explicit DocumentQuery(Registry* registry, const string& command="");
   
-    bool getOrderedDocPairs(vector<DocPair>& pairs);
-    bool getUnorderedDocPairs(unordered_set<DocPair>& pairs);
+    vector<DocPair> getSourceDocPairs();
+    vector<DocPair> getTargetDocPairs();
+    bool isValid();
   
   private:
+    vector<DocPair> getDocPairs(const DocTypeRange& range);
     DISALLOW_COPY_AND_ASSIGN(DocumentQuery);
   };
 }

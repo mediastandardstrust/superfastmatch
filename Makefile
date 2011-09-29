@@ -76,8 +76,8 @@ run : all
 	mkdir -p $(DATA)
 	$(RUNENV) ./superfastmatch -reset -debug
 
-check : tests/all-tests
-	tests/all-tests --gtest_filter=-*Slow*
+check : tests/tests
+	tests/tests --gtest_filter=-*Slow*
 
 profile : all
 	mkdir -p $(DATA)
@@ -100,7 +100,7 @@ debug : all
 tests/gmock-gtest.a : $(GTEST_DIR)/gmock-gtest-all.o
 	$(AR) $(ARFLAGS) $@ $^
 
-tests/all-tests : $(TESTS) $(OBJS) tests/all-tests.cc tests/gmock-gtest.a
+tests/tests : $(TESTS) $(OBJS) tests/tests.o tests/mock_registry.o tests/gmock-gtest.a
 	$(CXX) $(INCLUDES) $(LIBS) $(CXXFLAGS) -o $@ $^
 
 #================================================================
