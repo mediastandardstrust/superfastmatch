@@ -95,7 +95,7 @@ namespace superfastmatch
     DocumentPtr getDocument(const uint32_t doctype, const uint32_t docid,const int32_t state=DEFAULT_STATE);
     DocumentPtr getDocument(const string& key,const int32_t state=DEFAULT_STATE);
     vector<DocumentPtr> getDocuments(const uint32_t doctype=0,const int32_t state=DEFAULT_STATE);
-    bool associateDocument(DocumentPtr doc);
+    // bool associateDocument(DocumentPtr doc);
     void fillListDictionary(TemplateDictionary* dict,const uint32_t doctype,const uint32_t docid);
     
   private:

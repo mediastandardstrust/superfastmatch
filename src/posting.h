@@ -139,10 +139,8 @@ namespace superfastmatch
     uint64_t alterIndex(DocumentPtr doc,TaskPayload::TaskOperation operation);
     uint64_t addDocument(DocumentPtr doc);
     uint64_t deleteDocument(DocumentPtr doc);
-    uint64_t associateDocument(DocumentPtr doc);
     bool isReady();
 
-    void fill_search_dictionary(DocumentPtr doc,TemplateDictionary* dict);
     void fill_status_dictionary(TemplateDictionary* dict);
     void fill_list_dictionary(TemplateDictionary* dict,uint32_t start);
     void fill_histogram_dictionary(TemplateDictionary* dict);

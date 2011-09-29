@@ -323,24 +323,6 @@ namespace superfastmatch
     return doc;
   }
   
-  bool DocumentManager::associateDocument(DocumentPtr doc){
-    stringstream message;
-    message << "Associating: " << *doc;
-    registry_->getLogger()->log(Logger::DEBUG,&message);
-    search_t results;
-    inverted_search_t pruned_results;
-    registry_->getPostings()->searchIndex(doc,results,pruned_results);
-    size_t num_results=registry_->getNumResults();
-    size_t count=0;
-    for(inverted_search_t::iterator it2=pruned_results.begin(),ite2=pruned_results.end();it2!=ite2 && count<num_results;++it2){
-      DocumentPtr other=registry_->getDocumentManager()->getDocument(it2->second.doc_type,it2->second.doc_id);
-      Association association(registry_,doc,other);
-      association.save();
-      count++;
-    } 
-    return true;
-  }
-  
   bool DocumentManager::initDoc(const DocumentPtr doc,const int32_t state){
     if ((state&META) && (not doc->initMeta()))
       return false;

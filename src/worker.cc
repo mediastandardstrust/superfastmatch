@@ -175,7 +175,7 @@ namespace superfastmatch{
     switch (req.verb){
       case HTTPClient::MPOST:{
           DocumentPtr doc=registry_->getDocumentManager()->createTemporaryDocument(req.reqbody);
-          registry_->getPostings()->fill_search_dictionary(doc,&res.dict); 
+          registry_->getAssociationManager()->fillSearchDictionary(doc,&res.dict);
           res.code=200;
           res.template_name=RESULTS_PAGE;
         }

@@ -358,6 +358,8 @@ namespace superfastmatch
   }
   
   void Posting::searchIndex(DocumentPtr doc,search_t& results,inverted_search_t& pruned_results){
+    Logger* logger=registry_->getLogger();
+    stringstream message;
     for (size_t i=0;i<slots_.size();i++){
       slots_[i]->searchIndex(doc,results);
     }
@@ -370,9 +372,10 @@ namespace superfastmatch
     for (inverted_search_t::iterator it=pruned_results.begin(),ite=pruned_results.end();it!=ite && count<200;++it){
       count++;
       double heat =(it->first.total>0?double(it->first.count)/it->first.total:0.0f);
-      cout << "Search for: " << *doc << " with text length: " << doc->getText().size() << " found : (" << it->second.doc_type << "," << it->second.doc_id << ")";
-      cout << "Count: " << it->first.count << " Total: " << it->first.total;
-      cout << " Heat: " << setprecision(3) << heat  << " Score: " << it->first.getScore() << endl; 
+      message << "Search for: " << *doc << " with text length: " << doc->getText().size() << " found : (" << it->second.doc_type << "," << it->second.doc_id << ")";
+      message << "Count: " << it->first.count << " Total: " << it->first.total;
+      message << " Heat: " << setprecision(3) << heat  << " Score: " << it->first.getScore();
+      logger->log(Logger::DEBUG,&message);
     }
   }
   
@@ -398,27 +401,6 @@ namespace superfastmatch
   
   bool Posting::isReady(){
     return ready_;
-  }
-  
-  void Posting::fill_search_dictionary(DocumentPtr doc,TemplateDictionary* dict){
-    search_t results;
-    inverted_search_t pruned_results;
-    searchIndex(doc,results,pruned_results);
-    size_t count=0;
-    size_t num_results=registry_->getNumResults();
-    inverted_search_t::iterator it=pruned_results.begin();
-    while(it!=pruned_results.end() && count<num_results){
-      TemplateDictionary* result_dict=dict->AddSectionDictionary("RESULT");
-      result_dict->SetIntValue("DOC_TYPE",it->second.doc_type);
-      result_dict->SetIntValue("DOC_ID",it->second.doc_id);
-      result_dict->SetIntValue("COUNT",it->first.count);
-      result_dict->SetIntValue("TOTAL",it->first.total);
-      result_dict->SetFormattedValue("HEAT","%.2f",double(it->first.total)/it->first.count);
-      DocumentPtr other=registry_->getDocumentManager()->getDocument(it->second.doc_type,it->second.doc_id);
-      registry_->getAssociationManager()->fillSearchDictionary(doc,other,dict);
-      count++;
-      it++;
-    }
   }
   
   void Posting::fill_status_dictionary(TemplateDictionary* dict){

@@ -86,7 +86,9 @@ namespace superfastmatch
     vector<AssociationPtr> getAssociations(DocumentPtr doc,const int32_t state);
     bool removeAssociations(DocumentPtr doc);
     void fillListDictionary(DocumentPtr doc,TemplateDictionary* dict);
-    void fillSearchDictionary(DocumentPtr doc,DocumentPtr other, TemplateDictionary* dict);
+    void fillSearchDictionary(DocumentPtr doc,TemplateDictionary* dict);
+    
+    // void fillSearchDictionary(DocumentPtr doc,DocumentPtr other, TemplateDictionary* dict);
     
   private:
     vector<AssociationPtr> createAssociations(DocumentPtr doc);

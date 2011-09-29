@@ -96,6 +96,7 @@ namespace superfastmatch
     // TODO Optimise for shorter document
     // if (from_document->getText().length()<to_document->getText().length())
     Logger* logger = registry_->getLogger();
+    stringstream message;
     hashes_bloom* bloom = new hashes_bloom();
     hashes_vector from_hashes,to_hashes;
     *bloom|=from_document_->getBloom();
@@ -107,6 +108,7 @@ namespace superfastmatch
     string original_text = from_document_->getText();
     uint32_t window_size=registry_->getWindowSize();
     uint32_t white_space=registry_->getWhiteSpaceHash(false);
+    size_t bad_matches=0;
 
     // cout << "From length: " << from_document_->getText().size() << " To length: " << to_document_->getText().size() << " Bloom: " << bloom->count() << " From: " << from_document_->getBloom().count() << " To: " << to_document_->getBloom().count() << endl;
 
@@ -143,10 +145,12 @@ namespace superfastmatch
       matches_map::iterator to_match=to_matches.find(from_hashes[i]);
       if (to_match!=to_matches_end){
         positions_set checked_matches(to_match->second);
-        for (positions_set::iterator it=checked_matches.begin();it!=checked_matches.end();++it){
-          if (from_document_->getCleanText(i,window_size)!=to_document_->getCleanText(*it,window_size)){
+        string from_text = from_document_->getCleanText(i,window_size);
+        for (positions_set::iterator it=checked_matches.begin(),ite=checked_matches.end();it!=ite;++it){
+          if (from_text!=to_document_->getCleanText(*it,window_size)){
             // logger->log(Logger::DEBUG,kc::strprintf("Bad Match: \"%s\" : \"%s\"",from_document_->getCleanText(i,window_size).c_str(),to_document_->getCleanText(*it,window_size).c_str()).c_str());
             checked_matches.erase(it);
+            bad_matches++;
           }
         }
         matches.push_back(Match(i,checked_matches));
@@ -199,6 +203,8 @@ namespace superfastmatch
        }
     }
     sort(results_->begin(),results_->end(),result_sorter);
+    message << "Associated: " << *from_document_ << " with: " << *to_document_ << " Bad Matches: " << bad_matches;
+    logger->log(Logger::DEBUG,&message);
     delete bloom;
   }
 
@@ -284,9 +290,6 @@ namespace superfastmatch
   
   vector<AssociationPtr> AssociationManager::createAssociations(DocumentPtr doc){
     vector<AssociationPtr> associations;
-    stringstream message;
-    message << "Creating Associations for: " << *doc;
-    registry_->getLogger()->log(Logger::DEBUG,&message);
     search_t results;
     inverted_search_t pruned_results;
     registry_->getPostings()->searchIndex(doc,results,pruned_results);
@@ -330,10 +333,12 @@ namespace superfastmatch
     } 
   }
   
-  void AssociationManager::fillSearchDictionary(DocumentPtr doc,DocumentPtr other, TemplateDictionary* dict){
+  void AssociationManager::fillSearchDictionary(DocumentPtr doc,TemplateDictionary* dict){
     TemplateDictionary* association_dict=dict->AddIncludeDictionary("ASSOCIATION");
     association_dict->SetFilename(ASSOCIATION);
-    Association association(registry_,doc,other);
-    association.fillItemDictionary(association_dict);
+    vector<AssociationPtr> associations=createTemporaryAssociations(doc);
+    for (vector<AssociationPtr>::iterator it=associations.begin(),ite=associations.end();it!=ite;++it){
+      (*it)->fillItemDictionary(association_dict);
+    }
   }
 }
