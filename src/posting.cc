@@ -298,7 +298,10 @@ namespace superfastmatch
   // ---------------
   
   Posting::Posting(Registry* registry):
-  registry_(registry),doc_count_(0),ready_(false)
+  registry_(registry),
+  doc_count_(0),
+  total_doc_length_(0),
+  ready_(false)
   {
     for (uint32_t i=0;i<registry->getSlotCount();i++){
       slots_.push_back(new PostingSlot(registry,i));
