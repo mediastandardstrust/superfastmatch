@@ -110,8 +110,6 @@ namespace superfastmatch
     const uint32_t slot_number_;
     const uint32_t offset_;
     const uint32_t span_;
-    PostLineCodec* codec_;
-    PostLine line_;
     index_t index_;
     kc::RWLock index_lock_;
     PostingTaskQueue queue_;
@@ -121,8 +119,7 @@ namespace superfastmatch
     ~PostingSlot();
     
     bool alterIndex(DocumentPtr doc,TaskPayload::TaskOperation operation);
-    // bool searchIndex(DocumentPtr doc,search_t& results);
-    bool searchIndex(DocumentPtr doc,search_t& results, const uint32_t hash, const uint32_t position);
+    bool searchIndex(DocumentPtr doc,search_t& results, const uint32_t hash, const uint32_t position,PostLine& line);
 
     uint64_t addTask(TaskPayload* payload);
     uint64_t getTaskCount();

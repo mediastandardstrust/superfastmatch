@@ -49,7 +49,7 @@ namespace superfastmatch
     uint32_t updated_section_;
   
   public:
-    PostLine(PostLineCodec* codec,uint32_t max_length);
+    PostLine(uint32_t max_length);
     ~PostLine();
 
     void load(const unsigned char* start);

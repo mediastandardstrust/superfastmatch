@@ -81,8 +81,6 @@ namespace superfastmatch
   registry_(registry),slot_number_(slot_number),
   offset_((registry->getMaxHashCount()/registry->getSlotCount())*slot_number), // Offset for sparsetable insertion
   span_(registry->getMaxHashCount()/registry->getSlotCount()), // Span of slot, ie. ignore every hash where (hash-offset)>span
-  codec_(new VarIntCodec()),
-  line_(codec_,registry->getMaxLineLength()),
   index_(registry->getMaxHashCount()/registry->getSlotCount())
   {
     // 1 thread per slot, increase slot_number to get more threads!
@@ -108,7 +106,7 @@ namespace superfastmatch
   }
 
   bool PostingSlot::alterIndex(DocumentPtr doc,TaskPayload::TaskOperation operation){
-    // index_lock_.lock_writer();
+    PostLine line(registry_->getMaxLineLength());
     uint32_t hash;
     uint32_t hash_mask=registry_->getHashMask();
     uint32_t white_space=registry_->getWhiteSpaceHash()-offset_;
@@ -139,34 +137,33 @@ namespace superfastmatch
           index_.set(hash,entry);
         }
         entry=index_[hash];
-        line_.load(entry);
-        incoming_length=line_.getLength();
+        line.load(entry);
+        incoming_length=line.getLength();
         switch (operation){
           case TaskPayload::AddDocument:
-            noop=not line_.addDocument(doctype,docid);
+            noop=not line.addDocument(doctype,docid);
             break;
           case TaskPayload::DeleteDocument:
-            noop=not line_.deleteDocument(doctype,docid);
+            noop=not line.deleteDocument(doctype,docid);
             break;
         }
         if (!noop){
-          outgoing_length=line_.getLength();
+          outgoing_length=line.getLength();
           if ((outgoing_length/8)>(incoming_length/8)){
             size_t size=((outgoing_length/8)+1)*8;
             delete[] entry;
             entry = new unsigned char[size];
             index_.set(hash,entry);
           }
-          line_.commit(entry);
+          line.commit(entry);
         }
         index_lock_.unlock();
       }
     }
-    // index_lock_.unlock();
     return true;
   }
   
-  bool PostingSlot::searchIndex(DocumentPtr doc,search_t& results,const uint32_t hash, const uint32_t position){
+  bool PostingSlot::searchIndex(DocumentPtr doc,search_t& results,const uint32_t hash, const uint32_t position,PostLine& line){
     uint32_t threshold=registry_->getMaxPostingThreshold();
     uint32_t slot_hash = hash-offset_;
     uint32_t doctype=doc->doctype();
@@ -177,10 +174,10 @@ namespace superfastmatch
     DocPair pair(0,0);
     index_lock_.lock_reader();
     if(index_.test(slot_hash)){
-      line_.load(index_.unsafe_get(slot_hash));
-      line_.getDocTypes(doctypes);
+      line.load(index_.unsafe_get(slot_hash));
+      line.getDocTypes(doctypes);
       for (vector<uint32_t>::const_iterator it=doctypes.begin(),ite=doctypes.end();it!=ite;++it){
-        line_.getDocIds(*it,docids);
+        line.getDocIds(*it,docids);
         size_t doc_count=docids.size();
         if (doc_count<=threshold){
           for (vector<uint32_t>::const_iterator it2=docids.begin(),ite2=docids.end();it2!=ite2;++it2){
@@ -226,6 +223,7 @@ namespace superfastmatch
   }
   
   uint32_t PostingSlot::fill_list_dictionary(TemplateDictionary* dict,uint32_t start){
+    PostLine line(registry_->getMaxLineLength());
     index_lock_.lock_reader();
     uint32_t count=0;
     uint32_t hash=(offset_>start)?0:start-offset_;
@@ -244,16 +242,16 @@ namespace superfastmatch
     index_t::nonempty_iterator it=index_.get_iter(hash);
     while (it!=index_.nonempty_end() && count<registry_->getPageSize()){
       count++;
-      line_.load(*it);
-      line_.getDocTypes(doc_types);
+      line.load(*it);
+      line.getDocTypes(doc_types);
       TemplateDictionary* posting_dict=dict->AddSectionDictionary("POSTING");
       TemplateDictionary* hash_dict=posting_dict->AddSectionDictionary("HASH");
       hash_dict->SetIntValue("HASH",index_.get_pos(it)+offset_);
-      hash_dict->SetIntValue("BYTES",line_.getLength());
+      hash_dict->SetIntValue("BYTES",line.getLength());
       hash_dict->SetIntValue("DOC_TYPE_COUNT",doc_types.size());
       for (size_t i=0;i<doc_types.size();i++){
         posting_dict->SetIntValue("DOC_TYPE",doc_types[i]);
-        line_.getDocIds(doc_types[i],doc_ids);
+        line.getDocIds(doc_types[i],doc_ids);
         uint32_t previous=0;
         for (size_t j=0;j<doc_ids.size();j++){
           TemplateDictionary* doc_id_dict = posting_dict->AddSectionDictionary("DOC_IDS");
@@ -273,18 +271,19 @@ namespace superfastmatch
   }
   
   void PostingSlot::fillHistograms(histogram_t& hash_hist,histogram_t& gaps_hist){
+    PostLine line(registry_->getMaxLineLength());
     index_lock_.lock_reader();
     vector<uint32_t> doc_types;
     vector<uint32_t> doc_deltas;
     uint32_t doc_type;
     stats_t* doc_type_gaps;
     for (index_t::nonempty_iterator it=index_.nonempty_begin(),ite=index_.nonempty_end();it!=ite;++it){
-      line_.load(*it);
-      line_.getDocTypes(doc_types);
+      line.load(*it);
+      line.getDocTypes(doc_types);
       for(size_t i=0;i<doc_types.size();i++){
         doc_type=doc_types[i];
-        hash_hist[doc_type][line_.getLength(doc_type)]++;
-        line_.getDeltas(doc_type,doc_deltas);
+        hash_hist[doc_type][line.getLength(doc_type)]++;
+        line.getDeltas(doc_type,doc_deltas);
         doc_type_gaps=&gaps_hist[doc_type];
         for(size_t j=0;j<doc_deltas.size();j++){
           (*doc_type_gaps)[doc_deltas[j]]++;
@@ -367,6 +366,7 @@ namespace superfastmatch
   void Posting::searchIndex(DocumentPtr doc,search_t& results,inverted_search_t& pruned_results){
     Logger* logger=registry_->getLogger();
     stringstream message;
+    PostLine line(registry_->getMaxLineLength());
     uint32_t hash_mask=registry_->getHashMask();
     uint32_t hash_width=registry_->getHashWidth();
     uint32_t white_space=registry_->getWhiteSpaceHash();
@@ -375,7 +375,7 @@ namespace superfastmatch
     for (vector<uint32_t>::const_iterator it=doc->getHashes().begin(),ite=doc->getHashes().end();it!=ite;++it){
       uint32_t hash=(*it>>hash_width)^(*it&hash_mask);
       if (hash!=white_space){
-        slots_[hash/span]->searchIndex(doc,results,hash,position);
+        slots_[hash/span]->searchIndex(doc,results,hash,position,line);
       }
       position++;
     }

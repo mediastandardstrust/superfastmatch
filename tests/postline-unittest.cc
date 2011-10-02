@@ -42,8 +42,7 @@ TEST(PostLineTest,PostLineTest){
   memset(in,0,256);
   memset(out,0,256);
   size_t length;
-  PostLineCodec* codec = new VarIntCodec();
-  PostLine* line = new PostLine(codec,512);
+  PostLine* line = new PostLine(512);
   line->load(in);
   line->addDocument(2,1);
   length=line->getLength(2);
@@ -138,8 +137,7 @@ TEST(PostLineTest,PostLineTest){
 TEST(PostLineTest,BadParametersPostLineTest){
   unsigned char* first = new unsigned char[8];
   memset(first,0,8);
-  PostLineCodec* codec = new VarIntCodec();
-  PostLine* line = new PostLine(codec,512);
+  PostLine* line = new PostLine(512);
   line->load(first);
   EXPECT_EQ(1U,line->getLength());
   ASSERT_FALSE(line->addDocument(2,0));
@@ -166,8 +164,7 @@ TEST(PostLineTest,RealisticPostLineTest){
   memset(first,0,8);
   memset(second,0,16);
   vector<uint32_t> docids;
-  PostLineCodec* codec = new VarIntCodec();
-  PostLine* line = new PostLine(codec,512);
+  PostLine* line = new PostLine(512);
   line->load(first);
   // This is the single 0 marking the end of the header!
   EXPECT_EQ(1U,line->getLength());
@@ -212,8 +209,7 @@ TEST(PostLineTest,BigPostLineTest){
   vector<uint32_t> b_deltas;
   memset(forwards,0,4096);
   memset(backwards,0,4096);
-  PostLineCodec* codec = new VarIntCodec();
-  PostLine* line = new PostLine(codec,4096*5);
+  PostLine* line = new PostLine(4096*5);
   line->load(forwards);
   for (size_t doc_type=1;doc_type<12;doc_type++){
     for (size_t doc_id=1;doc_id<=256;doc_id++){

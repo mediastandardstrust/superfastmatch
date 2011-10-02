@@ -36,7 +36,7 @@ TEST_F(DocumentQueryTest,ParsingTest){
   DocumentPtr doc4=registry_.getDocumentManager()->createPermanentDocument(2,1,"text=This+is+a+test&title=Also+a+test&filename=test.txt");
   DocumentPtr doc5=registry_.getDocumentManager()->createPermanentDocument(2,2,"text=Another+test&title=Also+a+test&filename=test2.txt");
   DocumentPtr doc6=registry_.getDocumentManager()->createPermanentDocument(2,3,"text=Final+test&title=Also+a+test&filename=test3.txt");  
-  // testQuery(&registry_,"",0,0,true);
-  // testQuery(&registry_,"1/1/",1,1,true);
-  // testQuery(&registry_,"1-2/1-2/",2,2,true);
+  testQuery(&registry_,"",0,0,true);
+  testQuery(&registry_,"1/1/",1,1,true);
+  testQuery(&registry_,"1-2/1-2/",2,2,true);
 }

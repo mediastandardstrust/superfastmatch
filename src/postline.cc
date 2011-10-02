@@ -54,8 +54,8 @@ namespace superfastmatch
   // Both map and unordered_map have been avoided.
   // Cursors and vectors seem to be faster.
   
-  PostLine::PostLine(PostLineCodec* codec,uint32_t max_length):
-  codec_(codec),
+  PostLine::PostLine(uint32_t max_length):
+  codec_(new VarIntCodec()),
   temp_header_(new unsigned char[max_length*5]),
   temp_sections_(new unsigned char[max_length*5]),
   old_header_length_(0),
@@ -67,6 +67,7 @@ namespace superfastmatch
   PostLine::~PostLine(){
     delete[] temp_header_;
     delete[] temp_sections_;
+    delete codec_;
   }
   
   void PostLine::load(const unsigned char* start){
