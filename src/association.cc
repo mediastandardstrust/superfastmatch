@@ -108,7 +108,9 @@ namespace superfastmatch
     string original_text = from_document_->getText();
     uint32_t window_size=registry_->getWindowSize();
     uint32_t white_space=registry_->getWhiteSpaceHash(false);
+    uint32_t threshold=registry_->getMaxPostingThreshold();
     size_t bad_matches=0;
+    size_t above_threshold=0;
 
     // cout << "From length: " << from_document_->getText().size() << " To length: " << to_document_->getText().size() << " Bloom: " << bloom->count() << " From: " << from_document_->getBloom().count() << " To: " << to_document_->getBloom().count() << endl;
 
@@ -143,18 +145,25 @@ namespace superfastmatch
     matches_map::iterator to_matches_end=to_matches.end();
     for (size_t i=0;i<from_hashes_count;i++){
       matches_map::iterator to_match=to_matches.find(from_hashes[i]);
-      if (to_match!=to_matches_end){
-        positions_set checked_matches(to_match->second);
+      if (to_match!=to_matches_end && to_match->second.size()<=threshold){
+        Match match(i);
         string from_text = from_document_->getCleanText(i,window_size);
-        for (positions_set::iterator it=checked_matches.begin(),ite=checked_matches.end();it!=ite;++it){
-          if (from_text!=to_document_->getCleanText(*it,window_size)){
+        for (positions_set::iterator it=to_match->second.begin(),ite=to_match->second.end();it!=ite;++it){
+          if (from_text==to_document_->getCleanText(*it,window_size)){
+            match.right.insert(*it);
+          }else{
             // logger->log(Logger::DEBUG,kc::strprintf("Bad Match: \"%s\" : \"%s\"",from_document_->getCleanText(i,window_size).c_str(),to_document_->getCleanText(*it,window_size).c_str()).c_str());
-            checked_matches.erase(it);
             bad_matches++;
           }
         }
-        matches.push_back(Match(i,checked_matches));
-      }  
+        if (match.right.size()>0){
+          matches.push_back(match);
+        }
+      }else if(to_match!=to_matches_end && to_match->second.size()>threshold){
+        above_threshold++;
+        // TODO save these cases in a separate way
+        // cout << to_match->second.size() << ":" << from_document_->getCleanText(i,window_size) << endl; 
+      }
     }
 
     //Process matches to find longest common strings
@@ -203,7 +212,7 @@ namespace superfastmatch
        }
     }
     sort(results_->begin(),results_->end(),result_sorter);
-    message << "Associated: " << *from_document_ << " with: " << *to_document_ << " Bad Matches: " << bad_matches;
+    message << "Associated: " << *from_document_ << " with: " << *to_document_ << " Matches: " << results_->size() << " Bad Matches: " << bad_matches << " Above Threshold: " << above_threshold;
     logger->log(Logger::DEBUG,&message);
     delete bloom;
   }
@@ -276,19 +285,15 @@ namespace superfastmatch
 
   vector<AssociationPtr> AssociationManager::createTemporaryAssociations(DocumentPtr doc){
     assert((doc->doctype()==0)&&(doc->docid()==0));
-    return createAssociations(doc);
+    return createAssociations(doc,false);
   }
   
   vector<AssociationPtr> AssociationManager::createPermanentAssociations(DocumentPtr doc){
     assert((doc->doctype()!=0)&&(doc->docid()!=0));
-    vector<AssociationPtr> associations=createAssociations(doc);
-    for (vector<AssociationPtr>::iterator it=associations.begin(),ite=associations.end();it!=ite;++it){
-      assert((*it)->save());
-    }
-    return associations;
+    return createAssociations(doc,true);
   }
   
-  vector<AssociationPtr> AssociationManager::createAssociations(DocumentPtr doc){
+  vector<AssociationPtr> AssociationManager::createAssociations(DocumentPtr doc,const bool save){
     vector<AssociationPtr> associations;
     search_t results;
     inverted_search_t pruned_results;
@@ -299,6 +304,9 @@ namespace superfastmatch
       DocumentPtr other=registry_->getDocumentManager()->getDocument(it2->second.doc_type,it2->second.doc_id);
       AssociationPtr association(new Association(registry_,doc,other));
       associations.push_back(association);
+      if (save){
+        association->save();
+      }
       count++;
     }
     return associations;
@@ -327,7 +335,7 @@ namespace superfastmatch
   void AssociationManager::fillListDictionary(DocumentPtr doc,TemplateDictionary* dict){
     TemplateDictionary* association_dict=dict->AddIncludeDictionary("ASSOCIATION");
     association_dict->SetFilename(ASSOCIATION);
-    vector<AssociationPtr> associations=registry_->getAssociationManager()->getAssociations(doc,DocumentManager::META);
+    vector<AssociationPtr> associations=getAssociations(doc,DocumentManager::META);
     for (vector<AssociationPtr>::iterator it=associations.begin(),ite=associations.end();it!=ite;++it){
       (*it)->fillItemDictionary(association_dict);
     } 

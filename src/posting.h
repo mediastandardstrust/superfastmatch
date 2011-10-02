@@ -29,11 +29,22 @@ namespace superfastmatch
   struct DocTally{
     uint64_t count;
     uint64_t total;
-    uint64_t last_seen;
+    uint32_t previous_1;
+    uint32_t previous_2;
+    uint32_t previous_3;
+    uint32_t previous_4;
+    uint32_t previous_5;
+    uint32_t previous_6;
+    
     DocTally():
     count(0),
     total(0),
-    last_seen(0)
+    previous_1(0xfffffff0),
+    previous_2(0xfffffff0),
+    previous_3(0xfffffff0),
+    previous_4(0xfffffff0),
+    previous_5(0xfffffff0),
+    previous_6(0xfffffff0)
     {}
     
     double getScore() const{
@@ -44,7 +55,8 @@ namespace superfastmatch
   typedef struct
   {
     bool operator()(const DocTally &lhs, const DocTally &rhs) const { 
-      return lhs.getScore()>rhs.getScore();
+      return lhs.count>rhs.count;
+      // return lhs.getScore()>rhs.getScore();
     }
   } DocTallyEq;
     
@@ -109,10 +121,12 @@ namespace superfastmatch
     ~PostingSlot();
     
     bool alterIndex(DocumentPtr doc,TaskPayload::TaskOperation operation);
-    bool searchIndex(DocumentPtr doc,search_t& results);
+    // bool searchIndex(DocumentPtr doc,search_t& results);
+    bool searchIndex(DocumentPtr doc,search_t& results, const uint32_t hash, const uint32_t position);
 
     uint64_t addTask(TaskPayload* payload);
-    uint32_t getTaskCount();
+    uint64_t getTaskCount();
+    void finishTasks();
     size_t getHashCount();
 
     uint32_t fill_list_dictionary(TemplateDictionary* dict,uint32_t start);
@@ -133,7 +147,7 @@ namespace superfastmatch
     
     bool init();
     size_t getHashCount();
-    void wait(size_t queue_length);
+    void finishTasks();
     void searchIndex(DocumentPtr doc,search_t& results,inverted_search_t& pruned_results);
     // Following three methods return the current queue length for all slots combined   
     uint64_t alterIndex(DocumentPtr doc,TaskPayload::TaskOperation operation);

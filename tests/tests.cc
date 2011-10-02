@@ -24,7 +24,7 @@ void BaseTest::SetUp(){
   EXPECT_CALL(registry_,getWhiteSpaceHash(true))
     .WillRepeatedly(Return(0));
   EXPECT_CALL(registry_,getMaxPostingThreshold())
-    .WillRepeatedly(Return(200));
+    .WillRepeatedly(Return(100));
   EXPECT_CALL(registry_,getMaxDistance())
     .WillRepeatedly(Return(5));
   EXPECT_CALL(registry_,getSlotCount())

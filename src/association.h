@@ -19,11 +19,11 @@ namespace superfastmatch
   typedef std::deque<Result> results_deque;
   
   struct Match{
-     uint32_t left;
+     const uint32_t left;
      positions_set right;
-     Match(uint32_t left,positions_set right):
-     left(left),
-     right(right)
+
+     Match(uint32_t left):
+     left(left)
      {}
   };
   
@@ -91,7 +91,7 @@ namespace superfastmatch
     // void fillSearchDictionary(DocumentPtr doc,DocumentPtr other, TemplateDictionary* dict);
     
   private:
-    vector<AssociationPtr> createAssociations(DocumentPtr doc);
+    vector<AssociationPtr> createAssociations(DocumentPtr doc,const bool save);
     DISALLOW_COPY_AND_ASSIGN(AssociationManager);
   };
 }//namespace Superfastmatch

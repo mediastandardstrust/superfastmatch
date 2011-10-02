@@ -44,13 +44,13 @@ namespace superfastmatch{
         assert(command->changeStatus(Finished));
       }
       if((previousAction!=NullAction)&&(previousAction!=command->getAction())){
-        registry_->getPostings()->wait(0);
+        registry_->getPostings()->finishTasks();
       }
       // debug();
       previousAction=command->getAction();
       command = getQueuedCommand();
     }
-    registry_->getPostings()->wait(0);
+    registry_->getPostings()->finishTasks();
     return count;
   }
 

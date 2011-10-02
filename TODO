@@ -12,6 +12,7 @@ TODO
 * JSON versions of appropriate templates
 * Implement Document caching
 * Refactor paging into class
+* Store high frequency matches separately
 
 DONE
 ----

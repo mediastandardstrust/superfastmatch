@@ -100,7 +100,7 @@ debug : all
 tests/gmock-gtest.a : $(GTEST_DIR)/gmock-gtest-all.o
 	$(AR) $(ARFLAGS) $@ $^
 
-tests/tests : $(TESTS) $(OBJS) tests/tests.o tests/mock_registry.o tests/gmock-gtest.a
+tests/tests : $(OBJS) $(TESTS) tests/tests.o tests/mock_registry.o tests/gmock-gtest.a
 	$(CXX) $(INCLUDES) $(LIBS) $(CXXFLAGS) -o $@ $^
 
 #================================================================

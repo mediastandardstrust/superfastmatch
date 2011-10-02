@@ -10,7 +10,7 @@
 test_detail.xml
 gmon.out
 gmock-gtest.a
-tests/postline-unittest
+tests/tests
 external/
 data/
 fixtures/federal

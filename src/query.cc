@@ -76,7 +76,10 @@ namespace superfastmatch
   }
   
   vector<DocPair> DocumentQuery::getDocPairs(const DocTypeRange& range){
+    kc::PolyDB::Cursor* cursor=registry_->getMetaDB()->cursor();
     vector<DocPair> pairs;
+    cursor->jump();
+    delete cursor;
     return pairs;
   }
   

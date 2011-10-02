@@ -71,7 +71,7 @@ namespace superfastmatch
     PostingSlot* slot = ptask->getSlot();
     slot->alterIndex(doc,ptask->getPayload()->getTaskOperation());
     delete ptask;
-    }
+  }
 
   // -------------------
   // PostingSlot members
@@ -94,6 +94,11 @@ namespace superfastmatch
     index_.clear();
   }
   
+  void PostingSlot::finishTasks(){
+    queue_.finish();
+    queue_.start(1);
+  }
+  
   size_t PostingSlot::getHashCount(){
     size_t hash_count;
     index_lock_.lock_reader();
@@ -103,7 +108,7 @@ namespace superfastmatch
   }
 
   bool PostingSlot::alterIndex(DocumentPtr doc,TaskPayload::TaskOperation operation){
-    index_lock_.lock_writer();
+    // index_lock_.lock_writer();
     uint32_t hash;
     uint32_t hash_mask=registry_->getHashMask();
     uint32_t white_space=registry_->getWhiteSpaceHash()-offset_;
@@ -127,6 +132,7 @@ namespace superfastmatch
         }
         unsigned char* entry=NULL;
         bool noop=false;
+        index_lock_.lock_writer();
         if (!index_.test(hash)){
           entry = new unsigned char[8];
           memset(entry,0,8);
@@ -153,50 +159,49 @@ namespace superfastmatch
           }
           line_.commit(entry);
         }
+        index_lock_.unlock();
       }
     }
-    index_lock_.unlock();
+    // index_lock_.unlock();
     return true;
   }
   
-  bool PostingSlot::searchIndex(DocumentPtr doc,search_t& results){
-    uint32_t hash;
+  bool PostingSlot::searchIndex(DocumentPtr doc,search_t& results,const uint32_t hash, const uint32_t position){
+    uint32_t threshold=registry_->getMaxPostingThreshold();
+    uint32_t slot_hash = hash-offset_;
     uint32_t doctype=doc->doctype();
     uint32_t docid=doc->docid();
-    uint32_t hash_mask=registry_->getHashMask();
-    uint32_t white_space=registry_->getWhiteSpaceHash()-offset_;
-    uint32_t hash_width=registry_->getHashWidth();
-    uint32_t threshold=registry_->getMaxPostingThreshold();
     vector<uint32_t> docids;
     vector<uint32_t> doctypes;
     DocTally* tally;
     DocPair pair(0,0);
-    size_t position=0;
-    size_t doc_count;
-    size_t max_distance=registry_->getMaxDistance();
     index_lock_.lock_reader();
-    for (vector<uint32_t>::const_iterator it=doc->getHashes().begin(),ite=doc->getHashes().end();it!=ite;++it){
-      hash = ((*it>>hash_width)^(*it&hash_mask))-offset_;
-      if ((hash<span_) && (hash!=white_space) && (index_.test(hash))){
-        line_.load(index_.unsafe_get(hash));  
-        line_.getDocTypes(doctypes);
-        for (vector<uint32_t>::const_iterator it2=doctypes.begin(),ite2=doctypes.end();it2!=ite2;++it2){
-          line_.getDocIds(*it2,docids);
-          doc_count=docids.size();
-          if (doc_count<=threshold){
-            for (vector<uint32_t>::const_iterator it3=docids.begin(),ite3=docids.end();it3!=ite3;++it3){
-              pair.doc_type=*it2;
-              pair.doc_id=*it3;
-              tally=&results[pair];
-              uint32_t mask=(((*it3!=docid)||(*it2!=doctype))&&(position-tally->last_seen<=max_distance))-1;
-              tally->count+=(1&~mask)|(0&mask);
-              tally->total+=(doc_count&~mask)|(0&mask);
-              tally->last_seen=position;
-            }
+    if(index_.test(slot_hash)){
+      line_.load(index_.unsafe_get(slot_hash));
+      line_.getDocTypes(doctypes);
+      for (vector<uint32_t>::const_iterator it=doctypes.begin(),ite=doctypes.end();it!=ite;++it){
+        line_.getDocIds(*it,docids);
+        size_t doc_count=docids.size();
+        if (doc_count<=threshold){
+          for (vector<uint32_t>::const_iterator it2=docids.begin(),ite2=docids.end();it2!=ite2;++it2){
+            pair.doc_type=*it;
+            pair.doc_id=*it2;
+            tally=&results[pair];
+            uint32_t mask=(((*it2!=docid)||(*it!=doctype))&&((position-tally->previous_6)==6))-1;
+            tally->previous_6=tally->previous_5;
+            tally->previous_5=tally->previous_4;
+            tally->previous_4=tally->previous_3;
+            tally->previous_3=tally->previous_2;
+            tally->previous_2=tally->previous_1;
+            tally->previous_1=position;
+            // if (mask==0){
+              // cout << mask << " Position: " << position << " Previous 6th: " << tally->previous_6 <<endl; 
+            // }
+            tally->count+=(1&~mask);
+            tally->total+=(doc_count&~mask);
           }
         }
       }
-      position++;
     }
     index_lock_.unlock();
     return true;
@@ -204,10 +209,19 @@ namespace superfastmatch
   
   uint64_t PostingSlot::addTask(TaskPayload* payload){
     PostingTask* task = new PostingTask(this,payload);
-    return queue_.add_task(task);
+    uint64_t queue_length=queue_.add_task(task);
+    if (queue_length>40){
+      for (double wsec = 0.1; true; wsec *= 2) {
+        if (wsec > 1.0) wsec = 1.0;
+        kc::Thread::sleep(wsec);
+        queue_length=queue_.count();
+        if (queue_length<=20) break;
+      }
+    }
+    return queue_length;
   }
   
-  uint32_t PostingSlot::getTaskCount(){
+  uint64_t PostingSlot::getTaskCount(){
     return queue_.count();
   }
   
@@ -307,7 +321,7 @@ namespace superfastmatch
       addDocument(doc);
     }
     delete cursor;
-    wait(0);
+    finishTasks();
     stringstream message;
     message << "Posting initialisation finished in: " << setiosflags(ios::fixed) << setprecision(4) << kc::time()-start << " secs";
     registry_->getLogger()->log(Logger::DEBUG,&message);
@@ -315,24 +329,9 @@ namespace superfastmatch
     return ready_;
   }
   
-  void Posting::wait(size_t queue_length){
-    Logger* logger=registry_->getLogger();
-    stringstream message;
-    while(true){
-      message << "Slots: ";
-      size_t current_length=0;
-      for (size_t i=0;i<slots_.size();i++){
-        size_t slot_queue_length=slots_[i]->getTaskCount();
-        message << i << ":" << slot_queue_length << " ";
-        current_length+=slot_queue_length;
-      }
-      if (current_length>queue_length){
-        message << " Total: " << current_length << " Limit: " << queue_length;
-        logger->log(Logger::DEBUG,&message);
-        kc::Thread::sleep(0.05);
-      }else{
-        break;
-      }
+  void Posting::finishTasks(){
+    for (size_t i=0;i<slots_.size();i++){
+      slots_[i]->finishTasks();
     }
   }
   
@@ -345,31 +344,48 @@ namespace superfastmatch
   }
   
   uint64_t Posting::alterIndex(DocumentPtr doc,TaskPayload::TaskOperation operation){
+    Logger* logger=registry_->getLogger();
     stringstream message;
-    uint64_t queue_length=0;
+    if (operation==TaskPayload::AddDocument){
+      message << "Adding "; 
+    }else{
+      message << "Deleting ";
+    }
+    message << *doc << " Slots: ";
+    uint64_t total_length=0;
     TaskPayload* task = new TaskPayload(doc,operation,slots_.size());
     for (size_t i=0;i<slots_.size();i++){
-      queue_length+=slots_[i]->addTask(task);
+      uint64_t queue_length=slots_[i]->addTask(task);
+      message << i << ":" << queue_length << " ";
+      total_length+=queue_length;
     }
-    if (queue_length>(slots_.size()*40)){
-      wait(40); 
-    }
-    return queue_length;
+    message << " Total: " << total_length;
+    logger->log(Logger::DEBUG,&message);
+    return total_length;
   }
-  
+
   void Posting::searchIndex(DocumentPtr doc,search_t& results,inverted_search_t& pruned_results){
     Logger* logger=registry_->getLogger();
     stringstream message;
-    for (size_t i=0;i<slots_.size();i++){
-      slots_[i]->searchIndex(doc,results);
+    uint32_t hash_mask=registry_->getHashMask();
+    uint32_t hash_width=registry_->getHashWidth();
+    uint32_t white_space=registry_->getWhiteSpaceHash();
+    uint32_t span=registry_->getMaxHashCount()/registry_->getSlotCount();
+    uint32_t position=0;
+    for (vector<uint32_t>::const_iterator it=doc->getHashes().begin(),ite=doc->getHashes().end();it!=ite;++it){
+      uint32_t hash=(*it>>hash_width)^(*it&hash_mask);
+      if (hash!=white_space){
+        slots_[hash/span]->searchIndex(doc,results,hash,position);
+      }
+      position++;
     }
     for (search_t::iterator it=results.begin(),ite=results.end();it!=ite;it++){
-      if ((it->second.count>1) && !(it->first.doc_type==doc->doctype() && it->first.doc_id==doc->docid())){
+      if ((it->second.count>0) && !(it->first.doc_type==doc->doctype() && it->first.doc_id==doc->docid())){
         pruned_results.insert(pair<DocTally,DocPair>(it->second,it->first));
       }
     }
     size_t count=0;
-    for (inverted_search_t::iterator it=pruned_results.begin(),ite=pruned_results.end();it!=ite && count<200;++it){
+    for (inverted_search_t::iterator it=pruned_results.begin(),ite=pruned_results.end();it!=ite && count<20;++it){
       count++;
       double heat =(it->first.total>0?double(it->first.count)/it->first.total:0.0f);
       message << "Search for: " << *doc << " with text length: " << doc->getText().size() << " found : (" << it->second.doc_type << "," << it->second.doc_id << ")";
@@ -380,9 +396,6 @@ namespace superfastmatch
   }
   
   uint64_t Posting::addDocument(DocumentPtr doc){
-    stringstream message;
-    message << "Adding: " << *doc;
-    registry_->getLogger()->log(Logger::DEBUG,&message);
     uint64_t queue_length=alterIndex(doc,TaskPayload::AddDocument);
     doc_count_++;
     total_doc_length_+=doc->getText().size();
@@ -390,9 +403,6 @@ namespace superfastmatch
   }
   
   uint64_t Posting::deleteDocument(DocumentPtr doc){
-    stringstream message;
-    message << "Deleting: " << *doc;
-    registry_->getLogger()->log(Logger::DEBUG,&message);
     uint64_t queue_length=alterIndex(doc,TaskPayload::DeleteDocument);
     doc_count_--;
     total_doc_length_-=doc->getText().size();

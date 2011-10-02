@@ -20,7 +20,7 @@ TEST_F(CommandTest,DictionaryTest){
 
 TEST_F(CommandTest,PersistenceTest){
   CommandPtr addDoc = registry_.getQueueManager()->createCommand(AddDocument,1,1,"text=This+is+a+test");
-  registry_.getPostings()->wait(0);
+  registry_.getPostings()->finishTasks();
   EXPECT_STREQ("text=This+is+a+test",addDoc->getPayload().c_str());
   EXPECT_EQ(1U,addDoc->getDocType());
   EXPECT_EQ(1U,addDoc->getDocId());
@@ -70,15 +70,13 @@ TEST_F(CommandTest,QueueTest){
 TEST_F(CommandTest,DocumentTest){
   CommandPtr addDoc = registry_.getQueueManager()->createCommand(AddDocument,1,1,"text=This+is+a+test");
   EXPECT_TRUE(addDoc->execute());
-  registry_.getPostings()->wait(0);
+  registry_.getPostings()->finishTasks();
   EXPECT_EQ(11U,registry_.getPostings()->getHashCount());
   EXPECT_EQ(1U,registry_.getDocumentDB()->count());
   EXPECT_EQ(3U,registry_.getMetaDB()->count());
   CommandPtr dropDoc = registry_.getQueueManager()->createCommand(DropDocument,1,1,"");
   EXPECT_TRUE(dropDoc->execute());
-  registry_.getPostings()->wait(0);
-  // TODO Implement this!
-  // EXPECT_EQ(0U,registry_.getPostings()->getHashCount());
+  registry_.getPostings()->finishTasks();
   EXPECT_EQ(0U,registry_.getDocumentDB()->count());
   EXPECT_EQ(0U,registry_.getMetaDB()->count());
 }
@@ -88,7 +86,7 @@ TEST_F(CommandTest,AssociationTest){
   EXPECT_TRUE(addDoc1->execute());
   CommandPtr addDoc2 = registry_.getQueueManager()->createCommand(AddDocument,1,2,"text=This+is+a+test");
   EXPECT_TRUE(addDoc2->execute());
-  registry_.getPostings()->wait(0);
+  registry_.getPostings()->finishTasks();
   CommandPtr associateDoc1 = registry_.getQueueManager()->createCommand(AddAssociation,1,1,"");
   EXPECT_TRUE(associateDoc1->execute());
   EXPECT_EQ(2U,registry_.getAssociationDB()->count());
