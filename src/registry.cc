@@ -83,7 +83,7 @@ namespace superfastmatch{
   };
   
   size_t FlagsRegistry::getMaxLineLength() const{
-    return 1<<12;
+    return 1<<10;
   };
   
   size_t FlagsRegistry::getMaxHashCount() const{

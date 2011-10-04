@@ -41,14 +41,12 @@ TEST(PostLineTest,PostLineTest){
   vector<uint32_t> docids;
   memset(in,0,256);
   memset(out,0,256);
-  size_t length;
   PostLine* line = new PostLine(512);
+  EXPECT_EQ(0U,line->getLength());
   line->load(in);
   line->addDocument(2,1);
-  length=line->getLength(2);
-  EXPECT_EQ(1U,length);
-  length=line->getLength();
-  EXPECT_EQ(4U,length);
+  EXPECT_EQ(1U,line->getLength(2));
+  EXPECT_EQ(4U,line->getLength());
   ASSERT_TRUE(line->commit(out));
   EXPECT_EQ(out[0],2);
   EXPECT_EQ(out[1],1);

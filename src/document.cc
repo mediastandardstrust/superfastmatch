@@ -118,7 +118,9 @@ namespace superfastmatch
   bool Document::initHashes(){
     if (hashes_==0){
       hashes_vector* tempHashes = new hashes_vector();
-      UpperCaseRabinKarp(getText(),registry_->getWindowSize(),registry_->getWhiteSpaceThreshold(),*tempHashes);
+      if(getText().size()>=registry_->getWindowSize()){
+        UpperCaseRabinKarp(getText(),registry_->getWindowSize(),registry_->getWhiteSpaceThreshold(),*tempHashes);
+      }
       hashes_=tempHashes;
     }
     return true;

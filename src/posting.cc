@@ -129,7 +129,7 @@ namespace superfastmatch
           white_space_seen=true;
         }
         unsigned char* entry=NULL;
-        bool noop=false;
+        bool noop=true;
         index_lock_.lock_writer();
         if (!index_.test(hash)){
           entry = new unsigned char[8];
@@ -139,13 +139,15 @@ namespace superfastmatch
         entry=index_[hash];
         line.load(entry);
         incoming_length=line.getLength();
-        switch (operation){
-          case TaskPayload::AddDocument:
-            noop=not line.addDocument(doctype,docid);
-            break;
-          case TaskPayload::DeleteDocument:
-            noop=not line.deleteDocument(doctype,docid);
-            break;
+        if((incoming_length+5)<=(registry_->getMaxLineLength())){
+          switch (operation){
+            case TaskPayload::AddDocument:
+              noop=not line.addDocument(doctype,docid);
+              break;
+            case TaskPayload::DeleteDocument:
+              noop=not line.deleteDocument(doctype,docid);
+              break;
+            }
         }
         if (!noop){
           outgoing_length=line.getLength();

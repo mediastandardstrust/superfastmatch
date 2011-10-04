@@ -56,8 +56,8 @@ namespace superfastmatch
   
   PostLine::PostLine(uint32_t max_length):
   codec_(new VarIntCodec()),
-  temp_header_(new unsigned char[max_length*5]),
-  temp_sections_(new unsigned char[max_length*5]),
+  temp_header_(new unsigned char[max_length]),
+  temp_sections_(new unsigned char[max_length]),
   old_header_length_(0),
   temp_header_length_(0),
   temp_sections_length_(0),
