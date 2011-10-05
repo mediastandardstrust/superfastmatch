@@ -88,9 +88,6 @@ debug : all
 	mkdir -p data
 	$(DEBUGENV) superfastmatch
 
-# pull in dependency info for *existing* .o files
--include $(OBJS:.o=.d)
-
 .PHONY : all clean check profile debug run
 
 #================================================================
@@ -109,6 +106,9 @@ tests/tests : $(OBJS) $(TESTS) tests/tests.o tests/mock_registry.o tests/gmock-g
 
 superfastmatch : $(OBJS) $(MAIN)
 	$(CXX) $(LDFLAGS) $(LIBS) $(OBJS) $(MAIN) -o $@ 
+
+# pull in dependency info for *existing* .o files
+-include $(OBJS:.o=.d)
 
 # END OF FILE
 # DO NOT DELETE

@@ -16,6 +16,13 @@ namespace superfastmatch
     doc_type(doc_type),
     doc_id(doc_id)
     {}
+    DocPair(const string& key){
+      assert(key.size()==8);
+      memcpy(&doc_type,key.data(),4);
+      memcpy(&doc_id,key.data()+4,4);
+      doc_type=kc::ntoh32(doc_type);
+      doc_id=kc::ntoh32(doc_id);
+    }
   };
   
   typedef struct{
@@ -35,9 +42,8 @@ namespace superfastmatch
     public:
       explicit DocTypeRange();
       bool parse(const string& range);
-      bool isInRange(uint32_t doctype);
+      bool isInRange(uint32_t doctype) const;
       set<uint32_t> getDocTypes();
-      void fillItemDictionary(TemplateDictionary* dict);
   };
 
   class DocumentQuery
@@ -46,22 +52,41 @@ namespace superfastmatch
     Registry* registry_;
     DocTypeRange source_;
     DocTypeRange target_;
+    vector<DocPair> source_pairs_;
+    vector<DocPair> target_pairs_;
+    string path_;
     string cursor_;
     string order_by_;
-    size_t offset_;
-    size_t limit_;
+    string next_;
+    string previous_;
+    string first_;
+    string last_;
+    uint64_t limit_;
+    bool desc_;
     bool valid_;
-    // const Document::DocumentOrder order_;
 
   public:
     explicit DocumentQuery(Registry* registry, const string& command="");
   
-    vector<DocPair> getSourceDocPairs();
-    vector<DocPair> getTargetDocPairs();
-    bool isValid();
-  
+    const bool isValid();
+    const vector<DocPair>& getSourceDocPairs();
+    const vector<DocPair>& getTargetDocPairs();
+    const string& getCursor() const;
+    const string& getOrder() const;
+    const string& getFirst();
+    const string& getLast();
+    const string& getPrevious();
+    const string& getNext();
+    const bool isDescending() const;
+    const uint64_t getLimit() const;
+    
+    void fillItemDictionary(TemplateDictionary* dict);
+
   private:
-    vector<DocPair> getDocPairs(const DocTypeRange& range);
+    const string getCursor(const DocPair& pair)const;
+    const string getCommand() const;
+    const string getCommand(const DocPair& pair) const;
+    vector<DocPair> getDocPairs(const DocTypeRange& range, const string& order_by,const string& cursor, const uint64_t limit, const bool desc) const;
     DISALLOW_COPY_AND_ASSIGN(DocumentQuery);
   };
 }

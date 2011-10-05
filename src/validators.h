@@ -13,7 +13,7 @@ static bool ValidatePort(const char* flagname, int32_t value) {
 static bool ValidateAddress(const char* flagname, const string& value) {
   struct sockaddr_in sa;
   int result = inet_pton(AF_INET, value.c_str(), &(sa.sin_addr));
-  if (result != 0)
+  if (result > 0)
     return true;
   printf("Invalid value for --%s: %s\n", flagname, value.c_str());
   return false;
@@ -31,7 +31,6 @@ static bool ValidateHashWidth(const char* flagname, int32_t value){
     return true;
   printf("Invalid value for --%s: %d\n", flagname, (int)value);
   return false;
-
 }
 
 static bool ValidateWindowSize(const char* flagname, int32_t value){

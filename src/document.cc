@@ -73,6 +73,7 @@ namespace superfastmatch
         meta_key=toString(order)+key+reverse_value+getKey();
         break;
     }
+    // cout << key << ":" << value << ":" << meta_key << endl;
     return meta_key;
   }
 

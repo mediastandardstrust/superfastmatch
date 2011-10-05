@@ -15,6 +15,7 @@ namespace superfastmatch{
 
   //Forward Declarations
   class Posting;
+  class Document;
   class DocumentManager;
   class AssociationManager;
   class QueueManager;
