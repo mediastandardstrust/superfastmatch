@@ -55,6 +55,20 @@ namespace superfastmatch
     }
   }
   
+  bool Document::remove(){
+    bool success=registry_->getDocumentDB()->remove(*key_);
+    vector<string> db_keys;
+    vector<string> meta_keys;
+    assert(getMetaKeys(meta_keys));
+    for (vector<string>::iterator it=meta_keys.begin(),ite=meta_keys.end();it!=ite;++it){
+      db_keys.push_back(generateMetaKey(DEFAULT,*it,getMeta(*it)));
+      db_keys.push_back(generateMetaKey(FORWARD,*it,getMeta(*it)));
+      db_keys.push_back(generateMetaKey(REVERSE,*it,getMeta(*it)));
+    }
+    success = success && (registry_->getMetaDB()->remove_bulk(db_keys)!=-1);
+    return success;
+  }
+  
   string Document::generateMetaKey(const DocumentOrder order,const string& key,const string& value){
     string meta_key;
     string padded_value=padIfNumber(value);
@@ -107,6 +121,27 @@ namespace superfastmatch
     }
     return true;
   }
+  
+  string& Document::getMeta(const string& key){
+    if (metadata_==0){
+      throw runtime_error("Meta not initialised");
+    }
+    if (metadata_->find(key)!=metadata_->end()){
+      return (*metadata_)[key];
+    }
+    return *empty_meta_;
+  }
+  
+  bool Document::getMetaKeys(vector<string>& keys){
+    keys.clear();
+    if (metadata_!=0){
+      for (metadata_map::const_iterator it=metadata_->begin(),ite=metadata_->end();it!=ite;it++){
+        keys.push_back(it->first);
+      }
+      return true;
+    }
+    return false;
+  }
 
   bool Document::initText(){
     if (text_==0){
@@ -138,20 +173,6 @@ namespace superfastmatch
     return true;
   }
   
-  bool Document::remove(){
-    bool success=registry_->getDocumentDB()->remove(*key_);
-    vector<string> db_keys;
-    vector<string> meta_keys;
-    assert(getMetaKeys(meta_keys));
-    for (vector<string>::iterator it=meta_keys.begin(),ite=meta_keys.end();it!=ite;++it){
-      db_keys.push_back(generateMetaKey(DEFAULT,*it,getMeta(*it)));
-      db_keys.push_back(generateMetaKey(FORWARD,*it,getMeta(*it)));
-      db_keys.push_back(generateMetaKey(REVERSE,*it,getMeta(*it)));
-    }
-    success = success && (registry_->getMetaDB()->remove_bulk(db_keys)!=-1);
-    return success;
-  }
-  
   hashes_vector& Document::getHashes(){
     if (hashes_==0){
       throw runtime_error("Hashes not initialised");
@@ -177,27 +198,6 @@ namespace superfastmatch
     return *bloom_;
   }
 
-  string& Document::getMeta(const string& key){
-    if (metadata_==0){
-      throw runtime_error("Meta not initialised");
-    }
-    if (metadata_->find(key)!=metadata_->end()){
-      return (*metadata_)[key];
-    }
-    return *empty_meta_;
-  }
-  
-  bool Document::getMetaKeys(vector<string>& keys){
-    keys.clear();
-    if (metadata_!=0){
-      for (metadata_map::const_iterator it=metadata_->begin(),ite=metadata_->end();it!=ite;it++){
-        keys.push_back(it->first);
-      }
-      return true;
-    }
-    return false;
-  }
-  
   bool Document::setText(const string& text){
     text_=new string(text);
     return permanent_?registry_->getDocumentDB()->cas(getKey().data(),getKey().size(),NULL,0,text_->data(),text_->size()):true;

@@ -23,6 +23,7 @@ protected:
   PolyDB* associationDB_;
   PolyDB* documentDB_;
   PolyDB* metaDB_;
+  PolyDB* orderedMetaDB_;
   PolyDB* queueDB_;
   PolyDB* payloadDB_;
   PolyDB* miscDB_;

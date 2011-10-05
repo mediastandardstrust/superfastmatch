@@ -138,6 +138,10 @@ namespace superfastmatch{
     return metaDB_;
   };
 
+  kc::PolyDB* FlagsRegistry::getOrderedMetaDB(){
+    return orderedMetaDB_;
+  };
+
   kc::PolyDB* FlagsRegistry::getAssociationDB(){
     return associationDB_;
   };
@@ -178,6 +182,7 @@ namespace superfastmatch{
   payloadDB_(new kc::PolyDB()),
   documentDB_(new kc::PolyDB()),
   metaDB_(new kc::PolyDB()),
+  orderedMetaDB_(new kc::PolyDB()),
   associationDB_(new kc::PolyDB()),
   miscDB_(new kc::PolyDB()),
   templates_(mutable_default_template_cache()),
@@ -194,6 +199,7 @@ namespace superfastmatch{
             queueDB_->open(getDataPath()+"/queue.kcf#opts=lc",getMode()) && \
             payloadDB_->open(getDataPath()+"/payload.kcd#bnum=20m#msiz=128m#opts=c#zcomp=zlib",getMode()) && \
             metaDB_->open(getDataPath()+"/meta.kcf#opts=lc",getMode()) && \
+            orderedMetaDB_->open(getDataPath()+"/orderedmeta.kcf#opts=lc",getMode()) && \
             associationDB_->open(getDataPath()+"/association.kcf#opts=lc#pccap=256m#psiz=524288#zcomp=zlib",getMode()) && \
             miscDB_->open(getDataPath()+"/misc.kch",getMode()))){
       cout << "Error opening databases" << endl;
@@ -218,6 +224,9 @@ namespace superfastmatch{
     if (metaDB_!=0){
       metaDB_->close();
     }
+    if (orderedMetaDB_!=0){
+      metaDB_->close();
+    }
     if (associationDB_!=0){
       associationDB_->close();
     }
@@ -229,6 +238,7 @@ namespace superfastmatch{
     }
     delete documentDB_;
     delete metaDB_;
+    delete orderedMetaDB_;
     delete associationDB_;
     delete queueDB_;
     delete payloadDB_;

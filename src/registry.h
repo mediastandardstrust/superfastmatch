@@ -49,6 +49,7 @@ namespace superfastmatch{
     virtual kc::PolyDB* getPayloadDB()=0;
     virtual kc::PolyDB* getDocumentDB()=0;
     virtual kc::PolyDB* getMetaDB()=0;
+    virtual kc::PolyDB* getOrderedMetaDB()=0;
     virtual kc::PolyDB* getAssociationDB()=0;
     virtual kc::PolyDB* getMiscDB()=0;
 
@@ -70,6 +71,7 @@ namespace superfastmatch{
     kc::PolyDB* payloadDB_;
     kc::PolyDB* documentDB_;
     kc::PolyDB* metaDB_;
+    kc::PolyDB* orderedMetaDB_;
     kc::PolyDB* associationDB_;
     kc::PolyDB* miscDB_;
     TemplateCache* templates_;
@@ -107,6 +109,7 @@ namespace superfastmatch{
     kc::PolyDB* getPayloadDB();
     kc::PolyDB* getDocumentDB();
     kc::PolyDB* getMetaDB();
+    kc::PolyDB* getOrderedMetaDB();
     kc::PolyDB* getAssociationDB();
     kc::PolyDB* getMiscDB();
     

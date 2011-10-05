@@ -58,6 +58,8 @@ class MockRegistry : public Registry {
       kc::PolyDB*());
   MOCK_METHOD0(getMetaDB,
       kc::PolyDB*());
+  MOCK_METHOD0(getOrderedMetaDB,
+      kc::PolyDB*());
   MOCK_METHOD0(getAssociationDB,
       kc::PolyDB*());
   MOCK_METHOD0(getMiscDB,

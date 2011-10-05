@@ -4,12 +4,14 @@ void BaseTest::SetUp(){
   associationDB_ = new PolyDB();
   documentDB_ = new PolyDB();
   metaDB_ = new PolyDB();
+  orderedMetaDB_ = new PolyDB();
   queueDB_ = new PolyDB();
   payloadDB_ = new PolyDB();
   miscDB_ = new PolyDB();
   associationDB_->open("%");
   documentDB_->open("%");
   metaDB_->open("%");
+  orderedMetaDB_->open("%");
   queueDB_->open("%");
   payloadDB_->open("%");
   miscDB_->open("%");
@@ -44,6 +46,8 @@ void BaseTest::SetUp(){
     
   EXPECT_CALL(registry_,getMetaDB())
     .WillRepeatedly(Return(metaDB_));
+  EXPECT_CALL(registry_,getOrderedMetaDB())
+    .WillRepeatedly(Return(orderedMetaDB_));
   EXPECT_CALL(registry_,getMiscDB())
     .WillRepeatedly(Return(miscDB_));
   EXPECT_CALL(registry_,getDocumentDB())
@@ -75,12 +79,14 @@ void BaseTest::SetUp(){
 void BaseTest::TearDown(){
   associationDB_->close();
   metaDB_->close();
+  orderedMetaDB_->close();
   documentDB_->close();
   queueDB_->close();
   payloadDB_->close();
   miscDB_->close();
   delete associationDB_;
   delete metaDB_;
+  delete orderedMetaDB_;
   delete documentDB_;
   delete queueDB_;
   delete payloadDB_;
