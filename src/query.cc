@@ -63,6 +63,7 @@ namespace superfastmatch
     vector<string> paths,sections,parameter;
     urlbreak(command.c_str(),&elements);
     path_=elements["path"];
+    cout << path_ <<endl;
     kc::strsplit(path_, '/', &paths);
     if (paths.size()>3){
       valid_&=target_.parse(paths[3]);
@@ -141,16 +142,19 @@ namespace superfastmatch
   
   const string& DocumentQuery::getLast(){
     if (last_.empty()){
-      last_=getCommand(getDocPairs(source_,order_by_,"",limit_,!desc_).back());
+      vector<DocPair> pairs=getDocPairs(source_,order_by_,"",limit_,!desc_);
+      if (pairs.size()>0){
+        last_=getCommand(getDocPairs(source_,order_by_,"",limit_,!desc_).back()); 
+      }
     }
     return last_;
   }
   
   const string& DocumentQuery::getNext(){
-    if (next_.empty()){
+    if (next_.empty() && getSourceDocPairs().size()>0){
       string cursor=getCursor(getSourceDocPairs().back());
-      vector<DocPair> pairs=getDocPairs(source_,order_by_,cursor,1,desc_);
-      if (pairs.size()==1){
+      vector<DocPair> pairs=getDocPairs(source_,order_by_,cursor,1+desc_,desc_);
+      if (pairs.size()>0){
         next_=getCommand(pairs.back());
       }else{
         next_=getLast();
@@ -160,11 +164,11 @@ namespace superfastmatch
   }
   
   const string& DocumentQuery::getPrevious(){
-    if (previous_.empty()){
+    if (previous_.empty() && getSourceDocPairs().size()>0){
       string cursor=getCursor(getSourceDocPairs().front());
-      vector<DocPair> pairs=getDocPairs(source_,order_by_,cursor,1,!desc_);
-      if (pairs.size()==1){
-        previous_=getCommand(pairs.front());
+      vector<DocPair> pairs=getDocPairs(source_,order_by_,cursor,limit_+1,!desc_);
+      if (pairs.size()>0){
+        previous_=getCommand(pairs.back());
       }else{
         previous_=getFirst();
       }
@@ -174,8 +178,11 @@ namespace superfastmatch
   
   const string DocumentQuery::getCursor(const DocPair& pair)const{
     DocumentPtr doc=registry_->getDocumentManager()->getDocument(pair.doc_type,pair.doc_id,DocumentManager::META);
-    string key = doc->getMeta(order_by_)+doc->getKey();
-    return string(kc::urlencode(key.c_str(), key.size()));
+    if (doc){
+      string key = doc->getMeta(order_by_)+doc->getKey();
+      return string(kc::urlencode(key.c_str(), key.size()));
+    }
+    return "";
   }
   
   const string DocumentQuery::getCommand(const DocPair& pair) const{
@@ -199,19 +206,28 @@ namespace superfastmatch
     kc::PolyDB::Cursor* cur=registry_->getMetaDB()->cursor();
     string key;
     uint64_t count=0;
+    size_t csiz;
     if (order_by.empty()){
-      if (not cur->jump(cursor)){
-        if (desc){
-          cur->jump_back();
-        }else{
-          cur->jump();
-        }
+      char* cbuf=kc::urldecode(cursor.c_str(),&csiz);
+      string start="0"+string(cbuf,csiz);
+      cout << cursor << ":" << start.size() << endl;
+      if (desc){
+        // for (size_t i=start.size();i>0;i--){
+        //   if (start[i-1]!=255){
+        //     start.replace(i-1,1,1,start[i-1]+1);
+        //     break;
+        //   }
+        // }
+        assert(cur->jump_back("1"));
+      }else{
+        assert(cur->jump(start));
       }
       string previous_key="dUmMyKeY";
       while((cur->get_key(&key))&&(key.compare(0,1,"0")==0)&&(count<limit)){
+        cout << key << endl;
         if (key.substr(1,8)!=previous_key.substr(1,8)){
           DocPair pair(key.substr(1,8));
-          // cout << pair.doc_type << ":" << pair.doc_id << ":" << range.isInRange(pair.doc_type) << endl;
+          cout << pair.doc_type << ":" << pair.doc_id << ":" << range.isInRange(pair.doc_type) << endl;
           if (range.isInRange(pair.doc_type)){
             pairs.push_back(pair);
             count++;
@@ -229,6 +245,7 @@ namespace superfastmatch
     }else{
       string match="1"+order_by;
       string start=match+cursor;
+      cout << start << endl;
       if (desc){
         for (size_t i=start.size();i>0;i--){
           if (start[i-1]!=255){
@@ -239,7 +256,6 @@ namespace superfastmatch
         assert(cur->jump_back(start));
       }else{
         assert(cur->jump(start));
-        // cout << start << endl;
       }
       while((cur->get_key(&key))&&(key.compare(0,match.size(),match)==0)&&(count<limit)){
         // cout << count << ":" << key << endl;
@@ -257,7 +273,41 @@ namespace superfastmatch
         }
       }
     }
+    cout << "---------" << endl;
     delete cur;
     return pairs;
   } 
+  
+  void DocumentQuery::fillListDictionary(TemplateDictionary* dict){
+    dict->SetValueAndShowSection("PAGE",getFirst(),"FIRST");
+    dict->SetValueAndShowSection("PAGE",getLast(),"LAST");
+    dict->SetValueAndShowSection("PAGE",getPrevious(),"PREVIOUS");
+    dict->SetValueAndShowSection("PAGE",getNext(),"NEXT");
+    set<string,MetaKeyComparator> keys_set;
+    vector<DocumentPtr> docs;
+    vector<string> keys;
+    for(vector<DocPair>::const_iterator it=getSourceDocPairs().begin(),ite=getSourceDocPairs().end();it!=ite;++it){
+      cout << it->doc_type << ":" << it->doc_id << endl;
+      DocumentPtr doc=registry_->getDocumentManager()->getDocument(it->doc_type,it->doc_id,DocumentManager::META);
+      docs.push_back(doc);
+      if (doc->getMetaKeys(keys)){
+        for (vector<string>::iterator it=keys.begin();it!=keys.end();it++){
+          keys_set.insert(*it);
+        } 
+      }
+    }
+    for (set<string>::const_iterator it=keys_set.begin(),ite=keys_set.end();it!=ite;++it){
+      TemplateDictionary* keys_dict=dict->AddSectionDictionary("KEYS");
+      keys_dict->SetValue("KEY",*it);
+    }
+    for (vector<DocumentPtr>::iterator it=docs.begin(),ite=docs.end();it!=ite;++it){
+      TemplateDictionary* doc_dict = dict->AddSectionDictionary("DOCUMENT");
+      doc_dict->SetIntValue("DOC_TYPE",(*it)->doctype());
+      doc_dict->SetIntValue("DOC_ID",(*it)->docid()); 
+      for (set<string>::const_iterator it2=keys_set.begin(),ite2=keys_set.end();it2!=ite2;++it2){
+        TemplateDictionary* values_dict=doc_dict->AddSectionDictionary("VALUES");
+        values_dict->SetValue("VALUE",(*it)->getMeta(&(*it2->c_str())));
+      }
+    }
+  }
 }

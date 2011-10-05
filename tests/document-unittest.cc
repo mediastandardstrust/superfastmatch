@@ -65,32 +65,32 @@ TEST_F(DocumentTest,PaddingTest){
   EXPECT_EQ(alphaNumeric,removePadding(alphaNumeric));
 }
 
-TEST_F(DocumentTest, OrderedMetaTest){
-  DocumentPtr doc1=registry_.getDocumentManager()->createPermanentDocument(1,1,"text=definitely+the+longest&title=C&filename=test.txt");
-  DocumentPtr doc2=registry_.getDocumentManager()->createPermanentDocument(1,2,"text=shortest&title=B&filename=test2.txt");
-  DocumentPtr doc3=registry_.getDocumentManager()->createPermanentDocument(1,3,"text=medium+length&title=A&filename=test3.txt");
-  EXPECT_EQ(27U,registry_.getMetaDB()->count());
-  DocumentCursor cursor(&registry_);
-  EXPECT_EQ(1U,cursor.getNext()->docid());
-  EXPECT_EQ(2U,cursor.getNext()->docid());
-  EXPECT_EQ(3U,cursor.getNext()->docid());
-  EXPECT_FALSE(cursor.getNext());
-  DocumentCursor cursor2(&registry_,"title",Document::FORWARD);
-  EXPECT_EQ(3U,cursor2.getNext()->docid());
-  EXPECT_EQ(2U,cursor2.getNext()->docid());
-  EXPECT_EQ(1U,cursor2.getNext()->docid());
-  EXPECT_FALSE(cursor2.getNext());
-  DocumentCursor cursor3(&registry_,"title",Document::REVERSE);
-  EXPECT_EQ(1U,cursor3.getNext()->docid());
-  EXPECT_EQ(2U,cursor3.getNext()->docid());
-  EXPECT_EQ(3U,cursor3.getNext()->docid());
-  EXPECT_FALSE(cursor3.getNext());
-  DocumentCursor cursor4(&registry_,"characters",Document::FORWARD);
-  EXPECT_STREQ("shortest",cursor4.getNext(DocumentManager::TEXT)->getText().c_str());
-  EXPECT_STREQ("medium length",cursor4.getNext(DocumentManager::TEXT)->getText().c_str());
-  EXPECT_STREQ("definitely the longest",cursor4.getNext(DocumentManager::TEXT)->getText().c_str());
-  EXPECT_FALSE(cursor4.getNext());
-}
+// TEST_F(DocumentTest, OrderedMetaTest){
+//   DocumentPtr doc1=registry_.getDocumentManager()->createPermanentDocument(1,1,"text=definitely+the+longest&title=C&filename=test.txt");
+//   DocumentPtr doc2=registry_.getDocumentManager()->createPermanentDocument(1,2,"text=shortest&title=B&filename=test2.txt");
+//   DocumentPtr doc3=registry_.getDocumentManager()->createPermanentDocument(1,3,"text=medium+length&title=A&filename=test3.txt");
+//   EXPECT_EQ(27U,registry_.getMetaDB()->count());
+//   DocumentCursor cursor(&registry_);
+//   EXPECT_EQ(1U,cursor.getNext()->docid());
+//   EXPECT_EQ(2U,cursor.getNext()->docid());
+//   EXPECT_EQ(3U,cursor.getNext()->docid());
+//   EXPECT_FALSE(cursor.getNext());
+//   DocumentCursor cursor2(&registry_,"title",Document::FORWARD);
+//   EXPECT_EQ(3U,cursor2.getNext()->docid());
+//   EXPECT_EQ(2U,cursor2.getNext()->docid());
+//   EXPECT_EQ(1U,cursor2.getNext()->docid());
+//   EXPECT_FALSE(cursor2.getNext());
+//   DocumentCursor cursor3(&registry_,"title",Document::REVERSE);
+//   EXPECT_EQ(1U,cursor3.getNext()->docid());
+//   EXPECT_EQ(2U,cursor3.getNext()->docid());
+//   EXPECT_EQ(3U,cursor3.getNext()->docid());
+//   EXPECT_FALSE(cursor3.getNext());
+//   DocumentCursor cursor4(&registry_,"characters",Document::FORWARD);
+//   EXPECT_STREQ("shortest",cursor4.getNext(DocumentManager::TEXT)->getText().c_str());
+//   EXPECT_STREQ("medium length",cursor4.getNext(DocumentManager::TEXT)->getText().c_str());
+//   EXPECT_STREQ("definitely the longest",cursor4.getNext(DocumentManager::TEXT)->getText().c_str());
+//   EXPECT_FALSE(cursor4.getNext());
+// }
 
 TEST_F(DocumentTest,ManagerTest){
   DocumentPtr tempDoc=registry_.getDocumentManager()->createTemporaryDocument("text=some+short+text+with_metadata&title=Title");

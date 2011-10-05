@@ -338,144 +338,55 @@ namespace superfastmatch
     return true;
   }
   
-  struct MetaKeyComparator {
-    bool operator() (const string& lhs, const string& rhs) const{
-      if (lhs==rhs)
-        return false;
-      if ((lhs=="title"))
-        return true;
-      if ((lhs=="characters") && (rhs=="title"))
-        return false;
-      if (lhs=="characters")
-        return true;
-      return lhs<rhs;
-    }
-  };
-
-  void DocumentManager::fillListDictionary(TemplateDictionary* dict,const uint32_t doctype,const uint32_t docid){
-    // DocumentCursor cursor(registry_,"",Document::DEFAULT);
-    // if (getCount()==0){
-    //   return;
-    // }
-    // TemplateDictionary* page_dict=dict->AddIncludeDictionary("PAGING");
-    // page_dict->SetFilename(PAGING);
-    // uint32_t count=0;
-    // DocumentPtr doc;
-    // char* key=new char[8];
-    // size_t key_length;
-    // uint32_t di;
-    // if (doctype!=0){
-    //   uint32_t dt=kc::hton32(doctype);
-    //   memcpy(key,&dt,4);
-    //   cursor_->jump(key,4);
-    // }
-    // delete[] key;
-    // key=cursor->get_key(&key_length,false);
-    // if (key!=NULL){
-    //   memcpy(&di,key+4,4);
-    //   di=kc::ntoh32(di);
-    //   page_dict->SetValueAndShowSection("PAGE",toString(di),"FIRST");
-    // }
-    // if (docid!=0){
-    //   di=kc::hton32(docid);
-    //   memcpy(key+4,&di,4);
-    //   cursor->jump(key,8);
-    // }
-    // delete[] key;
-    // vector<DocumentPtr> docs;
-    // vector<string> keys;
-    // set<string,MetaKeyComparator> keys_set;
-    // while (((doc=getNext(DocumentManager::META)))&&(count<registry_->getPageSize())){
-    //   if ((doctype!=0) && (doctype!=doc->doctype())){
-    //     break;
-    //   }
-    //   docs.push_back(doc);
-    //   if (doc->getMetaKeys(keys)){
-    //     for (vector<string>::iterator it=keys.begin();it!=keys.end();it++){
-    //       keys_set.insert(*it);
-    //     } 
-    //   }
-    //   count++;
-    // }
-    // for (set<string>::const_iterator it=keys_set.begin(),ite=keys_set.end();it!=ite;++it){
-    //   TemplateDictionary* keys_dict=dict->AddSectionDictionary("KEYS");
-    //   keys_dict->SetValue("KEY",*it);
-    // }
-    // for (vector<DocumentPtr>::iterator it=docs.begin(),ite=docs.end();it!=ite;++it){
-    //   TemplateDictionary* doc_dict = dict->AddSectionDictionary("DOCUMENT");
-    //   doc_dict->SetIntValue("DOC_TYPE",(*it)->doctype());
-    //   doc_dict->SetIntValue("DOC_ID",(*it)->docid()); 
-    //   for (set<string>::const_iterator it2=keys_set.begin(),ite2=keys_set.end();it2!=ite2;++it2){
-    //     TemplateDictionary* values_dict=doc_dict->AddSectionDictionary("VALUES");
-    //     values_dict->SetValue("VALUE",(*it)->getMeta(&(*it2->c_str())));
-    //   }
-    // }
-    //   
-    // if (doc!=NULL){
-    //   key=cursor->get_key(&key_length,false);
-    //   memcpy(&di,key+4,4);
-    //   di=kc::ntoh32(di);
-    //   page_dict->SetValueAndShowSection("PAGE",toString(di),"NEXT");
-    //   delete[] key;
-    // }
-    // if ((doctype==0)&&(cursor_->jump_back())){
-    //   key=cursor->get_key(&key_length,false);
-    //   memcpy(&di,key+4,4);
-    //   di=kc::ntoh32(di);
-    //   page_dict->SetValueAndShowSection("PAGE",toString(di),"LAST");
-    //   delete[] key;
-    // }
-  }
-  
   // -----------------------
   // DocumentCursor members
   // -----------------------
   
-  DocumentCursor::DocumentCursor(Registry* registry,const string& meta_key,const Document::DocumentOrder order):
-  registry_(registry),
-  order_(order),
-  meta_key_(meta_key),
-  previous_key_("0",9)
-  {
-    assert(meta_key==""||order!=Document::DEFAULT);
-    cursor_=registry->getMetaDB()->cursor();
-    cursor_->jump(toString(order)+meta_key);
-  };
-
-  DocumentCursor::~DocumentCursor(){
-    delete cursor_;
-  }
-
-  bool DocumentCursor::jumpFirst(){
-    return cursor_->jump();
-  }
-
-  bool DocumentCursor::jumpLast(){
-    return cursor_->jump_back();
-  };
-
-  bool DocumentCursor::jump(string& key){
-    return cursor_->jump(key);
-  };
-
-  DocumentPtr DocumentCursor::getNext(const int32_t state){
-    string key;
-    while(cursor_->get_key(&key,true)&&(key.compare(0,1,toString(order_))==0)){
-      if ((order_==Document::DEFAULT)&&(key.substr(1,8)!=previous_key_.substr(1,8))){
-        previous_key_=key;
-        return registry_->getDocumentManager()->getDocument(key.substr(1,8),state);
-      }else if((order_!=Document::DEFAULT)&&(key.compare(1,meta_key_.size(),meta_key_)==0)){
-        return registry_->getDocumentManager()->getDocument(key.substr(key.size()-8),state);
-      }
-    }
-    return DocumentPtr();
-  };
-
-  DocumentPtr DocumentCursor::getPrevious(){
-    return DocumentPtr();
-  };
-
-  uint32_t DocumentCursor::getCount(){
-    return registry_->getDocumentDB()->count();
-  };
+  // DocumentCursor::DocumentCursor(Registry* registry,const string& meta_key,const Document::DocumentOrder order):
+  // registry_(registry),
+  // order_(order),
+  // meta_key_(meta_key),
+  // previous_key_("0",9)
+  // {
+  //   assert(meta_key==""||order!=Document::DEFAULT);
+  //   cursor_=registry->getMetaDB()->cursor();
+  //   cursor_->jump(toString(order)+meta_key);
+  // };
+  // 
+  // DocumentCursor::~DocumentCursor(){
+  //   delete cursor_;
+  // }
+  // 
+  // bool DocumentCursor::jumpFirst(){
+  //   return cursor_->jump();
+  // }
+  // 
+  // bool DocumentCursor::jumpLast(){
+  //   return cursor_->jump_back();
+  // };
+  // 
+  // bool DocumentCursor::jump(string& key){
+  //   return cursor_->jump(key);
+  // };
+  // 
+  // DocumentPtr DocumentCursor::getNext(const int32_t state){
+  //   string key;
+  //   while(cursor_->get_key(&key,true)&&(key.compare(0,1,toString(order_))==0)){
+  //     if ((order_==Document::DEFAULT)&&(key.substr(1,8)!=previous_key_.substr(1,8))){
+  //       previous_key_=key;
+  //       return registry_->getDocumentManager()->getDocument(key.substr(1,8),state);
+  //     }else if((order_!=Document::DEFAULT)&&(key.compare(1,meta_key_.size(),meta_key_)==0)){
+  //       return registry_->getDocumentManager()->getDocument(key.substr(key.size()-8),state);
+  //     }
+  //   }
+  //   return DocumentPtr();
+  // };
+  // 
+  // DocumentPtr DocumentCursor::getPrevious(){
+  //   return DocumentPtr();
+  // };
+  // 
+  // uint32_t DocumentCursor::getCount(){
+  //   return registry_->getDocumentDB()->count();
+  // };
 }//namespace superfastmatch

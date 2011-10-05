@@ -20,6 +20,20 @@ namespace superfastmatch
   
   class DocumentManager; // Forward Declaration
   
+  struct MetaKeyComparator {
+    bool operator() (const string& lhs, const string& rhs) const{
+      if (lhs==rhs)
+        return false;
+      if ((lhs=="title"))
+        return true;
+      if ((lhs=="characters") && (rhs=="title"))
+        return false;
+      if (lhs=="characters")
+        return true;
+      return lhs<rhs;
+    }
+  };
+  
   class Document : public std::tr1::enable_shared_from_this<Document>
   {
   friend class DocumentManager;
@@ -95,8 +109,6 @@ namespace superfastmatch
     DocumentPtr getDocument(const uint32_t doctype, const uint32_t docid,const int32_t state=DEFAULT_STATE);
     DocumentPtr getDocument(const string& key,const int32_t state=DEFAULT_STATE);
     vector<DocumentPtr> getDocuments(const uint32_t doctype=0,const int32_t state=DEFAULT_STATE);
-    // bool associateDocument(DocumentPtr doc);
-    void fillListDictionary(TemplateDictionary* dict,const uint32_t doctype,const uint32_t docid);
     
   private:
     bool initDoc(const DocumentPtr doc,const int32_t state);
@@ -104,26 +116,26 @@ namespace superfastmatch
     DISALLOW_COPY_AND_ASSIGN(DocumentManager);
   };
   
-  class DocumentCursor
-  {
-  private:
-    Registry* registry_;
-    const Document::DocumentOrder order_;
-    const string meta_key_;
-    string previous_key_;
-    kc::PolyDB::Cursor* cursor_;
-    
-  public:
-    DocumentCursor(Registry* registry, const string& meta_key="",const Document::DocumentOrder order=Document::DEFAULT);
-    ~DocumentCursor();
-    
-    bool jumpFirst();
-    bool jumpLast();
-    bool jump(string& key);
-    DocumentPtr getNext(const int32_t state=DocumentManager::META);
-    DocumentPtr getPrevious();
-    uint32_t getCount();
-  };
+  // class DocumentCursor
+  // {
+  // private:
+  //   Registry* registry_;
+  //   const Document::DocumentOrder order_;
+  //   const string meta_key_;
+  //   string previous_key_;
+  //   kc::PolyDB::Cursor* cursor_;
+  //   
+  // public:
+  //   DocumentCursor(Registry* registry, const string& meta_key="",const Document::DocumentOrder order=Document::DEFAULT);
+  //   ~DocumentCursor();
+  //   
+  //   bool jumpFirst();
+  //   bool jumpLast();
+  //   bool jump(string& key);
+  //   DocumentPtr getNext(const int32_t state=DocumentManager::META);
+  //   DocumentPtr getPrevious();
+  //   uint32_t getCount();
+  // };
   
 }//namespace Superfastmatch
 

@@ -319,12 +319,13 @@ namespace superfastmatch
   bool Posting::init(){
     // Load the stored docs
     double start = kc::time();
-    DocumentCursor* cursor = new DocumentCursor(registry_);
-    DocumentPtr doc;
-    while ((doc=cursor->getNext(DocumentManager::TEXT|DocumentManager::HASHES))){
+    // DocumentCursor* cursor = new DocumentCursor(registry_);
+    DocumentQuery query(registry_,"/document/?order_by=count");
+    vector<DocPair> pairs=query.getSourceDocPairs();
+    for(vector<DocPair>::iterator it=pairs.begin(),ite=pairs.end();it!=ite;++it){
+      DocumentPtr doc=registry_->getDocumentManager()->getDocument(it->doc_type,it->doc_id,DocumentManager::TEXT|DocumentManager::HASHES);
       addDocument(doc);
     }
-    delete cursor;
     finishTasks();
     stringstream message;
     message << "Posting initialisation finished in: " << setiosflags(ios::fixed) << setprecision(4) << kc::time()-start << " secs";

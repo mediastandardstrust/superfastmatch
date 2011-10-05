@@ -80,7 +80,7 @@ namespace superfastmatch
     const bool isDescending() const;
     const uint64_t getLimit() const;
     
-    void fillItemDictionary(TemplateDictionary* dict);
+    void fillListDictionary(TemplateDictionary* dict);
 
   private:
     const string getCursor(const DocPair& pair)const;

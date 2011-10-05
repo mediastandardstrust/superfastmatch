@@ -1,7 +1,12 @@
 {{>HEADER}}
 	<h1>Documents</h1>
 	<table>
-		<caption>{{>PAGING}}</caption>
+		<caption>
+			{{#FIRST}}<a href="{{PAGE}}">First Page</a>{{/FIRST}}
+			{{#PREVIOUS}}<a href="{{PAGE}}">Previous Page</a>{{/PREVIOUS}}
+			{{#NEXT}}<a href="{{PAGE}}">Next Page</a>{{/NEXT}}
+			{{#LAST}}<a href="{{PAGE}}">Last Page</a>{{/LAST}}
+		</caption>
 		<thead>
 			<th>
 				Document Type

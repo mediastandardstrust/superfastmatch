@@ -25,6 +25,7 @@ namespace superfastmatch{
   struct RESTRequest{
     const HTTPClient::Method& verb;
     const string& path;
+    string url;
     const map<string, string>& reqheads;
     const string& reqbody;
     map<string,string> values;
@@ -78,6 +79,8 @@ namespace superfastmatch{
               cursor_is_numeric=isNumeric(cursor);
             }
           }       
+        }else if(it->first=="url"){
+          url=it->second;
         }
       }
     }
@@ -245,25 +248,36 @@ namespace superfastmatch{
           break;
       }
     }
-    else if (req.first_is_numeric){
-      uint32_t doctype=kc::atoi(req.first_id.c_str());
-      uint32_t docid=0;
-      if (req.cursor_is_numeric){
-        docid=kc::atoi(req.cursor.c_str());
-      }
-      registry_->getDocumentManager()->fillListDictionary(&res.dict,doctype,docid);
-      res.template_name=DOCUMENTS_PAGE;
-      res.code=200;
-    }
     else{
-      uint32_t docid=0;
-      if (req.cursor_is_numeric){
-        docid=kc::atoi(req.cursor.c_str());
+      DocumentQuery query(registry_,req.url);
+      if (query.isValid()){
+        query.fillListDictionary(&res.dict);
+        res.template_name=DOCUMENTS_PAGE;
+        res.code=200;
+      }else{
+        res.template_name=ERROR_PAGE;
+        res.code=500;
       }
-      registry_->getDocumentManager()->fillListDictionary(&res.dict,0,docid);
-      res.template_name=DOCUMENTS_PAGE;
-      res.code=200;
     }
+    // else if (req.first_is_numeric){
+    //   uint32_t doctype=kc::atoi(req.first_id.c_str());
+    //   uint32_t docid=0;
+    //   if (req.cursor_is_numeric){
+    //     docid=kc::atoi(req.cursor.c_str());
+    //   }
+    //   registry_->getDocumentManager()->fillListDictionary(&res.dict,doctype,docid);
+    //   res.template_name=DOCUMENTS_PAGE;
+    //   res.code=200;
+    // }
+    // else{
+    //   uint32_t docid=0;
+    //   if (req.cursor_is_numeric){
+    //     docid=kc::atoi(req.cursor.c_str());
+    //   }
+    //   registry_->getDocumentManager()->fillListDictionary(&res.dict,0,docid);
+    //   res.template_name=DOCUMENTS_PAGE;
+    //   res.code=200;
+    // }
   }
   
   void Worker::process_help(const RESTRequest& req,RESTResponse& res){
