@@ -7,7 +7,6 @@ The point of the software is to index large amounts of text in memory. Therefore
 
 The process for installation is as follows:
 
-
 Dependencies
 ------------
 
@@ -55,6 +54,8 @@ On Fedora/Amazon AMI this will to allow bootstrap.sh to complete:
     tar xzf libunwind-0.99.tar.gz
     cd libunwind-0.99
     ./configure && make && sudo make install
+
+and you might have to add /usr/local/lib to /etc/ld.so.conf 
 
 Test
 ----
@@ -105,6 +106,18 @@ Feedback
 --------
 
 All feedback welcome. Either create an issue [here](https://github.com/mediastandardstrust/superfastmatch/issues) or ask a question on the [mailing list](http://groups.google.com/group/superfastmatch).
+
+Known Issues
+------------
+
+This is still an early release halfway between Alpha and Beta! There are known issues with large documents affecting the document list and detail pages and the full REST specification is not yet implemented. Lots of fixes, new features and performance improvements are currently in development so keep checking the commit log!
+
+Acknowledgements
+----------------
+
+Thanks to [Martin Moore](http://martinjemoore.com/) and [Ben Campbell](http://scumways.com) at [Media Standards Trust](http://mediastandardstrust.org) for ongoing support for the project and to [Tom Lee](http://sunlightfoundation.com/people/tlee/) and [James Turk](http://sunlightfoundation.com/people/jturk/) at [Sunlight Labs](http://sunlightlabs.com) for being willing testers, early adopters and proponents of open source!
+
+Thanks also to [Mikio Hirabayashi](http://fallabs.com) for assistance and the excellent open source [Kyoto Cabinet](http://fallabs.com/kyotocabinet/) and [Kyoto Tycoon](http://fallabs.com/kyototycoon/), to [Craig Silverstein](http://code.google.com/u/@VxVXRFZYBRdBWwU%3D/) for accepting and improving this [patch](http://code.google.com/p/google-sparsehash/source/detail?r=76), to [Neil Fraser](http://neil.fraser.name/) for useful hints and inspiration from [Diff-Match-Patch](http://code.google.com/p/google-diff-match-patch/) and to [Austin Appleby](http://code.google.com/p/smhasher/) for hashing advice.
 
 
 

@@ -53,12 +53,12 @@ function send_doc {
 # send_doc POST 1 "fixtures/congressional-record/" ".txt"
 
 # # echo "Test POST-ing documents"
-# send_doc POST 1 "fixtures/pan11-external/source-documents/" ".txt"
+send_doc POST 1 "fixtures/pan11-external/source-documents/" ".txt"
 
 # echo "Test POST-ing documents"
 # send_doc POST 2 "fixtures/pan11-external/suspicious-documents/" ".txt"
 
-send_doc POST 1 "fixtures/federal/sfm_text" ".txt"
+# send_doc POST 1 "fixtures/federal/sfm_text" ".txt"
 
 echo "Test batch indexing"
 curl -X POST -H "Expect:" 127.0.0.1:8080/association/

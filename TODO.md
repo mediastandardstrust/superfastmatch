@@ -3,7 +3,6 @@ TODO
 
 * Write test for massive search documents
 * Make association task work for specified doctypes
-* Allow ordering of documents by metadata
 * Make association task multithreaded
 * Better ordering of search results and fragments within an association
 * Create an AssociationCursor and respective page
@@ -17,6 +16,7 @@ TODO
 DONE
 ----
 
+* ~~Allow ordering of documents by metadata~~
 * ~~Separate queue payload out to speed up queue page and refactor Command to be polymorphic~~
 * ~~Implement search page~~
 * ~~Implement association task~~
@@ -35,5 +35,4 @@ V2
 * Use sparsetable<char[BLOCK]> rather than sparsetable<char*>
 * Full curl test of REST API
 * Implement unicode using ICU
-* Use MurmurHash3
-* Ask Austin Appleby about rolling MurmurHash
+
