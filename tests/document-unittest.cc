@@ -35,34 +35,42 @@ TEST_F(DocumentTest, MetaTest){
   EXPECT_STREQ("Title",doc1->getMeta("title").c_str());
   EXPECT_STREQ("test.txt",doc1->getMeta("filename").c_str());
   EXPECT_TRUE(doc1->setMeta("count","4"));
+  EXPECT_STREQ("1",doc1->getMeta("docid").c_str());
+  EXPECT_STREQ("1",doc1->getMeta("doctype").c_str());
   EXPECT_STREQ("4",doc1->getMeta("count").c_str());
   EXPECT_STRNE("",doc1->getMeta("characters").c_str());
   EXPECT_STREQ("",doc1->getMeta("non-existent").c_str());
   EXPECT_TRUE(doc1->getMetaKeys(keys));
-  EXPECT_EQ(4U,keys.size());
+  EXPECT_EQ(6U,keys.size());
+  EXPECT_EQ(6U,registry_.getMetaDB()->count());
+  EXPECT_EQ(6U,registry_.getOrderedMetaDB()->count());
   DocumentPtr doc2=registry_.getDocumentManager()->getDocument(1,1,DocumentManager::META);
   EXPECT_STREQ("4",doc2->getMeta("count").c_str());
+  EXPECT_STREQ("1",doc1->getMeta("docid").c_str());
+  EXPECT_STREQ("1",doc1->getMeta("doctype").c_str());
   EXPECT_STREQ("Title",doc2->getMeta("title").c_str());
   EXPECT_STREQ("test.txt",doc2->getMeta("filename").c_str());
   EXPECT_TRUE(doc1->getMetaKeys(keys));
-  EXPECT_EQ(4U,keys.size());
-  EXPECT_EQ(12U,registry_.getMetaDB()->count());
+  EXPECT_EQ(6U,keys.size());
+  EXPECT_EQ(6U,registry_.getMetaDB()->count());
+  EXPECT_EQ(6U,registry_.getOrderedMetaDB()->count());
   DocumentPtr doc3=registry_.getDocumentManager()->createPermanentDocument(1,2,"text=some+short+text+with_metadata&title=Title&filename=test.txt");
-  EXPECT_EQ(21U,registry_.getMetaDB()->count());
+  EXPECT_EQ(11U,registry_.getMetaDB()->count());
+  EXPECT_EQ(11U,registry_.getOrderedMetaDB()->count());
   EXPECT_TRUE(registry_.getDocumentManager()->removePermanentDocument(doc1));
-  EXPECT_EQ(9U,registry_.getMetaDB()->count());
+  EXPECT_EQ(5U,registry_.getMetaDB()->count());
+  EXPECT_EQ(5U,registry_.getOrderedMetaDB()->count());
   EXPECT_TRUE(registry_.getDocumentManager()->removePermanentDocument(doc3));
   EXPECT_EQ(0U,registry_.getMetaDB()->count());
+  EXPECT_EQ(0U,registry_.getOrderedMetaDB()->count());
 }
 
 TEST_F(DocumentTest,PaddingTest){
-  string paddedNumber("        10");
+  string paddedNumber("0000000010");
   string number("10");
   string alphaNumeric("a10");
   EXPECT_EQ(paddedNumber,padIfNumber(number));
   EXPECT_EQ(alphaNumeric,padIfNumber(alphaNumeric));
-  EXPECT_EQ(number,removePadding(paddedNumber));
-  EXPECT_EQ(alphaNumeric,removePadding(alphaNumeric));
 }
 
 // TEST_F(DocumentTest, OrderedMetaTest){
@@ -113,16 +121,6 @@ TEST_F(DocumentTest,ManagerTest){
   EXPECT_NE(0U,permDoc->getHashes().size());
   EXPECT_NE(0U,savedDoc->getHashes().size());
   EXPECT_NE(0U,savedDocFromKey->getHashes().size());
-}
-
-TEST_F(DocumentTest,GetDocumentsTest){
-  DocumentPtr doc1=registry_.getDocumentManager()->createPermanentDocument(1,1,"text=This+is+a+test&title=Also+a+test&filename=test.txt");
-  DocumentPtr doc2=registry_.getDocumentManager()->createPermanentDocument(1,2,"text=Another+test&title=Also+a+test&filename=test2.txt");
-  DocumentPtr doc3=registry_.getDocumentManager()->createPermanentDocument(2,1,"text=This+is+a+test&title=Also+a+test&filename=test.txt");
-  DocumentPtr doc4=registry_.getDocumentManager()->createPermanentDocument(2,2,"text=Another+test&title=Also+a+test&filename=test2.txt");
-  EXPECT_EQ(4U,registry_.getDocumentManager()->getDocuments().size());
-  EXPECT_EQ(2U,registry_.getDocumentManager()->getDocuments(1).size());
-  EXPECT_EQ(2U,registry_.getDocumentManager()->getDocuments(2).size());
 }
 
 TEST_F(DocumentDeathTest,RemovalTest){

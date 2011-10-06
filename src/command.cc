@@ -92,14 +92,15 @@ namespace superfastmatch{
   bool Command::addAssociation(){
     DocumentPtr doc=registry_->getDocumentManager()->getDocument(getDocType(),getDocId());
     registry_->getAssociationManager()->createPermanentAssociations(doc);
-    // registry_->getDocumentManager()->associateDocument(doc);
     return true;
   }
 
   bool Command::addAssociations(){
-    vector<DocumentPtr> documents=registry_->getDocumentManager()->getDocuments(getDocType(),DocumentManager::META);
-    for(vector<DocumentPtr>::iterator it=documents.begin(),ite=documents.end();it!=ite;++it){
-      registry_->getQueueManager()->insertCommand(AddAssociation,getQueueId(),(*it)->doctype(),(*it)->docid(),"");
+    DocumentQuery query(registry_,"/"+toString(getDocType())+"/");
+    vector<DocPair> pairs=query.getSourceDocPairs(true);
+    for(vector<DocPair>::iterator it=pairs.begin(),ite=pairs.end();it!=ite;++it){
+      DocumentPtr doc=registry_->getDocumentManager()->getDocument(it->doc_type,it->doc_id);
+      registry_->getAssociationManager()->createPermanentAssociations(doc);
     }
     return true;
   }

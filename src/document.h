@@ -24,7 +24,7 @@ namespace superfastmatch
     bool operator() (const string& lhs, const string& rhs) const{
       if (lhs==rhs)
         return false;
-      if ((lhs=="title"))
+      if (lhs=="title")
         return true;
       if ((lhs=="characters") && (rhs=="title"))
         return false;
@@ -50,11 +50,6 @@ namespace superfastmatch
     hashes_bloom* bloom_;
 
   public:
-    enum DocumentOrder{
-      DEFAULT,
-      FORWARD,
-      REVERSE
-    };
     ~Document();
     hashes_vector& getHashes();
     hashes_bloom& getBloom();
@@ -76,7 +71,7 @@ namespace superfastmatch
   private:
     explicit Document(const uint32_t doctype,const uint32_t docid,const bool permanent,Registry* registry);
     explicit Document(const string& key,const bool permanent,Registry* registry);
-    string generateMetaKey(const DocumentOrder order,const string& meta,const string& value);
+    // string generateMetaKey(const DocumentOrder order,const string& meta,const string& value);
     bool remove();
     bool setText(const string& text);
     bool initMeta();
@@ -108,35 +103,12 @@ namespace superfastmatch
     bool removePermanentDocument(DocumentPtr doc);
     DocumentPtr getDocument(const uint32_t doctype, const uint32_t docid,const int32_t state=DEFAULT_STATE);
     DocumentPtr getDocument(const string& key,const int32_t state=DEFAULT_STATE);
-    vector<DocumentPtr> getDocuments(const uint32_t doctype=0,const int32_t state=DEFAULT_STATE);
     
   private:
     bool initDoc(const DocumentPtr doc,const int32_t state);
     DocumentPtr createDocument(const uint32_t doctype, const uint32_t docid,const string& content,const int32_t state,const bool commit);
     DISALLOW_COPY_AND_ASSIGN(DocumentManager);
   };
-  
-  // class DocumentCursor
-  // {
-  // private:
-  //   Registry* registry_;
-  //   const Document::DocumentOrder order_;
-  //   const string meta_key_;
-  //   string previous_key_;
-  //   kc::PolyDB::Cursor* cursor_;
-  //   
-  // public:
-  //   DocumentCursor(Registry* registry, const string& meta_key="",const Document::DocumentOrder order=Document::DEFAULT);
-  //   ~DocumentCursor();
-  //   
-  //   bool jumpFirst();
-  //   bool jumpLast();
-  //   bool jump(string& key);
-  //   DocumentPtr getNext(const int32_t state=DocumentManager::META);
-  //   DocumentPtr getPrevious();
-  //   uint32_t getCount();
-  // };
-  
 }//namespace Superfastmatch
 
 #endif                                   // duplication check

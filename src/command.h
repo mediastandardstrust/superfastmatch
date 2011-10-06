@@ -2,6 +2,7 @@
 #define _SFMCOMMAND_H
 
 #include <registry.h>
+#include <query.h>
 #include <document.h>
 
 namespace superfastmatch{

@@ -319,9 +319,9 @@ namespace superfastmatch
   bool Posting::init(){
     // Load the stored docs
     double start = kc::time();
-    // DocumentCursor* cursor = new DocumentCursor(registry_);
-    DocumentQuery query(registry_,"/document/?order_by=count");
-    vector<DocPair> pairs=query.getSourceDocPairs();
+    DocumentQuery query(registry_);
+    assert(query.isValid());
+    vector<DocPair> pairs=query.getSourceDocPairs(true);
     for(vector<DocPair>::iterator it=pairs.begin(),ite=pairs.end();it!=ite;++it){
       DocumentPtr doc=registry_->getDocumentManager()->getDocument(it->doc_type,it->doc_id,DocumentManager::TEXT|DocumentManager::HASHES);
       addDocument(doc);

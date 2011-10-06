@@ -9,14 +9,14 @@
 		</caption>
 		<thead>
 			<th>
-				Document Type
+				<a href="?order_by=doctype">Document Type</a>
 			</th>
 			<th>
-				Document ID
+				<a href="?order_by=docid">Document ID</a>
 			</th>
 			{{#KEYS}}
 			<th>
-				{{KEY}}
+				<a href="?order_by={{DIRECTION}}{{KEY}}">{{KEY}}</a>
 			</th>
 			{{/KEYS}}
 		</thead>

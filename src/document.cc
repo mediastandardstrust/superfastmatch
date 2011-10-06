@@ -56,39 +56,17 @@ namespace superfastmatch
   }
   
   bool Document::remove(){
-    bool success=registry_->getDocumentDB()->remove(*key_);
-    vector<string> db_keys;
+    vector<string> keys;
     vector<string> meta_keys;
-    assert(getMetaKeys(meta_keys));
-    for (vector<string>::iterator it=meta_keys.begin(),ite=meta_keys.end();it!=ite;++it){
-      db_keys.push_back(generateMetaKey(DEFAULT,*it,getMeta(*it)));
-      db_keys.push_back(generateMetaKey(FORWARD,*it,getMeta(*it)));
-      db_keys.push_back(generateMetaKey(REVERSE,*it,getMeta(*it)));
+    vector<string> ordered_keys;
+    assert(getMetaKeys(keys));
+    for (vector<string>::iterator it=keys.begin(),ite=keys.end();it!=ite;++it){
+      meta_keys.push_back(getKey()+*it);
+      ordered_keys.push_back(*it+padIfNumber(getMeta(*it))+getKey());
     }
-    success = success && (registry_->getMetaDB()->remove_bulk(db_keys)!=-1);
-    return success;
-  }
-  
-  string Document::generateMetaKey(const DocumentOrder order,const string& key,const string& value){
-    string meta_key;
-    string padded_value=padIfNumber(value);
-    switch(order){
-      case DEFAULT:
-        meta_key=toString(order)+getKey()+key;
-        break;
-      case FORWARD:
-        meta_key=toString(order)+key+padded_value+getKey();
-        break;
-      case REVERSE:
-        string reverse_value=padded_value;
-        for (size_t i=0;i<reverse_value.size();i++){
-          reverse_value[i]=~reverse_value[i];
-        }
-        meta_key=toString(order)+key+reverse_value+getKey();
-        break;
-    }
-    // cout << key << ":" << value << ":" << meta_key << endl;
-    return meta_key;
+    return registry_->getDocumentDB()->remove(*key_) &&\
+           (registry_->getMetaDB()->remove_bulk(meta_keys)!=-1) &&\
+           (registry_->getOrderedMetaDB()->remove_bulk(ordered_keys)!=-1);
   }
 
   bool Document::setMeta(const string& key, const string& value){
@@ -97,25 +75,24 @@ namespace superfastmatch
     }
     (*metadata_)[key]=value;
     if (permanent_){
-      return registry_->getMetaDB()->set(generateMetaKey(DEFAULT,key,""),value) &&\
-             registry_->getMetaDB()->set(generateMetaKey(FORWARD,key,value),"") &&\
-             registry_->getMetaDB()->set(generateMetaKey(REVERSE,key,value),"");
+      registry_->getOrderedMetaDB()->remove(key+padIfNumber(getMeta(key))+getKey());
+      return registry_->getMetaDB()->set(getKey()+key,value) &&\
+             registry_->getOrderedMetaDB()->set(key+padIfNumber(value)+getKey(),"");
     }
     return true;
   }
-
   
   bool Document::initMeta(){
     if (metadata_==0){
       metadata_map* tempMap = new metadata_map();
       vector<string> meta_keys;
       string meta_value;
-      registry_->getMetaDB()->match_prefix(generateMetaKey(DEFAULT,"",""),&meta_keys);
+      registry_->getMetaDB()->match_prefix(getKey(),&meta_keys);
       for (vector<string>::const_iterator it=meta_keys.begin(),ite=meta_keys.end();it!=ite;++it){
         if (not registry_->getMetaDB()->get(*it,&meta_value)){
           return false;
         };
-        (*tempMap)[(*it).substr(9)]=meta_value;
+        (*tempMap)[(*it).substr(8)]=meta_value;
       }      
       metadata_=tempMap;
     }
@@ -286,30 +263,6 @@ namespace superfastmatch
     return doc;
   }
   
-  bool stripMeta(string lhs,string rhs){
-    return lhs.substr(1,8).compare(rhs.substr(1,8))==0;
-  }
-  
-  vector<DocumentPtr> DocumentManager::getDocuments(const uint32_t doctype,const int32_t state){
-    vector<DocumentPtr> documents;
-    vector<string> keys;
-    if (doctype!=0){
-      char key[4];
-      uint32_t dt=kc::hton32(doctype);
-      memcpy(key,&dt,4);
-      string match(key,4);
-      registry_->getMetaDB()->match_prefix(toString(Document::DEFAULT)+match,&keys);
-    }else{
-      registry_->getMetaDB()->match_prefix(toString(Document::DEFAULT),&keys);
-    }
-    vector<string>::iterator end=std::unique(keys.begin(),keys.end(),stripMeta);
-    keys.resize(end-keys.begin());
-    for(vector<string>::iterator it=keys.begin(),ite=keys.end();it!=ite;++it){
-      documents.push_back(getDocument((*it).substr(1,8),state));
-    }
-    return documents;
-  }
-  
   DocumentPtr DocumentManager::createDocument(const uint32_t doctype, const uint32_t docid,const string& content,const int32_t state,const bool permanent){
     DocumentPtr doc(new Document(doctype,docid,permanent,registry_));
     metadata_map content_map;
@@ -319,10 +272,12 @@ namespace superfastmatch
     }
     content_map.erase("text");
     assert(initDoc(doc,state|META));
-    assert(doc->setMeta("characters",toString(doc->getText().size())));
     for(metadata_map::const_iterator it=content_map.begin(),ite=content_map.end();it!=ite;++it){
       assert(doc->setMeta(it->first,it->second));
     }
+    assert(doc->setMeta("characters",toString(doc->getText().size())));
+    assert(doc->setMeta("doctype",toString(doctype)));
+    assert(doc->setMeta("docid",toString(docid)));
     return doc;
   }
   
@@ -337,56 +292,4 @@ namespace superfastmatch
       return false;
     return true;
   }
-  
-  // -----------------------
-  // DocumentCursor members
-  // -----------------------
-  
-  // DocumentCursor::DocumentCursor(Registry* registry,const string& meta_key,const Document::DocumentOrder order):
-  // registry_(registry),
-  // order_(order),
-  // meta_key_(meta_key),
-  // previous_key_("0",9)
-  // {
-  //   assert(meta_key==""||order!=Document::DEFAULT);
-  //   cursor_=registry->getMetaDB()->cursor();
-  //   cursor_->jump(toString(order)+meta_key);
-  // };
-  // 
-  // DocumentCursor::~DocumentCursor(){
-  //   delete cursor_;
-  // }
-  // 
-  // bool DocumentCursor::jumpFirst(){
-  //   return cursor_->jump();
-  // }
-  // 
-  // bool DocumentCursor::jumpLast(){
-  //   return cursor_->jump_back();
-  // };
-  // 
-  // bool DocumentCursor::jump(string& key){
-  //   return cursor_->jump(key);
-  // };
-  // 
-  // DocumentPtr DocumentCursor::getNext(const int32_t state){
-  //   string key;
-  //   while(cursor_->get_key(&key,true)&&(key.compare(0,1,toString(order_))==0)){
-  //     if ((order_==Document::DEFAULT)&&(key.substr(1,8)!=previous_key_.substr(1,8))){
-  //       previous_key_=key;
-  //       return registry_->getDocumentManager()->getDocument(key.substr(1,8),state);
-  //     }else if((order_!=Document::DEFAULT)&&(key.compare(1,meta_key_.size(),meta_key_)==0)){
-  //       return registry_->getDocumentManager()->getDocument(key.substr(key.size()-8),state);
-  //     }
-  //   }
-  //   return DocumentPtr();
-  // };
-  // 
-  // DocumentPtr DocumentCursor::getPrevious(){
-  //   return DocumentPtr();
-  // };
-  // 
-  // uint32_t DocumentCursor::getCount(){
-  //   return registry_->getDocumentDB()->count();
-  // };
 }//namespace superfastmatch

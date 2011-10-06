@@ -56,6 +56,7 @@ namespace superfastmatch
   
   DocumentQuery::DocumentQuery(Registry* registry, const string& command):
   registry_(registry),
+  order_by_("doctype"),
   desc_(false),
   valid_(true)
   {
@@ -63,7 +64,6 @@ namespace superfastmatch
     vector<string> paths,sections,parameter;
     urlbreak(command.c_str(),&elements);
     path_=elements["path"];
-    cout << path_ <<endl;
     kc::strsplit(path_, '/', &paths);
     if (paths.size()>3){
       valid_&=target_.parse(paths[3]);
@@ -119,16 +119,16 @@ namespace superfastmatch
     return limit_;
   }
 
-  const vector<DocPair>& DocumentQuery::getSourceDocPairs(){
+  const vector<DocPair>& DocumentQuery::getSourceDocPairs(bool unlimited){
     if (source_pairs_.size()==0){
-      source_pairs_=getDocPairs(source_,order_by_,cursor_,limit_,desc_);
+      source_pairs_=getDocPairs(source_,order_by_,cursor_,unlimited?numeric_limits<uint64_t>::max():limit_,desc_);
     }
     return source_pairs_;
   }
   
-  const vector<DocPair>& DocumentQuery::getTargetDocPairs(){
+  const vector<DocPair>& DocumentQuery::getTargetDocPairs(bool unlimited){
     if (target_pairs_.size()==0){
-      target_pairs_=getDocPairs(target_,order_by_,cursor_,limit_,desc_);
+      target_pairs_=getDocPairs(target_,order_by_,cursor_,unlimited?numeric_limits<uint64_t>::max():limit_,desc_);
     }
     return target_pairs_;
   }
@@ -153,7 +153,7 @@ namespace superfastmatch
   const string& DocumentQuery::getNext(){
     if (next_.empty() && getSourceDocPairs().size()>0){
       string cursor=getCursor(getSourceDocPairs().back());
-      vector<DocPair> pairs=getDocPairs(source_,order_by_,cursor,1+desc_,desc_);
+      vector<DocPair> pairs=getDocPairs(source_,order_by_,cursor,2,desc_);
       if (pairs.size()>0){
         next_=getCommand(pairs.back());
       }else{
@@ -178,11 +178,41 @@ namespace superfastmatch
   
   const string DocumentQuery::getCursor(const DocPair& pair)const{
     DocumentPtr doc=registry_->getDocumentManager()->getDocument(pair.doc_type,pair.doc_id,DocumentManager::META);
+    string cursor;
     if (doc){
-      string key = doc->getMeta(order_by_)+doc->getKey();
-      return string(kc::urlencode(key.c_str(), key.size()));
+      cursor=doc->getMeta(order_by_);
+      cursor=kc::urlencode(cursor.c_str(), cursor.size());
+      cursor+=":"+toString(doc->doctype())+":"+toString(doc->docid());
     }
-    return "";
+    return cursor;
+  }
+  
+  const string DocumentQuery::parseCursor(const string& cursor)const{
+    size_t splits = count(cursor.begin(),cursor.end(),':');
+    if (splits!=2){
+      return cursor;
+    }
+    size_t csiz;
+    size_t first=cursor.find(":");
+    size_t second=cursor.find(":",first+1);
+    string parsed=cursor.substr(0,first);
+    parsed = kc::urldecode(parsed.c_str(),&csiz);
+    parsed=padIfNumber(parsed);
+    uint32_t doctype=kc::atoi(cursor.substr(first+1,second).c_str());
+    if (doctype!=0){
+      char key[4];
+      doctype=kc::hton32(doctype);
+      memcpy(key,&doctype,4);
+      parsed+=string(key,4);
+    }
+    uint32_t docid=kc::atoi(cursor.substr(second+1).c_str());
+    if (docid!=0){
+      char key[4];
+      docid=kc::hton32(docid);
+      memcpy(key,&docid,4);
+      parsed+=string(key,4);
+    }
+    return parsed;
   }
   
   const string DocumentQuery::getCommand(const DocPair& pair) const{
@@ -202,78 +232,40 @@ namespace superfastmatch
   }
   
   vector<DocPair> DocumentQuery::getDocPairs(const DocTypeRange& range, const string& order_by,const string& cursor, const uint64_t limit, const bool desc) const{
+    kc::PolyDB::Cursor* cur=registry_->getOrderedMetaDB()->cursor();
     vector<DocPair> pairs;
-    kc::PolyDB::Cursor* cur=registry_->getMetaDB()->cursor();
     string key;
     uint64_t count=0;
-    size_t csiz;
-    if (order_by.empty()){
-      char* cbuf=kc::urldecode(cursor.c_str(),&csiz);
-      string start="0"+string(cbuf,csiz);
-      cout << cursor << ":" << start.size() << endl;
-      if (desc){
-        // for (size_t i=start.size();i>0;i--){
-        //   if (start[i-1]!=255){
-        //     start.replace(i-1,1,1,start[i-1]+1);
-        //     break;
-        //   }
-        // }
-        assert(cur->jump_back("1"));
-      }else{
-        assert(cur->jump(start));
-      }
-      string previous_key="dUmMyKeY";
-      while((cur->get_key(&key))&&(key.compare(0,1,"0")==0)&&(count<limit)){
-        cout << key << endl;
-        if (key.substr(1,8)!=previous_key.substr(1,8)){
-          DocPair pair(key.substr(1,8));
-          cout << pair.doc_type << ":" << pair.doc_id << ":" << range.isInRange(pair.doc_type) << endl;
-          if (range.isInRange(pair.doc_type)){
-            pairs.push_back(pair);
-            count++;
-          }
-        }
-        if (desc){
-          if (not cur->step_back()){
-            break;
-          }
-        }else if(not cur->step()){
+    string start=(cursor.size()==0)?order_by:(order_by+parseCursor(cursor));
+    if (desc){
+      for (size_t i=start.size();i>0;i--){
+        if (start[i-1]!=255){
+          start.replace(i-1,1,1,start[i-1]+1);
           break;
         }
-        previous_key=key;
+      }
+      if (not cur->jump_back(start)){
+        cur->jump_back();
       }
     }else{
-      string match="1"+order_by;
-      string start=match+cursor;
-      cout << start << endl;
-      if (desc){
-        for (size_t i=start.size();i>0;i--){
-          if (start[i-1]!=255){
-            start.replace(i-1,1,1,start[i-1]+1);
-            break;
-          }
-        }
-        assert(cur->jump_back(start));
-      }else{
-        assert(cur->jump(start));
-      }
-      while((cur->get_key(&key))&&(key.compare(0,match.size(),match)==0)&&(count<limit)){
-        // cout << count << ":" << key << endl;
-        DocPair pair(key.substr(key.size()-8));
-        if (range.isInRange(pair.doc_type)){
-          pairs.push_back(pair);
-          count++;
-        }
-        if (desc){
-          if (not cur->step_back()){
-            break;
-          }
-        }else if(not cur->step()){
-          break;
-        }
+      if (not cur->jump(start)){
+        cur->jump();
       }
     }
-    cout << "---------" << endl;
+    while((cur->get_key(&key))&&(key.compare(0,order_by.size(),order_by)==0)&&(count<limit)){
+      DocPair pair(key.substr(key.size()-8));
+      if (range.isInRange(pair.doc_type)){
+        pairs.push_back(pair);
+        count++;
+      }
+      if (desc){
+        if (not cur->step_back()){
+          break;
+        }
+      }else if(not cur->step()){
+        break;
+      }
+    }
     delete cur;
     return pairs;
   } 
@@ -283,22 +275,26 @@ namespace superfastmatch
     dict->SetValueAndShowSection("PAGE",getLast(),"LAST");
     dict->SetValueAndShowSection("PAGE",getPrevious(),"PREVIOUS");
     dict->SetValueAndShowSection("PAGE",getNext(),"NEXT");
-    set<string,MetaKeyComparator> keys_set;
+    set<string> keys_set;
     vector<DocumentPtr> docs;
     vector<string> keys;
     for(vector<DocPair>::const_iterator it=getSourceDocPairs().begin(),ite=getSourceDocPairs().end();it!=ite;++it){
-      cout << it->doc_type << ":" << it->doc_id << endl;
       DocumentPtr doc=registry_->getDocumentManager()->getDocument(it->doc_type,it->doc_id,DocumentManager::META);
       docs.push_back(doc);
       if (doc->getMetaKeys(keys)){
         for (vector<string>::iterator it=keys.begin();it!=keys.end();it++){
           keys_set.insert(*it);
-        } 
+        }
+        keys_set.erase("docid");
+        keys_set.erase("doctype");
       }
     }
     for (set<string>::const_iterator it=keys_set.begin(),ite=keys_set.end();it!=ite;++it){
       TemplateDictionary* keys_dict=dict->AddSectionDictionary("KEYS");
       keys_dict->SetValue("KEY",*it);
+      if ((!desc_) && (*it==order_by_)){
+        keys_dict->SetValue("DIRECTION","-");
+      }
     }
     for (vector<DocumentPtr>::iterator it=docs.begin(),ite=docs.end();it!=ite;++it){
       TemplateDictionary* doc_dict = dict->AddSectionDictionary("DOCUMENT");

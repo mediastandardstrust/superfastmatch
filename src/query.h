@@ -69,8 +69,8 @@ namespace superfastmatch
     explicit DocumentQuery(Registry* registry, const string& command="");
   
     const bool isValid();
-    const vector<DocPair>& getSourceDocPairs();
-    const vector<DocPair>& getTargetDocPairs();
+    const vector<DocPair>& getSourceDocPairs(bool unlimited=false);
+    const vector<DocPair>& getTargetDocPairs(bool unlimited=false);
     const string& getCursor() const;
     const string& getOrder() const;
     const string& getFirst();
@@ -84,6 +84,7 @@ namespace superfastmatch
 
   private:
     const string getCursor(const DocPair& pair)const;
+    const string parseCursor(const string& cursor)const;
     const string getCommand() const;
     const string getCommand(const DocPair& pair) const;
     vector<DocPair> getDocPairs(const DocTypeRange& range, const string& order_by,const string& cursor, const uint64_t limit, const bool desc) const;

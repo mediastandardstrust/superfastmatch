@@ -13,6 +13,7 @@ typedef unsigned __int64 uint64_t;
 #include <algorithm>
 #include <iomanip>
 #include <string>
+#include <limits>
 #include <kcutil.h>
 #include <ktutil.h>
 #include <tr1/memory>
@@ -253,16 +254,10 @@ namespace superfastmatch{
   inline string padIfNumber(const string& input){
     if (isNumeric(input)){
       stringstream s;
-      s << setw(10) << kc::atoi(input.c_str());
+      s << setfill('0') <<setw(10) << kc::atoi(input.c_str());
       return s.str();
     }
     return input;
-  }
-  
-  inline string removePadding(const string& input){
-    string output(input);
-    output.erase(output.begin(), std::find_if(output.begin(),output.end(),std::not1(std::ptr_fun<int, int>(std::isspace))));
-    return output;
   }
   
   template <typename T, typename U>
