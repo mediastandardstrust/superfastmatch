@@ -68,7 +68,7 @@ namespace superfastmatch
   public:
     explicit DocumentQuery(Registry* registry, const string& command="");
   
-    const bool isValid();
+    bool isValid();
     const vector<DocPair>& getSourceDocPairs(bool unlimited=false);
     const vector<DocPair>& getTargetDocPairs(bool unlimited=false);
     const string& getCursor() const;
@@ -77,9 +77,8 @@ namespace superfastmatch
     const string& getLast();
     const string& getPrevious();
     const string& getNext();
-    const bool isDescending() const;
-    const uint64_t getLimit() const;
-    
+    bool isDescending();
+    uint64_t getLimit();
     void fillListDictionary(TemplateDictionary* dict);
 
   private:
