@@ -277,7 +277,7 @@ const static vector<tuple<string,HasherFun> > getHashers(){
 const static vector<Document*> getDocs(){
   vector<Document*> docs;
   // docs.push_back(new Document("fixtures/congressional-record/2001-12.txt"));
-  docs.push_back(new Document("fixtures/gutenberg/bible.txt"));
+  docs.push_back(new Document("fixtures/gutenberg/Religious/bible.txt"));
   return docs;
 }
 
