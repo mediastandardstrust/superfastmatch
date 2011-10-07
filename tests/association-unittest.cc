@@ -72,7 +72,7 @@ TEST_F(AssociationDeathTest, ManagerPermanentTest){
   EXPECT_EQ(1U,savedAssociations.size());
   EXPECT_TRUE(registry_.getAssociationManager()->removeAssociations(doc3));
   EXPECT_EQ(0U,registry_.getAssociationDB()->count());
-  EXPECT_DEATH(registry_.getAssociationManager()->createTemporaryAssociations(doc1),"^Assertion failed");
+  EXPECT_DEATH(registry_.getAssociationManager()->createTemporaryAssociations(doc1),".*Assertion.*failed");
 }
 
 TEST_F(AssociationDeathTest, ManagerTemporaryTest){
@@ -85,5 +85,5 @@ TEST_F(AssociationDeathTest, ManagerTemporaryTest){
   vector<AssociationPtr> associations = registry_.getAssociationManager()->createTemporaryAssociations(doc2);
   EXPECT_EQ(1U,associations.size());
   EXPECT_EQ(0U,registry_.getAssociationDB()->count());
-  EXPECT_DEATH(registry_.getAssociationManager()->createPermanentAssociations(doc2),"^Assertion failed");
+  EXPECT_DEATH(registry_.getAssociationManager()->createPermanentAssociations(doc2),".*Assertion.*failed.*");
 }

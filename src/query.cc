@@ -99,7 +99,7 @@ namespace superfastmatch
     }
   }
 
-  const bool DocumentQuery::isValid(){
+  bool DocumentQuery::isValid(){
     return valid_;
   }
   
@@ -111,11 +111,11 @@ namespace superfastmatch
     return order_by_;
   }
   
-  const bool DocumentQuery::isDescending() const{
+  bool DocumentQuery::isDescending(){
     return desc_;
   }
   
-  const uint64_t DocumentQuery::getLimit() const{
+  uint64_t DocumentQuery::getLimit(){
     return limit_;
   }
 
