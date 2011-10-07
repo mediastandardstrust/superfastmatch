@@ -4,48 +4,50 @@ namespace superfastmatch
 {
   // VarIntCodec implementation
   // --------------------------
-  
+
   size_t VarIntCodec::encodeHeader(const vector<PostLineHeader>& header,unsigned char* start){
-    size_t offset=0;
+    size_t offset=kc::writevarnum(start,header.size());
     for (size_t i=0;i<header.size();i++){
       offset+=kc::writevarnum(start+offset,header[i].doc_type);
       offset+=kc::writevarnum(start+offset,header[i].length);
     }
-    offset+=kc::writevarnum(start+offset,0);
     return offset;
   }
 
   size_t VarIntCodec::decodeHeader(const unsigned char* start, vector<PostLineHeader>& header){
-    size_t offset=0;
+    uint64_t length;
+    size_t offset=kc::readvarnum(start,5,&length);
     PostLineHeader item;
-    header.resize(0);
-    while(start[offset]!=0){
+    header.resize(length);
+    for(vector<PostLineHeader>::iterator it=header.begin(),ite=header.end();it!=ite;++it){
       offset+=kc::readvarnum(start+offset,5,&item.doc_type);
       offset+=kc::readvarnum(start+offset,5,&item.length);
-      header.push_back(item);
+      *it=item;
     };
-    return offset+1;
+    return offset;
   };
-
+  
   size_t VarIntCodec::encodeSection(const vector<uint32_t>& section,unsigned char* start){
     size_t offset=0;
-    for (size_t i=0;i<section.size();i++){
-      offset+=kc::writevarnum(start+offset,section[i]);
+    for(vector<uint32_t>::const_iterator it=section.begin(),ite=section.end();it!=ite;++it){
+      offset+=kc::writevarnum(start+offset,*it);
     }
     return offset;
   }
   
   size_t VarIntCodec::decodeSection(const unsigned char* start, const size_t length, vector<uint32_t>& section){
     size_t offset=0;
+    size_t count=0;
     uint64_t value;
-    section.resize(0);
+    section.resize(length);
     while (offset!=length){
       offset+=kc::readvarnum(start+offset,5,&value);
-      section.push_back(value);
+      section[count++]=value;
     }
+    section.resize(count);
     return offset;
   }
- 
+   
   // PostLine implementation
   // -----------------------
   

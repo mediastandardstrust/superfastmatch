@@ -48,9 +48,9 @@ TEST(PostLineTest,PostLineTest){
   EXPECT_EQ(1U,line->getLength(2));
   EXPECT_EQ(4U,line->getLength());
   ASSERT_TRUE(line->commit(out));
-  EXPECT_EQ(out[0],2);
-  EXPECT_EQ(out[1],1);
-  EXPECT_EQ(out[2],0);
+  EXPECT_EQ(out[0],1);
+  EXPECT_EQ(out[1],2);
+  EXPECT_EQ(out[2],1);
   EXPECT_EQ(out[3],1);
   line->getDeltas(2,deltas);
   EXPECT_THAT(deltas,ElementsAre(1));
