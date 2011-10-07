@@ -1,30 +1,27 @@
-function send_doc {
-	method=$1
-	doctype=$2
+#! /bin/bash 
+SAVEIFS=$IFS
+IFS=$(echo -en "\n\b")
+
+doctype=0
+parent=$1
+filemask=${2-"*.txt"}
+
+for dir in `find $1 -type d`
+do
 	docid=1
-	dir=$3
-	filemask=$4
-	
+	for file in `find $dir -type f -depth 1 -name "$filemask"`
 	# Smallest first
 	# for file in `ls -ASr $dir | grep $filemask`
 	# Largest first
 	# for file in `ls -ASR $dir | grep $filemask`
 	# Unsorted
-	# for file in `ls -A $dir | grep $filemask`
-	# Using find
-	SAVEIFS=$IFS
-	IFS=$(echo -en "\n\b")
-	for file in `find $dir -type f`
+	# for file in `ls -A $dir | grep $filemask
 	do
-		if [[ "${method}" == "DELETE" ]] ; then
-			echo "curl -X $method -H \"Expect:\" 127.0.0.1:8080/document/$doctype/$docid/"
-			curl -sS -X $method -H "Expect:" 127.0.0.1:8080/document/$doctype/$docid/ -o test.log &
-		else
-			echo "curl -X $method -H \"Expect:\" -d \"title=$file\" --data-urlencode \"text@$file\" 127.0.0.1:8080/document/$doctype/$docid/"
-			curl -sS -X $method -H "Expect:" -d "title=$file" --data-urlencode "text@$file" 127.0.0.1:8080/document/$doctype/$docid/ -o load.log &
-			# echo "curl -X $method -H \"Expect:\" -d \"title=$file\" --data-urlencode \"text@$dir$file\" 127.0.0.1:8080/document/$doctype/$docid/"
-			# curl -sS -X $method -H "Expect:" -d "title=$file" --data-urlencode "text@$dir$file" 127.0.0.1:8080/document/$doctype/$docid/ -o load.log &
-		fi
+		group=${dir#$parent/}
+		title=$(basename $file)
+		command="curl -sS -X POST -H \"Expect:\" -d \"title=$title\" -d \"group=$group\" --data-urlencode \"text@$file\" 127.0.0.1:8080/document/$doctype/$docid/ "
+		echo $command
+		eval $command > /dev/null
 		docid=$(($docid+1))
 		NPROC=$(($NPROC+1))
 		if [ "$NPROC" -ge 4 ]; then
@@ -32,33 +29,8 @@ function send_doc {
 			  NPROC=0
 		fi
 	done
-	IFS=$SAVEIFS
-	wait
-}
+	doctype=$(($doctype+1))
+done
+IFS=$SAVEIFS
+wait
 
-# echo "Test PUT-ing documents as doctype 1"
-# send_doc PUT 1 "fixtures/gutenberg/" ".txt"
- 
-# echo "Test DELETE-ing documents"
-# send_doc DELETE 1 "fixtures/gutenberg/" ".txt"
-#  
-# echo "Test POST-ing documents"
-# send_doc POST 2 "fixtures/gutenberg/" ".txt"
-# 
-# echo "Test batch indexing"
-# curl -X POST -H "Expect:" 127.0.0.1:8080/association/
-# 
-
-# echo "Test POST-ing documents"
-# send_doc POST 1 "fixtures/congressional-record/" ".txt"
-
-# # echo "Test POST-ing documents"
-send_doc POST 1 "fixtures/pan11-external/source-documents/" ".txt"
-
-# echo "Test POST-ing documents"
-# send_doc POST 2 "fixtures/pan11-external/suspicious-documents/" ".txt"
-
-# send_doc POST 1 "fixtures/federal/sfm_text" ".txt"
-
-echo "Test batch indexing"
-curl -X POST -H "Expect:" 127.0.0.1:8080/association/

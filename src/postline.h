@@ -7,7 +7,6 @@ using namespace std;
 
 namespace superfastmatch
 {
-
   struct PostLineHeader{
     uint64_t doc_type;
     uint64_t length;
