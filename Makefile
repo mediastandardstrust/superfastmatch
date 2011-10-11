@@ -12,7 +12,7 @@ DATA = ./data
 
 # Targets
 MYBINS = superfastmatch
-OBJS =  src/worker.o src/queue.o src/posting.o src/document.o src/logger.o src/registry.o src/command.o src/postline.o src/association.o src/query.o
+OBJS =  src/worker.o src/queue.o src/posting.o src/document.o src/logger.o src/registry.o src/command.o src/postline.o src/association.o src/query.o src/task.o
 MAIN = src/superfastmatch.o
 
 # Building binaries

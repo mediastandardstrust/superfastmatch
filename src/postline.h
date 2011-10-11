@@ -23,7 +23,7 @@ namespace superfastmatch
     virtual size_t encodeHeader(const vector<PostLineHeader>& header,unsigned char* start)=0;
     virtual size_t decodeHeader(const unsigned char* start, vector<PostLineHeader>& header)=0;
     virtual size_t encodeSection(const vector<uint32_t>& section,unsigned char* start)=0;
-    virtual size_t decodeSection(const unsigned char* start, const size_t length, vector<uint32_t>& section)=0;
+    virtual size_t decodeSection(const unsigned char* start, const size_t length, vector<uint32_t>& section,bool asDeltas)=0;
   };
   
   class VarIntCodec: public PostLineCodec{
@@ -31,7 +31,7 @@ namespace superfastmatch
     size_t encodeHeader(const vector<PostLineHeader>& header,unsigned char* start);
     size_t decodeHeader(const unsigned char* start, vector<PostLineHeader>& header);
     size_t encodeSection(const vector<uint32_t>& section,unsigned char* start);
-    size_t decodeSection(const unsigned char* start, const size_t length, vector<uint32_t>& section);
+    size_t decodeSection(const unsigned char* start, const size_t length, vector<uint32_t>& section,bool asDeltas=true);
   };
 
   class PostLine{
@@ -43,9 +43,11 @@ namespace superfastmatch
     size_t old_header_length_;
     size_t temp_header_length_;
     size_t temp_sections_length_;
-    vector<PostLineHeader> header_;
-    vector<uint32_t> section_;
     uint32_t updated_section_;
+    vector<PostLineHeader>* header_;
+    vector<uint32_t> section_;
+    vector<uint32_t>* deltas_;
+    vector<uint32_t>* docids_;
   
   public:
     PostLine(uint32_t max_length);
@@ -68,8 +70,8 @@ namespace superfastmatch
     size_t getLength();
     size_t getLength(const uint32_t doc_type);
     void getDocTypes(vector<uint32_t>& doc_types);
-    void getDocIds(const uint32_t doc_type,vector<uint32_t>& doc_ids);
-    void getDeltas(const uint32_t doc_type,vector<uint32_t>& deltas);
+    vector<uint32_t>* getDocIds(const uint32_t doc_type);
+    vector<uint32_t>* getDeltas(const uint32_t doc_type);
     
     friend std::ostream& operator<< (std::ostream& stream, PostLine& postline);
   private:

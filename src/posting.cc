@@ -11,69 +11,6 @@ namespace superfastmatch
   RegisterTemplateFilename(HISTOGRAM, "histogram.tpl");
   
   // -------------------
-  // TaskPayload members
-  // -------------------
-  
-  TaskPayload::TaskPayload(DocumentPtr document,TaskOperation operation,uint32_t slots):
-  document_(document),operation_(operation),slots_left_(slots)
-  {}
-  
-  TaskPayload::~TaskPayload(){}
-    
-  uint64_t TaskPayload::markSlotFinished(){
-    uint64_t o_slots=slots_left_;
-    do{
-      o_slots=slots_left_;
-    }while(!slots_left_.cas(o_slots,o_slots-1));
-    return o_slots;
-  }
-  
-  TaskPayload::TaskOperation TaskPayload::getTaskOperation(){
-    return operation_;
-  }
-  
-  DocumentPtr TaskPayload::getDocument(){
-    return document_;
-  }
-  
-  // -------------------
-  // PostingTask members
-  // -------------------
-  
-  PostingTask::PostingTask(PostingSlot* slot,TaskPayload* payload):
-  slot_(slot),payload_(payload)
-  {}
-  
-  PostingTask::~PostingTask(){
-    // The task is complete so delete the payload
-    if (payload_->markSlotFinished()==1){
-      delete payload_;
-    }
-  }
-  
-  PostingSlot* PostingTask::getSlot(){
-    return slot_;
-  }
-  
-  TaskPayload* PostingTask::getPayload(){
-    return payload_;
-  }
-  
-  // ------------------------
-  // PostingTaskQueue members
-  // ------------------------
-  
-  PostingTaskQueue::PostingTaskQueue(){}
-  
-  void PostingTaskQueue::do_task(Task* task) {
-    PostingTask* ptask = (PostingTask*)task;
-    DocumentPtr doc = ptask->getPayload()->getDocument();
-    PostingSlot* slot = ptask->getSlot();
-    slot->alterIndex(doc,ptask->getPayload()->getTaskOperation());
-    delete ptask;
-  }
-
-  // -------------------
   // PostingSlot members
   // -------------------
   
@@ -165,40 +102,28 @@ namespace superfastmatch
     return true;
   }
   
-  bool PostingSlot::searchIndex(DocumentPtr doc,search_t& results,const uint32_t hash, const uint32_t position,PostLine& line){
-    uint32_t threshold=registry_->getMaxPostingThreshold();
+  bool PostingSlot::searchIndex(const uint32_t doctype,const uint32_t docid,const uint32_t hash, const uint32_t position,PostLine& line,search_t& results){
     uint32_t slot_hash = hash-offset_;
-    uint32_t doctype=doc->doctype();
-    uint32_t docid=doc->docid();
-    vector<uint32_t> docids;
     vector<uint32_t> doctypes;
-    DocTally* tally;
-    DocPair pair(0,0);
     index_lock_.lock_reader();
     if(index_.test(slot_hash)){
       line.load(index_.unsafe_get(slot_hash));
       line.getDocTypes(doctypes);
       for (vector<uint32_t>::const_iterator it=doctypes.begin(),ite=doctypes.end();it!=ite;++it){
-        line.getDocIds(*it,docids);
-        size_t doc_count=docids.size();
-        if (doc_count<=threshold){
-          for (vector<uint32_t>::const_iterator it2=docids.begin(),ite2=docids.end();it2!=ite2;++it2){
-            pair.doc_type=*it;
-            pair.doc_id=*it2;
-            tally=&results[pair];
-            uint32_t mask=(((*it2!=docid)||(*it!=doctype))&&((position-tally->previous_6)==6))-1;
-            tally->previous_6=tally->previous_5;
-            tally->previous_5=tally->previous_4;
-            tally->previous_4=tally->previous_3;
-            tally->previous_3=tally->previous_2;
-            tally->previous_2=tally->previous_1;
-            tally->previous_1=position;
-            // if (mask==0){
-              // cout << mask << " Position: " << position << " Previous 6th: " << tally->previous_6 <<endl; 
-            // }
-            tally->count+=(1&~mask);
-            tally->total+=(doc_count&~mask);
-          }
+        vector<uint32_t>* docids=line.getDocIds(*it);
+        size_t doc_count=docids->size();
+        for (vector<uint32_t>::const_iterator it2=docids->begin(),ite2=docids->end();it2!=ite2;++it2){
+          DocPair pair(*it,*it2);
+          DocTally* tally=&results[pair];
+          uint32_t mask=(((pair.doc_id!=docid)||(pair.doc_type!=doctype))&&((position-tally->previous_6)==6))-1;
+          tally->previous_6=tally->previous_5;
+          tally->previous_5=tally->previous_4;
+          tally->previous_4=tally->previous_3;
+          tally->previous_3=tally->previous_2;
+          tally->previous_2=tally->previous_1;
+          tally->previous_1=position;
+          tally->count+=(1&~mask);
+          tally->total+=(doc_count&~mask);
         }
       }
     }
@@ -230,7 +155,7 @@ namespace superfastmatch
     uint32_t count=0;
     uint32_t hash=(offset_>start)?0:start-offset_;
     // Find first hash
-    while (hash<span_ && !index_.test(hash)){    
+    while (hash<span_ && !index_.test(hash)){
       hash++;
     }
     // If not in slot break early
@@ -239,9 +164,8 @@ namespace superfastmatch
         return 0;
     }
     // Scan non empty
-    vector<uint32_t> doc_types;
-    vector<uint32_t> doc_ids;
     index_t::nonempty_iterator it=index_.get_iter(hash);
+    vector<uint32_t> doc_types;
     while (it!=index_.nonempty_end() && count<registry_->getPageSize()){
       count++;
       line.load(*it);
@@ -253,14 +177,14 @@ namespace superfastmatch
       hash_dict->SetIntValue("DOC_TYPE_COUNT",doc_types.size());
       for (size_t i=0;i<doc_types.size();i++){
         posting_dict->SetIntValue("DOC_TYPE",doc_types[i]);
-        line.getDocIds(doc_types[i],doc_ids);
+        vector<uint32_t>* doc_ids=line.getDocIds(doc_types[i]);
         uint32_t previous=0;
-        for (size_t j=0;j<doc_ids.size();j++){
+        for (size_t j=0;j<doc_ids->size();j++){
           TemplateDictionary* doc_id_dict = posting_dict->AddSectionDictionary("DOC_IDS");
           TemplateDictionary* doc_delta_dict = posting_dict->AddSectionDictionary("DOC_DELTAS");
-          doc_id_dict->SetIntValue("DOC_ID",doc_ids[j]); 
-          doc_delta_dict->SetIntValue("DOC_DELTA",doc_ids[j]-previous);
-          previous=doc_ids[j];
+          doc_id_dict->SetIntValue("DOC_ID",(*doc_ids)[j]); 
+          doc_delta_dict->SetIntValue("DOC_DELTA",(*doc_ids)[j]-previous);
+          previous=(*doc_ids)[j];
         }
         if (i!=(doc_types.size()-1)){
           posting_dict=dict->AddSectionDictionary("POSTING");
@@ -276,7 +200,6 @@ namespace superfastmatch
     PostLine line(registry_->getMaxLineLength());
     index_lock_.lock_reader();
     vector<uint32_t> doc_types;
-    vector<uint32_t> doc_deltas;
     uint32_t doc_type;
     stats_t* doc_type_gaps;
     for (index_t::nonempty_iterator it=index_.nonempty_begin(),ite=index_.nonempty_end();it!=ite;++it){
@@ -285,10 +208,10 @@ namespace superfastmatch
       for(size_t i=0;i<doc_types.size();i++){
         doc_type=doc_types[i];
         hash_hist[doc_type][line.getLength(doc_type)]++;
-        line.getDeltas(doc_type,doc_deltas);
+        vector<uint32_t>* doc_deltas=line.getDeltas(doc_type);
         doc_type_gaps=&gaps_hist[doc_type];
-        for(size_t j=0;j<doc_deltas.size();j++){
-          (*doc_type_gaps)[doc_deltas[j]]++;
+        for(size_t j=0;j<doc_deltas->size();j++){
+          (*doc_type_gaps)[(*doc_deltas)[j]]++;
         }
       }
     }
@@ -372,16 +295,20 @@ namespace superfastmatch
   void Posting::searchIndex(DocumentPtr doc,search_t& results,inverted_search_t& pruned_results){
     Logger* logger=registry_->getLogger();
     stringstream message;
+    results.rehash(doc_count_*2);
     PostLine line(registry_->getMaxLineLength());
+    size_t num_results=registry_->getNumResults();
     uint32_t hash_mask=registry_->getHashMask();
     uint32_t hash_width=registry_->getHashWidth();
     uint32_t white_space=registry_->getWhiteSpaceHash();
     uint32_t span=registry_->getMaxHashCount()/registry_->getSlotCount();
+    uint32_t doctype=doc->doctype();
+    uint32_t docid=doc->docid();
     uint32_t position=0;
     for (vector<uint32_t>::const_iterator it=doc->getHashes().begin(),ite=doc->getHashes().end();it!=ite;++it){
       uint32_t hash=(*it>>hash_width)^(*it&hash_mask);
       if (hash!=white_space){
-        slots_[hash/span]->searchIndex(doc,results,hash,position,line);
+        slots_[hash/span]->searchIndex(doctype,docid,hash,position,line,results);
       }
       position++;
     }
@@ -391,7 +318,7 @@ namespace superfastmatch
       }
     }
     size_t count=0;
-    for (inverted_search_t::iterator it=pruned_results.begin(),ite=pruned_results.end();it!=ite && count<20;++it){
+    for (inverted_search_t::iterator it=pruned_results.begin(),ite=pruned_results.end();it!=ite && count<num_results;++it){
       count++;
       double heat =(it->first.total>0?double(it->first.count)/it->first.total:0.0f);
       message << "Search for: " << *doc << " with text length: " << doc->getText().size() << " found : (" << it->second.doc_type << "," << it->second.doc_id << ")";

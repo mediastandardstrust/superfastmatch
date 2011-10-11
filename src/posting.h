@@ -1,29 +1,25 @@
 #ifndef _SFMPOSTING_H                       // duplication check
 #define _SFMPOSTING_H
 
-#include <cassert>
-#include <deque>
-#include <algorithm>
-#include <map>
-#include <tr1/unordered_map>
+// #include <cassert>
+// #include <deque>
+// #include <algorithm>
+// #include <map>
 #include <google/sparsetable>
-#include <google/sparse_hash_map>
-#include <kcthread.h>
 #include <common.h>
 #include <templates.h>
 #include <postline.h>
 #include <query.h>
+#include <task.h>
 
 using google::sparsetable;
 using namespace std;
 
 namespace superfastmatch
 {
-
   // Forward Declarations
   class Registry;
   class Command;
-  class PostingSlot;
   class Association;
     
   struct DocTally{
@@ -66,44 +62,6 @@ namespace superfastmatch
   typedef unordered_map<DocPair,DocTally,DocPairHash,DocPairEq> search_t;
   typedef multimap<DocTally,DocPair,DocTallyEq> inverted_search_t;
 
-  class TaskPayload{
-  public:
-    enum TaskOperation{
-      AddDocument,
-      DeleteDocument
-    };
-  private:
-    DocumentPtr document_;
-    TaskOperation operation_;
-    kc::AtomicInt64 slots_left_;
-  public:
-    TaskPayload(DocumentPtr document,TaskOperation operation,uint32_t slots);
-    ~TaskPayload();
-    
-    uint64_t markSlotFinished();
-    TaskOperation getTaskOperation();
-    DocumentPtr getDocument();
-  };
-
-  class PostingTaskQueue : public kc::TaskQueue{
-  public:
-    explicit PostingTaskQueue();
-  private:
-    void do_task(Task* task);
-  };
-
-  class PostingTask : public kc::TaskQueue::Task{
-  private:
-    PostingSlot* slot_;
-    TaskPayload* payload_;
-  public:
-    explicit PostingTask(PostingSlot* slot,TaskPayload* payload);
-    ~PostingTask();
-    
-    PostingSlot* getSlot();
-    TaskPayload* getPayload();
-  };
-
   class PostingSlot{
   private:
     Registry* registry_;
@@ -119,7 +77,7 @@ namespace superfastmatch
     ~PostingSlot();
     
     bool alterIndex(DocumentPtr doc,TaskPayload::TaskOperation operation);
-    bool searchIndex(DocumentPtr doc,search_t& results, const uint32_t hash, const uint32_t position,PostLine& line);
+    bool searchIndex(const uint32_t doctype,const uint32_t docid,const uint32_t hash, const uint32_t position,PostLine& line,search_t& results);
 
     uint64_t addTask(TaskPayload* payload);
     uint64_t getTaskCount();
