@@ -110,6 +110,7 @@ namespace superfastmatch
     uint32_t white_space=registry_->getWhiteSpaceHash(false);
     uint32_t threshold=registry_->getMaxPostingThreshold();
     size_t bad_matches=0;
+    size_t too_short=0;
     size_t above_threshold=0;
 
     // cout << "From length: " << from_document_->getText().size() << " To length: " << to_document_->getText().size() << " Bloom: " << bloom->count() << " From: " << from_document_->getBloom().count() << " To: " << to_document_->getBloom().count() << endl;
@@ -208,11 +209,12 @@ namespace superfastmatch
          results_->push_back(result);
          // logger->log(Logger::DEBUG,kc::strprintf("Match: \"%s\"",result.text.c_str()).c_str()); 
        }else{
+         too_short++;
          // logger->log(Logger::DEBUG,kc::strprintf("Match too short: \"%s\"",text.c_str()).c_str());
        }
     }
     sort(results_->begin(),results_->end(),result_sorter);
-    message << "Associated: " << *from_document_ << " with: " << *to_document_ << " Matches: " << results_->size() << " Bad Matches: " << bad_matches << " Above Threshold: " << above_threshold;
+    message << "Associated: " << *from_document_ << " with: " << *to_document_ << " Matches: " << results_->size() << " Too short: " << too_short << " Bad Matches: " << bad_matches << " Above Threshold: " << above_threshold;
     logger->log(Logger::DEBUG,&message);
     delete bloom;
   }

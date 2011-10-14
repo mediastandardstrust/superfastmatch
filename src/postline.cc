@@ -71,11 +71,12 @@ namespace superfastmatch
   temp_header_length_(0),
   temp_sections_length_(0),
   updated_section_(0),
+  header_(new vector<PostLineHeader>()),
   deltas_(new vector<uint32_t>()),
   docids_(new vector<uint32_t>())
   {
-    header_.reserve(max_length);
     section_.reserve(max_length);
+    header_->reserve(max_length);
     deltas_->reserve(max_length);
     docids_->reserve(max_length);
   }
@@ -84,16 +85,18 @@ namespace superfastmatch
     delete[] temp_header_;
     delete[] temp_sections_;
     delete codec_;
+    delete header_;
     delete deltas_;
     delete docids_;
   }
   
-  void PostLine::load(const unsigned char* start){
+  vector<PostLineHeader>* PostLine::load(const unsigned char* start){
     start_=const_cast<unsigned char*>(start);
-    old_header_length_=codec_->decodeHeader(start_,header_);
+    old_header_length_=codec_->decodeHeader(start_,*header_);
     updated_section_=0;
     temp_header_length_=0;
     temp_sections_length_=0;
+    return header_;
   }
   
   bool PostLine::commit(unsigned char* out){
@@ -114,10 +117,10 @@ namespace superfastmatch
     if ((doc_type==0)||(doc_id==0)){
       return false;
     }
-    vector<PostLineHeader>::iterator header=header_.begin();
+    vector<PostLineHeader>::iterator header=header_->begin();
     size_t offset=old_header_length_;
     bool noop=true;
-    while(header!=header_.end()){
+    while(header!=header_->end()){
       if (header->doc_type==doc_type){
         noop=false;
         break;
@@ -147,13 +150,13 @@ namespace superfastmatch
     }
     updated_section_=doc_type;
     size_t old_sections_length=old_header_length_;
-    for (vector<PostLineHeader>::iterator it=header_.begin(),ite=header_.end();it!=ite;++it){
+    for (vector<PostLineHeader>::iterator it=header_->begin(),ite=header_->end();it!=ite;++it){
       if (it->doc_type==updated_section_){
         old_sections_length+=header->length;
         header->length=codec_->encodeSection(section_,temp_sections_+temp_sections_length_);
         temp_sections_length_+=header->length;
         if (header->length==0){
-          header_.erase(header);
+          header_->erase(header);
         }
       }else{
         memcpy(temp_sections_+temp_sections_length_,start_+old_sections_length,it->length);
@@ -161,7 +164,7 @@ namespace superfastmatch
         old_sections_length+=it->length;
       }
     }
-    temp_header_length_=codec_->encodeHeader(header_,temp_header_);
+    temp_header_length_=codec_->encodeHeader(*header_,temp_header_);
     return true;
   }
   
@@ -170,11 +173,11 @@ namespace superfastmatch
       return false;
     }
     updated_section_=doc_type;
-    vector<PostLineHeader>::iterator header=header_.begin();
+    vector<PostLineHeader>::iterator header=header_->begin();
     size_t offset=old_header_length_;
     while(true){
-      if((header==header_.end())||(header->doc_type>doc_type)){
-        header=header_.insert(header,PostLineHeader(doc_type,0));
+      if((header==header_->end())||(header->doc_type>doc_type)){
+        header=header_->insert(header,PostLineHeader(doc_type,0));
         break;        
       }else if (header->doc_type==doc_type){
         break;
@@ -202,7 +205,7 @@ namespace superfastmatch
       cursor++;
     }
     size_t old_sections_length=old_header_length_;
-    for (vector<PostLineHeader>::iterator it=header_.begin(),ite=header_.end();it!=ite;++it){
+    for (vector<PostLineHeader>::iterator it=header_->begin(),ite=header_->end();it!=ite;++it){
       if (it->doc_type==updated_section_){
         old_sections_length+=header->length;
         header->length=codec_->encodeSection(section_,temp_sections_+temp_sections_length_);
@@ -213,21 +216,21 @@ namespace superfastmatch
         old_sections_length+=it->length;
       }
     }
-    temp_header_length_=codec_->encodeHeader(header_,temp_header_);
+    temp_header_length_=codec_->encodeHeader(*header_,temp_header_);
     return true;
   }
   
   size_t PostLine::getLength(){ 
     size_t length=(temp_header_length_==0)?old_header_length_:temp_header_length_;
-    for (size_t i=0;i<header_.size();i++){
-      length+=header_[i].length;
+    for (size_t i=0;i<header_->size();i++){
+      length+=(*header_)[i].length;
     }
     return length;
   }
   
   size_t PostLine::getLength(const uint32_t doc_type){
-    vector<PostLineHeader>::iterator it=header_.begin();
-    while(it!=header_.end()){
+    vector<PostLineHeader>::iterator it=header_->begin();
+    while(it!=header_->end()){
       if (it->doc_type==doc_type){
        return it->length; 
       }
@@ -236,17 +239,10 @@ namespace superfastmatch
     return 0;
   }
   
-  void PostLine::getDocTypes(vector<uint32_t>& doc_types){
-    doc_types.resize(0);
-    for(vector<PostLineHeader>::iterator it=header_.begin(),ite=header_.end();it!=ite;++it){
-      doc_types.push_back(it->doc_type);
-    }
-  }
-
   vector<uint32_t>* PostLine::getDocIds(const uint32_t doc_type){
     size_t offset=old_header_length_;
     docids_->resize(0);
-    for(vector<PostLineHeader>::iterator it=header_.begin(),ite=header_.end();it!=ite;++it){
+    for(vector<PostLineHeader>::iterator it=header_->begin(),ite=header_->end();it!=ite;++it){
       if (it->doc_type==doc_type){
         codec_->decodeSection(start_+offset,it->length,*docids_,false);
         break;
@@ -259,7 +255,7 @@ namespace superfastmatch
   vector<uint32_t>* PostLine::getDeltas(const uint32_t doc_type){
     size_t offset=old_header_length_;
     deltas_->resize(0);
-    for(vector<PostLineHeader>::iterator it=header_.begin(),ite=header_.end();it!=ite;++it){
+    for(vector<PostLineHeader>::iterator it=header_->begin(),ite=header_->end();it!=ite;++it){
       if (it->doc_type==doc_type){
         codec_->decodeSection(start_+offset,it->length,*deltas_,true);
         break;
@@ -270,12 +266,10 @@ namespace superfastmatch
   }
   
   ostream& operator<< (ostream& stream, PostLine& postline) {
-    vector<uint32_t> doctypes;
-    postline.getDocTypes(doctypes);
     stream << "Total Bytes: "<< postline.getLength() << endl;
-    for (vector<uint32_t>::iterator it=doctypes.begin(),ite=doctypes.end();it!=ite;++it){
-      vector<uint32_t>* docids=postline.getDocIds(*it);
-      stream << "Doc Type: " << *it << " Bytes: " << postline.getLength(*it) << " Doc Ids: {";
+    for(vector<PostLineHeader>::iterator it=postline.header_->begin(),ite=postline.header_->end();it!=ite;++it){
+      vector<uint32_t>* docids=postline.getDocIds(it->doc_type);
+      stream << "Doc Type: " << it->doc_type << " Bytes: " << it->length << " Doc Ids: {";
       for (vector<uint32_t>::iterator it2=docids->begin(),ite2=docids->end();it2!=ite2;it2++){
         stream << *it2 <<",";
       }

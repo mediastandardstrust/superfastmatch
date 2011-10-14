@@ -44,8 +44,8 @@ namespace superfastmatch
     size_t temp_header_length_;
     size_t temp_sections_length_;
     uint32_t updated_section_;
-    vector<PostLineHeader>* header_;
     vector<uint32_t> section_;
+    vector<PostLineHeader>* header_;
     vector<uint32_t>* deltas_;
     vector<uint32_t>* docids_;
   
@@ -53,7 +53,7 @@ namespace superfastmatch
     PostLine(uint32_t max_length);
     ~PostLine();
 
-    void load(const unsigned char* start);
+    vector<PostLineHeader>* load(const unsigned char* start);
     
     // Returns false if there are no changes
     // out must have a length greater than or equal to getLength()
@@ -69,14 +69,12 @@ namespace superfastmatch
 
     size_t getLength();
     size_t getLength(const uint32_t doc_type);
-    void getDocTypes(vector<uint32_t>& doc_types);
     vector<uint32_t>* getDocIds(const uint32_t doc_type);
     vector<uint32_t>* getDeltas(const uint32_t doc_type);
     
     friend std::ostream& operator<< (std::ostream& stream, PostLine& postline);
   private:
-    PostLine(const PostLine&);
-    PostLine& operator=(const PostLine&);
+    DISALLOW_COPY_AND_ASSIGN(PostLine);
   };
 }
 #endif

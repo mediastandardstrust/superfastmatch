@@ -1,10 +1,6 @@
 #ifndef _SFMPOSTING_H                       // duplication check
 #define _SFMPOSTING_H
 
-// #include <cassert>
-// #include <deque>
-// #include <algorithm>
-// #include <map>
 #include <google/sparsetable>
 #include <common.h>
 #include <templates.h>
@@ -24,35 +20,17 @@ namespace superfastmatch
     
   struct DocTally{
     uint64_t count;
-    uint64_t total;
-    uint32_t previous_1;
-    uint32_t previous_2;
-    uint32_t previous_3;
-    uint32_t previous_4;
-    uint32_t previous_5;
-    uint32_t previous_6;
-    
+    uint64_t previous;
     DocTally():
     count(0),
-    total(0),
-    previous_1(0xfffffff0),
-    previous_2(0xfffffff0),
-    previous_3(0xfffffff0),
-    previous_4(0xfffffff0),
-    previous_5(0xfffffff0),
-    previous_6(0xfffffff0)
+    previous(0)
     {}
-    
-    double getScore() const{
-      return (count*count)/double(total);
-    }
   };
   
   typedef struct
   {
     bool operator()(const DocTally &lhs, const DocTally &rhs) const { 
       return lhs.count>rhs.count;
-      // return lhs.getScore()>rhs.getScore();
     }
   } DocTallyEq;
     
@@ -83,16 +61,19 @@ namespace superfastmatch
     uint64_t getTaskCount();
     void finishTasks();
     size_t getHashCount();
-
+    void lockSlotForReading();
+    void unlockSlotForReading();
+    
     uint32_t fill_list_dictionary(TemplateDictionary* dict,uint32_t start);
     void fillHistograms(histogram_t& hash_hist,histogram_t& gaps_hist);
+  
   };
 
   class Posting{
   private:    
     Registry* registry_;
     vector<PostingSlot*> slots_;
-    uint32_t doc_count_;
+    uint64_t doc_count_;
     uint64_t total_doc_length_;
     bool ready_;
         
@@ -113,7 +94,10 @@ namespace superfastmatch
     void fill_status_dictionary(TemplateDictionary* dict);
     void fill_list_dictionary(TemplateDictionary* dict,uint32_t start);
     void fill_histogram_dictionary(TemplateDictionary* dict);
-  };
+  private:
+    void lockSlotsForReading();
+    void unlockSlotsForReading();
+  };  
 }
 
 #endif

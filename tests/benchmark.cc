@@ -1,12 +1,14 @@
 #include <tests.h>
 #include <cstdlib>
 #include <document.h>
+#include <google/dense_hash_map>
 
 TEST(BenchmarkTest,SearchMapTest){
   search_t results;
-  for (uint i=0;i<1000000;i++){
-    DocPair pair(rand()%10000,rand()%10000);
+  for (size_t i=0;i<10000000;i++){
+    DocPair pair(rand()%2+1,rand()%10000+1);
     DocTally* tally=&results[pair];
+    tally->count++;
     // if ((i%1000)==0){
     //   cout << "Loop: " << i << " Load Factor: " << results.load_factor() << " Count: " << results.size() <<endl; 
     // }

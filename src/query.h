@@ -12,10 +12,17 @@ namespace superfastmatch
   struct DocPair{
     uint32_t doc_type;
     uint32_t doc_id;
+    
+    DocPair():
+    doc_type(0),
+    doc_id(0)
+    {}
+    
     DocPair(uint32_t doc_type,uint32_t doc_id):
     doc_type(doc_type),
     doc_id(doc_id)
     {}
+    
     DocPair(const string& key){
       assert(key.size()==8);
       memcpy(&doc_type,key.data(),4);
@@ -26,14 +33,16 @@ namespace superfastmatch
   };
   
   typedef struct{
-    size_t operator() (const DocPair& k) const { 
+    inline size_t operator() (const DocPair& k) const {
       return (static_cast<uint64_t>(k.doc_type)<<32)|k.doc_id;
     }
   } DocPairHash;
 
   typedef struct
   {
-    bool operator() (const DocPair& x, const DocPair &y) const { return (x.doc_type==y.doc_type) && (x.doc_id==y.doc_id); }
+    inline bool operator() (const DocPair& x, const DocPair &y) const { 
+      return (x.doc_id==y.doc_id) && (x.doc_type==y.doc_type);
+    }
   } DocPairEq;
 
   class DocTypeRange{
