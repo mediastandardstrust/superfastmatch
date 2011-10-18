@@ -80,7 +80,7 @@ namespace superfastmatch{
   }
   
   bool Command::addDocument(){
-    DocumentPtr doc = registry_->getDocumentManager()->createPermanentDocument(getDocType(),getDocId(),getPayload(),DocumentManager::TEXT|DocumentManager::HASHES);
+    DocumentPtr doc = registry_->getDocumentManager()->createPermanentDocument(getDocType(),getDocId(),getPayload(),DocumentManager::TEXT|DocumentManager::POSTING_HASHES);
     if (doc){
       registry_->getPostings()->addDocument(doc);
       return true;

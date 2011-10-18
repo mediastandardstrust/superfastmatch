@@ -18,6 +18,8 @@ class MockRegistry : public Registry {
       uint32_t());
   MOCK_CONST_METHOD0(getWindowSize,
       uint32_t());
+  MOCK_CONST_METHOD0(getPostingWindowSize,
+      uint32_t());
   MOCK_CONST_METHOD0(getWhiteSpaceThreshold,
       uint32_t());
   MOCK_CONST_METHOD1(getWhiteSpaceHash,

@@ -12,7 +12,7 @@ DATA = ./data
 
 # Targets
 MYBINS = superfastmatch
-OBJS =  src/worker.o src/queue.o src/posting.o src/document.o src/logger.o src/registry.o src/command.o src/postline.o src/association.o src/query.o src/task.o
+OBJS =  src/worker.o src/queue.o src/posting.o src/document.o src/logger.o src/registry.o src/command.o src/postline.o src/association.o src/query.o src/task.o src/codec.o
 MAIN = src/superfastmatch.o
 
 # Building binaries
@@ -24,7 +24,7 @@ CXXFLAGS = -Wall -Wextra -funsigned-char -m64 -march=core2 -O3 -g
 LIBS = -lkyototycoon -lkyotocabinet -lstdc++ -lz -lpthread -lm -lc -lctemplate -lgflags
 # LIBS = -lkyototycoon -lkyotocabinet -lstdc++ -lz -lpthread -lm -lc -lctemplate -lgflags -ltcmalloc -lprofiler
 CXX = g++ $(INCLUDES)
-# CXX = icc $(INCLUDES)
+#CXX = icc $(INCLUDES)
 
 # Enviroments
 # RUNENV = TCMALLOC_SAMPLE_PARAMETER=524288

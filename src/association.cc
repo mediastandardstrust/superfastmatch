@@ -109,6 +109,7 @@ namespace superfastmatch
     uint32_t window_size=registry_->getWindowSize();
     uint32_t white_space=registry_->getWhiteSpaceHash(false);
     uint32_t threshold=registry_->getMaxPostingThreshold();
+    size_t total_characters=0;
     size_t bad_matches=0;
     size_t too_short=0;
     size_t above_threshold=0;
@@ -207,6 +208,7 @@ namespace superfastmatch
        if (length>=window_size){
          Result result(left,right,original_text.substr(left,length),length);
          results_->push_back(result);
+         total_characters+=length;
          // logger->log(Logger::DEBUG,kc::strprintf("Match: \"%s\"",result.text.c_str()).c_str()); 
        }else{
          too_short++;
@@ -214,7 +216,7 @@ namespace superfastmatch
        }
     }
     sort(results_->begin(),results_->end(),result_sorter);
-    message << "Associated: " << *from_document_ << " with: " << *to_document_ << " Matches: " << results_->size() << " Too short: " << too_short << " Bad Matches: " << bad_matches << " Above Threshold: " << above_threshold;
+    message << "Associated: " << *from_document_ << " with: " << *to_document_ << " Matches: " << results_->size() << " Characters: " << total_characters << " Too short: " << too_short << " Bad Matches: " << bad_matches << " Above Threshold: " << above_threshold;
     logger->log(Logger::DEBUG,&message);
     delete bloom;
   }

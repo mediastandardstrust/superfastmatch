@@ -51,9 +51,9 @@ namespace superfastmatch{
     return (1L<<getHashWidth())-1;
   };
 
-  uint32_t FlagsRegistry::getWhiteSpaceHash(bool masked) const{
-    uint32_t hash= WhiteSpaceHash(getWindowSize());
-    if (masked)
+  uint32_t FlagsRegistry::getWhiteSpaceHash(bool posting) const{
+    uint32_t hash= WhiteSpaceHash(posting?getPostingWindowSize():getWindowSize());
+    if (posting)
       return((hash>>getHashWidth())^(hash&getHashMask()));
     return hash;
   }
@@ -64,6 +64,12 @@ namespace superfastmatch{
   
   uint32_t FlagsRegistry::getWindowSize() const{
     return FLAGS_window_size;
+  };
+  
+  // This is shorter than window size to remove false positives in the search algorithm
+  // 7 is the magic number of bytes used in the algorithm, which seems to map to 6 (TODO!)
+  uint32_t FlagsRegistry::getPostingWindowSize() const{
+    return getWindowSize()-6;
   };
   
   uint32_t FlagsRegistry::getThreadCount() const{

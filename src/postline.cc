@@ -2,59 +2,6 @@
 
 namespace superfastmatch
 {
-  // VarIntCodec implementation
-  // --------------------------
-
-  size_t VarIntCodec::encodeHeader(const vector<PostLineHeader>& header,unsigned char* start){
-    size_t offset=kc::writevarnum(start,header.size());
-    for (size_t i=0;i<header.size();i++){
-      offset+=kc::writevarnum(start+offset,header[i].doc_type);
-      offset+=kc::writevarnum(start+offset,header[i].length);
-    }
-    return offset;
-  }
-
-  size_t VarIntCodec::decodeHeader(const unsigned char* start, vector<PostLineHeader>& header){
-    uint64_t length;
-    size_t offset=kc::readvarnum(start,5,&length);
-    PostLineHeader item;
-    header.resize(length);
-    for(vector<PostLineHeader>::iterator it=header.begin(),ite=header.end();it!=ite;++it){
-      offset+=kc::readvarnum(start+offset,5,&item.doc_type);
-      offset+=kc::readvarnum(start+offset,5,&item.length);
-      *it=item;
-    };
-    return offset;
-  };
-  
-  size_t VarIntCodec::encodeSection(const vector<uint32_t>& section,unsigned char* start){
-    size_t offset=0;
-    for(vector<uint32_t>::const_iterator it=section.begin(),ite=section.end();it!=ite;++it){
-      offset+=kc::writevarnum(start+offset,*it);
-    }
-    return offset;
-  }
-  
-  size_t VarIntCodec::decodeSection(const unsigned char* start, const size_t length, vector<uint32_t>& section,bool asDeltas){
-    size_t offset=0;
-    uint64_t value;
-    section.resize(0);
-    if (asDeltas){
-      while (offset!=length){
-        offset+=kc::readvarnum(start+offset,5,&value);
-        section.push_back(value);
-      }
-    }else{
-      uint64_t previous=0;
-      while (offset!=length){
-        offset+=kc::readvarnum(start+offset,5,&value);
-        previous+=value;
-        section.push_back(previous);
-      }
-    }
-    return offset;
-  }
-   
   // PostLine implementation
   // -----------------------
   
@@ -64,7 +11,7 @@ namespace superfastmatch
   // Cursors and vectors seem to be faster.
   
   PostLine::PostLine(uint32_t max_length):
-  codec_(new VarIntCodec()),
+  codec_(new GroupVarIntCodec()),
   temp_header_(new unsigned char[max_length]),
   temp_sections_(new unsigned char[max_length]),
   old_header_length_(0),

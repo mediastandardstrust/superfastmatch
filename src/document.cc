@@ -7,7 +7,7 @@ namespace superfastmatch
   // -----------------------
 
   Document::Document(const uint32_t doctype,const uint32_t docid, const bool permanent,Registry* registry):
-  doctype_(doctype),docid_(docid),permanent_(permanent),empty_meta_(new string()),registry_(registry),key_(0),text_(0),metadata_(),hashes_(0),bloom_(0)
+  doctype_(doctype),docid_(docid),permanent_(permanent),empty_meta_(new string()),registry_(registry),key_(0),text_(0),metadata_(),hashes_(0),posting_hashes_(0),bloom_(0)
   {
     char key[8];
     uint32_t dt=kc::hton32(doctype_);
@@ -18,7 +18,7 @@ namespace superfastmatch
   }
   
   Document::Document(const string& key,const bool permanent,Registry* registry):
-  permanent_(permanent),empty_meta_(new string()),registry_(registry),key_(0),text_(0),metadata_(0),hashes_(0),bloom_(0)
+  permanent_(permanent),empty_meta_(new string()),registry_(registry),key_(0),text_(0),metadata_(0),hashes_(0),posting_hashes_(0),bloom_(0)
   {
     key_= new string(key);
     memcpy(&doctype_,key.data(),4);
@@ -28,7 +28,6 @@ namespace superfastmatch
   }
   
   Document::~Document(){
-    // cout << "Deleting " << *this <<endl;;
     if (metadata_!=0){
       delete metadata_;
       metadata_=0;
@@ -36,6 +35,10 @@ namespace superfastmatch
     if (hashes_!=0){
       delete hashes_;
       hashes_=0;
+    }
+    if (posting_hashes_!=0){
+      delete posting_hashes_;
+      posting_hashes_=0;
     }
     if (bloom_!=0){
       delete bloom_;
@@ -139,6 +142,17 @@ namespace superfastmatch
     return true;
   }
 
+  bool Document::initPostingHashes(){
+    if (posting_hashes_==0){
+      hashes_vector* tempHashes = new hashes_vector();
+      if(getText().size()>=registry_->getWindowSize()){
+        UpperCaseRabinKarp(getText(),registry_->getPostingWindowSize(),registry_->getWhiteSpaceThreshold(),*tempHashes);
+      }
+      posting_hashes_=tempHashes;
+    }
+    return true;
+  }
+
   bool Document::initBloom(){
     if (bloom_==0){
       hashes_bloom* tempBloom = new hashes_bloom();
@@ -155,6 +169,13 @@ namespace superfastmatch
       throw runtime_error("Hashes not initialised");
     }
     return *hashes_;
+  }
+  
+  hashes_vector& Document::getPostingHashes(){
+    if (posting_hashes_==0){
+      throw runtime_error("Posting Hashes not initialised");
+    }
+    return *posting_hashes_;
   }
 
   string Document::getCleanText(const uint32_t position,const uint32_t length){
@@ -287,6 +308,8 @@ namespace superfastmatch
     if ((state&TEXT) && (not doc->initText()))
       return false;
     if ((state&HASHES) && (not doc->initHashes()))
+      return false;
+    if ((state&POSTING_HASHES) && (not doc->initPostingHashes()))
       return false;
     if ((state&BLOOM) && (not doc->initBloom()))
       return false;

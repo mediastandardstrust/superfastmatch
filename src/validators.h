@@ -34,9 +34,9 @@ static bool ValidateHashWidth(const char* flagname, int32_t value){
 }
 
 static bool ValidateWindowSize(const char* flagname, int32_t value){
-  if (value>0 && value <999)
+  if (value>10)
     return true;
-  printf("Invalid value for --%s: %d\n", flagname, (int)value);
+  printf("Invalid value for --%s: %d\n Must be greater than 10.\n", flagname, (int)value);
   return false;
 }
 

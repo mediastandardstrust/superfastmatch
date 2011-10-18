@@ -1,5 +1,13 @@
 This is a text document which includes some words from Great Expectations and Oliver Twist.
 
+My father's family name being Pirrip
+12345678901234567890
+My father's family nose is a test line!
+
+TREATS OF THE PLACE WHERE OLIVER TWIST WAS BORN AND OF THE
+12345678901234567890
+TREATS OF THE PLACES
+
 This document needs to be fairly long to enable a decent test for the index paging to kick in and be tested.
 
 

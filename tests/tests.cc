@@ -17,6 +17,8 @@ void BaseTest::SetUp(){
   miscDB_->open("%");
   EXPECT_CALL(registry_,getWindowSize())
     .WillRepeatedly(Return(4));
+  EXPECT_CALL(registry_,getPostingWindowSize())
+    .WillRepeatedly(Return(2));
   EXPECT_CALL(registry_,getSlotCount())
     .WillRepeatedly(Return(4));
   EXPECT_CALL(registry_,getWhiteSpaceThreshold())

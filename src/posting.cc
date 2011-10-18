@@ -61,7 +61,7 @@ namespace superfastmatch
     size_t outgoing_length;
     // Where hash width is below 32 we will get duplicates per document
     // We discard them with a no operation 
-    for (hashes_vector::const_iterator it=doc->getHashes().begin(),ite=doc->getHashes().end();it!=ite;++it){
+    for (hashes_vector::const_iterator it=doc->getPostingHashes().begin(),ite=doc->getPostingHashes().end();it!=ite;++it){
       hash = ((*it>>hash_width)^(*it&hash_mask))-offset_;
       uint32_t doctype=doc->doctype();
       uint32_t docid=doc->docid();
@@ -81,7 +81,7 @@ namespace superfastmatch
           memset(entry,0,8);
           index_.set(hash,entry);
         }
-        entry=index_[hash];
+        entry=index_.unsafe_get(hash);
         line.load(entry);
         incoming_length=line.getLength();
         if((incoming_length+5)<=(registry_->getMaxLineLength())){
@@ -129,14 +129,6 @@ namespace superfastmatch
           bool consecutive=((barrel&0xFFFFFFFFFFFFFF00)==0x0101010101010100);
           uint32_t mask=((consecutive)&&((pair.doc_id!=docid)||(pair.doc_type!=doctype)))-1;
           tally->count+=(~mask)&1;
-          // if (mask==0){
-          //   cout << position << ":" << hash << (consecutive?'+':'-') << ":[";
-          //     for (size_t i=8; i>0;i--){
-          //       cout << uint32_t((tally->previous>>((i-1)*8))&0xFF) << ",";
-          //     }
-          //   cout << "]:" << uint32_t(current) << ":" << uint32_t(previous) << ":" << uint32_t(difference);
-          //   cout << ":" << tally->count << "(" << doctype <<","<< docid << ")"<< "(" << pair.doc_type << "," << pair.doc_id << ")" << endl; 
-          // }
         }
       }
     }
@@ -254,7 +246,7 @@ namespace superfastmatch
     assert(query.isValid());
     vector<DocPair> pairs=query.getSourceDocPairs(true);
     for(vector<DocPair>::iterator it=pairs.begin(),ite=pairs.end();it!=ite;++it){
-      DocumentPtr doc=registry_->getDocumentManager()->getDocument(it->doc_type,it->doc_id,DocumentManager::TEXT|DocumentManager::HASHES);
+      DocumentPtr doc=registry_->getDocumentManager()->getDocument(it->doc_type,it->doc_id,DocumentManager::TEXT|DocumentManager::POSTING_HASHES);
       addDocument(doc);
     }
     finishTasks();
@@ -327,7 +319,7 @@ namespace superfastmatch
     uint64_t results_estimate=((total_doc_length_/registry_->getMaxHashCount())+1)*doc->getText().size();
     results.rehash(min(doc_count_,results_estimate)*3);
     lockSlotsForReading();
-    for (vector<uint32_t>::const_iterator it=doc->getHashes().begin(),ite=doc->getHashes().end();it!=ite;++it){
+    for (vector<uint32_t>::const_iterator it=doc->getPostingHashes().begin(),ite=doc->getPostingHashes().end();it!=ite;++it){
       uint32_t hash=(*it>>hash_width)^(*it&hash_mask);
       if (hash!=white_space){
         slots_[hash/span]->searchIndex(doctype,docid,hash,position,line,results);

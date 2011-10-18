@@ -2,6 +2,17 @@
 #define _SFMTESTS_H
 
 #include <stdexcept>
+#include <sys/time.h>
+#include <tr1/unordered_set>
+#include <tr1/unordered_map>
+#include <algorithm>
+#include <numeric>
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <string>
+#include <stdint.h>
+#include <cctype>
 #include <kcprotodb.h>
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
@@ -17,6 +28,8 @@
 using namespace testing;
 using namespace superfastmatch;
 using namespace kyotocabinet;
+using namespace std;
+using namespace std::tr1;
 
 class BaseTest :public ::testing::Test{
 protected:

@@ -47,11 +47,13 @@ namespace superfastmatch
     string* text_;
     metadata_map* metadata_;
     hashes_vector* hashes_;
+    hashes_vector* posting_hashes_;
     hashes_bloom* bloom_;
 
   public:
     ~Document();
     hashes_vector& getHashes();
+    hashes_vector& getPostingHashes();
     hashes_bloom& getBloom();
     string& getMeta(const string& key);
     bool setMeta(const string& key, const string& value);
@@ -78,6 +80,7 @@ namespace superfastmatch
     bool initText();
     bool initCleanText();
     bool initHashes();
+    bool initPostingHashes();
     bool initBloom();
   };
   
@@ -85,15 +88,16 @@ namespace superfastmatch
   {
   public:
     enum DocumentState{
-      NONE        = 0,
-      META        = 1 << 0,
-      TEXT        = 1 << 1,
-      HASHES      = 1 << 3,   // HASHES depends on TEXT
-      BLOOM       = 1 << 4    // BLOOM depends on HASHES
+      NONE            = 0,
+      META            = 1 << 0,
+      TEXT            = 1 << 1,
+      HASHES          = 1 << 2,   // HASHES depends on TEXT
+      POSTING_HASHES  = 1 << 3,   // POSTING_HASHES depends on TEXT
+      BLOOM           = 1 << 4    // BLOOM depends on HASHES
     };
   private:
     Registry* registry_;
-    static const int32_t DEFAULT_STATE = META|TEXT|HASHES|BLOOM;
+    static const int32_t DEFAULT_STATE = META|TEXT|HASHES|POSTING_HASHES|BLOOM;
   public:
     explicit DocumentManager(Registry* registry);
     ~DocumentManager();
