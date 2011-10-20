@@ -21,7 +21,7 @@ INCLUDES = -Isrc -Itests -I/usr/local/ -Itests/utils/
 CXXFLAGS = -Wall -Wextra -funsigned-char -m64 -march=core2 -O3 -g
 # CXXFLAGS = -Wall -Wextra -funsigned-char -msse4.1 -ftree-vectorize -O3 -g
 #CXXFLAGS = -Wall -Wextra -funsigned-char -fno-omit-frame-pointer -fno-builtin-malloc -fno-builtin-calloc -fno-builtin-realloc -fno-builtin-free -m64 -march=core2 -O3 -g
-LIBS = -lkyototycoon -lkyotocabinet -lstdc++ -lz -lpthread -lm -lc -lctemplate -lgflags
+LIBS =  -lstdc++ -lz -lm -lc -lpthread -lkyototycoon -lkyotocabinet -lctemplate -lgflags
 # LIBS = -lkyototycoon -lkyotocabinet -lstdc++ -lz -lpthread -lm -lc -lctemplate -lgflags -ltcmalloc -lprofiler
 CXX = g++ $(INCLUDES)
 #CXX = icc $(INCLUDES)
@@ -105,7 +105,7 @@ tests/tests : $(OBJS) $(TESTS) tests/tests.o tests/mock_registry.o tests/gmock-g
 #================================================================
 
 superfastmatch : $(OBJS) $(MAIN)
-	$(CXX) $(LDFLAGS) $(LIBS) $(OBJS) $(MAIN) -o $@ 
+	$(CXX) $(OBJS) $(LDFLAGS) $(LIBS) $(MAIN) -o $@ 
 
 # pull in dependency info for *existing* .o files
 -include $(OBJS:.o=.d)
