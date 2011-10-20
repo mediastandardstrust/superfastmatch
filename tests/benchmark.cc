@@ -4,7 +4,7 @@
 
 TEST(BenchmarkTest,SearchMapTest){
   search_t results;
-  for (size_t i=0;i<10000000;i++){
+  for (size_t i=0;i<100000000;i++){
     DocPair pair(rand()%2+1,rand()%10000+1);
     DocTally* tally=&results[pair];
     tally->count++;

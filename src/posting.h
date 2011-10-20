@@ -2,6 +2,7 @@
 #define _SFMPOSTING_H
 
 #include <google/sparsetable>
+#include <ext/pool_allocator.h>
 #include <common.h>
 #include <templates.h>
 #include <postline.h>
@@ -37,6 +38,7 @@ namespace superfastmatch
   typedef sparsetable<unsigned char*,48> index_t;
   typedef unordered_map<uint32_t,uint64_t> stats_t;
   typedef unordered_map<uint32_t,stats_t> histogram_t;
+  // typedef unordered_map<DocPair,DocTally,DocPairHash,DocPairEq,__gnu_cxx::__pool_alloc<pair<const DocPair,DocTally> > > search_t;
   typedef unordered_map<DocPair,DocTally,DocPairHash,DocPairEq> search_t;
   typedef multimap<DocTally,DocPair,DocTallyEq> inverted_search_t;
 

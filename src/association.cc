@@ -93,14 +93,10 @@ namespace superfastmatch
   }
   
   void Association::match(){
-    // TODO Optimise for shorter document
-    // if (from_document->getText().length()<to_document->getText().length())
     Logger* logger = registry_->getLogger();
     stringstream message;
-    hashes_bloom* bloom = new hashes_bloom();
     hashes_vector from_hashes,to_hashes;
-    *bloom|=from_document_->getBloom();
-    *bloom&=to_document_->getBloom();
+    hashes_bloom* bloom = new hashes_bloom(from_document_->getBloom()&to_document_->getBloom());
     from_hashes=from_document_->getHashes();
     to_hashes=to_document_->getHashes();
     uint32_t from_hashes_count = from_hashes.size();
@@ -305,8 +301,13 @@ namespace superfastmatch
     size_t num_results=registry_->getNumResults();
     size_t count=0;
     for(inverted_search_t::iterator it2=pruned_results.begin(),ite2=pruned_results.end();it2!=ite2 && count<num_results;++it2){
-      DocumentPtr other=registry_->getDocumentManager()->getDocument(it2->second.doc_type,it2->second.doc_id);
-      AssociationPtr association(new Association(registry_,doc,other));
+      DocumentPtr other=registry_->getDocumentManager()->getDocument(it2->second.doc_type,it2->second.doc_id,DocumentManager::TEXT|DocumentManager::HASHES|DocumentManager::BLOOM|DocumentManager::META);
+      AssociationPtr association;
+      if (doc->getText().length()<other->getText().length()){
+        association.reset(new Association(registry_,doc,other));
+      }else{
+        association.reset(new Association(registry_,other,doc));
+      }
       associations.push_back(association);
       if (save){
         association->save();

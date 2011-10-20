@@ -111,24 +111,30 @@ namespace superfastmatch
   }
   
   bool PostingSlot::searchIndex(const uint32_t doctype,const uint32_t docid,const uint32_t hash, const uint32_t position,PostLine& line,search_t& results){
-    uint32_t slot_hash = hash-offset_;
-    uint8_t current=position&0xFF;
+    const uint32_t slot_hash = hash-offset_;
+    const uint8_t current=position&0xFF;
     if(index_.test(slot_hash)){
-      unsigned char* start=index_.unsafe_get(slot_hash);
+      const unsigned char* start=index_.unsafe_get(slot_hash);
       vector<PostLineHeader>* doctypes=line.load(start);
       for (vector<PostLineHeader>::const_iterator it=doctypes->begin(),ite=doctypes->end();it!=ite;++it){
         vector<uint32_t>* docids=line.getDocIds(it->doc_type);
         for (vector<uint32_t>::const_iterator it2=docids->begin(),ite2=docids->end();it2!=ite2;++it2){
           DocPair pair(it->doc_type,*it2);
           DocTally* tally=&results[pair];
+          // cout << pair.doc_type << ":" << pair.doc_id << ":" << (void*)tally << endl;
+          const bool notSearchDoc=(doctype-it->doc_type)|(docid-*it2);
           uint64_t barrel=tally->previous;
-          uint8_t previous=(barrel)&0xFF;
-          uint8_t difference=current-previous;
+          const uint8_t previous=(barrel)&0xFF;
+          const uint8_t difference=current-previous;
           barrel=((barrel&0xFFFFFFFFFFFFFF00)<<8)|(uint64_t(difference)<<8)|current;
           tally->previous=barrel;
-          bool consecutive=((barrel&0xFFFFFFFFFFFFFF00)==0x0101010101010100);
-          uint32_t mask=((consecutive)&&((pair.doc_id!=docid)||(pair.doc_type!=doctype)))-1;
-          tally->count+=(~mask)&1;
+          const bool notConsecutive=(barrel&0xFFFFFFFFFFFFFF00)-0x0101010101010100;
+          const bool isMatch=notSearchDoc&(~notConsecutive);
+          tally->count+=isMatch;
+          // if (isMatch){
+          //   cout << isMatch << ":" << uint32_t(consecutive) << "," << uint32_t(notConsecutive) << ":" << uint32_t(notSearchDoc);
+          //   cout << ",[" << doctype << "," << docid << "],[" << it->doc_type << "," << *it2 << "]" <<endl; 
+          // }
         }
       }
     }
@@ -308,15 +314,15 @@ namespace superfastmatch
     Logger* logger=registry_->getLogger();
     stringstream message;
     PostLine line(registry_->getMaxLineLength());
-    size_t num_results=registry_->getNumResults();
-    uint32_t hash_mask=registry_->getHashMask();
-    uint32_t hash_width=registry_->getHashWidth();
-    uint32_t white_space=registry_->getWhiteSpaceHash();
-    uint32_t span=registry_->getMaxHashCount()/registry_->getSlotCount();
-    uint32_t doctype=doc->doctype();
-    uint32_t docid=doc->docid();
+    const size_t num_results=registry_->getNumResults();
+    const uint32_t hash_mask=registry_->getHashMask();
+    const uint32_t hash_width=registry_->getHashWidth();
+    const uint32_t white_space=registry_->getWhiteSpaceHash();
+    const uint32_t span=registry_->getMaxHashCount()/registry_->getSlotCount();
+    const uint32_t doctype=doc->doctype();
+    const uint32_t docid=doc->docid();
+    const uint64_t results_estimate=((total_doc_length_/registry_->getMaxHashCount())+1)*doc->getText().size();
     uint32_t position=0;
-    uint64_t results_estimate=((total_doc_length_/registry_->getMaxHashCount())+1)*doc->getText().size();
     results.rehash(min(doc_count_,results_estimate)*3);
     lockSlotsForReading();
     for (vector<uint32_t>::const_iterator it=doc->getPostingHashes().begin(),ite=doc->getPostingHashes().end();it!=ite;++it){
