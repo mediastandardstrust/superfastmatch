@@ -9,7 +9,7 @@ filemask=${2-"*.txt"}
 for dir in `find $1 -type d`
 do
 	docid=1
-	for file in `find $dir -type f -depth 1 -name "$filemask"`
+	for file in `find $dir -maxdepth 1 -type f -name "$filemask"`
 	# Smallest first
 	# for file in `ls -ASr $dir | grep $filemask`
 	# Largest first
