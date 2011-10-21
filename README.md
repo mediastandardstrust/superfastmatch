@@ -34,9 +34,9 @@ and wait for everything to build. The script will ask you for your sudo password
 
 On Ubuntu you'll need to do this first:
 
-    sudo apt-get install libunwind7
+    sudo apt-get install libunwind7-dev subversion curl build-essential zlib1g-dev 
 
-Which is a dependency for perftools. And you might also need a:
+And you might also need a:
 
     sudo ldconfig
 

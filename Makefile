@@ -22,11 +22,10 @@ CXXFLAGS = -Wall -Wextra -funsigned-char -m64 -march=core2 -O3 -g
 PROFILEFLAGS = -D_GLIBCXX_PROFILE -D_GLIBCXX_PROFILE_MAX_WARN_COUNT=100 
 # CXXFLAGS = -Wall -Wextra -funsigned-char -msse4.1 -ftree-vectorize -O3 -g
 #CXXFLAGS = -Wall -Wextra -funsigned-char -fno-omit-frame-pointer -fno-builtin-malloc -fno-builtin-calloc -fno-builtin-realloc -fno-builtin-free -m64 -march=core2 -O3 -g
-LIBS = -lkyototycoon -lkyotocabinet -lz -lpthread -lm -lc -lctemplate -lgflags
+LIBS =  -lstdc++ -lz -lm -lc -lpthread -lkyototycoon -lkyotocabinet -lctemplate -lgflags
 # LIBS = -lkyototycoon -lkyotocabinet -lstdc++ -lz -lpthread -lm -lc -lctemplate -lgflags -ltcmalloc -lprofiler
-#CXX = g++ $(INCLUDES)
+CXX = g++ $(INCLUDES)
 #CXX = icc $(INCLUDES)
-CXX = /usr/local/bin/g++ $(INCLUDES)
 
 # Enviroments
 # RUNENV = TCMALLOC_SAMPLE_PARAMETER=524288
@@ -78,9 +77,6 @@ run : all
 	mkdir -p $(DATA)
 	$(RUNENV) ./superfastmatch -reset -debug
 
-check : tests/tests
-	tests/tests --gtest_filter=-*Slow*
-
 profile : CXXFLAGS += $(PROFILEFLAGS)
 profile : all
 	mkdir -p $(DATA)
@@ -90,6 +86,9 @@ debug : CXXFLAGS += -O0
 debug : all
 	mkdir -p data
 	$(DEBUGENV) superfastmatch
+
+check : tests/tests
+	tests/tests --gtest_filter=-*Slow*
 
 .PHONY : all clean check profile debug run
 
@@ -101,14 +100,14 @@ tests/gmock-gtest.a : $(GTEST_DIR)/gmock-gtest-all.o
 	$(AR) $(ARFLAGS) $@ $^
 
 tests/tests : $(OBJS) $(TESTS) tests/tests.o tests/mock_registry.o tests/gmock-gtest.a
-	$(CXX) $(INCLUDES) $(LIBS) $(CXXFLAGS) -o $@ $^
+	$(CXX) $(INCLUDES) $(CXXFLAGS) -o $@ $^ $(LIBS)
 
 #================================================================
 # Building binaries
 #================================================================
 
 superfastmatch : $(OBJS) $(MAIN)
-	$(CXX) $(LDFLAGS) $(LIBS) $(OBJS) $(MAIN) -o $@ 
+	$(CXX) $(OBJS) $(LDFLAGS) $(LIBS) $(MAIN) -o $@ 
 
 # pull in dependency info for *existing* .o files
 -include $(OBJS:.o=.d)
