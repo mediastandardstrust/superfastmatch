@@ -98,7 +98,7 @@ tests/gmock-gtest.a : $(GTEST_DIR)/gmock-gtest-all.o
 	$(AR) $(ARFLAGS) $@ $^
 
 tests/tests : $(OBJS) $(TESTS) tests/tests.o tests/mock_registry.o tests/gmock-gtest.a
-	$(CXX) $(INCLUDES) $(LIBS) $(CXXFLAGS) -o $@ $^
+	$(CXX) $(INCLUDES) $(CXXFLAGS) -o $@ $^ $(LIBS)
 
 #================================================================
 # Building binaries
