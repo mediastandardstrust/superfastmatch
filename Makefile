@@ -19,6 +19,7 @@ MAIN = src/superfastmatch.o
 INCLUDES = -Isrc -Itests -I/usr/local/ -Itests/utils/
 #LDFLAGS = -Wl,-no_pie
 CXXFLAGS = -Wall -Wextra -funsigned-char -m64 -march=core2 -O3 -g
+PROFILEFLAGS = -D_GLIBCXX_PROFILE -D_GLIBCXX_PROFILE_MAX_WARN_COUNT=100 
 # CXXFLAGS = -Wall -Wextra -funsigned-char -msse4.1 -ftree-vectorize -O3 -g
 #CXXFLAGS = -Wall -Wextra -funsigned-char -fno-omit-frame-pointer -fno-builtin-malloc -fno-builtin-calloc -fno-builtin-realloc -fno-builtin-free -m64 -march=core2 -O3 -g
 LIBS =  -lstdc++ -lz -lm -lc -lpthread -lkyototycoon -lkyotocabinet -lctemplate -lgflags
@@ -28,7 +29,7 @@ CXX = g++ $(INCLUDES)
 
 # Enviroments
 # RUNENV = TCMALLOC_SAMPLE_PARAMETER=524288
-PROFILEENV = HEAPPROFILE=/tmp/superfastmatch.hprof 
+# PROFILEENV = HEAPPROFILE=/tmp/superfastmatch.hprof 
 DEBUGENV = gdb 
 
 #================================================================
@@ -76,9 +77,7 @@ run : all
 	mkdir -p $(DATA)
 	$(RUNENV) ./superfastmatch -reset -debug
 
-check : tests/tests
-	tests/tests --gtest_filter=-*Slow*
-
+profile : CXXFLAGS += $(PROFILEFLAGS)
 profile : all
 	mkdir -p $(DATA)
 	$(PROFILEENV) ./superfastmatch -reset -debug
@@ -87,6 +86,9 @@ debug : CXXFLAGS += -O0
 debug : all
 	mkdir -p data
 	$(DEBUGENV) superfastmatch
+
+check : tests/tests
+	tests/tests --gtest_filter=-*Slow*
 
 .PHONY : all clean check profile debug run
 
