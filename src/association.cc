@@ -96,7 +96,9 @@ namespace superfastmatch
     Logger* logger = registry_->getLogger();
     stringstream message;
     hashes_vector from_hashes,to_hashes;
-    hashes_bloom* bloom = new hashes_bloom(from_document_->getBloom()&to_document_->getBloom());
+    hashes_bloom* bloom = new hashes_bloom();
+    *bloom|=from_document_->getBloom();
+    *bloom&=to_document_->getBloom();
     from_hashes=from_document_->getHashes();
     to_hashes=to_document_->getHashes();
     uint32_t from_hashes_count = from_hashes.size();
