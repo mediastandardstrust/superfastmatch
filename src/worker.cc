@@ -163,8 +163,12 @@ namespace superfastmatch{
     res.dict.AddIncludeDictionary("HEADER")->SetFilename(HEADER);
     res.dict.AddIncludeDictionary("FOOTER")->SetFilename(FOOTER);
     registry_->getTemplateCache()->ExpandWithData(res.template_name,DO_NOT_STRIP,&res.dict,NULL,&resbody);
-  
-    res.message << " Response Time: " << setiosflags(ios::fixed) << setprecision(4) << kyotocabinet::time()-start << " secs";
+
+    stringstream time;
+    time << setiosflags(ios::fixed) << setprecision(4) << kyotocabinet::time()-start << " secs";
+    resheads["content-type"] = "text/html";
+    resheads["X-response-time"] = time.str();
+    res.message << " Response Time: " << time ;
     if (res.code==500 || res.code==404){
       serv->log(Logger::ERROR,res.message.str().c_str());
     }else{

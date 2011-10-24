@@ -25,7 +25,7 @@ namespace superfastmatch
     reverse_key_=new string(to_document->getKey());
     reverse_key_->append(from_document->getKey());
     if(not load()){
-      // TODO The state should be indicated by the document itself to permit lzay evalution like this
+      // TODO The state should be indicated by the document itself to permit lazy evalution like this
       if ((to_document_->doctype()!=0)&&(to_document_->docid()!=0)){
         to_document_=registry_->getDocumentManager()->getDocument(to_document_->doctype(),to_document_->docid(),DocumentManager::TEXT|DocumentManager::HASHES|DocumentManager::BLOOM|DocumentManager::META); 
       }

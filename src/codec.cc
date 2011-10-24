@@ -126,12 +126,12 @@ namespace superfastmatch
   }
 
   size_t GroupVarIntCodec::decodeHeader(const unsigned char* start, vector<PostLineHeader>& header){
-    uint32_t length;
+    uint32_t length=0;
     unsigned char* cursor=GetVarint32Ptr(const_cast<unsigned char*>(start),&length);
     header.resize(0);
     for (size_t i=length;i>0;i--){
-      uint32_t doc_type;
-      uint32_t length;
+      uint32_t doc_type=0;
+      uint32_t length=0;
       cursor=GetVarint32Ptr(cursor,&doc_type);
       cursor=GetVarint32Ptr(cursor,&length);
       header.push_back(PostLineHeader(doc_type,length));
