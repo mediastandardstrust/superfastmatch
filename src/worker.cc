@@ -168,7 +168,7 @@ namespace superfastmatch{
     time << setiosflags(ios::fixed) << setprecision(4) << kyotocabinet::time()-start << " secs";
     resheads["content-type"] = "text/html";
     resheads["X-response-time"] = time.str();
-    res.message << " Response Time: " << time ;
+    res.message << " Response Time: " << time.str() ;
     if (res.code==500 || res.code==404){
       serv->log(Logger::ERROR,res.message.str().c_str());
     }else{
