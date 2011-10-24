@@ -3,6 +3,60 @@
 
 namespace superfastmatch
 {
+  // VarInt algorithms derived from
+  // http://code.google.com/p/leveldb/source/browse/util/coding.cc
+  // -------------------------------------------------------------
+  
+  inline unsigned char* GetVarint32Ptr(unsigned char* p,uint32_t* value) {
+    uint32_t result = *p;
+    if ((result & 128) == 0) {
+      *value = result;
+      return p + 1;
+    }
+    result = 0;
+    for (uint32_t shift = 0; shift <= 28 ; shift += 7) {
+      uint32_t byte = *p;
+      p++;
+      if (byte & 128) {
+        // More bytes are present
+        result |= ((byte & 127) << shift);
+      } else {
+        result |= (byte << shift);
+        *value = result;
+        return p;
+      }
+    }
+    return NULL;
+  }
+  
+  inline unsigned char* EncodeVarint32(const unsigned char* dst, const uint32_t v) {
+    // Operate on characters as unsigneds
+    unsigned char* ptr = const_cast<unsigned char*>(dst);
+    static const int B = 128;
+    if (v < (1<<7)) {
+      *(ptr++) = v;
+    } else if (v < (1<<14)) {
+      *(ptr++) = v | B;
+      *(ptr++) = v>>7;
+    } else if (v < (1<<21)) {
+      *(ptr++) = v | B;
+      *(ptr++) = (v>>7) | B;
+      *(ptr++) = v>>14;
+    } else if (v < (1<<28)) {
+      *(ptr++) = v | B;
+      *(ptr++) = (v>>7) | B;
+      *(ptr++) = (v>>14) | B;
+      *(ptr++) = v>>21;
+    } else {
+      *(ptr++) = v | B;
+      *(ptr++) = (v>>7) | B;
+      *(ptr++) = (v>>14) | B;
+      *(ptr++) = (v>>21) | B;
+      *(ptr++) = v>>28;
+    }
+    return ptr;
+  }
+  
   // VarIntCodec implementation
   // --------------------------
 
@@ -61,26 +115,25 @@ namespace superfastmatch
   // GroupVarIntCodec implementation derived from:
   // http://www.ir.uwaterloo.ca/book/addenda-06-index-compression.html#groupvarint
   // --------------------------
-
+  
   size_t GroupVarIntCodec::encodeHeader(const vector<PostLineHeader>& header,unsigned char* start){
-    size_t offset=kc::writevarnum(start,header.size());
+    unsigned char* cursor=EncodeVarint32(start,header.size());
     for (size_t i=0;i<header.size();i++){
-      offset+=kc::writevarnum(start+offset,header[i].doc_type);
-      offset+=kc::writevarnum(start+offset,header[i].length);
+      cursor=EncodeVarint32(cursor,header[i].doc_type);
+      cursor=EncodeVarint32(cursor,header[i].length);
     }
-    return offset;
+    return cursor-start;
   }
 
   size_t GroupVarIntCodec::decodeHeader(const unsigned char* start, vector<PostLineHeader>& header){
-    uint64_t length;
-    unsigned char* cursor=const_cast<unsigned char*>(start);
-    cursor+=kc::readvarnum(cursor,5,&length);
+    uint32_t length;
+    unsigned char* cursor=GetVarint32Ptr(const_cast<unsigned char*>(start),&length);
     header.resize(0);
     for (size_t i=length;i>0;i--){
-      uint64_t doc_type;
-      uint64_t length;
-      cursor+=kc::readvarnum(cursor,5,&doc_type);
-      cursor+=kc::readvarnum(cursor,5,&length);
+      uint32_t doc_type;
+      uint32_t length;
+      cursor=GetVarint32Ptr(cursor,&doc_type);
+      cursor=GetVarint32Ptr(cursor,&length);
       header.push_back(PostLineHeader(doc_type,length));
     }
     return cursor-start;

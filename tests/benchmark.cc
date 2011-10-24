@@ -2,10 +2,33 @@
 #include <cstdlib>
 #include <document.h>
 
-TEST(BenchmarkTest,SearchMapTest){
+#include <ext/pool_allocator.h>
+#include <ext/bitmap_allocator.h>
+#include <boost/pool/pool_alloc.hpp>
+#include <boost/unordered_map.hpp>
+
+class SearchMapTest : public Test{
+  public:
+     static vector<uint32_t> input;
+  
+     static void SetUpTestCase(){
+       input.clear();
+       srand(time(NULL));
+       input.reserve(100000000);
+       for (size_t i=0;i<100000000;i++){
+         input.push_back(rand()%2+1);
+         input.push_back(rand()%10000+1);
+       }
+     }
+};
+
+vector<uint32_t> SearchMapTest::input;
+
+TEST_F(SearchMapTest,SearchMapTest){
   search_t results;
-  for (size_t i=0;i<100000000;i++){
-    DocPair pair(rand()%2+1,rand()%10000+1);
+  results.rehash(50000);
+  for (vector<uint32_t>::const_iterator it=SearchMapTest::input.begin(),ite=SearchMapTest::input.end();it!=ite;){
+    DocPair pair(*it++,*it++);
     DocTally* tally=&results[pair];
     tally->count++;
     // if ((i%1000)==0){
@@ -15,6 +38,51 @@ TEST(BenchmarkTest,SearchMapTest){
   // for (search_t::const_iterator it=results.begin(),ite=results.end();it!=ite;++it){
   //   size_t bucket=results.bucket(it->first);
   //   cout << "Bucket: " << bucket << "/" << results.bucket_count() <<" Doctype: " << it->first.doc_type << " Docid: " << it->first.doc_id << " Bucket size: " << results.bucket_size(bucket) << endl;
+  // }
+}
+
+typedef struct
+{
+  inline bool operator() (const DocPair& x, const DocPair &y) const { 
+    // return ~((uint64_t(x.doc_type)<<32|x.doc_id)^(uint64_t(y.doc_type)<<32|y.doc_id));
+    return ~((x.doc_id^y.doc_id)&&(x.doc_type^y.doc_type));
+    // return (x.doc_id==y.doc_id)&(x.doc_type==y.doc_type);
+    // return (x.doc_type==y.doc_type)&&(x.doc_id==y.doc_id);
+  }
+} DocPairEq2;
+
+typedef struct{
+  inline size_t operator() (const DocPair& k) const {
+    return (uint64_t(k.doc_type)<<32|k.doc_id);
+  }
+} DocPairHash2;
+
+typedef unordered_set<DocPair,DocPairHash2,DocPairEq2> searchset_t;
+typedef unordered_map<DocPair,DocTally,DocPairHash2,DocPairEq2,boost::fast_pool_allocator<pair<DocPair,DocTally> > > pooled_search_t;
+// typedef unordered_map<DocPair,DocTally,DocPairHash,DocPairEq,__gnu_cxx::bitmap_allocator<pair<const DocPair,DocTally> > > pooled_search_t;
+// typedef unordered_map<DocPair,DocTally,DocPairHash,DocPairEq,__gnu_cxx::__pool_alloc<pair<const DocPair,DocTally> > > pooled_search_t;
+
+TEST_F(SearchMapTest,PooledSearchMapTest){
+  pooled_search_t results;
+  results.rehash(50000);
+  size_t count=0;
+  for (vector<uint32_t>::const_iterator it=SearchMapTest::input.begin(),ite=SearchMapTest::input.end();it!=ite;){
+    DocPair pair(*it++,*it++);
+    DocTally* tally=&results[pair];
+    tally->count++;
+    // if(count%1000==0){
+    //   cout << results.bucket_count() <<":" << results.load_factor() <<endl;
+    // }
+    // count++;
+  }
+  // vector<void*> addresses;
+  // for(search_t::const_iterator it=results.begin(),ite=results.end();it!=ite;++it){
+  //   addresses.push_back((void*)&it->first);
+  //   addresses.push_back((void*)&it->second);
+  // }
+  // sort(addresses.begin(),addresses.end());
+  // for(vector<void*>::const_iterator it=addresses.begin(),ite=addresses.end();it!=ite;++it){
+  //   cout << *it << endl;
   // }
 }
 

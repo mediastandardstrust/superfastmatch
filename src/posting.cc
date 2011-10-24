@@ -121,7 +121,6 @@ namespace superfastmatch
         for (vector<uint32_t>::const_iterator it2=docids->begin(),ite2=docids->end();it2!=ite2;++it2){
           DocPair pair(it->doc_type,*it2);
           DocTally* tally=&results[pair];
-          // cout << pair.doc_type << ":" << pair.doc_id << ":" << (void*)tally << endl;
           const bool notSearchDoc=(doctype-it->doc_type)|(docid-*it2);
           uint64_t barrel=tally->previous;
           const uint8_t previous=(barrel)&0xFF;
@@ -207,17 +206,15 @@ namespace superfastmatch
   void PostingSlot::fillHistograms(histogram_t& hash_hist,histogram_t& gaps_hist){
     PostLine line(registry_->getMaxLineLength());
     index_lock_.lock_reader();
-    uint32_t doc_type;
-    stats_t* doc_type_gaps;
     for (index_t::nonempty_iterator it=index_.nonempty_begin(),ite=index_.nonempty_end();it!=ite;++it){
       vector<PostLineHeader>* doc_types=line.load(*it);
-      for(size_t i=0;i<doc_types->size();i++){
-        doc_type=(*doc_types)[i].doc_type;
-        hash_hist[doc_type][line.getLength(doc_type)]++;
+      for(vector<PostLineHeader>::const_iterator it=doc_types->begin(),ite=doc_types->end();it!=ite;++it){
+        const uint32_t doc_type=it->doc_type;
         vector<uint32_t>* doc_deltas=line.getDeltas(doc_type);
-        doc_type_gaps=&gaps_hist[doc_type];
-        for(size_t j=0;j<doc_deltas->size();j++){
-          (*doc_type_gaps)[(*doc_deltas)[j]]++;
+        hash_hist[doc_type][doc_deltas->size()]++;
+        stats_t* gaps=&gaps_hist[doc_type];
+        for (vector<uint32_t>::const_iterator it2=doc_deltas->begin(),ite2=doc_deltas->end();it2!=ite2;++it2){
+          (*gaps)[*it2]++;
         }
       }
     }

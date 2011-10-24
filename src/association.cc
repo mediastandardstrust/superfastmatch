@@ -25,6 +25,10 @@ namespace superfastmatch
     reverse_key_=new string(to_document->getKey());
     reverse_key_->append(from_document->getKey());
     if(not load()){
+      // TODO The state should be indicated by the document itself to permit lzay evalution like this
+      if ((to_document_->doctype()!=0)&&(to_document_->docid()!=0)){
+        to_document_=registry_->getDocumentManager()->getDocument(to_document_->doctype(),to_document_->docid(),DocumentManager::TEXT|DocumentManager::HASHES|DocumentManager::BLOOM|DocumentManager::META); 
+      }
       match();
     }
   }
@@ -93,6 +97,10 @@ namespace superfastmatch
   }
   
   void Association::match(){
+    const bool invert=to_document_->getText().length()<from_document_->getText().length();
+    if (invert){
+     from_document_.swap(to_document_); 
+    }
     Logger* logger = registry_->getLogger();
     stringstream message;
     hashes_vector from_hashes,to_hashes;
@@ -101,12 +109,12 @@ namespace superfastmatch
     *bloom&=to_document_->getBloom();
     from_hashes=from_document_->getHashes();
     to_hashes=to_document_->getHashes();
-    uint32_t from_hashes_count = from_hashes.size();
-    uint32_t to_hashes_count = to_hashes.size();
+    const uint32_t from_hashes_count = from_hashes.size();
+    const uint32_t to_hashes_count = to_hashes.size();
     string original_text = from_document_->getText();
-    uint32_t window_size=registry_->getWindowSize();
-    uint32_t white_space=registry_->getWhiteSpaceHash(false);
-    uint32_t threshold=registry_->getMaxPostingThreshold();
+    const uint32_t window_size=registry_->getWindowSize();
+    const uint32_t white_space=registry_->getWhiteSpaceHash(false);
+    const uint32_t threshold=registry_->getMaxPostingThreshold();
     size_t total_characters=0;
     size_t bad_matches=0;
     size_t too_short=0;
@@ -214,6 +222,12 @@ namespace superfastmatch
        }
     }
     sort(results_->begin(),results_->end(),result_sorter);
+    if (invert){
+     from_document_.swap(to_document_);
+     for (vector<Result>::iterator it=results_->begin(),ite=results_->end();it!=ite;++it){
+       swap(it->left,it->right);
+     }
+    }
     message << "Associated: " << *from_document_ << " with: " << *to_document_ << " Matches: " << results_->size() << " Characters: " << total_characters << " Too short: " << too_short << " Bad Matches: " << bad_matches << " Above Threshold: " << above_threshold;
     logger->log(Logger::DEBUG,&message);
     delete bloom;
@@ -303,13 +317,8 @@ namespace superfastmatch
     size_t num_results=registry_->getNumResults();
     size_t count=0;
     for(inverted_search_t::iterator it2=pruned_results.begin(),ite2=pruned_results.end();it2!=ite2 && count<num_results;++it2){
-      DocumentPtr other=registry_->getDocumentManager()->getDocument(it2->second.doc_type,it2->second.doc_id,DocumentManager::TEXT|DocumentManager::HASHES|DocumentManager::BLOOM|DocumentManager::META);
-      AssociationPtr association;
-      if (doc->getText().length()<other->getText().length()){
-        association.reset(new Association(registry_,doc,other));
-      }else{
-        association.reset(new Association(registry_,other,doc));
-      }
+      DocumentPtr other=registry_->getDocumentManager()->getDocument(it2->second.doc_type,it2->second.doc_id,DocumentManager::META);
+      AssociationPtr association(new Association(registry_,doc,other));
       associations.push_back(association);
       if (save){
         association->save();

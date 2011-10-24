@@ -41,7 +41,8 @@ namespace superfastmatch
   typedef struct
   {
     inline bool operator() (const DocPair& x, const DocPair &y) const { 
-      return (x.doc_id==y.doc_id)&(x.doc_type==y.doc_type);
+      return ~((x.doc_id^y.doc_id)&&(x.doc_type^y.doc_type));
+      // return (x.doc_id==y.doc_id)&(x.doc_type==y.doc_type);
       // return (x.doc_id==y.doc_id) && (x.doc_type==y.doc_type);
     }
   } DocPairEq;
