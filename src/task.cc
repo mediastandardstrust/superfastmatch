@@ -1,5 +1,7 @@
 #include <task.h>
 #include <posting.h>
+#include <document.h>
+#include <association.h>
 
 namespace superfastmatch
 {
@@ -66,4 +68,27 @@ namespace superfastmatch
     slot->alterIndex(doc,ptask->getPayload()->getTaskOperation());
     delete ptask;
   }
+  
+  // -----------------------
+  // AssociationTask members
+  // -----------------------
+  
+  AssociationTask::AssociationTask(const DocPair pair):
+  pair_(pair)
+  {}
+  
+  // ----------------------------
+  // AssociationTaskQueue members
+  // ----------------------------
+
+  AssociationTaskQueue::AssociationTaskQueue(Registry* registry):
+  registry_(registry)
+  {}
+
+  void AssociationTaskQueue::do_task(Task* task){
+    AssociationTask* ptask = (AssociationTask*)task;
+    DocumentPtr doc = registry_->getDocumentManager()->getDocument(ptask->pair_.doc_type,ptask->pair_.doc_id);
+    registry_->getAssociationManager()->createPermanentAssociations(doc);
+  }
+
 }

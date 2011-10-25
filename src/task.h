@@ -3,6 +3,8 @@
 
 #include <common.h>
 #include <kcthread.h>
+#include <registry.h>
+#include <query.h>
 
 namespace superfastmatch
 {
@@ -45,5 +47,22 @@ namespace superfastmatch
     PostingSlot* getSlot();
     TaskPayload* getPayload();
   }; 
+  
+  class AssociationTaskQueue : public kc::TaskQueue{
+  private:
+    Registry* registry_;
+  public:
+    explicit AssociationTaskQueue(Registry* registry);
+  private:
+    void do_task(Task* task);
+  };
+  
+  class AssociationTask : public kc::TaskQueue::Task{
+  friend class AssociationTaskQueue;
+  private:
+    const DocPair pair_;
+  public:
+    AssociationTask(const DocPair pair);
+  };
 }
 #endif

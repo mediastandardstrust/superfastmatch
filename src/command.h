@@ -4,6 +4,7 @@
 #include <registry.h>
 #include <query.h>
 #include <document.h>
+#include <task.h>
 
 namespace superfastmatch{
   // Forward declaration

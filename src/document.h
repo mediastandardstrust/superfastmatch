@@ -73,7 +73,6 @@ namespace superfastmatch
   private:
     explicit Document(const uint32_t doctype,const uint32_t docid,const bool permanent,Registry* registry);
     explicit Document(const string& key,const bool permanent,Registry* registry);
-    // string generateMetaKey(const DocumentOrder order,const string& meta,const string& value);
     bool remove();
     bool setText(const string& text);
     bool initMeta();

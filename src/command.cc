@@ -98,10 +98,12 @@ namespace superfastmatch{
   bool Command::addAssociations(){
     DocumentQuery query(registry_,"/"+toString(getDocType())+"/");
     vector<DocPair> pairs=query.getSourceDocPairs(true);
+    AssociationTaskQueue queue(registry_);
+    queue.start(registry_->getSlotCount());
     for(vector<DocPair>::iterator it=pairs.begin(),ite=pairs.end();it!=ite;++it){
-      DocumentPtr doc=registry_->getDocumentManager()->getDocument(it->doc_type,it->doc_id);
-      registry_->getAssociationManager()->createPermanentAssociations(doc);
+      queue.add_task(new AssociationTask(*it));
     }
+    queue.finish();
     return true;
   }
   
