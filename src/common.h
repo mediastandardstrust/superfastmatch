@@ -45,6 +45,9 @@ namespace superfastmatch{
   
   //Global utility functions
   
+  #define likely(x) __builtin_expect(!!(x), 1)
+  #define unlikely(x) __builtin_expect(!!(x), 0)
+  
   #define IsWhiteSpace(ch)((1ULL<<(ch-47))&0x2FFFFFFC07FE)==0
   
   inline bool notAlphaNumeric(char c){

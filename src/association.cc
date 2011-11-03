@@ -291,6 +291,7 @@ namespace superfastmatch
     }
   }
   
+  // -------------------
   // Association Manager
   // -------------------
   

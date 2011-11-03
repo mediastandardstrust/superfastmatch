@@ -37,14 +37,14 @@ namespace superfastmatch{
     CommandAction previousAction=NullAction;
     CommandPtr command = getQueuedCommand();
     while (command){
+      if((previousAction!=NullAction)&&(previousAction!=command->getAction())){
+        registry_->getPostings()->finishTasks();
+      }
       if (not command->execute()){
         assert(command->changeStatus(Queued));
       }else{
         count++;
         assert(command->changeStatus(Finished));
-      }
-      if((previousAction!=NullAction)&&(previousAction!=command->getAction())){
-        registry_->getPostings()->finishTasks();
       }
       // debug();
       previousAction=command->getAction();

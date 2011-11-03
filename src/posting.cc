@@ -109,7 +109,7 @@ namespace superfastmatch
     }
     return true;
   }
-  
+
   bool PostingSlot::searchIndex(const uint32_t doctype,const uint32_t docid,const uint32_t hash, const uint32_t position,PostLine& line,search_t& results){
     const uint32_t slot_hash = hash-offset_;
     const uint8_t current=position&0xFF;
@@ -128,12 +128,8 @@ namespace superfastmatch
           barrel=((barrel&0xFFFFFFFFFFFFFF00)<<8)|(uint64_t(difference)<<8)|current;
           tally->previous=barrel;
           const bool notConsecutive=(barrel&0xFFFFFFFFFFFFFF00)-0x0101010101010100;
-          const bool isMatch=notSearchDoc&(~notConsecutive);
+          const bool isMatch=notSearchDoc&(!notConsecutive);
           tally->count+=isMatch;
-          // if (isMatch){
-          //   cout << isMatch << ":" << uint32_t(consecutive) << "," << uint32_t(notConsecutive) << ":" << uint32_t(notSearchDoc);
-          //   cout << ",[" << doctype << "," << docid << "],[" << it->doc_type << "," << *it2 << "]" <<endl; 
-          // }
         }
       }
     }

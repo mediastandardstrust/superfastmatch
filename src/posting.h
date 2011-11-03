@@ -2,6 +2,7 @@
 #define _SFMPOSTING_H
 
 #include <google/sparsetable>
+#include <boost/pool/pool_alloc.hpp>
 #include <common.h>
 #include <templates.h>
 #include <postline.h>
@@ -37,7 +38,8 @@ namespace superfastmatch
   typedef sparsetable<unsigned char*,48> index_t;
   typedef unordered_map<uint32_t,uint64_t> stats_t;
   typedef unordered_map<uint32_t,stats_t> histogram_t;
-  typedef unordered_map<DocPair,DocTally,DocPairHash,DocPairEq> search_t;
+  // typedef unordered_map<DocPair,DocTally,DocPairHash,DocPairEq> search_t;
+  typedef unordered_map<DocPair,DocTally,DocPairHash,DocPairEq,boost::fast_pool_allocator<pair<DocPair,DocTally> > > search_t;
   typedef multimap<DocTally,DocPair,DocTallyEq> inverted_search_t;
 
   class PostingSlot{
