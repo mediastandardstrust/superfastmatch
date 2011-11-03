@@ -67,6 +67,10 @@ namespace superfastmatch{
       return false;
     }
     status_=status;
+    if (status==Finished){
+      return  registry_->getPayloadDB()->remove(toString(payload_id_)) &&\
+              registry_->getQueueDB()->set(getKey(),"");
+    }
     return registry_->getQueueDB()->set(getKey(),toString(payload_id_));
   }
   

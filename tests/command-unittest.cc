@@ -52,17 +52,19 @@ TEST_F(CommandTest,QueueTest){
   CommandPtr associateDoc1 = registry_.getQueueManager()->createCommand(AddAssociation,1,1,"");
   CommandPtr associateDoc2 = registry_.getQueueManager()->createCommand(AddAssociation,1,2,"");
   CommandPtr associateDoc3 = registry_.getQueueManager()->createCommand(AddAssociation,1,3,"");
+  EXPECT_EQ(3U,registry_.getPayloadDB()->count());
   EXPECT_EQ(3U,registry_.getQueueManager()->processQueue());
   EXPECT_EQ(6U,registry_.getQueueDB()->count());
-  EXPECT_EQ(6U,registry_.getPayloadDB()->count());
+  EXPECT_EQ(0U,registry_.getPayloadDB()->count());
   EXPECT_EQ(3U,registry_.getDocumentDB()->count());
   EXPECT_EQ(6U,registry_.getAssociationDB()->count());
   CommandPtr dropDoc1 = registry_.getQueueManager()->createCommand(DropDocument,1,1,"");
   CommandPtr dropDoc2 = registry_.getQueueManager()->createCommand(DropDocument,1,2,"");
   CommandPtr dropDoc3 = registry_.getQueueManager()->createCommand(DropDocument,1,3,"");
+  EXPECT_EQ(3U,registry_.getPayloadDB()->count());
   EXPECT_EQ(3U,registry_.getQueueManager()->processQueue());
   EXPECT_EQ(9U,registry_.getQueueDB()->count());
-  EXPECT_EQ(9U,registry_.getPayloadDB()->count());
+  EXPECT_EQ(0U,registry_.getPayloadDB()->count());
   EXPECT_EQ(0U,registry_.getDocumentDB()->count());
   EXPECT_EQ(0U,registry_.getAssociationDB()->count());
 }
