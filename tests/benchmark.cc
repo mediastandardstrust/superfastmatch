@@ -5,7 +5,6 @@
 #include <ext/pool_allocator.h>
 #include <ext/bitmap_allocator.h>
 #include <boost/pool/pool_alloc.hpp>
-#include <boost/unordered_map.hpp>
 
 class SearchMapTest : public Test{
   public:
