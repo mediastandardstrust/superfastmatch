@@ -5,7 +5,8 @@
 #include <ext/pool_allocator.h>
 #include <ext/bitmap_allocator.h>
 #include <boost/pool/pool_alloc.hpp>
-#include <boost/unordered_map.hpp>
+
+using namespace boost;
 
 class SearchMapTest : public Test{
   public:
@@ -16,13 +17,130 @@ class SearchMapTest : public Test{
        srand(time(NULL));
        input.reserve(100000000);
        for (size_t i=0;i<100000000;i++){
-         input.push_back(rand()%2+1);
+         input.push_back(rand()%5+1);
          input.push_back(rand()%10000+1);
        }
      }
 };
 
 vector<uint32_t> SearchMapTest::input;
+
+static uint32_t nearest_pow (uint32_t num)
+{
+    uint32_t n = 1;
+    while (n < num)
+        n <<= 1;
+    return n;
+}
+// 
+// class Tally : public intrusive::unordered_set_base_hook<>
+// {
+//   public:
+//     uint32_t doc_type;
+//     uint32_t doc_id;
+//     uint64_t previous;
+//     uint32_t count;
+// 
+//     Tally():
+//     doc_type(0),
+//     doc_id(0),
+//     previous(0),
+//     count(0)
+//     {}
+// 
+//     inline friend bool operator== (const Tally &a, const Tally &b){
+//       return (a.doc_type==b.doc_type)&&(a.doc_id==b.doc_id);
+//     }
+// 
+//     inline friend std::size_t hash_value(const Tally &value){
+//       // return (uint64_t(value.doc_type)*0xff51afd7ed558ccd)^(value.doc_id*8745648375);
+//       std::size_t seed = 0;
+//       boost::hash_combine(seed, value.doc_type*8745648375);
+//       // boost::hash_combine(seed, value.doc_type*0xc2b2ae35);
+//       boost::hash_combine(seed, value.doc_id);
+//       return seed;
+//     }
+// };
+// 
+// typedef intrusive::unordered_set<Tally,intrusive::constant_time_size<false>,intrusive::power_2_buckets<true> > TallySet;
+// //typedef intrusive::unordered_set<Tally,intrusive::constant_time_size<false> > TallySet;
+// 
+// 
+// TEST_F(SearchMapTest,InstrusiveSetTest){
+//   vector<Tally> storage;
+//   size_t length=nearest_pow(100000);
+//   storage.reserve(length);
+//   TallySet::bucket_type buckets[length];
+//   TallySet tallies(TallySet::bucket_traits(buckets,length));
+//   vector<uint32_t>::const_iterator it=SearchMapTest::input.begin(),ite=SearchMapTest::input.end();
+//   vector<pair<Tally,TallySet::size_type> > batch;
+//   // batch.resize(1000);
+//   // for (;it!=ite;){
+//   //   for (size_t i=0;i<1000;i++){
+//   //     batch[i].first.doc_type=*it++;
+//   //     batch[i].first.doc_id=*it++;
+//   //     batch[i].second=tallies.bucket(batch[i].first);
+//   //     __builtin_prefetch(&buckets[batch[i].second],0,0);
+//   //   }
+//   //   for (size_t i=0;i<1000;i++){
+//   //     __builtin_prefetch(((void*)(buckets+batch[i].second)),0,0);
+//   //   }
+//   //   for (size_t i=0;i<1000;i++){
+//   //     TallySet::iterator tally_it=tallies.find(batch[i].first);
+//   //     if(likely(tally_it!=tallies.end())){
+//   //       tally_it->count++;
+//   //       // cout << storage.capacity() << ":" <<tally.doc_type << ":" << tally.doc_id << ":" << tally_it->count << ":" << sizeof(*tally_it) << ":" << &*tally_it << endl;
+//   //     }else{
+//   //       storage.push_back(batch[i].first);
+//   //       tallies.insert(storage.back());
+//   //     }      
+//   //   }
+//   // }
+//   Tally tally;
+//   for (;it!=ite;){
+//     vector<Tally> batch;
+//     tally.doc_type=*it++;
+//     tally.doc_id=*it++;
+//   
+//     TallySet::iterator tally_it=tallies.find(tally);
+//     if(likely(tally_it!=tallies.end())){
+//       tally_it->count++;
+//       // cout << storage.capacity() << ":" <<tally.doc_type << ":" << tally.doc_id << ":" << tally_it->count << ":" << sizeof(*tally_it) << ":" << &*tally_it << endl;
+//     }else{
+//       storage.push_back(tally);
+//       tallies.insert(storage.back());
+//     }
+//   }
+//   size_t count=0;
+//   for (size_t i=0;i<length;i++){
+//     if (tallies.bucket_size(i)>1){
+//       count++;
+//       // cout << i << ":" << tallies.bucket_size(i) << endl; 
+//     }
+//   }
+//   cout << count << " collisons" << endl; 
+// }
+
+TEST_F(SearchMapTest,PrefetchMapTest){
+  search_t results;
+  // results.rehash(20000);
+  vector<uint32_t>::const_iterator it=SearchMapTest::input.begin(),ite=SearchMapTest::input.end();
+  DocTally* previous=&results[DocPair(*it++,*it++)];
+  for (;it!=ite;){
+    DocTally* current=previous;
+    previous=&results[DocPair(*it++,*it++)];
+    __builtin_prefetch (previous, 1, 3);
+    current->count++;
+  }
+  // size_t count=0;
+  // for (size_t i=0;i<results.bucket_count();i++){
+  //   if (results.bucket_size(i)>1){
+  //     count++;
+  //     // cout << i << ":" << tallies.bucket_size(i) << endl; 
+  //   }
+  // }
+  // cout << count << " collisons" << endl;
+}
 
 TEST_F(SearchMapTest,SearchMapTest){
   search_t results;
@@ -37,7 +155,8 @@ TEST_F(SearchMapTest,SearchMapTest){
   }
   // for (search_t::const_iterator it=results.begin(),ite=results.end();it!=ite;++it){
   //   size_t bucket=results.bucket(it->first);
-  //   cout << "Bucket: " << bucket << "/" << results.bucket_count() <<" Doctype: " << it->first.doc_type << " Docid: " << it->first.doc_id << " Bucket size: " << results.bucket_size(bucket) << endl;
+  //   cout << "Bucket: " << bucket << "/" << results.bucket_count() <<" Doctype: " << it->first.doc_type << " Docid: " << it->first.doc_id << " Bucket size: " << results.bucket_size(bucket);
+  //   cout << " Key: " << (void*)&it->first  << " Value : " << (void*)&it->second << endl;
   // }
 }
 
@@ -59,22 +178,28 @@ typedef struct{
 
 typedef unordered_set<DocPair,DocPairHash2,DocPairEq2> searchset_t;
 typedef unordered_map<DocPair,DocTally,DocPairHash2,DocPairEq2,boost::fast_pool_allocator<pair<DocPair,DocTally> > > pooled_search_t;
-// typedef unordered_map<DocPair,DocTally,DocPairHash,DocPairEq,__gnu_cxx::bitmap_allocator<pair<const DocPair,DocTally> > > pooled_search_t;
-// typedef unordered_map<DocPair,DocTally,DocPairHash,DocPairEq,__gnu_cxx::__pool_alloc<pair<const DocPair,DocTally> > > pooled_search_t;
 
 TEST_F(SearchMapTest,PooledSearchMapTest){
   pooled_search_t results;
-  results.rehash(50000);
-  size_t count=0;
-  for (vector<uint32_t>::const_iterator it=SearchMapTest::input.begin(),ite=SearchMapTest::input.end();it!=ite;){
-    DocPair pair(*it++,*it++);
-    DocTally* tally=&results[pair];
-    tally->count++;
-    // if(count%1000==0){
-    //   cout << results.bucket_count() <<":" << results.load_factor() <<endl;
-    // }
-    // count++;
+  vector<uint32_t>::const_iterator it=SearchMapTest::input.begin(),ite=SearchMapTest::input.end();
+  DocTally* previous=&results[DocPair(*it++,*it++)];
+  for (;it!=ite;){
+    DocTally* current=previous;
+    previous=&results[DocPair(*it++,*it++)];
+    __builtin_prefetch (previous, 1, 3);
+    current->count++;
   }
+  // results.rehash(50000);
+  // size_t count=0;
+  // for (vector<uint32_t>::const_iterator it=SearchMapTest::input.begin(),ite=SearchMapTest::input.end();it!=ite;){
+  //   DocPair pair(*it++,*it++);
+  //   DocTally* tally=&results[pair];
+  //   tally->count++;
+  //   // if(count%1000==0){
+  //   //   cout << results.bucket_count() <<":" << results.load_factor() <<endl;
+  //   // }
+  //   // count++;
+  // }
   // vector<void*> addresses;
   // for(search_t::const_iterator it=results.begin(),ite=results.end();it!=ite;++it){
   //   addresses.push_back((void*)&it->first);
