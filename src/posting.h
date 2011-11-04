@@ -38,7 +38,6 @@ namespace superfastmatch
   typedef sparsetable<unsigned char*,48> index_t;
   typedef unordered_map<uint32_t,uint64_t> stats_t;
   typedef unordered_map<uint32_t,stats_t> histogram_t;
-  // typedef unordered_map<DocPair,DocTally,DocPairHash,DocPairEq> search_t;
   typedef unordered_map<DocPair,DocTally,DocPairHash,DocPairEq,boost::fast_pool_allocator<pair<DocPair,DocTally> > > search_t;
   typedef multimap<DocTally,DocPair,DocTallyEq> inverted_search_t;
 
