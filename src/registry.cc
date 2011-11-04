@@ -20,6 +20,9 @@ namespace superfastmatch{
   DEFINE_int32(slot_count,4,"Number of slots to divide the index into (one thread per slot)");
   static const bool slot_count_dummy = google::RegisterFlagValidator(&FLAGS_slot_count, &ValidateThreads);
 
+  DEFINE_int32(cache,2048,"Number of megabytes to use for caching");
+  static const bool cache_dummy = google::RegisterFlagValidator(&FLAGS_cache, &ValidateCache);
+
   DEFINE_int32(hash_width,26,"Number of bits to use to hash windows of text");
   static const bool hash_width_dummy = google::RegisterFlagValidator(&FLAGS_hash_width, &ValidateHashWidth);
 
@@ -201,12 +204,13 @@ namespace superfastmatch{
     if (FLAGS_debug){
       logger_->open("debug.log");
     }
-    if (not(documentDB_->open(getDataPath()+"/document.kcd#bnum=20m#msiz=2g#opts=c#zcomp=lzo",getMode()) && \
+    uint32_t cache=FLAGS_cache/16;
+    if (not(documentDB_->open(getDataPath()+"/document.kcd#bnum=20m#opts=c#zcomp=lzo#msiz="+toString(cache*12)+"m",getMode()) && \
             queueDB_->open(getDataPath()+"/queue.kcf#opts=lc#zcomp=lzo",getMode()) && \
-            payloadDB_->open(getDataPath()+"/payload.kcd#bnum=20m#msiz=128m#opts=c#zcomp=lzo",getMode()) && \
-            metaDB_->open(getDataPath()+"/meta.kcf#opts=lc#zcomp=lzo",getMode()) && \
-            orderedMetaDB_->open(getDataPath()+"/orderedmeta.kcf#opts=lc#zcomp=lzo",getMode()) && \
-            associationDB_->open(getDataPath()+"/association.kcf#opts=lc#pccap=256m#psiz=524288#zcomp=lzo",getMode()) && \
+            payloadDB_->open(getDataPath()+"/payload.kcd#bnum=1m#opts=c#zcomp=lzo#msiz="+toString(cache)+"m",getMode()) && \
+            metaDB_->open(getDataPath()+"/meta.kcf#opts=lc#zcomp=lzo#msiz="+toString(cache)+"m",getMode()) && \
+            orderedMetaDB_->open(getDataPath()+"/orderedmeta.kcf#opts=lc#zcomp=lzo#msiz="+toString(cache)+"m",getMode()) && \
+            associationDB_->open(getDataPath()+"/association.kcf#opts=lc#zcomp=lzo#msiz="+toString(cache)+"m",getMode()) && \
             miscDB_->open(getDataPath()+"/misc.kch",getMode()))){
       cout << "Error opening databases" << endl;
     }
@@ -269,6 +273,7 @@ namespace superfastmatch{
     fill_db_dictionary(dict,getPayloadDB(),"Payload DB");
     fill_db_dictionary(dict,getDocumentDB(),"Document DB");
     fill_db_dictionary(dict,getMetaDB(),"Meta DB");
+    fill_db_dictionary(dict,getOrderedMetaDB(),"Ordered Meta DB");
     fill_db_dictionary(dict,getAssociationDB(),"Association DB");
     fill_db_dictionary(dict,getMiscDB(),"Misc DB");
   }

@@ -26,6 +26,13 @@ static bool ValidateThreads(const char* flagname, int32_t value){
   return false;
 }
 
+static bool ValidateCache(const char* flagname, int32_t value){
+  if (value>256 && value <=32768 && (value%16)==0)
+    return true;
+  printf("Invalid value for --%s: %d\nMust be between 256 and 32768 and divisible by 16.\n", flagname, (int)value);
+  return false;
+}
+
 static bool ValidateHashWidth(const char* flagname, int32_t value){
   if (value>=16 && value <=32)
     return true;
