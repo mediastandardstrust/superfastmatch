@@ -64,8 +64,10 @@ namespace superfastmatch
     vector<string> ordered_keys;
     assert(getMetaKeys(keys));
     for (vector<string>::iterator it=keys.begin(),ite=keys.end();it!=ite;++it){
-      meta_keys.push_back(getKey()+*it);
-      ordered_keys.push_back(*it+padIfNumber(getMeta(*it))+getKey());
+      string meta_key=getKey()+*it;
+      string ordered_key=*it+padIfNumber(getMeta(*it))+getKey();
+      meta_keys.push_back(meta_key);
+      ordered_keys.push_back(ordered_key);
     }
     return registry_->getDocumentDB()->remove(*key_) &&\
            (registry_->getMetaDB()->remove_bulk(meta_keys)!=-1) &&\
@@ -78,9 +80,12 @@ namespace superfastmatch
     }
     (*metadata_)[key]=value;
     if (permanent_){
-      registry_->getOrderedMetaDB()->remove(key+padIfNumber(getMeta(key))+getKey());
-      return registry_->getMetaDB()->set(getKey()+key,value) &&\
-             registry_->getOrderedMetaDB()->set(key+padIfNumber(value)+getKey(),"");
+      string meta_key=getKey()+key;
+      string old_ordered_key=key+padIfNumber(getMeta(key))+getKey();
+      string new_ordered_key=key+padIfNumber(value)+getKey();
+      registry_->getOrderedMetaDB()->remove(old_ordered_key);
+      return registry_->getMetaDB()->set(meta_key,value) &&\
+             registry_->getOrderedMetaDB()->set(new_ordered_key,"");
     }
     return true;
   }

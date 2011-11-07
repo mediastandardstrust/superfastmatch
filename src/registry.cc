@@ -205,12 +205,12 @@ namespace superfastmatch{
       logger_->open("debug.log");
     }
     uint32_t cache=FLAGS_cache/16;
-    if (not(documentDB_->open(getDataPath()+"/document.kcd#bnum=20m#opts=c#zcomp=lzo#msiz="+toString(cache*12)+"m",getMode()) && \
-            queueDB_->open(getDataPath()+"/queue.kcf#opts=lc#zcomp=lzo",getMode()) && \
-            payloadDB_->open(getDataPath()+"/payload.kcd#bnum=1m#opts=c#zcomp=lzo#msiz="+toString(cache)+"m",getMode()) && \
-            metaDB_->open(getDataPath()+"/meta.kcf#opts=lc#zcomp=lzo#msiz="+toString(cache)+"m",getMode()) && \
-            orderedMetaDB_->open(getDataPath()+"/orderedmeta.kcf#opts=lc#zcomp=lzo#msiz="+toString(cache)+"m",getMode()) && \
-            associationDB_->open(getDataPath()+"/association.kcf#opts=lc#zcomp=lzo#msiz="+toString(cache)+"m",getMode()) && \
+    if (not(documentDB_->open(getDataPath()+"/document.kch#bnum=20m#opts=c#zcomp=lzo#msiz="+toString(cache*12)+"m",getMode()) && \
+            queueDB_->open(getDataPath()+"/queue.kct#bnum=1m#opts=lc#zcomp=lzo",getMode()) && \
+            payloadDB_->open(getDataPath()+"/payload.kch#bnum=100k#opts=c#zcomp=lzo#msiz="+toString(cache)+"m",getMode()) && \
+            metaDB_->open(getDataPath()+"/meta.kct#bnum=1m#opts=lc#zcomp=lzo#msiz="+toString(cache)+"m",getMode()) && \
+            orderedMetaDB_->open(getDataPath()+"/orderedmeta.kct#bnum=1m#opts=lc#zcomp=lzo#msiz="+toString(cache)+"m",getMode()) && \
+            associationDB_->open(getDataPath()+"/association.kct#bnum=1m#opts=lc#zcomp=lzo#msiz="+toString(cache)+"m",getMode()) && \
             miscDB_->open(getDataPath()+"/misc.kch",getMode()))){
       cout << "Error opening databases" << endl;
     }

@@ -58,8 +58,8 @@ namespace superfastmatch{
   }
   
   bool Command::save(){
-    return registry_->getQueueDB()->set(getKey(),toString(payload_id_)) &&\
-           registry_->getPayloadDB()->set(toString(payload_id_),*payload_);
+    return  registry_->getPayloadDB()->set(toString(payload_id_),*payload_) &&\
+            registry_->getQueueDB()->set(getKey(),toString(payload_id_));
   }
   
   bool Command::changeStatus(CommandStatus status){
