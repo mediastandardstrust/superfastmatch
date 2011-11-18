@@ -10,6 +10,7 @@
 #include <stdint.h>
 #include <sys/time.h>
 #include <cctype>
+#include <tests.h>
 
 using namespace testing;
 using namespace std;
@@ -54,83 +55,6 @@ static void MurmurHash2(const string& text, const size_t window_size,const size_
   }
 }
 
-// #define IsWhiteSpace(ch) not((unsigned(ch-97)<=25)|(unsigned(ch-48)<=9)|(ch==92))
-
-// 0123456789012345678901234567890123456789012345678901234567890123
-// /0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmn
-// 0111111111100000001111111111111111111111111101000000000000000000
-#define IsWhiteSpace(ch)((1ULL<<(ch-47))&0x2FFFFFFC07FE)==0
-
-
-// Taken from http://www.azillionmonkeys.com/qed/asmexample.html
-static inline uint64_t UpperCase(uint64_t upper){
-  uint64_t u1 = 0x8080808080808080ul | upper;
-  uint64_t u2 = u1-0x6161616161616161ul;
-  uint64_t u3 = ~(u1-0x7b7b7b7b7b7b7b7bul);
-  uint64_t u4 = (u2 & u3) & (~upper & 0x8080808080808080ul);
-  return upper-=(u4 >> 2); 
-}
-
-static inline uint64_t fmix ( uint64_t h )
-{
-  return h*= 0xff51afd7ed558ccd;
-}
-
-static void UpperCaseRabinKarp(const string& text,const size_t window_size,const size_t whitespace_threshold,vector<uint32_t>& hashes){
-  const uint64_t base=37;
-  const size_t limit=text.size()-window_size+1;
-  uint64_t* f=(uint64_t*)text.data();
-  uint64_t* b=(uint64_t*)(text.data()+window_size);
-  hashes.clear();
-  hashes.resize(limit);
-  uint64_t highBase=1;
-  uint64_t hash=0;
-  uint64_t whitespace=0;
-  uint64_t whitespaceHash=0;
-  for (size_t i=0;i<window_size;i++){
-    highBase=(i==0)?1:highBase*base;
-    char c=toupper(text[window_size-i-1]);
-    hash+=c*highBase;
-    whitespaceHash+=32*highBase;
-    whitespace+=IsWhiteSpace(c);
-  }
-  const uint64_t high=highBase;
-  hashes[0]=fmix(hash);
-  whitespaceHash=fmix(whitespaceHash);
-  vector<uint32_t>::iterator it=hashes.begin()+1;
-  for (size_t i=(limit/8);i>0;i--){
-    uint64_t uf=UpperCase(*f++);
-    uint64_t ub=UpperCase(*b++);
-    for (size_t i=8;i>0;i--){
-      uint32_t front=uf&0xFF;
-      uint32_t back=ub&0xFF;
-      uf>>=8;
-      ub>>=8;
-      whitespace-=IsWhiteSpace(front);
-      whitespace+=IsWhiteSpace(back);
-      uint32_t mask=((whitespace<whitespace_threshold)-1);
-      hash-=front*high;
-      hash*=base;
-      hash+=back;
-      *it=(fmix(hash)&~mask)|(whitespaceHash&mask);
-      // cout << text.substr(it-hashes.begin(),window_size) << ":" << char(front) << ":" << int(IsWhiteSpace(front)) << ":" << char(back) << ":" << int(IsWhiteSpace(back)) << ":" << hash  << ":" << *it << ":" << mask << ":" << whitespace << endl; 
-      ++it;
-    }
-  }
-  for (size_t i=(limit/8)*8;i<limit;i++){
-    char front=toupper(text[i]);
-    char back=toupper(text[i+window_size]);
-    hash-=front*high;
-    hash*=base;
-    hash+=back;
-    whitespace+=IsWhiteSpace(front);
-    whitespace-=IsWhiteSpace(back);
-    *it=(whitespace<whitespace_threshold)?(fmix(hash)):whitespaceHash;
-    // cout << text.substr(it-hashes.begin(),window_size) << ":" << char(front) << ":" << int(IsWhiteSpace(front)) << ":" << char(back) << ":" << int(IsWhiteSpace(back)) << ":" << hash  << ":" << *it << ":" << whitespace << endl; 
-    ++it;
-  }
-}
-
 static void RabinKarp(const string& text,const size_t window_size,const size_t whitespace_threshold,vector<uint32_t>& hashes){
   const uint64_t base=37;
   const size_t limit=text.size()-window_size+1;
@@ -154,43 +78,12 @@ static void RabinKarp(const string& text,const size_t window_size,const size_t w
   }
 }
 
-// Testing apparatus
-
 typedef void(*HasherFun)(const string&,const size_t,const size_t,vector<uint32_t>&);
 
-class Document{
-private:
-  string text_;
-  unordered_map<size_t,size_t> uniques_;
-public:
-  Document(const char* filename){
-    ifstream file(filename);
-    stringstream buffer;
-    buffer << file.rdbuf();
-    text_=buffer.str();
-    EXPECT_NE(0U,text_.size());
-  }
-  
-  string& getText(){
-    return text_;
-  }
-  
-  size_t getUniques(const size_t window_size){
-    if (uniques_.find(window_size)==uniques_.end()){
-      unordered_set<string> uniques;
-      for (size_t i=0;i<text_.size()-window_size+1;i++){
-        uniques.insert(text_.substr(i,window_size));
-      }
-      uniques_[window_size]=uniques.size();
-    }
-    return uniques_[window_size];
-  }
-};
-
-class HashTest : public TestWithParam<tuple<tuple<string,HasherFun>,Document*,size_t> > {
+class HashTest : public TestWithParam<tuple<tuple<string,HasherFun>,TestDocument*,size_t> > {
 public:
   HasherFun hasher_;
-  Document* doc_;
+  TestDocument* doc_;
   size_t window_size_;
 
   virtual void SetUp(){
@@ -274,10 +167,10 @@ const static vector<tuple<string,HasherFun> > getHashers(){
   return hashers;
 }
 
-const static vector<Document*> getDocs(){
-  vector<Document*> docs;
-  // docs.push_back(new Document("fixtures/congressional-record/2001-12.txt"));
-  docs.push_back(new Document("fixtures/gutenberg/Religious/bible.txt"));
+const static vector<TestDocument*> getDocs(){
+  vector<TestDocument*> docs;
+  // docs.push_back(new TestDocument("fixtures/congressional-record/2001-12.txt"));
+  docs.push_back(new TestDocument("fixtures/gutenberg/Religious/bible.txt"));
   return docs;
 }
 

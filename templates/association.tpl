@@ -12,7 +12,7 @@
 		<tr>
 			<td><a href="/document/{{DOC_TYPE}}/">{{DOC_TYPE}}</a></td>
 			<td><a href="/document/{{DOC_TYPE}}/{{DOC_ID}}">{{TITLE}}</a></td>
-			<td><pre>{{TEXT}}</pre></td>
+			<td><pre class="wrap">{{TEXT}}</pre></td>
 			<td>{{#LEFT_POSITIONS}}{{LEFT_POSITION}}{{#LEFT_POSITIONS_separator}}, {{/LEFT_POSITIONS_separator}}{{/LEFT_POSITIONS}}</td>
 			<td>{{#RIGHT_POSITIONS}}{{RIGHT_POSITION}}{{#RIGHT_POSITIONS_separator}}, {{/RIGHT_POSITIONS_separator}}{{/RIGHT_POSITIONS}}</td>
 			<td>{{LENGTH}}</td>

@@ -12,7 +12,7 @@ DATA = ./data
 
 # Targets
 MYBINS = superfastmatch
-OBJS =  src/worker.o src/queue.o src/posting.o src/document.o src/logger.o src/registry.o src/command.o src/postline.o src/association.o src/query.o src/task.o src/codec.o
+OBJS =  src/worker.o src/queue.o src/posting.o src/document.o src/logger.o src/registry.o src/command.o src/postline.o src/association.o src/query.o src/task.o src/codec.o src/instrumentation.o
 MAIN = src/superfastmatch.o
 
 # Building binaries
@@ -33,7 +33,7 @@ DEBUGENV = gdb
 # Test variables
 #================================================================
 
-TESTS = tests/command-unittest.o tests/postline-unittest.o tests/document-unittest.o tests/association-unittest.o tests/posting-unittest.o tests/benchmark.o tests/hash-unittest.o tests/query-unittest.o
+TESTS = tests/command-unittest.o tests/postline-unittest.o tests/document-unittest.o tests/association-unittest.o tests/posting-unittest.o tests/benchmark.o tests/hash-unittest.o tests/query-unittest.o tests/instrumentation-unittest.o
 GTEST_DIR = tests/utils
 
 #================================================================
@@ -75,17 +75,13 @@ run : all
 	$(RUNENV) ./superfastmatch -reset -debug
 
 production : LDFLAGS += -ltcmalloc
-production : run
+production : all
 
 profile : CXXFLAGS += $(PROFILEFLAGS)
 profile : all
-	mkdir -p $(DATA)
-	$(PROFILEENV) ./superfastmatch -reset -debug
 
 debug : CXXFLAGS += -O0 
 debug : all
-	mkdir -p data
-	$(DEBUGENV) superfastmatch
 
 check : tests/tests
 	tests/tests --gtest_filter=-*Slow*

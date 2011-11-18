@@ -1,12 +1,12 @@
 #ifndef _SFMREGISTRY_H                       // duplication check
 #define _SFMREGISTRY_H
 
-#include <map>
 #include <common.h>
 #include <kcplantdb.h>
 #include <kccompress.h>
 #include <logger.h>
 #include <templates.h>
+#include <instrumentation.h>
 
 using namespace std;
 using namespace kyototycoon;
@@ -44,6 +44,9 @@ namespace superfastmatch{
     virtual string getAddress() const=0;
     virtual uint32_t getPort() const=0;
 
+    // Instrumentation
+    virtual InstrumentGroupPtr getInstrumentGroup(const int32_t group)=0;
+
     // DB's
     virtual uint32_t getMode()=0;
     virtual kc::PolyDB* getQueueDB()=0;
@@ -62,6 +65,8 @@ namespace superfastmatch{
     virtual AssociationManager* getAssociationManager()=0;
     virtual QueueManager* getQueueManager()=0;
     
+    // Display
+    virtual void fillPerformanceDictionary(TemplateDictionary* dict)=0;
     virtual void fill_status_dictionary(TemplateDictionary* dict)=0;
   };
 
@@ -81,10 +86,17 @@ namespace superfastmatch{
     DocumentManager* documentManager_;
     AssociationManager* associationManager_;
     QueueManager* queueManager_;
+    vector<InstrumentGroupPtr> instruments_;
 
   public:
     FlagsRegistry();
     ~FlagsRegistry();
+    
+    enum InstrumentGroups{
+      WORKER,
+      QUEUE,
+      INDEX
+    };
     
     uint32_t getHashWidth() const;
     uint32_t getHashMask() const;
@@ -105,6 +117,7 @@ namespace superfastmatch{
     string getAddress() const;
     uint32_t getPort() const;
     double getTimeout() const;
+    InstrumentGroupPtr getInstrumentGroup(const int32_t group);
 
     uint32_t getMode();
     kc::PolyDB* getQueueDB();
@@ -123,6 +136,7 @@ namespace superfastmatch{
     QueueManager* getQueueManager();
 
     void fill_status_dictionary(TemplateDictionary* dict);
+    void fillPerformanceDictionary(TemplateDictionary* dict);
       
   private:
     void fill_db_dictionary(TemplateDictionary* dict, kc::PolyDB* db, const string name);

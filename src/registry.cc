@@ -6,7 +6,6 @@
 #include <queue.h>
 
 namespace superfastmatch{
-
   // Command line flags
   DEFINE_int32(port, 8080, "What port to listen on");
   static const bool port_dummy = google::RegisterFlagValidator(&FLAGS_port, &ValidatePort);
@@ -186,6 +185,10 @@ namespace superfastmatch{
     return queueManager_;
   }
 
+  InstrumentGroupPtr FlagsRegistry::getInstrumentGroup(const int32_t group){
+    return instruments_[group];
+  }
+
   FlagsRegistry::FlagsRegistry():
   queueDB_(new kc::PolyDB()),
   payloadDB_(new kc::PolyDB()),
@@ -201,6 +204,9 @@ namespace superfastmatch{
   associationManager_(0),
   queueManager_(0)
   {
+    instruments_.push_back(InstrumentGroupPtr(new InstrumentGroup("Worker Instruments",100,20)));
+    instruments_.push_back(InstrumentGroupPtr(new InstrumentGroup("Queue Instruments",100,20)));
+    instruments_.push_back(InstrumentGroupPtr(new InstrumentGroup("Index Instruments",100,20)));
     if (FLAGS_debug){
       logger_->open("debug.log");
     }
@@ -258,6 +264,24 @@ namespace superfastmatch{
     delete associationManager_;
     delete queueManager_;
     delete logger_;
+  }
+  
+  void FlagsRegistry::fillPerformanceDictionary(TemplateDictionary* dict){
+    stringstream s;
+    TemplateDictionary* worker_dict = dict->AddSectionDictionary("INSTRUMENT_SET");
+    TemplateDictionary* queue_dict = dict->AddSectionDictionary("INSTRUMENT_SET");
+    TemplateDictionary* index_dict = dict->AddSectionDictionary("INSTRUMENT_SET");
+    s << *getInstrumentGroup(WORKER);
+    worker_dict->SetValue("NAME","Worker Instruments");
+    worker_dict->SetValue("INSTRUMENTS",s.str());
+    s.str(string());
+    s << *getInstrumentGroup(QUEUE);
+    queue_dict->SetValue("NAME","Queue Instruments");
+    queue_dict->SetValue("INSTRUMENTS",s.str());
+    s.str(string());
+    s << *getInstrumentGroup(INDEX);
+    index_dict->SetValue("NAME","Index Instruments");
+    index_dict->SetValue("INSTRUMENTS",s.str());
   }
   
   void FlagsRegistry::fill_db_dictionary(TemplateDictionary* dict, kc::PolyDB* db, const string name){

@@ -1,16 +1,18 @@
 #ifndef _SFMPOSTING_H                       // duplication check
 #define _SFMPOSTING_H
 
+#include <bitset>
 #include <google/sparsetable>
 #include <boost/pool/pool_alloc.hpp>
 #include <common.h>
+#include <instrumentation.h>
 #include <templates.h>
 #include <postline.h>
 #include <query.h>
 #include <task.h>
+#include <posting.h>
 
 using google::sparsetable;
-using namespace std;
 
 namespace superfastmatch
 {
@@ -68,10 +70,9 @@ namespace superfastmatch
     
     uint32_t fill_list_dictionary(TemplateDictionary* dict,uint32_t start);
     void fillHistograms(histogram_t& hash_hist,histogram_t& gaps_hist);
-  
   };
 
-  class Posting{
+  class Posting : public Instrumented<Posting>{
   private:    
     Registry* registry_;
     vector<PostingSlot*> slots_;
@@ -86,7 +87,7 @@ namespace superfastmatch
     bool init();
     size_t getHashCount();
     void finishTasks();
-    void searchIndex(DocumentPtr doc,search_t& results,inverted_search_t& pruned_results);
+    InstrumentPtr searchIndex(DocumentPtr doc,search_t& results,inverted_search_t& pruned_results);
     // Following three methods return the current queue length for all slots combined   
     uint64_t alterIndex(DocumentPtr doc,TaskPayload::TaskOperation operation);
     uint64_t addDocument(DocumentPtr doc);

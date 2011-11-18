@@ -21,6 +21,7 @@ namespace superfastmatch{
 	RegisterTemplateFilename(DOCUMENT_PAGE, "document_page.tpl");
 	RegisterTemplateFilename(HELP_PAGE, "help_page.tpl");
 	RegisterTemplateFilename(HISTOGRAMS_PAGE, "histograms_page.tpl");
+	RegisterTemplateFilename(PERFORMANCE_PAGE, "performance_page.tpl");
 	
   struct RESTRequest{
     const HTTPClient::Method& verb;
@@ -147,6 +148,9 @@ namespace superfastmatch{
     }
     else if(req.resource=="histograms"){
       process_histograms(req,res);
+    }
+    else if(req.resource=="performance"){
+      process_performance(req,res);
     }
     else if(req.resource=="status"){
       process_status(req,res);
@@ -378,6 +382,13 @@ namespace superfastmatch{
     res.dict.SetTemplateGlobalValue("TITLE","Histograms");
     registry_->getPostings()->fill_histogram_dictionary(&res.dict);
     res.template_name=HISTOGRAMS_PAGE;
+    res.code=200;
+  }
+  
+  void Worker::process_performance(const RESTRequest& req,RESTResponse& res){
+    res.dict.SetTemplateGlobalValue("TITLE","Performance");
+    registry_->fillPerformanceDictionary(&res.dict);
+    res.template_name=PERFORMANCE_PAGE;
     res.code=200;
   }
   

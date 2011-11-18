@@ -11,6 +11,10 @@ typedef unsigned __int64 uint64_t;
 
 #include <iostream>
 #include <algorithm>
+#include <functional>
+#include <vector>
+#include <deque>
+#include <queue>
 #include <iomanip>
 #include <string>
 #include <limits>
@@ -26,6 +30,7 @@ typedef unsigned __int64 uint64_t;
 
 using namespace ctemplate;
 using namespace std;
+using namespace std::tr1;
 namespace superfastmatch{
   namespace kt=kyototycoon;
   namespace kc=kyotocabinet;
@@ -34,11 +39,12 @@ namespace superfastmatch{
   class Document;
   class Association;
   class Command;
+  class Instrument;
 
   // Global Typedefs
-  typedef std::tr1::shared_ptr<Document> DocumentPtr;
-  typedef std::tr1::shared_ptr<Association> AssociationPtr;
-  typedef std::tr1::shared_ptr<Command> CommandPtr;
+  typedef shared_ptr<Document> DocumentPtr;
+  typedef shared_ptr<Association> AssociationPtr;
+  typedef shared_ptr<Command> CommandPtr;
 
   // Global consts
   const uint64_t MAX_HASH=(1L<<32)-1;

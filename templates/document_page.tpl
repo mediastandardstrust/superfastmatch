@@ -22,6 +22,6 @@
 	<h2>Associations</h2>
 {{>ASSOCIATION}}
 	<h2>Text</h2>
-	<pre>{{TEXT}}</pre>
+	<pre class="wrap">{{TEXT}}</pre>
 	
 {{>FOOTER}}

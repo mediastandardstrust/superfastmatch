@@ -50,7 +50,7 @@
 			list-style-type: none;
 		} 
 		
-		pre {
+		pre.wrap {
 			white-space: pre-wrap;       /* css-3 */
 			white-space: -moz-pre-wrap;  /* Mozilla, since 1999 */
 			white-space: -pre-wrap;      /* Opera 4-6 */
@@ -69,4 +69,5 @@
 			<li><a href="/help/">Help</a></li>
 			<li><a href="/status/">Status</a></li>
 			<li><a href="/histograms/">Histograms</a></li>
+			<li><a href="/performance/">Performance</a></li>
 		</ul>

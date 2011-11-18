@@ -100,6 +100,35 @@ void BaseTest::TearDown(){
   delete logger_;
 }
 
+TestDocument::TestDocument(const char* filename){
+  ifstream file(filename);
+  stringstream buffer;
+  buffer << file.rdbuf();
+  text_=buffer.str();
+  form_text_="text=";
+  form_text_+=kyotocabinet::urlencode(text_.data(),text_.size());
+  EXPECT_NE(0U,text_.size());
+}
+
+string& TestDocument::getText(){
+  return text_;
+}
+
+string& TestDocument::getFormText(){
+  return form_text_;
+}
+
+size_t TestDocument::getUniques(const size_t window_size){
+  if (uniques_.find(window_size)==uniques_.end()){
+    unordered_set<string> uniques;
+    for (size_t i=0;i<text_.size()-window_size+1;i++){
+      uniques.insert(text_.substr(i,window_size));
+    }
+    uniques_[window_size]=uniques.size();
+  }
+  return uniques_[window_size];
+}
+
 int main(int argc, char** argv) {
   ::testing::InitGoogleMock(&argc, argv);
   return RUN_ALL_TESTS();

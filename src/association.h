@@ -5,18 +5,19 @@
 #include "registry.h"
 #include "templates.h"
 #include "document.h"
+#include "instrumentation.h"
 
 namespace superfastmatch
 {
   struct Match;
   struct Result;
   
-  typedef std::tr1::unordered_set<uint32_t> hashes_set;
-  typedef std::tr1::unordered_set<uint32_t> positions_set;
-  typedef std::tr1::unordered_map<uint32_t,positions_set> matches_map;
-  typedef std::pair<uint32_t,positions_set> match_pair;
-  typedef std::deque<Match> matches_deque;
-  typedef std::deque<Result> results_deque;
+  typedef unordered_set<uint32_t> hashes_set;
+  typedef unordered_set<uint32_t> positions_set;
+  typedef unordered_map<uint32_t,positions_set> matches_map;
+  typedef pair<uint32_t,positions_set> match_pair;
+  typedef deque<Match> matches_deque;
+  typedef deque<Result> results_deque;
   
   struct Match{
      const uint32_t left;
@@ -41,7 +42,7 @@ namespace superfastmatch
     {}
   };
 
-  class Association
+  class Association : public Instrumented<Association>
   {
   friend class AssociationManager;
   private:
@@ -51,11 +52,12 @@ namespace superfastmatch
     string* key_;
     string* reverse_key_;
     vector<Result>* results_;
-    
+
   public:
     Association(Registry* registry,DocumentPtr from_document,DocumentPtr to_document);
     ~Association();
-    
+
+    void match();
     bool save();
     bool remove();
     string& getKey();
@@ -69,7 +71,14 @@ namespace superfastmatch
     
   private:
     bool load();
-    void match();
+  };
+  
+  struct AssociationResult{
+    vector<AssociationPtr> associations;
+    InstrumentGroupPtr performance;
+    AssociationResult(const size_t max_results):
+    performance(new InstrumentGroup("Association Result",max_results,max_results))
+    {}
   };
   
   class AssociationManager
@@ -81,17 +90,15 @@ namespace superfastmatch
     explicit AssociationManager(Registry* registry);
     ~AssociationManager();
     
-    vector<AssociationPtr> createPermanentAssociations(DocumentPtr doc);
-    vector<AssociationPtr> createTemporaryAssociations(DocumentPtr doc);
+    void createPermanentAssociations(DocumentPtr doc,AssociationResult& result);
+    void createTemporaryAssociations(DocumentPtr doc,AssociationResult& result);
     vector<AssociationPtr> getAssociations(DocumentPtr doc,const int32_t state);
     bool removeAssociations(DocumentPtr doc);
     void fillListDictionary(DocumentPtr doc,TemplateDictionary* dict);
     void fillSearchDictionary(DocumentPtr doc,TemplateDictionary* dict);
     
-    // void fillSearchDictionary(DocumentPtr doc,DocumentPtr other, TemplateDictionary* dict);
-    
   private:
-    vector<AssociationPtr> createAssociations(DocumentPtr doc,const bool save);
+    void createAssociations(DocumentPtr doc,const bool save,AssociationResult& result);
     DISALLOW_COPY_AND_ASSIGN(AssociationManager);
   };
 }//namespace Superfastmatch

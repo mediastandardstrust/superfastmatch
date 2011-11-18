@@ -16,6 +16,7 @@
 #include <kcprotodb.h>
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
+#include <instrumentation.h>
 #include <document.h>
 #include <command.h>
 #include <association.h>
@@ -50,6 +51,19 @@ protected:
   virtual void SetUp();
   virtual void TearDown();
 
+};
+
+// Testing apparatus
+class TestDocument{
+private:
+  string text_;
+  string form_text_;
+  unordered_map<size_t,size_t> uniques_;
+public:
+  TestDocument(const char* filename);
+  string& getText();
+  string& getFormText();
+  size_t getUniques(const size_t window_size);
 };
 
 #endif

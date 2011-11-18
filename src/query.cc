@@ -3,6 +3,11 @@
 
 namespace superfastmatch
 {
+  ostream& operator<<(ostream &stream,const DocPair& pair){
+    stream << "Document("<< pair.doc_type << "," << pair.doc_id <<")";
+    return stream;
+  }
+
   DocTypeRange::DocTypeRange(){}
   
   bool DocTypeRange::parse(const string& range){

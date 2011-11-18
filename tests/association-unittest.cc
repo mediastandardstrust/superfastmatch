@@ -63,8 +63,9 @@ TEST_F(AssociationDeathTest, ManagerPermanentTest){
   registry_.getPostings()->addDocument(doc2);
   registry_.getPostings()->finishTasks();
   EXPECT_NE(0U,registry_.getPostings()->getHashCount());
-  vector<AssociationPtr> associations = registry_.getAssociationManager()->createPermanentAssociations(doc1);
-  EXPECT_EQ(1U,associations.size());
+  AssociationResult result(20);
+  registry_.getAssociationManager()->createPermanentAssociations(doc1,result);
+  EXPECT_EQ(1U,result.associations.size());
   EXPECT_EQ(2U,registry_.getAssociationDB()->count());
   DocumentPtr doc3 = registry_.getDocumentManager()->getDocument(1,1);
   EXPECT_NE(0U,doc3->getText().size());
@@ -72,7 +73,7 @@ TEST_F(AssociationDeathTest, ManagerPermanentTest){
   EXPECT_EQ(1U,savedAssociations.size());
   EXPECT_TRUE(registry_.getAssociationManager()->removeAssociations(doc3));
   EXPECT_EQ(0U,registry_.getAssociationDB()->count());
-  EXPECT_DEATH(registry_.getAssociationManager()->createTemporaryAssociations(doc1),".*Assertion.*failed");
+  EXPECT_DEATH(registry_.getAssociationManager()->createTemporaryAssociations(doc1,result),".*Assertion.*failed");
 }
 
 TEST_F(AssociationDeathTest, ManagerTemporaryTest){
@@ -82,8 +83,9 @@ TEST_F(AssociationDeathTest, ManagerTemporaryTest){
   registry_.getPostings()->finishTasks();
   EXPECT_NE(0U,registry_.getPostings()->getHashCount());
   DocumentPtr doc2 = registry_.getDocumentManager()->createTemporaryDocument("text=Always+Look+On+The+Bright+Side+Of+Life+and+this+is+a+long+sentence&title=Doc2");
-  vector<AssociationPtr> associations = registry_.getAssociationManager()->createTemporaryAssociations(doc2);
-  EXPECT_EQ(1U,associations.size());
+  AssociationResult result(20);
+  registry_.getAssociationManager()->createTemporaryAssociations(doc2,result);
+  EXPECT_EQ(1U,result.associations.size());
   EXPECT_EQ(0U,registry_.getAssociationDB()->count());
-  EXPECT_DEATH(registry_.getAssociationManager()->createPermanentAssociations(doc2),".*Assertion.*failed.*");
+  EXPECT_DEATH(registry_.getAssociationManager()->createPermanentAssociations(doc2,result),".*Assertion.*failed.*");
 }

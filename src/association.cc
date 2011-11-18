@@ -3,6 +3,52 @@
 namespace superfastmatch
 {
   RegisterTemplateFilename(ASSOCIATION, "association.tpl");
+
+  //-----------------------
+  // Instrument definitions
+  //-----------------------
+  
+  enum AssociationTimers{
+    MATCH,
+    INIT_MATCH
+  };
+
+  enum AssociationCounters{
+    FROM_DOC_TYPE,
+    FROM_DOC_ID,
+    TO_DOC_TYPE,
+    TO_DOC_ID,
+    WINDOW_SIZE,
+    THRESHOLD,
+    FROM_HASHES,
+    TO_HASHES,
+    FROM_BLOOM,
+    TO_BLOOM,
+    BLOOM,
+    TOO_SHORT,
+    ABOVE_THRESHOLD,
+    TOTAL_CHARACTERS,
+    RESULTS,
+  };
+    
+  template<> const InstrumentDefinition Instrumented<Association>::getDefinition(){
+    return InstrumentDefinition("Association",MATCH,create_map<int32_t,string>(MATCH,"Match")(INIT_MATCH,"Init Match"),
+                                create_map<int32_t,string>(FROM_DOC_TYPE,"From Doc Type")
+                                                          (FROM_DOC_ID,"From Doc Id")
+                                                          (TO_DOC_TYPE,"To Doc Type")
+                                                          (TO_DOC_ID,"To Doc Id")
+                                                          (WINDOW_SIZE,"Window Size")
+                                                          (THRESHOLD,"Threshold")
+                                                          (FROM_HASHES,"From Hashes")
+                                                          (TO_HASHES,"To Hashes")
+                                                          (FROM_BLOOM,"From Bloom")
+                                                          (TO_BLOOM,"To Bloom")
+                                                          (BLOOM,"Bloom")
+                                                          (TOO_SHORT,"Too Short")
+                                                          (ABOVE_THRESHOLD,"Above T'hold")
+                                                          (TOTAL_CHARACTERS,"Total Chars")
+                                                          (RESULTS,"Results"));
+  }
   
   bool result_sorter(Result const& lhs,Result const& rhs ){
     if (lhs.length!=rhs.length)
@@ -20,6 +66,10 @@ namespace superfastmatch
   to_document_(to_document),
   results_(new vector<Result>())
   {
+    getInstrument()->setCounter(FROM_DOC_TYPE,from_document->doctype());
+    getInstrument()->setCounter(FROM_DOC_ID,from_document->docid());
+    getInstrument()->setCounter(TO_DOC_TYPE,from_document->doctype());
+    getInstrument()->setCounter(TO_DOC_ID,from_document->docid());
     key_=new string(from_document->getKey());
     key_->append(to_document->getKey());
     reverse_key_=new string(to_document->getKey());
@@ -97,6 +147,8 @@ namespace superfastmatch
   }
   
   void Association::match(){
+    getInstrument()->startTimer(MATCH);
+    getInstrument()->startTimer(INIT_MATCH);
     const bool invert=to_document_->getText().length()<from_document_->getText().length();
     if (invert){
      from_document_.swap(to_document_); 
@@ -109,18 +161,21 @@ namespace superfastmatch
     *bloom&=to_document_->getBloom();
     from_hashes=from_document_->getHashes();
     to_hashes=to_document_->getHashes();
+    unordered_set<string> above_threshold;
     const uint32_t from_hashes_count = from_hashes.size();
     const uint32_t to_hashes_count = to_hashes.size();
     string original_text = from_document_->getText();
     const uint32_t window_size=registry_->getWindowSize();
     const uint32_t white_space=registry_->getWhiteSpaceHash(false);
     const uint32_t threshold=registry_->getMaxPostingThreshold();
-    size_t total_characters=0;
-    size_t bad_matches=0;
-    size_t too_short=0;
-    size_t above_threshold=0;
-
-    // cout << "From length: " << from_document_->getText().size() << " To length: " << to_document_->getText().size() << " Bloom: " << bloom->count() << " From: " << from_document_->getBloom().count() << " To: " << to_document_->getBloom().count() << endl;
+    getInstrument()->setCounter(WINDOW_SIZE,window_size);
+    getInstrument()->setCounter(THRESHOLD,threshold);
+    getInstrument()->setCounter(FROM_HASHES,from_hashes_count);
+    getInstrument()->setCounter(TO_HASHES,to_hashes_count);
+    // getInstrument()->setCounter(FROM_BLOOM,from_document_->getBloom().count());
+    // getInstrument()->setCounter(TO_BLOOM,to_document_->getBloom().count());
+    // getInstrument()->setCounter(BLOOM,bloom->count());
+    getInstrument()->stopTimer(INIT_MATCH);
 
     //Find from_document hashes set
     uint32_t from_hash;
@@ -160,20 +215,19 @@ namespace superfastmatch
           if (from_text==to_document_->getCleanText(*it,window_size)){
             match.right.insert(*it);
           }else{
+            getInstrument()->incrementCounter(TOO_SHORT);
             // logger->log(Logger::DEBUG,kc::strprintf("Bad Match: \"%s\" : \"%s\"",from_document_->getCleanText(i,window_size).c_str(),to_document_->getCleanText(*it,window_size).c_str()).c_str());
-            bad_matches++;
           }
         }
         if (match.right.size()>0){
           matches.push_back(match);
         }
       }else if(to_match!=to_matches_end && to_match->second.size()>threshold){
-        above_threshold++;
-        // TODO save these cases in a separate way
-        // cout << to_match->second.size() << ":" << from_document_->getCleanText(i,window_size) << endl; 
+        above_threshold.insert(from_document_->getCleanText(i,window_size));
       }
     }
-
+    getInstrument()->setCounter(ABOVE_THRESHOLD,above_threshold.size());
+    
     //Process matches to find longest common strings
     while(matches.size()>0){
        Match* first = &matches.front();
@@ -214,10 +268,11 @@ namespace superfastmatch
        if (length>=window_size){
          Result result(left,right,original_text.substr(left,length),length);
          results_->push_back(result);
-         total_characters+=length;
+         getInstrument()->incrementCounter(TOTAL_CHARACTERS,length);
+         getInstrument()->incrementCounter(RESULTS);
          // logger->log(Logger::DEBUG,kc::strprintf("Match: \"%s\"",result.text.c_str()).c_str()); 
        }else{
-         too_short++;
+         getInstrument()->incrementCounter(TOO_SHORT);
          // logger->log(Logger::DEBUG,kc::strprintf("Match too short: \"%s\"",text.c_str()).c_str());
        }
     }
@@ -228,9 +283,8 @@ namespace superfastmatch
        swap(it->left,it->right);
      }
     }
-    message << "Associated: " << *from_document_ << " with: " << *to_document_ << " Matches: " << results_->size() << " Characters: " << total_characters << " Too short: " << too_short << " Bad Matches: " << bad_matches << " Above Threshold: " << above_threshold;
-    logger->log(Logger::DEBUG,&message);
     delete bloom;
+    getInstrument()->stopTimer(MATCH);
   }
 
   size_t Association::getTotalLength(){
@@ -300,33 +354,32 @@ namespace superfastmatch
   
   AssociationManager::~AssociationManager(){}
 
-  vector<AssociationPtr> AssociationManager::createTemporaryAssociations(DocumentPtr doc){
+  void AssociationManager::createTemporaryAssociations(DocumentPtr doc,AssociationResult& result){
     assert((doc->doctype()==0)&&(doc->docid()==0));
-    return createAssociations(doc,false);
+    createAssociations(doc,false,result);
   }
   
-  vector<AssociationPtr> AssociationManager::createPermanentAssociations(DocumentPtr doc){
+  void AssociationManager::createPermanentAssociations(DocumentPtr doc,AssociationResult& result){
     assert((doc->doctype()!=0)&&(doc->docid()!=0));
-    return createAssociations(doc,true);
+    createAssociations(doc,true,result);
   }
   
-  vector<AssociationPtr> AssociationManager::createAssociations(DocumentPtr doc,const bool save){
-    vector<AssociationPtr> associations;
-    search_t results;
-    inverted_search_t pruned_results;
-    registry_->getPostings()->searchIndex(doc,results,pruned_results);
+  void AssociationManager::createAssociations(DocumentPtr doc,const bool save,AssociationResult& result){
     size_t num_results=registry_->getNumResults();
     size_t count=0;
-    for(inverted_search_t::iterator it2=pruned_results.begin(),ite2=pruned_results.end();it2!=ite2 && count<num_results;++it2){
+    search_t results;
+    inverted_search_t pruned_results;
+    result.performance->add(registry_->getPostings()->searchIndex(doc,results,pruned_results));
+    for(inverted_search_t::iterator it2=pruned_results.begin(),ite2=pruned_results.end();(it2!=ite2) && (count<num_results);++it2){
       DocumentPtr other=registry_->getDocumentManager()->getDocument(it2->second.doc_type,it2->second.doc_id,DocumentManager::META);
       AssociationPtr association(new Association(registry_,doc,other));
-      associations.push_back(association);
+      result.performance->add(association->getInstrument());
+      result.associations.push_back(association);
       if (save){
         association->save();
       }
       count++;
     }
-    return associations;
   }
   
   bool AssociationManager::removeAssociations(DocumentPtr doc){
@@ -361,8 +414,9 @@ namespace superfastmatch
   void AssociationManager::fillSearchDictionary(DocumentPtr doc,TemplateDictionary* dict){
     TemplateDictionary* association_dict=dict->AddIncludeDictionary("ASSOCIATION");
     association_dict->SetFilename(ASSOCIATION);
-    vector<AssociationPtr> associations=createTemporaryAssociations(doc);
-    for (vector<AssociationPtr>::iterator it=associations.begin(),ite=associations.end();it!=ite;++it){
+    AssociationResult result(registry_->getNumResults());
+    createTemporaryAssociations(doc,result);
+    for (vector<AssociationPtr>::iterator it=result.associations.begin(),ite=result.associations.end();it!=ite;++it){
       (*it)->fillItemDictionary(association_dict);
     }
   }

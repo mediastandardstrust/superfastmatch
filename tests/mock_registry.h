@@ -78,6 +78,10 @@ class MockRegistry : public Registry {
       AssociationManager*());
   MOCK_METHOD0(getQueueManager,
       QueueManager*());
+  MOCK_METHOD1(getInstrumentGroup,
+      InstrumentGroupPtr(const int32_t group));
+  MOCK_METHOD1(fillPerformanceDictionary,
+      void(TemplateDictionary* dict));
   MOCK_METHOD1(fill_status_dictionary,
       void(TemplateDictionary* dict));
 };

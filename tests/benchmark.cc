@@ -15,10 +15,10 @@ class SearchMapTest : public Test{
      static void SetUpTestCase(){
        input.clear();
        srand(time(NULL));
-       input.reserve(100000000);
-       for (size_t i=0;i<100000000;i++){
-         input.push_back(rand()%5+1);
-         input.push_back(rand()%10000+1);
+       input.reserve(10000000);
+       for (size_t i=0;i<10000000;i++){
+         input.push_back(rand()%20+1);
+         input.push_back(rand()%10000000+1);
        }
      }
 };
@@ -164,19 +164,22 @@ typedef struct
 {
   inline bool operator() (const DocPair& x, const DocPair &y) const { 
     // return ~((uint64_t(x.doc_type)<<32|x.doc_id)^(uint64_t(y.doc_type)<<32|y.doc_id));
-    return ~((x.doc_id^y.doc_id)&&(x.doc_type^y.doc_type));
-    // return (x.doc_id==y.doc_id)&(x.doc_type==y.doc_type);
+    // return ~((x.doc_id^y.doc_id)&&(x.doc_type^y.doc_type));
+    return (x.doc_id==y.doc_id)&(x.doc_type==y.doc_type);
     // return (x.doc_type==y.doc_type)&&(x.doc_id==y.doc_id);
   }
 } DocPairEq2;
 
 typedef struct{
   inline size_t operator() (const DocPair& k) const {
-    return (uint64_t(k.doc_type)<<32|k.doc_id);
+    return (uint64_t(k.doc_type)*73856093)^(uint64_t(k.doc_id)*19349663);
+    // return (static_cast<uint64_t>(k.doc_type)<<32)|k.doc_id;
+    // return (uint64_t(k.doc_type)<<32|k.doc_id);
   }
 } DocPairHash2;
 
 typedef unordered_set<DocPair,DocPairHash2,DocPairEq2> searchset_t;
+// typedef unordered_map<DocPair,DocTally,DocPairHash2,DocPairEq2> pooled_search_t;
 typedef unordered_map<DocPair,DocTally,DocPairHash2,DocPairEq2,boost::fast_pool_allocator<pair<DocPair,DocTally> > > pooled_search_t;
 
 TEST_F(SearchMapTest,PooledSearchMapTest){

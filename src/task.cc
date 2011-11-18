@@ -88,7 +88,9 @@ namespace superfastmatch
   void AssociationTaskQueue::do_task(Task* task){
     AssociationTask* ptask = (AssociationTask*)task;
     DocumentPtr doc = registry_->getDocumentManager()->getDocument(ptask->pair_.doc_type,ptask->pair_.doc_id);
-    registry_->getAssociationManager()->createPermanentAssociations(doc);
+    AssociationResult result(registry_->getNumResults());
+    registry_->getAssociationManager()->createPermanentAssociations(doc,result);
+    registry_->getInstrumentGroup(FlagsRegistry::QUEUE)->merge(result.performance);
     delete ptask;
   }
 
