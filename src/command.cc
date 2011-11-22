@@ -94,9 +94,7 @@ namespace superfastmatch{
   }
   
   bool Command::addAssociation(){
-    DocumentPtr doc=registry_->getDocumentManager()->getDocument(getDocType(),getDocId());
-    AssociationResult result(registry_->getNumResults());
-    registry_->getAssociationManager()->createPermanentAssociations(doc,result);
+    SearchPtr search=Search::createPermanentSearch(registry_,getDocType(),getDocId());
     return true;
   }
 

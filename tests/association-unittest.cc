@@ -1,6 +1,5 @@
 #include <tests.h>
 
-typedef BaseTest AssociationDeathTest;
 typedef BaseTest AssociationTest;
 
 TEST_F(AssociationTest,ShortTest){
@@ -55,17 +54,15 @@ TEST_F(AssociationTest, EndingTest){
   EXPECT_STREQ("This is Captain Fran",association->getToResult(0).c_str());
 }
 
-TEST_F(AssociationDeathTest, ManagerPermanentTest){
-  ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+TEST_F(AssociationTest, ManagerPermanentTest){
   DocumentPtr doc1 = registry_.getDocumentManager()->createPermanentDocument(1,1,"text=This+is+a+long+sentence+where+the+phrase+Always+Look+On+The+Bright+Side+Of+Life&title=Doc1");
   DocumentPtr doc2 = registry_.getDocumentManager()->createPermanentDocument(1,2,"text=Always+Look+On+The+Bright+Side+Of+Life+and+this+is+a+long+sentence&title=Doc2");
   registry_.getPostings()->addDocument(doc1);
   registry_.getPostings()->addDocument(doc2);
   registry_.getPostings()->finishTasks();
   EXPECT_NE(0U,registry_.getPostings()->getHashCount());
-  AssociationResult result(20);
-  registry_.getAssociationManager()->createPermanentAssociations(doc1,result);
-  EXPECT_EQ(1U,result.associations.size());
+  SearchPtr search=Search::createPermanentSearch(&registry_,doc1->doctype(),doc1->docid());
+  EXPECT_EQ(1U,search->associations.size());
   EXPECT_EQ(2U,registry_.getAssociationDB()->count());
   DocumentPtr doc3 = registry_.getDocumentManager()->getDocument(1,1);
   EXPECT_NE(0U,doc3->getText().size());
@@ -73,19 +70,14 @@ TEST_F(AssociationDeathTest, ManagerPermanentTest){
   EXPECT_EQ(1U,savedAssociations.size());
   EXPECT_TRUE(registry_.getAssociationManager()->removeAssociations(doc3));
   EXPECT_EQ(0U,registry_.getAssociationDB()->count());
-  EXPECT_DEATH(registry_.getAssociationManager()->createTemporaryAssociations(doc1,result),".*Assertion.*failed");
 }
 
-TEST_F(AssociationDeathTest, ManagerTemporaryTest){
-  ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+TEST_F(AssociationTest, ManagerTemporaryTest){
   DocumentPtr doc1 = registry_.getDocumentManager()->createPermanentDocument(1,1,"text=This+is+a+long+sentence+where+the+phrase+Always+Look+On+The+Bright+Side+Of+Life&title=Doc1");
   registry_.getPostings()->addDocument(doc1);
   registry_.getPostings()->finishTasks();
   EXPECT_NE(0U,registry_.getPostings()->getHashCount());
-  DocumentPtr doc2 = registry_.getDocumentManager()->createTemporaryDocument("text=Always+Look+On+The+Bright+Side+Of+Life+and+this+is+a+long+sentence&title=Doc2");
-  AssociationResult result(20);
-  registry_.getAssociationManager()->createTemporaryAssociations(doc2,result);
-  EXPECT_EQ(1U,result.associations.size());
+  SearchPtr search=Search::createTemporarySearch(&registry_,"text=Always+Look+On+The+Bright+Side+Of+Life+and+this+is+a+long+sentence&title=Doc2");
+  EXPECT_EQ(1U,search->associations.size());
   EXPECT_EQ(0U,registry_.getAssociationDB()->count());
-  EXPECT_DEATH(registry_.getAssociationManager()->createPermanentAssociations(doc2,result),".*Assertion.*failed.*");
 }

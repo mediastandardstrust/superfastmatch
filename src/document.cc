@@ -2,6 +2,39 @@
 
 namespace superfastmatch
 {
+  //-----------------------
+  // Instrument definitions
+  //-----------------------
+  
+  enum DocumentTimers{
+    INIT,
+    META,
+    TEXT,
+    HASHES,
+    POSTING_HASHES,
+    BLOOM
+  };
+
+  enum DocumentCounters{
+    DOC_TYPE,
+    DOC_ID,
+    WINDOW_SIZE,
+    HASH_WIDTH
+  };
+    
+  template<> const InstrumentDefinition Instrumented<Document>::getDefinition(){
+    return InstrumentDefinition("Document",INIT,create_map<int32_t,string>(INIT,"Init")
+                                                                          (META,"Meta")
+                                                                          (TEXT,"Text")
+                                                                          (HASHES,"Hashes")
+                                                                          (POSTING_HASHES,"Posting Hashes")
+                                                                          (BLOOM,"Bloom"),
+                                                create_map<int32_t,string>(DOC_TYPE,"Doc Type")
+                                                                          (DOC_ID,"Doc Id")
+                                                                          (WINDOW_SIZE,"Window Size")
+                                                                          (HASH_WIDTH,"Hash Width"));
+  }
+  
   // -----------------------
   // Document members
   // -----------------------
@@ -9,6 +42,10 @@ namespace superfastmatch
   Document::Document(const uint32_t doctype,const uint32_t docid, const bool permanent,Registry* registry):
   doctype_(doctype),docid_(docid),permanent_(permanent),empty_meta_(new string()),registry_(registry),key_(0),text_(0),metadata_(),hashes_(0),posting_hashes_(0),bloom_(0)
   {
+    getInstrument()->setCounter(DOC_TYPE,doctype);
+    getInstrument()->setCounter(DOC_ID,docid);
+    getInstrument()->setCounter(WINDOW_SIZE,registry->getWindowSize());
+    getInstrument()->setCounter(WINDOW_SIZE,registry->getHashWidth());
     char key[8];
     uint32_t dt=kc::hton32(doctype_);
     uint32_t di=kc::hton32(docid_);
@@ -169,6 +206,10 @@ namespace superfastmatch
     return true;
   }
   
+  bool Document::isPermanent(){
+    return permanent_;
+  }
+  
   hashes_vector& Document::getHashes(){
     if (hashes_==0){
       throw runtime_error("Hashes not initialised");
@@ -230,7 +271,7 @@ namespace superfastmatch
     return stream;
   }
   
-  void Document::fill_document_dictionary(TemplateDictionary* dict){
+  void Document::fillDocumentDictionary(TemplateDictionary* dict){
     vector<string> keys;
     if (getMetaKeys(keys)){
       for (vector<string>::iterator it=keys.begin();it!=keys.end();it++){
@@ -240,7 +281,6 @@ namespace superfastmatch
       } 
     }
     dict->SetValue("TEXT",getText());
-    registry_->getAssociationManager()->fillListDictionary(shared_from_this(),dict);
   }
   
   bool operator< (Document& lhs,Document& rhs){

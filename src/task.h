@@ -5,6 +5,7 @@
 #include <kcthread.h>
 #include <registry.h>
 #include <query.h>
+#include <search.h>
 
 namespace superfastmatch
 {

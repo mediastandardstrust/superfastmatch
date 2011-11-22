@@ -1,9 +1,6 @@
 #ifndef _SFMWORKER_H                       // duplication check
 #define _SFMWORKER_H
 
-#include <map>
-#include <sstream>
-#include <cstdlib>
 // #include <google/malloc_extension.h>
 #include <kthttp.h>
 #include <kcthread.h>
@@ -13,6 +10,7 @@
 #include <queue.h>
 #include <command.h>
 #include <document.h>
+#include <search.h>
 #include <templates.h>
 
 using namespace std;

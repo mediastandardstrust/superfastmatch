@@ -1,7 +1,6 @@
 #ifndef _SFMPOSTING_H                       // duplication check
 #define _SFMPOSTING_H
 
-#include <bitset>
 #include <google/sparsetable>
 #include <boost/pool/pool_alloc.hpp>
 #include <common.h>
@@ -10,7 +9,7 @@
 #include <postline.h>
 #include <query.h>
 #include <task.h>
-#include <posting.h>
+#include <search.h>
 
 using google::sparsetable;
 
@@ -20,29 +19,11 @@ namespace superfastmatch
   class Registry;
   class Command;
   class Association;
-    
-  struct DocTally{
-    uint64_t count;
-    uint64_t previous;
-    DocTally():
-    count(0),
-    previous(0)
-    {}
-  };
-  
-  typedef struct
-  {
-    bool operator()(const DocTally &lhs, const DocTally &rhs) const { 
-      return lhs.count>rhs.count;
-    }
-  } DocTallyEq;
-    
+
+  //Typedefs
   typedef sparsetable<unsigned char*,48> index_t;
   typedef unordered_map<uint32_t,uint64_t> stats_t;
   typedef unordered_map<uint32_t,stats_t> histogram_t;
-  typedef unordered_map<DocPair,DocTally,DocPairHash,DocPairEq> search_t;
-  //typedef unordered_map<DocPair,DocTally,DocPairHash,DocPairEq,boost::fast_pool_allocator<pair<DocPair,DocTally> > > search_t;
-  typedef multimap<DocTally,DocPair,DocTallyEq> inverted_search_t;
 
   class PostingSlot{
   private:
@@ -87,8 +68,8 @@ namespace superfastmatch
     bool init();
     size_t getHashCount();
     void finishTasks();
-    InstrumentPtr searchIndex(DocumentPtr doc,search_t& results,inverted_search_t& pruned_results);
-    // Following three methods return the current queue length for all slots combined   
+    void searchIndex(Search& search);
+    // Following three methods return the current queue length for all slots combined
     uint64_t alterIndex(DocumentPtr doc,TaskPayload::TaskOperation operation);
     uint64_t addDocument(DocumentPtr doc);
     uint64_t deleteDocument(DocumentPtr doc);
@@ -100,6 +81,7 @@ namespace superfastmatch
   private:
     void lockSlotsForReading();
     void unlockSlotsForReading();
+    DISALLOW_COPY_AND_ASSIGN(Posting);
   };  
 }
 

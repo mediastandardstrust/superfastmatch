@@ -2,8 +2,6 @@
 
 namespace superfastmatch
 {
-  RegisterTemplateFilename(ASSOCIATION, "association.tpl");
-
   //-----------------------
   // Instrument definitions
   //-----------------------
@@ -153,8 +151,6 @@ namespace superfastmatch
     if (invert){
      from_document_.swap(to_document_); 
     }
-    Logger* logger = registry_->getLogger();
-    stringstream message;
     hashes_vector from_hashes,to_hashes;
     hashes_bloom* bloom = new hashes_bloom();
     *bloom|=from_document_->getBloom();
@@ -352,36 +348,6 @@ namespace superfastmatch
   AssociationManager::AssociationManager(Registry* registry):
   registry_(registry){}
   
-  AssociationManager::~AssociationManager(){}
-
-  void AssociationManager::createTemporaryAssociations(DocumentPtr doc,AssociationResult& result){
-    assert((doc->doctype()==0)&&(doc->docid()==0));
-    createAssociations(doc,false,result);
-  }
-  
-  void AssociationManager::createPermanentAssociations(DocumentPtr doc,AssociationResult& result){
-    assert((doc->doctype()!=0)&&(doc->docid()!=0));
-    createAssociations(doc,true,result);
-  }
-  
-  void AssociationManager::createAssociations(DocumentPtr doc,const bool save,AssociationResult& result){
-    size_t num_results=registry_->getNumResults();
-    size_t count=0;
-    search_t results;
-    inverted_search_t pruned_results;
-    result.performance->add(registry_->getPostings()->searchIndex(doc,results,pruned_results));
-    for(inverted_search_t::iterator it2=pruned_results.begin(),ite2=pruned_results.end();(it2!=ite2) && (count<num_results);++it2){
-      DocumentPtr other=registry_->getDocumentManager()->getDocument(it2->second.doc_type,it2->second.doc_id,DocumentManager::META);
-      AssociationPtr association(new Association(registry_,doc,other));
-      result.performance->add(association->getInstrument());
-      result.associations.push_back(association);
-      if (save){
-        association->save();
-      }
-      count++;
-    }
-  }
-  
   bool AssociationManager::removeAssociations(DocumentPtr doc){
     bool success=true;
     vector<AssociationPtr> associations=getAssociations(doc,DocumentManager::NONE);
@@ -400,24 +366,5 @@ namespace superfastmatch
       associations.push_back(AssociationPtr(new Association(registry_,doc,other)));
     }
     return associations;
-  }
-  
-  void AssociationManager::fillListDictionary(DocumentPtr doc,TemplateDictionary* dict){
-    TemplateDictionary* association_dict=dict->AddIncludeDictionary("ASSOCIATION");
-    association_dict->SetFilename(ASSOCIATION);
-    vector<AssociationPtr> associations=getAssociations(doc,DocumentManager::META);
-    for (vector<AssociationPtr>::iterator it=associations.begin(),ite=associations.end();it!=ite;++it){
-      (*it)->fillItemDictionary(association_dict);
-    } 
-  }
-  
-  void AssociationManager::fillSearchDictionary(DocumentPtr doc,TemplateDictionary* dict){
-    TemplateDictionary* association_dict=dict->AddIncludeDictionary("ASSOCIATION");
-    association_dict->SetFilename(ASSOCIATION);
-    AssociationResult result(registry_->getNumResults());
-    createTemporaryAssociations(doc,result);
-    for (vector<AssociationPtr>::iterator it=result.associations.begin(),ite=result.associations.end();it!=ite;++it){
-      (*it)->fillItemDictionary(association_dict);
-    }
-  }
+  }  
 }

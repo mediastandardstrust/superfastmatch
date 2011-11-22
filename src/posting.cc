@@ -337,50 +337,50 @@ namespace superfastmatch
     logger->log(Logger::DEBUG,&message);
     return total_length;
   }
-
-  InstrumentPtr Posting::searchIndex(DocumentPtr doc,search_t& results,inverted_search_t& pruned_results){
+  
+  void Posting::searchIndex(Search& search){
     InstrumentPtr perf=createInstrument();
+    search.performance->add(perf);
     perf->startTimer(SEARCH);
     PostLine line(registry_->getMaxLineLength());
     const uint32_t hash_mask=registry_->getHashMask();
     const uint32_t hash_width=registry_->getHashWidth();
     const uint32_t white_space=registry_->getWhiteSpaceHash();
     const uint32_t span=registry_->getMaxHashCount()/registry_->getSlotCount();
-    const uint32_t doctype=doc->doctype();
-    const uint32_t docid=doc->docid();
-    const uint64_t results_estimate=min(doc_count_,((total_doc_length_/registry_->getMaxHashCount())+1)*doc->getText().size())*3;
+    const uint32_t doctype=search.doc->doctype();
+    const uint32_t docid=search.doc->docid();
+    const uint64_t results_estimate=min(doc_count_,((total_doc_length_/registry_->getMaxHashCount())+1)*search.doc->getText().size())*3;
     perf->setCounter(DOC_TYPE,doctype);
     perf->setCounter(DOC_ID,docid);
-    perf->setCounter(DOC_LENGTH, doc->getText().size());
+    perf->setCounter(DOC_LENGTH, search.doc->getText().size());
     perf->setCounter(RESULTS_ESTIMATE,results_estimate);
     perf->setCounter(WINDOW_SIZE,registry_->getWindowSize());
     uint32_t position=0;
-    results.rehash(results_estimate);
+    search.results.rehash(results_estimate);
     lockSlotsForReading();
-    for (vector<uint32_t>::const_iterator it=doc->getPostingHashes().begin(),ite=doc->getPostingHashes().end();it!=ite;++it){
+    for (vector<uint32_t>::const_iterator it=search.doc->getPostingHashes().begin(),ite=search.doc->getPostingHashes().end();it!=ite;++it){
       uint32_t hash=(*it>>hash_width)^(*it&hash_mask);
       if (hash!=white_space){
-        slots_[hash/span]->searchIndex(doctype,docid,hash,position,line,results);
+        slots_[hash/span]->searchIndex(doctype,docid,hash,position,line,search.results);
       }else{
         perf->incrementCounter(WHITESPACE_COUNT);
       }
       position++;
     }
     unlockSlotsForReading();
-    perf->setCounter(BUCKET_COUNT,results.bucket_count());
-    perf->setCounter(RESULT_COUNT,results.size());
-    for (size_t i=0;i<results.bucket_count();i++){
-      if (results.bucket_size(i)>1){
+    perf->setCounter(BUCKET_COUNT,search.results.bucket_count());
+    perf->setCounter(RESULT_COUNT,search.results.size());
+    for (size_t i=0;i<search.results.bucket_count();i++){
+      if (search.results.bucket_size(i)>1){
         perf->incrementCounter(COLLISIONS);
       }
     }
-    for (search_t::iterator it=results.begin(),ite=results.end();it!=ite;it++){
+    for (search_t::iterator it=search.results.begin(),ite=search.results.end();it!=ite;it++){
       if ((it->second.count>0)){
-        pruned_results.insert(pair<DocTally,DocPair>(it->second,it->first));
+        search.pruned_results.insert(pair<DocTally,DocPair>(it->second,it->first));
       }
     }
     perf->stopTimer(SEARCH);
-    return perf;
   }
   
   uint64_t Posting::addDocument(DocumentPtr doc){

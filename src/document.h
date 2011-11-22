@@ -1,22 +1,17 @@
 #ifndef _SFMDOCUMENT_H                       // duplication check
 #define _SFMDOCUMENT_H
 
-#include <vector>
-#include <bitset>
-#include <map>
-#include <algorithm>
-#include <string>
-#include <cctype>
 #include <common.h>
+#include <instrumentation.h>
 #include <registry.h>
 #include <association.h>
 #include <posting.h>
 
 namespace superfastmatch
 { 
-  typedef std::vector<uint32_t> hashes_vector;
-  typedef std::bitset<(1<<26)> hashes_bloom;
-  typedef std::map<std::string,std::string> metadata_map;
+  typedef vector<uint32_t> hashes_vector;
+  typedef bitset<(1<<26)> hashes_bloom;
+  typedef map<std::string,std::string> metadata_map;
   
   class DocumentManager; // Forward Declaration
   
@@ -34,7 +29,7 @@ namespace superfastmatch
     }
   };
   
-  class Document : public std::tr1::enable_shared_from_this<Document>
+  class Document : public enable_shared_from_this<Document>, public Instrumented<Document>
   {
   friend class DocumentManager;
   private:
@@ -55,6 +50,7 @@ namespace superfastmatch
     hashes_vector& getHashes();
     hashes_vector& getPostingHashes();
     hashes_bloom& getBloom();
+    bool isPermanent();
     string& getMeta(const string& key);
     bool setMeta(const string& key, const string& value);
     bool getMetaKeys(vector<string>& keys);
@@ -65,7 +61,7 @@ namespace superfastmatch
     uint32_t doctype();
     uint32_t docid();
     
-    void fill_document_dictionary(TemplateDictionary* dict);
+    void fillDocumentDictionary(TemplateDictionary* dict);
     
     friend std::ostream& operator<< (std::ostream& stream, Document& document);
     friend bool operator< (Document& lhs,Document& rhs);

@@ -24,6 +24,7 @@
 #include <posting.h>
 #include <queue.h>
 #include <query.h>
+#include <search.h>
 #include <mock_registry.h>
 
 using namespace testing;

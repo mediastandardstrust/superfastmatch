@@ -15,6 +15,10 @@ typedef unsigned __int64 uint64_t;
 #include <vector>
 #include <deque>
 #include <queue>
+#include <bitset>
+#include <map>
+#include <sstream>
+#include <cstdlib>
 #include <iomanip>
 #include <string>
 #include <limits>

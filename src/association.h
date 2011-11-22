@@ -5,6 +5,7 @@
 #include "registry.h"
 #include "templates.h"
 #include "document.h"
+#include "search.h"
 #include "instrumentation.h"
 
 namespace superfastmatch
@@ -73,14 +74,6 @@ namespace superfastmatch
     bool load();
   };
   
-  struct AssociationResult{
-    vector<AssociationPtr> associations;
-    InstrumentGroupPtr performance;
-    AssociationResult(const size_t max_results):
-    performance(new InstrumentGroup("Association Result",max_results,max_results))
-    {}
-  };
-  
   class AssociationManager
   {
   private:
@@ -88,17 +81,10 @@ namespace superfastmatch
     
   public:
     explicit AssociationManager(Registry* registry);
-    ~AssociationManager();
     
-    void createPermanentAssociations(DocumentPtr doc,AssociationResult& result);
-    void createTemporaryAssociations(DocumentPtr doc,AssociationResult& result);
     vector<AssociationPtr> getAssociations(DocumentPtr doc,const int32_t state);
     bool removeAssociations(DocumentPtr doc);
-    void fillListDictionary(DocumentPtr doc,TemplateDictionary* dict);
-    void fillSearchDictionary(DocumentPtr doc,TemplateDictionary* dict);
-    
   private:
-    void createAssociations(DocumentPtr doc,const bool save,AssociationResult& result);
     DISALLOW_COPY_AND_ASSIGN(AssociationManager);
   };
 }//namespace Superfastmatch

@@ -185,8 +185,8 @@ namespace superfastmatch{
     res.dict.SetTemplateGlobalValue("TITLE","Search");
     switch (req.verb){
       case HTTPClient::MPOST:{
-          DocumentPtr doc=registry_->getDocumentManager()->createTemporaryDocument(req.reqbody);
-          registry_->getAssociationManager()->fillSearchDictionary(doc,&res.dict);
+          SearchPtr search=Search::createTemporarySearch(registry_,req.reqbody);
+          search->fillDictionary(&res.dict);
           res.code=200;
           res.template_name=RESULTS_PAGE;
         }
@@ -211,16 +211,17 @@ namespace superfastmatch{
         case HTTPClient::MGET:
         case HTTPClient::MHEAD:
           {
-            DocumentPtr doc=registry_->getDocumentManager()->getDocument(doctype,docid,DocumentManager::TEXT|DocumentManager::META);
-            if (doc){
-              res.message << "Getting document: " << *doc;
+            SearchPtr search=Search::getPermanentSearch(registry_,doctype,docid);
+            if (search->doc){
+              res.message << "Getting document: " << *search->doc;
               if(req.verb==HTTPClient::MGET){
                 res.template_name=DOCUMENT_PAGE;
-                doc->fill_document_dictionary(&res.dict);
+                search->fillDictionary(&res.dict);
+                search->doc->fillDocumentDictionary(&res.dict);
               }
               res.code=200;
             }else{
-              res.message << "Error getting document: " << doc;
+              res.message << "Error getting document: " << *search->doc;
               res.template_name=NOT_FOUND_PAGE;
               res.dict.SetValue("ITEM","Document");
               res.code=404;

@@ -3,6 +3,7 @@
 
 #include <registry.h>
 #include <query.h>
+#include <search.h>
 #include <document.h>
 #include <task.h>
 
