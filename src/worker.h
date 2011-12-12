@@ -48,6 +48,7 @@ namespace superfastmatch{
     void process_performance(const RESTRequest&, RESTResponse&);
     void process_heap(const RESTRequest&, RESTResponse&);
     void process_echo(const RESTRequest&, RESTResponse&);
+    void process_static(const RESTRequest& ,RESTResponse&);
   };
 }
 

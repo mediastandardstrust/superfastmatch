@@ -71,29 +71,29 @@ TEST_F(DocumentQueryTest,PagingTest){
   testQuery(&registry_,"http://test.com/document/?limit=100",100,100,true,"","doctype",false,100);
   
   DocumentQuery query(&registry_,"http://test.com/document/?limit=100");
-  EXPECT_STREQ("/document/?limit=100&order_by=doctype",query.getFirst().c_str());
+  EXPECT_STREQ("",query.getFirst().c_str());
 
   DocumentQuery query2(&registry_,"http://test.com/document/1/?order_by=title&limit=100");
-  EXPECT_STREQ("/document/1/?limit=100&order_by=title",query2.getFirst().c_str());
-  EXPECT_STREQ("/document/1/?limit=100&order_by=title&cursor=Test0000000001:1:1",query2.getPrevious().c_str());
-  EXPECT_STREQ("/document/1/?limit=100&order_by=title&cursor=Test0000000101:1:101",query2.getNext().c_str());
-  EXPECT_STREQ("/document/1/?limit=100&order_by=title&cursor=Test0000000201:1:201",query2.getLast().c_str());
+  EXPECT_STREQ("",query2.getFirst().c_str());
+  EXPECT_STREQ("Test0000000001:1:1",query2.getPrevious().c_str());
+  EXPECT_STREQ("Test0000000101:1:101",query2.getNext().c_str());
+  EXPECT_STREQ("Test0000000201:1:201",query2.getLast().c_str());
   
   DocumentQuery query3(&registry_,"http://test.com/document/1/?order_by=-title&limit=100");
-  EXPECT_STREQ("/document/1/?limit=100&order_by=-title",query3.getFirst().c_str());
-  EXPECT_STREQ("/document/1/?limit=100&order_by=-title&cursor=Test0000000300:1:300",query3.getPrevious().c_str());
-  EXPECT_STREQ("/document/1/?limit=100&order_by=-title&cursor=Test0000000200:1:200",query3.getNext().c_str());
-  EXPECT_STREQ("/document/1/?limit=100&order_by=-title&cursor=Test0000000100:1:100",query3.getLast().c_str());
+  EXPECT_STREQ("",query3.getFirst().c_str());
+  EXPECT_STREQ("Test0000000300:1:300",query3.getPrevious().c_str());
+  EXPECT_STREQ("Test0000000200:1:200",query3.getNext().c_str());
+  EXPECT_STREQ("Test0000000100:1:100",query3.getLast().c_str());
 
   DocumentQuery query4(&registry_,"http://test.com/document/2/?order_by=-title&limit=100");
-  EXPECT_STREQ("/document/2/?limit=100&order_by=-title",query4.getFirst().c_str());
-  EXPECT_STREQ("/document/2/?limit=100&order_by=-title&cursor=Test0000000300:2:300",query4.getPrevious().c_str());
-  EXPECT_STREQ("/document/2/?limit=100&order_by=-title&cursor=Test0000000200:2:200",query4.getNext().c_str());
-  EXPECT_STREQ("/document/2/?limit=100&order_by=-title&cursor=Test0000000100:2:100",query4.getLast().c_str());
+  EXPECT_STREQ("",query4.getFirst().c_str());
+  EXPECT_STREQ("Test0000000300:2:300",query4.getPrevious().c_str());
+  EXPECT_STREQ("Test0000000200:2:200",query4.getNext().c_str());
+  EXPECT_STREQ("Test0000000100:2:100",query4.getLast().c_str());
   
   DocumentQuery query5(&registry_,"http://test.com/document/2/?order_by=-title&limit=100&cursor=Test0000000201:2:201");
-  EXPECT_STREQ("/document/2/?limit=100&order_by=-title",query5.getFirst().c_str());
-  EXPECT_STREQ("/document/2/?limit=100&order_by=-title&cursor=Test0000000300:2:300",query5.getPrevious().c_str());
-  EXPECT_STREQ("/document/2/?limit=100&order_by=-title&cursor=Test0000000101:2:101",query5.getNext().c_str());
-  EXPECT_STREQ("/document/2/?limit=100&order_by=-title&cursor=Test0000000100:2:100",query5.getLast().c_str());
+  EXPECT_STREQ("",query5.getFirst().c_str());
+  EXPECT_STREQ("Test0000000300:2:300",query5.getPrevious().c_str());
+  EXPECT_STREQ("Test0000000101:2:101",query5.getNext().c_str());
+  EXPECT_STREQ("Test0000000100:2:100",query5.getLast().c_str());
 }

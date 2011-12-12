@@ -43,6 +43,7 @@ namespace superfastmatch{
     InstrumentGroupPtr performance;
     
     void fillDictionary(TemplateDictionary* dict);
+    void fillJSONDictionary(TemplateDictionary* dict,const bool includeDoc);
     
     // Factory methods
     static SearchPtr createTemporarySearch(Registry* registry,const string& text);

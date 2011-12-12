@@ -44,6 +44,8 @@ class MockRegistry : public Registry {
       size_t());
   MOCK_CONST_METHOD0(getTimeout,
       double());
+  MOCK_CONST_METHOD0(getPublicPath,
+      string());
   MOCK_CONST_METHOD0(getDataPath,
       string());
   MOCK_CONST_METHOD0(getAddress,

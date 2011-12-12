@@ -1,12 +1,7 @@
 #include "worker.h"
 
 namespace superfastmatch{
-  
-  // Register standard includes
-	RegisterTemplateFilename(HEADER, "header.tpl");
-	RegisterTemplateFilename(FOOTER, "footer.tpl");
-
-	// Register pages
+  // Register pages
 	RegisterTemplateFilename(EMPTY_PAGE, "empty_page.tpl");
 	RegisterTemplateFilename(ECHO_PAGE, "echo_page.tpl");
 	RegisterTemplateFilename(ERROR_PAGE, "error_page.tpl");
@@ -22,6 +17,8 @@ namespace superfastmatch{
 	RegisterTemplateFilename(HELP_PAGE, "help_page.tpl");
 	RegisterTemplateFilename(HISTOGRAMS_PAGE, "histograms_page.tpl");
 	RegisterTemplateFilename(PERFORMANCE_PAGE, "performance_page.tpl");
+	RegisterTemplateFilename(SUCCESS_JSON, "JSON/success.tpl");
+	RegisterTemplateFilename(FAILURE_JSON, "JSON/failure.tpl");
 	
   struct RESTRequest{
     const HTTPClient::Method& verb;
@@ -87,16 +84,22 @@ namespace superfastmatch{
     }
   };
   
-  struct RESTResponse{
+  class RESTResponse{
+  public:
     map<string, string>& resheads;
     TemplateDictionary dict;
     string template_name;
     int32_t code;
+    string content_type;
     stringstream message;
+    string& body;
     
-    RESTResponse(map<string,string>& resheads):
+    RESTResponse(map<string,string>& resheads,string& resbody):
     resheads(resheads),
-    dict("response"){}
+    dict("response"),
+    content_type("text/html"),
+    body(resbody)
+    {}
   };
 
   Worker::Worker(Registry* registry):
@@ -126,7 +129,7 @@ namespace superfastmatch{
   {
     double start = kyotocabinet::time();
     RESTRequest req(method,path,reqheads,reqbody,misc);
-    RESTResponse res(resheads);
+    RESTResponse res(resheads,resbody);
     
     if(req.resource=="document"){
       process_document(req,res);  
@@ -161,23 +164,14 @@ namespace superfastmatch{
     else if(req.resource=="search"){
       process_search(req,res);
     }else{
-      process_search(req,res);
+      process_static(req,res);
     }
-    
-    res.dict.AddIncludeDictionary("HEADER")->SetFilename(HEADER);
-    res.dict.AddIncludeDictionary("FOOTER")->SetFilename(FOOTER);
     registry_->getTemplateCache()->ExpandWithData(res.template_name,DO_NOT_STRIP,&res.dict,NULL,&resbody);
 
     stringstream time;
     time << setiosflags(ios::fixed) << setprecision(4) << kyotocabinet::time()-start << " secs";
-    resheads["content-type"] = "text/html";
+    resheads["content-type"] = res.content_type;
     resheads["X-response-time"] = time.str();
-    res.message << " Response Time: " << time.str() ;
-    if (res.code==500 || res.code==404){
-      serv->log(Logger::ERROR,res.message.str().c_str());
-    }else{
-      serv->log(Logger::INFO,res.message.str().c_str());
-    }
     return res.code;
   }
 
@@ -186,18 +180,21 @@ namespace superfastmatch{
     switch (req.verb){
       case HTTPClient::MPOST:{
           SearchPtr search=Search::createTemporarySearch(registry_,req.reqbody);
-          search->fillDictionary(&res.dict);
+          search->fillJSONDictionary(&res.dict,false);
+          res.content_type="application/json";
           res.code=200;
-          res.template_name=RESULTS_PAGE;
+          res.template_name=SUCCESS_JSON;
         }
         break;
       case HTTPClient::MGET:
         res.template_name=SEARCH_PAGE;
+        res.content_type="text/html";
         res.code=200;
         break;
       default:
         res.template_name=ERROR_PAGE;
-        res.code=500;
+        res.content_type="text/html";
+        res.code=200;
         break;
     }
   }
@@ -212,20 +209,24 @@ namespace superfastmatch{
         case HTTPClient::MHEAD:
           {
             SearchPtr search=Search::getPermanentSearch(registry_,doctype,docid);
-            if (search->doc){
-              res.message << "Getting document: " << *search->doc;
-              if(req.verb==HTTPClient::MGET){
-                res.template_name=DOCUMENT_PAGE;
-                search->fillDictionary(&res.dict);
-                search->doc->fillDocumentDictionary(&res.dict);
-              }
-              res.code=200;
-            }else{
-              res.message << "Error getting document: " << *search->doc;
-              res.template_name=NOT_FOUND_PAGE;
-              res.dict.SetValue("ITEM","Document");
-              res.code=404;
-            } 
+            search->fillJSONDictionary(&res.dict,true);
+            res.content_type="application/json";
+            res.code=200;
+            res.template_name=SUCCESS_JSON;
+            // if (search->doc){
+            //   res.message << "Getting document: " << *search->doc;
+            //   if(req.verb==HTTPClient::MGET){
+            //     res.template_name=DOCUMENT_PAGE;
+            //     search->fillDictionary(&res.dict);
+            //     search->doc->fillDocumentDictionary(&res.dict);
+            //   }
+            //   res.code=200;
+            // }else{
+            //   res.message << "Error getting document: " << *search->doc;
+            //   res.template_name=NOT_FOUND_PAGE;
+            //   res.dict.SetValue("ITEM","Document");
+            //   res.code=404;
+            // } 
           }
           break;          
         case HTTPClient::MPUT:
@@ -260,33 +261,16 @@ namespace superfastmatch{
     else{
       DocumentQuery query(registry_,req.url);
       if (query.isValid()){
-        query.fillListDictionary(&res.dict);
-        res.template_name=DOCUMENTS_PAGE;
+        query.fillJSONDictionary(&res.dict);
+        res.content_type="application/json";
+        res.template_name=SUCCESS_JSON;
         res.code=200;
       }else{
-        res.template_name=ERROR_PAGE;
+        res.content_type="application/json";
+        res.template_name=FAILURE_JSON;
         res.code=500;
       }
     }
-    // else if (req.first_is_numeric){
-    //   uint32_t doctype=kc::atoi(req.first_id.c_str());
-    //   uint32_t docid=0;
-    //   if (req.cursor_is_numeric){
-    //     docid=kc::atoi(req.cursor.c_str());
-    //   }
-    //   registry_->getDocumentManager()->fillListDictionary(&res.dict,doctype,docid);
-    //   res.template_name=DOCUMENTS_PAGE;
-    //   res.code=200;
-    // }
-    // else{
-    //   uint32_t docid=0;
-    //   if (req.cursor_is_numeric){
-    //     docid=kc::atoi(req.cursor.c_str());
-    //   }
-    //   registry_->getDocumentManager()->fillListDictionary(&res.dict,0,docid);
-    //   res.template_name=DOCUMENTS_PAGE;
-    //   res.code=200;
-    // }
   }
   
   void Worker::process_help(const RESTRequest& req,RESTResponse& res){
@@ -408,5 +392,81 @@ namespace superfastmatch{
     res.dict.SetTemplateGlobalValue("TITLE","Status");
     res.template_name=STATUS_PAGE;
     res.code=200;
+  }
+  
+  static const char* media_type(const std::string& url) {
+    static const char* types[] = {
+      "txt", "text/plain", "text", "text/plain", "asc", "text/plain",
+      "js", "application/javascript","css","text/css",
+      "html", "text/html", "htm", "text/html",
+      "xml", "application/xml",
+      "xhtml", "application/xml+xhtml",
+      "gz", "application/x-gzip",
+      "bz2", "application/x-bzip2",
+      "zip", "application/zip",
+      "pdf", "application/pdf",
+      "png", "image/png",
+      "jpg", "image/jpeg", "jpeg", "image/jpeg",
+      "gif", "image/gif",
+      NULL
+    };
+    const char* rp = url.c_str();
+    const char* pv = std::strrchr(rp, '/');
+    if (pv) rp = pv + 1;
+    pv = std::strrchr(rp, '.');
+    if (pv) {
+      rp = pv + 1;
+      for (int32_t i = 0; types[i]; i += 2) {
+        if (!kc::stricmp(rp, types[i])) return types[i+1];
+      }
+    }
+    return NULL;
+  }
+  
+  // Lifted from ktuilserv.cc in Kyoto Tycoon
+  void Worker::process_static(const RESTRequest& req,RESTResponse& res){
+    const std::string& lpath = kt::HTTPServer::localize_path(req.path);
+    std::string apath = registry_->getPublicPath() + (lpath.empty() ? "" : kc::File::PATHSTR) + lpath;
+    bool dir = kc::strbwm(req.url.c_str(), "/");
+    if (req.verb == kt::HTTPClient::MGET) {
+      kc::File::Status sbuf;
+      if (kc::File::status(apath, &sbuf)) {
+        if (dir && sbuf.isdir) {
+          const std::string& ipath = apath + kc::File::PATHSTR + "index.html";
+          if (kc::File::status(ipath,&sbuf)) {
+            apath = ipath;
+          }
+        }
+        if (sbuf.isdir) {
+          res.code = 403;
+        } else {
+          map<string,string>::const_iterator etag=req.reqheads.find("if-none-match");
+          if ((etag!=req.reqheads.end())&&(etag->second.compare(toString(sbuf.mtime))==0)){
+            res.code=304;
+          }else{
+            int64_t size;
+            char* buf = kc::File::read_file(apath, &size, 256LL << 20);
+            if (buf) {
+              res.code = 200;
+              res.resheads["ETag"]=toString(sbuf.mtime);
+              const char* type = media_type(apath);
+              if (type) res.content_type = type;
+              res.body.append(buf, size);
+              delete[] buf;
+            } else {
+              res.code = 403;
+            } 
+          }
+        }
+      } else {
+        res.code = 404;
+      }
+    } else {
+      res.code = 403;
+    }
+    if (res.code!=200){
+      res.content_type = "text/plain";
+      kc::strprintf(&res.body, "%s\n", kt::HTTPServer::status_name(res.code));
+    }
   }
 }

@@ -34,6 +34,7 @@ namespace superfastmatch
     uint32_t right;
     string text;
     uint32_t length;
+    uint32_t hash;
     
     Result(uint32_t left,uint32_t right,string text,uint32_t length):
     left(left),
@@ -68,6 +69,7 @@ namespace superfastmatch
     string getFromResult(size_t index);
     string getToResult(size_t index);
     size_t getLength(size_t index);
+    void fillJSONDictionary(TemplateDictionary* dict);
     void fillItemDictionary(TemplateDictionary* dict);
     
   private:

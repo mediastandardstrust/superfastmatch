@@ -3,6 +3,8 @@
 
 namespace superfastmatch
 {
+  RegisterTemplateFilename(DOCUMENTS_JSON, "JSON/documents.tpl");
+
   ostream& operator<<(ostream &stream,const DocPair& pair){
     stream << "Document("<< pair.doc_type << "," << pair.doc_id <<")";
     return stream;
@@ -221,19 +223,21 @@ namespace superfastmatch
   }
   
   const string DocumentQuery::getCommand(const DocPair& pair) const{
-    return getCommand()+"&cursor="+getCursor(pair);
+    return getCursor(pair);
+    // return getCommand()+"&cursor="+getCursor(pair);
   }
   
   const string DocumentQuery::getCommand() const{
-    string command(path_+"?limit="+toString(limit_));
-    if (!order_by_.empty()){
-      command+="&order_by=";
-      if(desc_){
-        command+="-"; 
-      }
-      command+=order_by_;
-    }
-    return command;
+    return "";
+    // string command(path_+"?limit="+toString(limit_));
+    // if (!order_by_.empty()){
+    //   command+="&order_by=";
+    //   if(desc_){
+    //     command+="-"; 
+    //   }
+    //   command+=order_by_;
+    // }
+    // return command;
   }
   
   vector<DocPair> DocumentQuery::getDocPairs(const DocTypeRange& range, const string& order_by,const string& cursor, const uint64_t limit, const bool desc) const{
@@ -274,6 +278,41 @@ namespace superfastmatch
     delete cur;
     return pairs;
   } 
+  
+  void DocumentQuery::fillJSONDictionary(TemplateDictionary* dict){
+    TemplateDictionary* documents_dict=dict->AddIncludeDictionary("DATA");
+    documents_dict->SetFilename(DOCUMENTS_JSON);
+    set<string> keys_set;
+    vector<DocumentPtr> docs;
+    vector<string> keys;
+    for(vector<DocPair>::const_iterator it=getSourceDocPairs().begin(),ite=getSourceDocPairs().end();it!=ite;++it){
+      DocumentPtr doc=registry_->getDocumentManager()->getDocument(it->doc_type,it->doc_id,DocumentManager::META);
+      docs.push_back(doc);
+      if (doc->getMetaKeys(keys)){
+        for (vector<string>::iterator it=keys.begin();it!=keys.end();it++){
+          keys_set.insert(*it);
+        }
+      }
+    }
+    for (set<string>::const_iterator it=keys_set.begin(),ite=keys_set.end();it!=ite;++it){
+      TemplateDictionary* fields_dict=documents_dict->AddSectionDictionary("FIELDS");
+      fields_dict->SetValue("FIELD",*it);
+    }
+    for (vector<DocumentPtr>::iterator it=docs.begin(),ite=docs.end();it!=ite;++it){
+      TemplateDictionary* doc_dict = documents_dict->AddSectionDictionary("DOCUMENT");
+      for (set<string>::const_iterator it2=keys_set.begin(),ite2=keys_set.end();it2!=ite2;++it2){
+        TemplateDictionary* meta_dict=doc_dict->AddSectionDictionary("META");
+        meta_dict->SetValue("KEY",*it2);
+        meta_dict->SetValue("VALUE",(*it)->getMeta(&(*it2->c_str())));
+      }
+    }
+    documents_dict->SetIntValue("TOTAL",registry_->getDocumentDB()->count());
+    documents_dict->SetValue("CURRENT",getCursor());
+    documents_dict->SetValue("FIRST",getFirst());
+    documents_dict->SetValue("LAST",getLast());
+    documents_dict->SetValue("PREVIOUS",getPrevious());
+    documents_dict->SetValue("NEXT",getNext());
+  }
   
   void DocumentQuery::fillListDictionary(TemplateDictionary* dict){
     dict->SetValueAndShowSection("PAGE",getFirst(),"FIRST");

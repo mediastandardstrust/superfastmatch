@@ -41,6 +41,7 @@ namespace superfastmatch{
     virtual size_t getMaxDistance() const=0;
     virtual double getTimeout() const=0;
     virtual string getDataPath() const=0;
+    virtual string getPublicPath() const=0;
     virtual string getAddress() const=0;
     virtual uint32_t getPort() const=0;
 
@@ -114,6 +115,7 @@ namespace superfastmatch{
     size_t getMaxPostingThreshold() const;
     size_t getMaxDistance() const;
     string getDataPath() const;
+    string getPublicPath() const;
     string getAddress() const;
     uint32_t getPort() const;
     double getTimeout() const;

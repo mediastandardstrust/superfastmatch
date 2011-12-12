@@ -1,8 +1,10 @@
 #include <search.h>
 #include "document.h"
+#include "association.h"
 
 namespace superfastmatch{
   RegisterTemplateFilename(ASSOCIATION, "association.tpl");
+  RegisterTemplateFilename(SEARCH_JSON, "JSON/search.tpl");
 
   Search::Search(Registry* registry,DocumentPtr doc,const string& name):
   registry_(registry),
@@ -61,6 +63,18 @@ namespace superfastmatch{
     association_dict->SetFilename(ASSOCIATION);
     for (vector<AssociationPtr>::iterator it=associations.begin(),ite=associations.end();it!=ite;++it){
       (*it)->fillItemDictionary(association_dict);
+    }
+  }
+
+  void Search::fillJSONDictionary(TemplateDictionary* dict,const bool includeDoc){
+    TemplateDictionary* searchDict=dict->AddIncludeDictionary("DATA");
+    searchDict->SetFilename(SEARCH_JSON);
+    for (vector<AssociationPtr>::iterator it=associations.begin(),ite=associations.end();it!=ite;++it){
+      (*it)->fillJSONDictionary(searchDict);
+    }
+    if(includeDoc){
+      TemplateDictionary* sourceDict=searchDict->AddSectionDictionary("SOURCE");
+      sourceDict->SetValue("TEXT",doc->getText());
     }
   }
 }

@@ -1,5 +1,4 @@
 {{>HEADER}}
-	<h1>Documents</h1>
 	<table>
 		<caption>
 			{{#FIRST}}<a href="{{PAGE}}">First Page</a>{{/FIRST}}

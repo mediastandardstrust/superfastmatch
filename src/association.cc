@@ -307,6 +307,24 @@ namespace superfastmatch
     return results_->at(index).length;
   }
   
+  void Association::fillJSONDictionary(TemplateDictionary* dict){
+    TemplateDictionary* docDict=dict->AddSectionDictionary("DOCUMENT");
+    vector<string> keys;
+    if (to_document_->getMetaKeys(keys)){
+      for (vector<string>::iterator it=keys.begin();it!=keys.end();it++){
+        TemplateDictionary* metaDict=docDict->AddSectionDictionary("META");
+        metaDict->SetValue("KEY",*it);
+        metaDict->SetValue("VALUE",to_document_->getMeta(&(*it->c_str())));
+      } 
+    }
+    for(vector<Result>::const_iterator it=results_->begin(),ite=results_->end();it!=ite;++it){
+      TemplateDictionary* fragmentDict=docDict->AddSectionDictionary("FRAGMENT");
+      fragmentDict->SetIntValue("FROM",it->left);
+      fragmentDict->SetIntValue("TO",it->right);
+      fragmentDict->SetIntValue("LENGTH",it->length);
+    }
+  }
+  
   void Association::fillItemDictionary(TemplateDictionary* dict){
     uint32_t previous_left=numeric_limits<uint32_t>::max();
     uint32_t previous_right=numeric_limits<uint32_t>::max();

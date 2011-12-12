@@ -92,6 +92,7 @@ namespace superfastmatch
     bool isDescending();
     uint64_t getLimit();
     void fillListDictionary(TemplateDictionary* dict);
+    void fillJSONDictionary(TemplateDictionary* dict);
 
   private:
     const string getCursor(const DocPair& pair)const;

@@ -36,6 +36,8 @@ namespace superfastmatch{
   DEFINE_int32(num_results,10,"Minimum number of documents to associate with");
  
   DEFINE_string(data_path,"data","Path to store data files");
+
+  DEFINE_string(public_path,"public","Path to store static files for web serving");
   
   DEFINE_bool(reset,false,"Reset index and remove all documents");
 
@@ -116,6 +118,10 @@ namespace superfastmatch{
   
   string FlagsRegistry::getDataPath() const{
     return FLAGS_data_path;
+  };
+  
+  string FlagsRegistry::getPublicPath() const{
+    return FLAGS_public_path;
   };
   
   string FlagsRegistry::getAddress() const{
