@@ -1,0 +1,88 @@
+@mixin extjs-form {
+    // Remove blue focus halo from Safari/Chrome
+    // Actually, this is in reset-extras...
+    // .#{$prefix}webkit {
+    //     *:focus {
+    //         outline: none !important;
+    //     }
+    // }
+    
+    //form items
+    .#{$prefix}form-item {
+        display: block;
+        // @tag iezoomhack
+        position: relative;
+        margin-bottom: 10px;
+    }
+    
+    // No margins when inside an Editor
+    .#{$prefix}editor .#{$prefix}form-item {
+        margin: 0;
+    }
+    
+    .#{$prefix}form-item-label {
+        float: left;
+        padding: 4px 0 0;
+        z-index: 2;
+        position: relative;
+        font-size: $form-label-font-size;
+        @extend .no-select;
+    }
+    
+    .#{$prefix}form-item-label-left {
+        text-align: right;
+    }
+
+    .#{$prefix}form-item-label-top {
+        float: none;
+        clear: none;
+        padding: 0;
+        display: block;
+    }
+
+    .#{$prefix}form-item-label-right {
+        float: left;
+        text-align: right;
+    }
+
+    .#{$prefix}form-item-body {
+        position: relative;
+        float: left;
+    }
+
+    .#{$prefix}form-invalid-under {
+        padding: 2px 2px 2px 18px;
+        clear: left;
+
+        color: $form-error-msg-color;
+        font: $form-error-msg-font;
+        line-height: $form-error-msg-line-height;
+
+        background: no-repeat 0 2px;
+        background-image: theme-background-image($theme-name, $form-exclamation-icon);
+    }
+    
+    .#{$prefix}form-invalid-icon {
+        width: 16px;
+        height: 16px;
+//        overflow: hidden;
+//        text-indent: -9999px;
+        
+        position: absolute;
+        left: 0;
+        top: 0;
+        
+        margin: 3px 3px 0 3px;
+
+//      @todo this should use pictos
+//        @include pictos('!', $size: 21px, $include-states: false, $color: #FC0D1B);
+        
+        background: no-repeat;
+        background-image: theme-background-image($theme-name, $form-exclamation-icon);
+
+        ul {
+            // Prevent inner elements from interfering with QuickTip hovering
+            display: none;
+        }
+    }
+}
