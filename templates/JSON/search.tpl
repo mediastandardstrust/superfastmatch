@@ -1,7 +1,7 @@
 {{%AUTOESCAPE context="JSON"}}
 "documents"   :{
                 "metaData"  :{
-                                "fields"      : ['doctype','docid','characters','title','group']
+                                "fields"      : [{{#FIELDS}}"{{FIELD}}"{{#FIELDS_separator}},{{/FIELDS_separator}}{{/FIELDS}}]
                 },
                 "rows"        : [
                                     {{#DOCUMENT}}
@@ -9,7 +9,7 @@
                                         {{#META}}
                                         "{{KEY}}":"{{VALUE}}",
                                         {{/META}}
-                                        "fragments" : [{{#FRAGMENT}}[{{FROM}},{{TO}},{{LENGTH}}]{{#FRAGMENT_separator}},{{/FRAGMENT_separator}}{{/FRAGMENT}}]
+                                        "fragments" : [{{#FRAGMENT}}[{{FROM}},{{TO}},{{LENGTH}},{{HASH}}]{{#FRAGMENT_separator}},{{/FRAGMENT_separator}}{{/FRAGMENT}}]
                                     }{{#DOCUMENT_separator}},{{/DOCUMENT_separator}}
                                     {{/DOCUMENT}}
                                 ]

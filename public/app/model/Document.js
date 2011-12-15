@@ -16,7 +16,7 @@ Ext.define('Superfastmatch.model.Document', {
     ],
     statics:{
         getColumns: function(){
-            var columns=[{header:'Doc Type',dataIndex:'doctype'},{header:'Doc Id',dataIndex:'docid'},{header:'Characters',dataIndex:'characters'}];
+            var columns=[{header:'Doc Type',dataIndex:'doctype',width:15},{header:'Doc Id',dataIndex:'docid',width:15},{header:'Characters',dataIndex:'characters',width:20}];
             this.getFields().each(function(field){
                 if ((field.name!='doctype')&&(field.name!='docid')&&(field.name!='characters')){
                     columns.push({header:field.name.humanize(),dataIndex:field.name});

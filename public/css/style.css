@@ -50,3 +50,7 @@ pre.wrap {
   white-space: -o-pre-wrap;    /* Opera 7 */
   word-wrap: break-word;       /* Internet Explorer 5.5+ */
 }
+
+span.highlight{
+  background-color: #F9A803;
+}

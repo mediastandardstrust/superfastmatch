@@ -48,14 +48,12 @@ namespace superfastmatch
                                                           (RESULTS,"Results"));
   }
   
-  bool result_sorter(Result const& lhs,Result const& rhs ){
-    if (lhs.length!=rhs.length)
-      return lhs.length > rhs.length;
-    if (lhs.text.compare(rhs.text)!=0)
-      return lhs.text < rhs.text;
-    if (lhs.left!=rhs.left)
-      return lhs.left < rhs.left;
-    return lhs.right < rhs.right;
+  bool result_sorter_left(Result const& lhs,Result const& rhs){
+    return lhs.left< rhs.left;
+  }
+  
+  bool result_sorter_right(Result const& lhs,Result const& rhs){
+    return lhs.right< rhs.right;
   }
   
   Association::Association(Registry* registry,DocumentPtr from_document,DocumentPtr to_document):
@@ -108,12 +106,15 @@ namespace superfastmatch
       flip=true;
     }
     size_t offset=0;
-    uint64_t left,right,length;
+    uint64_t left,right,length,uc_left,uc_right,uc_length;
     while(offset<value.size()){
       offset+=kc::readvarnum(value.data()+offset,5,flip?&right:&left);
       offset+=kc::readvarnum(value.data()+offset,5,flip?&left:&right);
       offset+=kc::readvarnum(value.data()+offset,5,&length);
-      results_->push_back(Result(left,right,from_document_->getText().substr(left,length),length));
+      offset+=kc::readvarnum(value.data()+offset,5,flip?&uc_right:&uc_left);
+      offset+=kc::readvarnum(value.data()+offset,5,flip?&uc_left:&uc_right);
+      offset+=kc::readvarnum(value.data()+offset,5,&uc_length);
+      results_->push_back(Result(left,right,length,uc_left,uc_right,uc_length,from_document_->getText().substr(left,length)));
     }
     return true;
   }
@@ -128,6 +129,9 @@ namespace superfastmatch
       offset+=kc::writevarnum(value+offset,results_->at(i).left);
       offset+=kc::writevarnum(value+offset,results_->at(i).right);
       offset+=kc::writevarnum(value+offset,results_->at(i).length);
+      offset+=kc::writevarnum(value+offset,results_->at(i).uc_left);
+      offset+=kc::writevarnum(value+offset,results_->at(i).uc_right);
+      offset+=kc::writevarnum(value+offset,results_->at(i).uc_length);
     }
     if (not registry_->getAssociationDB()->set(getKey().data(),16,value,offset)){
       success=false;
@@ -262,7 +266,7 @@ namespace superfastmatch
 
        // Keep if text is as long as window size
        if (length>=window_size){
-         Result result(left,right,original_text.substr(left,length),length);
+         Result result(left,right,length,0,0,0,original_text.substr(left,length));
          results_->push_back(result);
          getInstrument()->incrementCounter(TOTAL_CHARACTERS,length);
          getInstrument()->incrementCounter(RESULTS);
@@ -272,11 +276,43 @@ namespace superfastmatch
          // logger->log(Logger::DEBUG,kc::strprintf("Match too short: \"%s\"",text.c_str()).c_str());
        }
     }
-    sort(results_->begin(),results_->end(),result_sorter);
+    
+    // Fix up unicode sections
+    sort(results_->begin(),results_->end(),result_sorter_right);
+    size_t to_cursor=0;
+    size_t to_uc_cursor=0;
+    const char* to_text=to_document_->getText().data();
+    for(vector<Result>::iterator it=results_->begin(),ite=results_->end();it!=ite;++it){
+      while((it->right)>to_cursor){
+        u8_inc(to_text,&to_cursor);
+        to_uc_cursor++;
+      }
+      it->uc_right=to_uc_cursor;
+      size_t length_cursor=to_cursor;
+      while((it->length+to_cursor)>length_cursor){
+        u8_inc(to_text,&length_cursor);
+        it->uc_length++;
+      }
+    }
+    
+    sort(results_->begin(),results_->end(),result_sorter_left);
+    size_t from_cursor=0;
+    size_t from_uc_cursor=0;
+    const char* from_text=from_document_->getText().data();
+    for(vector<Result>::iterator it=results_->begin(),ite=results_->end();it!=ite;++it){
+      while((it->left)>from_cursor){
+        u8_inc(from_text,&from_cursor);
+        from_uc_cursor++;
+      }
+      it->uc_left=from_uc_cursor;
+    }
+    
+    // Check for flip
     if (invert){
      from_document_.swap(to_document_);
      for (vector<Result>::iterator it=results_->begin(),ite=results_->end();it!=ite;++it){
        swap(it->left,it->right);
+       swap(it->uc_left,it->uc_right);
      }
     }
     delete bloom;
@@ -286,7 +322,7 @@ namespace superfastmatch
   size_t Association::getTotalLength(){
     size_t total=0;
     for (size_t i=0;i<results_->size();i++){
-      total+=getLength(i);
+      total+=results_->at(i).length;
     }
     return total;
   }
@@ -294,20 +330,20 @@ namespace superfastmatch
   size_t Association::getResultCount(){
     return results_->size();
   }
+
+  const Result& Association::getResult(const size_t index){
+    return results_->at(index);
+  }
   
-  string Association::getFromResult(size_t index){
+  const string Association::getFromResultText(size_t index){
     return from_document_->getText().substr(results_->at(index).left,results_->at(index).length);
   }
   
-  string Association::getToResult(size_t index){
+  const string Association::getToResultText(size_t index){
     return to_document_->getText().substr(results_->at(index).right,results_->at(index).length);
   }
   
-  size_t Association::getLength(size_t index){
-    return results_->at(index).length;
-  }
-  
-  void Association::fillJSONDictionary(TemplateDictionary* dict){
+  void Association::fillJSONDictionary(TemplateDictionary* dict,set<string>& metadata){
     TemplateDictionary* docDict=dict->AddSectionDictionary("DOCUMENT");
     vector<string> keys;
     if (to_document_->getMetaKeys(keys)){
@@ -315,47 +351,15 @@ namespace superfastmatch
         TemplateDictionary* metaDict=docDict->AddSectionDictionary("META");
         metaDict->SetValue("KEY",*it);
         metaDict->SetValue("VALUE",to_document_->getMeta(&(*it->c_str())));
-      } 
+        metadata.insert(*it);
+      }
     }
     for(vector<Result>::const_iterator it=results_->begin(),ite=results_->end();it!=ite;++it){
       TemplateDictionary* fragmentDict=docDict->AddSectionDictionary("FRAGMENT");
-      fragmentDict->SetIntValue("FROM",it->left);
-      fragmentDict->SetIntValue("TO",it->right);
-      fragmentDict->SetIntValue("LENGTH",it->length);
-    }
-  }
-  
-  void Association::fillItemDictionary(TemplateDictionary* dict){
-    uint32_t previous_left=numeric_limits<uint32_t>::max();
-    uint32_t previous_right=numeric_limits<uint32_t>::max();
-    uint32_t previous_length=0;
-    string previous_text="";
-    string text;
-    TemplateDictionary* fragment_dict;
-    TemplateDictionary* left_dict;
-    TemplateDictionary* right_dict;
-    for (size_t i=0;i<results_->size();i++){
-      text=from_document_->getCleanText(results_->at(i).left,results_->at(i).length);
-      if (text.compare(previous_text)!=0){
-        fragment_dict=dict->AddSectionDictionary("FRAGMENT");
-        fragment_dict->SetValue("TITLE",to_document_->getMeta("title"));
-        fragment_dict->SetIntValue("DOC_TYPE",to_document_->doctype());
-        fragment_dict->SetIntValue("DOC_ID",to_document_->docid());
-        fragment_dict->SetIntValue("LENGTH",results_->at(i).length);
-        fragment_dict->SetValue("TEXT",from_document_->getText().substr(results_->at(i).left,results_->at(i).length));
-      }
-      if (previous_left!=results_->at(i).left || previous_length!=results_->at(i).length){
-        left_dict=fragment_dict->AddSectionDictionary("LEFT_POSITIONS");
-        left_dict->SetIntValue("LEFT_POSITION",results_->at(i).left);
-      }
-      if(previous_right!=results_->at(i).right || previous_length!=results_->at(i).length){
-        right_dict=fragment_dict->AddSectionDictionary("RIGHT_POSITIONS");
-        right_dict->SetIntValue("RIGHT_POSITION",results_->at(i).right);
-      }
-      previous_text=text;
-      previous_left=results_->at(i).left;
-      previous_right=results_->at(i).right;
-      previous_length=results_->at(i).length;
+      fragmentDict->SetIntValue("FROM",it->uc_left);
+      fragmentDict->SetIntValue("TO",it->uc_right);
+      fragmentDict->SetIntValue("LENGTH",it->uc_length);
+      fragmentDict->SetIntValue("HASH",it->hash);
     }
   }
   

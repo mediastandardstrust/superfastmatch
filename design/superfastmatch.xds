@@ -360,6 +360,7 @@
             "codeClass": null,
             "userConfig": {
                 "loader": "{\n       scripts: true,\nloadMask:true\n}\n",
+                "autoScroll": true,
                 "title": null,
                 "designer|userClassName": "HTMLPanel",
                 "designer|userAlias": "HTMLPanel"
@@ -391,7 +392,8 @@
                     },
                     "codeClass": null,
                     "userConfig": {
-                        "id": "Text",
+                        "id": null,
+                        "itemId": "SearchText",
                         "margin": null,
                         "name": "text",
                         "fieldLabel": "Text",

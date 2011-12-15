@@ -1,6 +1,6 @@
 Ext.define('Superfastmatch.model.Fragment', {
     extend: 'Ext.data.Model',
-    fields: ['from','to','length'],
+    fields: ['from','to','length','hash'],
     associations: [
         { type: 'belongsTo', model: 'Superfastmatch.model.Document',getterName: 'getDocument' }
     ],

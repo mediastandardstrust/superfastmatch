@@ -37,8 +37,11 @@ namespace superfastmatch{
 
   SearchPtr Search::getPermanentSearch(Registry* registry,const uint32_t doctype,const uint32_t docid){
     DocumentPtr doc=registry->getDocumentManager()->getDocument(doctype,docid,DocumentManager::TEXT|DocumentManager::META);
-    SearchPtr search=SearchPtr(new Search(registry,doc,"Get Permanent Search"));
-    search->associations=registry->getAssociationManager()->getAssociations(doc,DocumentManager::META);
+    SearchPtr search;
+    if (doc){
+      search=SearchPtr(new Search(registry,doc,"Get Permanent Search"));
+      search->associations=registry->getAssociationManager()->getAssociations(doc,DocumentManager::META);      
+    }
     return search;
   }
   
@@ -58,19 +61,16 @@ namespace superfastmatch{
     }
   }
   
-  void Search::fillDictionary(TemplateDictionary* dict){
-    TemplateDictionary* association_dict=dict->AddIncludeDictionary("ASSOCIATION");
-    association_dict->SetFilename(ASSOCIATION);
-    for (vector<AssociationPtr>::iterator it=associations.begin(),ite=associations.end();it!=ite;++it){
-      (*it)->fillItemDictionary(association_dict);
-    }
-  }
-
   void Search::fillJSONDictionary(TemplateDictionary* dict,const bool includeDoc){
     TemplateDictionary* searchDict=dict->AddIncludeDictionary("DATA");
     searchDict->SetFilename(SEARCH_JSON);
+    set<string> keys;
     for (vector<AssociationPtr>::iterator it=associations.begin(),ite=associations.end();it!=ite;++it){
-      (*it)->fillJSONDictionary(searchDict);
+      (*it)->fillJSONDictionary(searchDict,keys);
+    }
+    for (set<string>::const_iterator it=keys.begin(),ite=keys.end();it!=ite;++it){
+      TemplateDictionary* fields_dict=searchDict->AddSectionDictionary("FIELDS");
+      fields_dict->SetValue("FIELD",*it);
     }
     if(includeDoc){
       TemplateDictionary* sourceDict=searchDict->AddSectionDictionary("SOURCE");

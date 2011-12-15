@@ -32,15 +32,20 @@ namespace superfastmatch
   struct Result{
     uint32_t left;
     uint32_t right;
-    string text;
     uint32_t length;
+    uint32_t uc_left;
+    uint32_t uc_right;
+    uint32_t uc_length;
     uint32_t hash;
     
-    Result(uint32_t left,uint32_t right,string text,uint32_t length):
+    Result(const uint32_t left,const uint32_t right,uint32_t length,const uint32_t uc_left,const uint32_t uc_right,uint32_t uc_length,const string& text):
     left(left),
     right(right),
-    text(text),
-    length(length)
+    length(length),
+    uc_left(uc_left),
+    uc_right(uc_right),
+    uc_length(uc_length),
+    hash(hashmurmur(text.c_str(),text.length()))
     {}
   };
 
@@ -66,11 +71,10 @@ namespace superfastmatch
     string& getReverseKey();
     size_t getTotalLength();
     size_t getResultCount();
-    string getFromResult(size_t index);
-    string getToResult(size_t index);
-    size_t getLength(size_t index);
-    void fillJSONDictionary(TemplateDictionary* dict);
-    void fillItemDictionary(TemplateDictionary* dict);
+    const Result& getResult(size_t index);
+    const string getFromResultText(size_t index);
+    const string getToResultText(size_t index);
+    void fillJSONDictionary(TemplateDictionary* dict,set<string>& metadata);
     
   private:
     bool load();

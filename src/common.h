@@ -53,6 +53,14 @@ namespace superfastmatch{
   // Global consts
   const uint64_t MAX_HASH=(1L<<32)-1;
   
+  // Unicode helpers
+  #define isutf(c) (((c)&0xC0)!=0x80)
+  inline void u8_inc(const char *s, size_t *i)
+  {
+      (void)(isutf(s[++(*i)]) || isutf(s[++(*i)]) ||
+              isutf(s[++(*i)]) || ++(*i));
+  }
+  
   //Global utility functions
   
   #define likely(x) __builtin_expect(!!(x), 1)

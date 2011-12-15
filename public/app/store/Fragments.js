@@ -1,35 +1,40 @@
 Ext.define('Superfastmatch.store.Fragments', {
     extend: 'Ext.data.Store',
-    fields: ['from','to','length','fullText','text',{name:'count',defaultValue:1}],
+    requires: ['Superfastmatch.model.Fragment'],
+    fields: ['from','length','text',{name:'count',defaultValue:1}],
     
     loadDocuments: function(docs){
-        var me=this;
+        var me=this,
+            tempStore=Ext.create('Ext.data.Store',{
+                model: 'Superfastmatch.model.Fragment',
+                getGroupString: function(instance){
+                    return instance.get('hash')+":"+instance.get('length');
+                }
+            });
+        me.suspendEvents();
         me.removeAll();
         Ext.each(docs,function(doc){
             doc.fragments().each(function(fragment){
-                var from=fragment.get('from'),
-                    to=fragment.get('to'),
-                    length=fragment.get('length'),
-                    text=fragment.getText(),
-                    record=me.getAt(me.findExact('fullText',text));
-                    // record=me.getAt(me.find('fullText',text,null,false));
-                    // record=me.getAt(me.findBy(function(record,id){
-                    //     return ((record.get('from')==from)||(record.get('to')==to)) && record.get('length')==length;
-                    // }));
-                if(record){
-                    record.set('count',record.get('count')+1);
-                }else{
-                    me.add({
-                        from: from,
-                        to: to,
-                        length: length,
-                        fullText: text,
-                        text: Ext.String.ellipsis(text,500,true)
-                    });   
-                }
+                tempStore.add(fragment); 
             });
         });
-        this.sync();
-        this.sort();
+        Ext.each(tempStore.getGroups(),function(group){
+            var first=group.children[0];
+            me.add({
+                from: first.get('from'),
+                length: first.get('length'),
+                text: Ext.String.ellipsis(first.getText(),1000,true),
+                count: group.children.length
+            })
+        });
+        me.sort();
+        if (me.count()>500){
+            var limit=me.getAt(500).get('length');
+            me.filterBy(function(record,id){
+               return record.get('length')<limit;
+            });
+        }
+        me.sync();
+        me.resumeEvents();
     }
 });

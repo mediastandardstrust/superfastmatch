@@ -40,6 +40,10 @@ Ext.define('Superfastmatch.controller.Documents', {
               },
               '#DocumentPanel #DocumentBrowser' : {
                   select: this.onSelectDocument
+              },
+              '#DocumentPanel #Results > #Fragments' : {
+                  itemmouseenter: this.onHighlightFragment,
+                  itemmouseleave: this.onUnHighlightFragment
               }
         });
     },
@@ -57,11 +61,28 @@ Ext.define('Superfastmatch.controller.Documents', {
     onSelectDocument: function(selModel,selected){
         var me=this,
             id=selected.get('doctype')+'/'+selected.get('docid')+'/';
+        me.getText().getEl().mask();
+        me.getResults().getEl().mask();
+        me.getDocuments().getEl().mask();
         me.getSearchModel().load(id,{
             url: '/document/',
             success: me.onLoadResults,
             scope: me
         });
+    },
+    
+    onHighlightFragment: function(view,record){
+        var me=this,
+            textEl=me.getText().body.dom,
+            text=(record.length>500)?textEl.innerText.substr(record.get('from'),record.get('length')).trim():record.get('text');
+        highlightText(textEl,text,'highlight',true)
+        Ext.get(Ext.query('span',textEl)).scrollIntoView(textEl);
+    },
+    
+    onUnHighlightFragment: function(view,record){
+        var me=this,
+            textEl=me.getText().body.dom;
+        removeHighlighting('highlight',textEl);
     },
     
     onLoadResults: function(record,operation){
@@ -70,6 +91,7 @@ Ext.define('Superfastmatch.controller.Documents', {
         this.getText().update({text:record.get('text')});
         this.getResults().enable();
         this.getResults().getEl().unmask();
+        this.getDocuments().getEl().unmask();
         this.getDocuments().reconfigure(record.documents(),record.documents().model.getColumns());
         this.getDocuments().doLayout();  
     },

@@ -209,24 +209,16 @@ namespace superfastmatch{
         case HTTPClient::MHEAD:
           {
             SearchPtr search=Search::getPermanentSearch(registry_,doctype,docid);
-            search->fillJSONDictionary(&res.dict,true);
+            if (search){
+              search->fillJSONDictionary(&res.dict,true);
+              res.template_name=SUCCESS_JSON; 
+              res.code=200;
+            }else{
+              res.dict.SetValue("MESSAGE","Document not found");
+              res.template_name=FAILURE_JSON;
+              res.code=404;
+            }
             res.content_type="application/json";
-            res.code=200;
-            res.template_name=SUCCESS_JSON;
-            // if (search->doc){
-            //   res.message << "Getting document: " << *search->doc;
-            //   if(req.verb==HTTPClient::MGET){
-            //     res.template_name=DOCUMENT_PAGE;
-            //     search->fillDictionary(&res.dict);
-            //     search->doc->fillDocumentDictionary(&res.dict);
-            //   }
-            //   res.code=200;
-            // }else{
-            //   res.message << "Error getting document: " << *search->doc;
-            //   res.template_name=NOT_FOUND_PAGE;
-            //   res.dict.SetValue("ITEM","Document");
-            //   res.code=404;
-            // } 
           }
           break;          
         case HTTPClient::MPUT:

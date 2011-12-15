@@ -42,7 +42,6 @@ namespace superfastmatch{
     vector<AssociationPtr> associations;
     InstrumentGroupPtr performance;
     
-    void fillDictionary(TemplateDictionary* dict);
     void fillJSONDictionary(TemplateDictionary* dict,const bool includeDoc);
     
     // Factory methods

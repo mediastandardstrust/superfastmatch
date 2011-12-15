@@ -1,10 +1,11 @@
 Ext.Loader.setConfig({
     enabled: true,
-    disableCaching: false
+    disableCaching: false,
+    paths: {
+        'Ext': 'extjs/src',
+        'Ext.ux': 'app/ux'
+    }
 });
-
-Ext.Loader.setPath('Ext.ux', 'app/ux');
-Ext.Loader.setPath('Ext', 'extjs/src');
 
 Ext.application({
     name: 'Superfastmatch',
