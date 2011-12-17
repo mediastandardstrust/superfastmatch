@@ -113,7 +113,7 @@ namespace superfastmatch{
   };
   
   double FlagsRegistry::getTimeout() const{
-    return 1.0;
+    return 10.0;
   };
   
   string FlagsRegistry::getDataPath() const{

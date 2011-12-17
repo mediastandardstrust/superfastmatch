@@ -1,3 +1,4 @@
+{{%AUTOESCAPE context="JSON"}}
 "metaData"  :{
                 "fields"      : [{{#FIELDS}}"{{FIELD}}"{{#FIELDS_separator}},{{/FIELDS_separator}}{{/FIELDS}}]
 },
