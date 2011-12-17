@@ -1,3 +1,9 @@
+RegExp.escape = function(str)
+{
+  var specials = new RegExp("[.*+?|()\\[\\]{}\\\\]", "g"); // .*+?|()[]{}\
+  return str.replace(specials, "\\$&");
+};
+
 // From http://www.sencha.com/forum/showthread.php?68599-Ultra-Simple-text-highlighting-method
 function highlightText(node, regex, cls, deep) {
     if (typeof(regex) == 'string') {

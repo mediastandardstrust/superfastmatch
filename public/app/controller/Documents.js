@@ -74,7 +74,7 @@ Ext.define('Superfastmatch.controller.Documents', {
     onHighlightFragment: function(view,record){
         var me=this,
             textEl=me.getText().body.dom,
-            text=(record.length>500)?textEl.innerText.substr(record.get('from'),record.get('length')).trim():record.get('text');
+            text=RegExp.escape((record.length>500)?textEl.innerText.substr(record.get('from'),record.get('length')).trim():record.get('text'));
         highlightText(textEl,text,'highlight',true)
         Ext.get(Ext.query('span',textEl)).scrollIntoView(textEl);
     },
