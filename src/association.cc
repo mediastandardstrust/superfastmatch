@@ -139,7 +139,7 @@ namespace superfastmatch
     if (not registry_->getAssociationDB()->set(getReverseKey().data(),16,"x",1)){
       success=false;
     }
-    delete value;
+    delete[] value;
     return success;
   }
   
