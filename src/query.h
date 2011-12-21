@@ -91,13 +91,11 @@ namespace superfastmatch
     const string& getNext();
     bool isDescending();
     uint64_t getLimit();
-    void fillListDictionary(TemplateDictionary* dict);
     void fillJSONDictionary(TemplateDictionary* dict);
 
   private:
     const string getCursor(const DocPair& pair)const;
     const string parseCursor(const string& cursor)const;
-    const string getCommand() const;
     const string getCommand(const DocPair& pair) const;
     vector<DocPair> getDocPairs(const DocTypeRange& range, const string& order_by,const string& cursor, const uint64_t limit, const bool desc) const;
     DISALLOW_COPY_AND_ASSIGN(DocumentQuery);

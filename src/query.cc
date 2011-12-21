@@ -142,7 +142,7 @@ namespace superfastmatch
   
   const string& DocumentQuery::getFirst(){
     if (first_.empty()){
-      first_=getCommand();
+      first_="";
     }
     return first_;
   }
@@ -188,7 +188,9 @@ namespace superfastmatch
     string cursor;
     if (doc){
       cursor=doc->getMeta(order_by_);
-      cursor=kc::urlencode(cursor.c_str(), cursor.size());
+      char* encoded=kc::urlencode(cursor.c_str(), cursor.size());
+      cursor=encoded;
+      delete[] encoded;
       cursor+=":"+toString(doc->doctype())+":"+toString(doc->docid());
     }
     return cursor;
@@ -203,7 +205,9 @@ namespace superfastmatch
     size_t first=cursor.find(":");
     size_t second=cursor.find(":",first+1);
     string parsed=cursor.substr(0,first);
-    parsed = kc::urldecode(parsed.c_str(),&csiz);
+    char* decoded = kc::urldecode(parsed.c_str(),&csiz);
+    parsed=decoded;
+    delete[] decoded;
     parsed=padIfNumber(parsed);
     uint32_t doctype=kc::atoi(cursor.substr(first+1,second).c_str());
     if (doctype!=0){
@@ -224,22 +228,8 @@ namespace superfastmatch
   
   const string DocumentQuery::getCommand(const DocPair& pair) const{
     return getCursor(pair);
-    // return getCommand()+"&cursor="+getCursor(pair);
   }
-  
-  const string DocumentQuery::getCommand() const{
-    return "";
-    // string command(path_+"?limit="+toString(limit_));
-    // if (!order_by_.empty()){
-    //   command+="&order_by=";
-    //   if(desc_){
-    //     command+="-"; 
-    //   }
-    //   command+=order_by_;
-    // }
-    // return command;
-  }
-  
+    
   vector<DocPair> DocumentQuery::getDocPairs(const DocTypeRange& range, const string& order_by,const string& cursor, const uint64_t limit, const bool desc) const{
     kc::PolyDB::Cursor* cur=registry_->getOrderedMetaDB()->cursor();
     vector<DocPair> pairs;
@@ -312,42 +302,5 @@ namespace superfastmatch
     documents_dict->SetValue("LAST",getLast());
     documents_dict->SetValue("PREVIOUS",getPrevious());
     documents_dict->SetValue("NEXT",getNext());
-  }
-  
-  void DocumentQuery::fillListDictionary(TemplateDictionary* dict){
-    dict->SetValueAndShowSection("PAGE",getFirst(),"FIRST");
-    dict->SetValueAndShowSection("PAGE",getLast(),"LAST");
-    dict->SetValueAndShowSection("PAGE",getPrevious(),"PREVIOUS");
-    dict->SetValueAndShowSection("PAGE",getNext(),"NEXT");
-    set<string> keys_set;
-    vector<DocumentPtr> docs;
-    vector<string> keys;
-    for(vector<DocPair>::const_iterator it=getSourceDocPairs().begin(),ite=getSourceDocPairs().end();it!=ite;++it){
-      DocumentPtr doc=registry_->getDocumentManager()->getDocument(it->doc_type,it->doc_id,DocumentManager::META);
-      docs.push_back(doc);
-      if (doc->getMetaKeys(keys)){
-        for (vector<string>::iterator it=keys.begin();it!=keys.end();it++){
-          keys_set.insert(*it);
-        }
-        keys_set.erase("docid");
-        keys_set.erase("doctype");
-      }
-    }
-    for (set<string>::const_iterator it=keys_set.begin(),ite=keys_set.end();it!=ite;++it){
-      TemplateDictionary* keys_dict=dict->AddSectionDictionary("KEYS");
-      keys_dict->SetValue("KEY",*it);
-      if ((!desc_) && (*it==order_by_)){
-        keys_dict->SetValue("DIRECTION","-");
-      }
-    }
-    for (vector<DocumentPtr>::iterator it=docs.begin(),ite=docs.end();it!=ite;++it){
-      TemplateDictionary* doc_dict = dict->AddSectionDictionary("DOCUMENT");
-      doc_dict->SetIntValue("DOC_TYPE",(*it)->doctype());
-      doc_dict->SetIntValue("DOC_ID",(*it)->docid()); 
-      for (set<string>::const_iterator it2=keys_set.begin(),ite2=keys_set.end();it2!=ite2;++it2){
-        TemplateDictionary* values_dict=doc_dict->AddSectionDictionary("VALUES");
-        values_dict->SetValue("VALUE",(*it)->getMeta(&(*it2->c_str())));
-      }
-    }
   }
 }
