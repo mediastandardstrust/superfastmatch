@@ -123,7 +123,9 @@ namespace superfastmatch
     assert((from_document_->doctype()!=0)&&(from_document_->docid()!=0));
     assert((to_document_->doctype()!=0)&&(to_document_->docid()!=0));
     bool success=true;
-    char* value=new char[getResultCount()*5*3];
+    // 6 variable length 32-bit unsigned integers (maximum 5 bytes each)
+    size_t value_size=getResultCount()*5*6;
+    char* value=new char[value_size];
     size_t offset=0;
     for (size_t i=0;i<results_->size();i++){
       offset+=kc::writevarnum(value+offset,results_->at(i).left);
