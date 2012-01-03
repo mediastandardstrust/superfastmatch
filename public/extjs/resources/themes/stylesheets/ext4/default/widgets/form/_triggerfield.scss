@@ -1,6 +1,6 @@
 @mixin extjs-form-triggerfield {
-	.#{$prefix}form-trigger-wrap {
-        float: left;
+    .#{$prefix}form-trigger-wrap {
+        vertical-align: top;
     }
     
     .#{$prefix}form-trigger {
@@ -9,7 +9,6 @@
 		
 		width: $form-trigger-width;
 		height: $form-trigger-height - $form-trigger-border-bottom-width;
-		float: left;
 
 		border-bottom: $form-trigger-border-bottom;
 

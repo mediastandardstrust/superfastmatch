@@ -13,6 +13,16 @@ Ext.define('Ext.Neptune.button.Button', {
     }
 });
 
+Ext.define('Ext.Neptune.tab.Bar', {
+    override: 'Ext.tab.Bar',
+    
+    onAdd: function(tab) {
+        tab.position = this.dock;
+        tab.ui = this.ui;
+        this.callParent(arguments);
+    }
+});
+
 Ext.define('Ext.Neptune.container.ButtonGroup', {
 	override: 'Ext.container.ButtonGroup',
 	
@@ -810,7 +820,7 @@ Ext.define('Ext.Neptune.tree.Panel', {
         }
         
         me.cls = cls.join(' ');
-        me.callParent();
+        Ext.tree.Panel.superclass.initComponent.apply(me, arguments);
         
         view = me.getView();
 

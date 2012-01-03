@@ -3,11 +3,11 @@ Ext.define('Superfastmatch.model.Search', {
     requires: ['Ext.ux.data.TimedJsonReader','Ext.ux.data.PagedProxy'],
     uses: ['Superfastmatch.model.Document'],
 
-    fields: ['doctype','docid','text','responseTime'],
+    fields: ['doctype','docid',{name: 'text',persist: 'false'},'responseTime'],
     proxy:{
         type: 'paged',
-        url: '/search',
-        // appendId: true,
+        url: '/search/',
+        // appendId: false,
         reader: {
             type: 'timedjson'
         }
@@ -30,10 +30,8 @@ Ext.define('Superfastmatch.model.Search', {
             scope=options.scope,
             text=me.get('text');
         options.success=function(record,operation){
-            record = operation.getRecords()[0];
+            var record=operation.getResultSet().records[0];
             record.set('text',text);
-            me.set(record.data);
-            record.dirty = false;
             Ext.callback(success, scope, [record, operation]);
         }
         me.callParent([options]);

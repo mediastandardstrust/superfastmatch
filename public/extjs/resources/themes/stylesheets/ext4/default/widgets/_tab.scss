@@ -58,11 +58,12 @@
                 font-weight: $tab-font-weight;
             }
             @if $tab-font-family {
-                $font-family: $tab-font-family;
+                font-family: $tab-font-family;
             }
 
             color: $tab-color;
             outline: 0 none;
+            overflow-x: visible;
 
             &::-moz-focus-inner {
                 border: 0;

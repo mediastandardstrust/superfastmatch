@@ -18,6 +18,8 @@ Ext.define('Superfastmatch.view.ui.SearchForm', {
     },
     bodyPadding: 10,
     title: 'Search',
+    tpl: Ext.create('Ext.XTemplate','<pre class="wrap">{text}</pre>'),
+    autoScroll: true,
 
     initComponent: function() {
         var me = this;
@@ -28,7 +30,6 @@ Ext.define('Superfastmatch.view.ui.SearchForm', {
                     xtype: 'textareafield',
                     itemId: 'SearchText',
                     name: 'text',
-                    fieldLabel: 'Text',
                     labelAlign: 'top',
                     allowBlank: false,
                     blankText: 'Please paste some text!',

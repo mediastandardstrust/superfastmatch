@@ -13,7 +13,8 @@
                                     }{{#DOCUMENT_separator}},{{/DOCUMENT_separator}}
                                     {{/DOCUMENT}}
                                 ]
-},
+}
 {{#SOURCE}}
+,
 "text"      : "{{TEXT}}"
 {{/SOURCE}}

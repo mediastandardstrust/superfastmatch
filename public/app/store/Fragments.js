@@ -34,7 +34,7 @@ Ext.define('Superfastmatch.store.Fragments', {
                return record.get('length')<limit;
             });
         }
-        me.sync();
+        // me.sync();
         me.resumeEvents();
     }
 });

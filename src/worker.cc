@@ -370,7 +370,7 @@ namespace superfastmatch{
   }
   
   void Worker::process_status(const RESTRequest& req,RESTResponse& res){
-    size_t memory;
+    size_t memory=0;
     const int kBufferSize = 16 << 12;
     char* buffer = new char[kBufferSize];
     // MallocExtension::instance()->GetNumericProperty("generic.current_allocated_bytes",&memory);

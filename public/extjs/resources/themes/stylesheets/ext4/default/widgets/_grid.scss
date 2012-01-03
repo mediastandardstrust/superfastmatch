@@ -181,16 +181,19 @@
     }
 
     //grid rows
-    .#{$prefix}grid-row .#{$prefix}grid-cell {
-        @if $grid-row-cell-color {
-            color: $grid-row-cell-color;
+    .#{$prefix}grid-row {
+        vertical-align: top;
+        .#{$prefix}grid-cell {
+            @if $grid-row-cell-color {
+                color: $grid-row-cell-color;
+            }
+            font: $grid-row-cell-font;
+            background-color: $grid-row-cell-background;
+            border-color: $grid-row-cell-border-color;
+            border-style: $grid-row-cell-border-style;
+            border-top-color: lighten($grid-row-cell-border-color, 5);
+            border-width: 0;
         }
-        font: $grid-row-cell-font;
-        background-color: $grid-row-cell-background;
-        border-color: $grid-row-cell-border-color;
-        border-style: $grid-row-cell-border-style;
-        border-top-color: lighten($grid-row-cell-border-color, 5);
-        border-width: 0;
     }
 
     .#{$prefix}grid-with-row-lines .#{$prefix}grid-cell {
@@ -538,7 +541,7 @@
     // Header checkbox element needs centering
     .#{$prefix}column-header-checkbox .#{$prefix}column-header-text {
         display: block;
-        margin: 4px 5px;
+        margin: 0 5px;
     }
 
     @if $include-ie or $compile-all {

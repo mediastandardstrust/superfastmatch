@@ -11,6 +11,8 @@ $include-form-highlights: $include-highlights !default;
 
 $form-field-height: $font-size-large + 8px !default;
 $form-toolbar-field-height: 22px !default;
+$form-error-icon-width: 20px !default;
+$form-error-icon-margin-left: 3px !default;
 
 //padding
 $form-field-padding: 1px 3px !default;
@@ -83,7 +85,8 @@ $form-error-msg-line-height: 16px !default;
  * Trigger Field
  */
 $form-trigger-width: 17px !default;
-$form-trigger-height: $form-trigger-width !default;
+$form-trigger-margin-left: 2px !default;
+$form-trigger-height: 22px !default;
 $form-toolbar-trigger-height: $form-toolbar-field-height !default;
 
 $form-trigger-border-bottom-width: 1px !default;
@@ -113,4 +116,13 @@ $fieldset-border-color: $form-field-border-color !default;
 $fieldset-border: $fieldset-border-width $fieldset-border-style $fieldset-border-color !default;
 
 $fieldset-padding: 10px !default;
-$fieldset-header-padding: 0 5px 10px 10px !default;
+$fieldset-header-padding: 0 3px !default;
+
+/**
+ * Sliders
+ */
+$horizontal-slider-thumb-width: 14px !default;
+$horizontal-slider-thumb-height: 15px !default;
+
+$vertical-slider-thumb-width: 15px !default;
+$vertical-slider-thumb-height: 14px !default;

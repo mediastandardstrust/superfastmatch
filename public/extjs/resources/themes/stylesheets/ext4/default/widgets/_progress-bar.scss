@@ -1,5 +1,6 @@
 @mixin extjs-progress {
     .#{$prefix}progress {
+        position: relative;
         border-width: $progress-border-width;
         border-style: solid;
         @include border-radius($progress-border-radius);

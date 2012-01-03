@@ -27,6 +27,17 @@ Ext.define('Superfastmatch.view.ResultsContainer', {
         me.down('#fragmentTextColumn').renderer=me.columnWrap;
         me.down('#Documents').on('reconfigure',me.buildFragments,me);
         me.down('#Documents').on('selectionchange',me.buildFragments,me);
+        me.down('#Fragments').on('itemmouseenter',me.highlightFragment,me);
+        me.down('#Fragments').on('itemmouseleave',me.unHighlightFragment,me);
+        me.addEvents('highlightchange');
+    },
+
+    highlightFragment: function(view,record){
+        this.fireEvent('highlightchange',{action:'enter',start: record.get('from'),length: record.get('length')});
+    },
+    
+    unHighlightFragment: function(view,record){
+        this.fireEvent('highlightchange',{action:'leave',start: record.get('from'),length: record.get('length')});
     },
 
     buildFragments: function(){
@@ -47,4 +58,6 @@ Ext.define('Superfastmatch.view.ResultsContainer', {
     columnWrap: function(val){
         return '<div style="white-space:normal !important;"><pre class="wrap">'+ val +'</pre></div>';
     },
+    
+    
 });

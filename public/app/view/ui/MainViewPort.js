@@ -30,7 +30,7 @@ Ext.define('Superfastmatch.view.ui.MainViewPort', {
                 {
                     xtype: 'tabpanel',
                     id: 'Tabs',
-                    activeTab: 1,
+                    activeTab: 0,
                     items: [
                         {
                             xtype: 'panel',

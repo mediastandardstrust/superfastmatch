@@ -100,6 +100,11 @@
     }
     
     @if $include-ie {
+        /* IE9 shows scrollbars in a button unless this is set  */
+        .#{$prefix}ie9 .#{$prefix}btn button {
+            overflow: visible!important;
+        }
+
         * html .#{$prefix}ie {
             .#{$prefix}btn button {
                 width: 1px;
@@ -120,16 +125,21 @@
     }
   
     @if not $supports-border-radius or $compile-all {
-        .#{$prefix}nbr {
-            .#{$prefix}btn {
-                .#{$prefix}frame-mc {
-                    vertical-align: middle;
-                    white-space: nowrap;
-                    text-align: center;
-                    cursor: pointer;
-                }
+        /* Keep the selector simple ".x-btn .x-frame-mc" is enough to target the center frame of the button table */
+        .#{$prefix}btn {
+            .#{$prefix}frame-mc {
+                vertical-align: middle;
+                white-space: nowrap;
+                cursor: pointer;
             }
-        }    
+        }
+
+        /* Only center when all there is is text. Otherwise solo icons get centered. */
+        .#{$prefix}btn-noicon {
+            .#{$prefix}frame-mc {
+                text-align: center;
+            }
+        }
     }
 
     .#{$prefix}btn-icon-text-left .#{$prefix}btn-icon {

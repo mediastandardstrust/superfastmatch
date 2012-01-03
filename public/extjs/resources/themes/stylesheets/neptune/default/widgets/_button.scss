@@ -255,7 +255,7 @@
 
     .x-btn-menu-active {
         .#{$prefix}btn-arrow-right {
-            background-position: right -28px;
+//            background-position: right -28px;
         }
     }
 
@@ -499,6 +499,7 @@
         }
 
         @if $color-pressed != $color {
+            .#{$prefix}btn-#{$ui}-menu-active,
             .#{$prefix}btn-#{$ui}-pressed {
                 .x-btn-icon:after {
                     @include background-gradient($color-pressed, matte);

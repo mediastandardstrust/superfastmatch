@@ -9,22 +9,24 @@
     
     //form items
     .#{$prefix}form-item {
-        display: block;
-        // @tag iezoomhack
-        position: relative;
-        margin-bottom: 10px;
+        vertical-align: top;
+        margin-bottom: 5px;
+        table-layout: fixed;
     }
     
-    // No margins when inside an Editor
-    .#{$prefix}editor .#{$prefix}form-item {
-        margin: 0;
+    // Padding row when Labelable Fields are in a form layout
+    td.#{$prefix}form-item-pad {
+        height: 5px;
     }
     
+    // No padding when inside an Editor
+    .#{$prefix}editor .#{$prefix}form-item-body {
+        padding-bottom: 0;
+    }
+
     .#{$prefix}form-item-label {
-        float: left;
-        padding: 4px 0 0;
-        z-index: 2;
-        position: relative;
+        display: block;
+        padding: 3px 5px 0 0;
         font-size: $form-label-font-size;
         @extend .no-select;
     }
@@ -34,25 +36,15 @@
     }
 
     .#{$prefix}form-item-label-top {
-        float: none;
-        clear: none;
         padding: 0;
-        display: block;
     }
 
     .#{$prefix}form-item-label-right {
-        float: left;
         text-align: right;
     }
 
-    .#{$prefix}form-item-body {
-        position: relative;
-        float: left;
-    }
-
     .#{$prefix}form-invalid-under {
-        padding: 2px 2px 2px 18px;
-        clear: left;
+        padding: 2px 2px 2px $form-error-icon-width;
 
         color: $form-error-msg-color;
         font: $form-error-msg-font;
@@ -62,27 +54,25 @@
         background-image: theme-background-image($theme-name, $form-exclamation-icon);
     }
     
-    .#{$prefix}form-invalid-icon {
-        width: 16px;
-        height: 16px;
-//        overflow: hidden;
-//        text-indent: -9999px;
-        
+    .#{$prefix}external-error-icon {
         position: absolute;
-        left: 0;
-        top: 0;
-        
-        margin: 3px 3px 0 3px;
+        right: ($form-error-icon-width - 1);
+        height: $form-field-height;
+    }
 
-//      @todo this should use pictos
-//        @include pictos('!', $size: 21px, $include-states: false, $color: #FC0D1B);
-        
-        background: no-repeat;
-        background-image: theme-background-image($theme-name, $form-exclamation-icon);
-
+    .#{$prefix}form-invalid-icon {
+        position: relative;
+        width: ($form-error-icon-width + $form-error-icon-margin-left);
+        overflow: hidden;
         ul {
-            // Prevent inner elements from interfering with QuickTip hovering
-            display: none;
+            @include pictos('!', $size: 21px, $include-states: false, $color: #FC0D1B);
+            display: block;
+            margin-left: $form-error-icon-margin-left;
+            width: $form-error-icon-width;
+            li {
+                /* prevent inner elements from interfering with QuickTip hovering */
+                display: none;
+            }
         }
     }
 }

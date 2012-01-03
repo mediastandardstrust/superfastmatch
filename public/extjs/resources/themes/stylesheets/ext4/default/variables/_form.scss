@@ -8,6 +8,7 @@
 
 $form-field-height: 22px !default;
 $form-toolbar-field-height: 20px !default;
+$form-error-icon-width: 18px !default;
 
 //padding
 $form-field-padding: 1px 3px !default;
@@ -112,3 +113,12 @@ $fieldset-border: $fieldset-border-width $fieldset-border-style $fieldset-border
 
 $fieldset-padding: 10px !default;
 $fieldset-header-padding: 0 3px !default;
+
+/**
+ * Sliders
+ */
+$horizontal-slider-thumb-width: 14px !default;
+$horizontal-slider-thumb-height: 15px !default;
+
+$vertical-slider-thumb-width: 15px !default;
+$vertical-slider-thumb-height: 14px !default;
