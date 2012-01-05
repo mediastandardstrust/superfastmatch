@@ -13,12 +13,6 @@ Ext.define('Superfastmatch.view.SearchForm', {
     tpl: Ext.create('Ext.XTemplate','<pre class="wrap">{text}</pre>'),
     autoScroll: true,
 
-    listeners: {
-       'render': function(panel) {
-           panel.body.on('click',this.unlockText,panel);
-        }
-    },
-    
     config: {
         showDocked: true,   
     },
@@ -63,6 +57,9 @@ Ext.define('Superfastmatch.view.SearchForm', {
                 })
             })]);
             me.down('#SearchButton').on('click',me.search,me);
+            me.on('render',function(panel) {
+                panel.body.on('click',me.unlockText,panel);
+            });
         }
         me.addEvents('searching','results');
     },
