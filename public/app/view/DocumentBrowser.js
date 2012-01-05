@@ -32,6 +32,7 @@ Ext.define('Superfastmatch.view.DocumentBrowser', {
             me.getSelectionModel().select(0);
         }
         me.doLayout();
+        me.getView().refresh();
     },
     
     onSelect: function(selModel,selected){
