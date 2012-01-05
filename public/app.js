@@ -7,6 +7,11 @@ Ext.Loader.setConfig({
     }
 });
 
+Ext.state.Manager.setProvider(
+    new Ext.state.CookieProvider({
+        expires: new Date(new Date().getTime()+(1000*60*60*24*365)), //1 year from now
+}));
+
 Ext.application({
     name: 'Superfastmatch',
     models: ['Fragment','Search','Document'],

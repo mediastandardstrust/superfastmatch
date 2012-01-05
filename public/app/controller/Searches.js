@@ -9,10 +9,6 @@ Ext.define('Superfastmatch.controller.Searches', {
         {
             ref: 'results',
             selector: '#SearchPanel > #Results'
-        },
-        {
-            ref: 'documents',
-            selector: '#SearchPanel > #Results > #Documents'
         }
     ],
     
@@ -33,13 +29,10 @@ Ext.define('Superfastmatch.controller.Searches', {
     },
     
     onSearch: function() {
-        this.getResults().getEl().mask();
+        this.getResults().loading();
     },
     
     onResults: function(record,operation){
-        this.getResults().enable();
-        this.getResults().getEl().unmask();
-        this.getDocuments().reconfigure(record.documents(),record.documents().model.getColumns());
-        this.getDocuments().doLayout();
+        this.getResults().loadMatches(record);
     }
 });
