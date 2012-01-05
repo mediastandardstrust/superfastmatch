@@ -22,7 +22,6 @@ Ext.define('Superfastmatch.view.DocumentBrowser', {
        me.down('#DocumentPaging').bindStore(store,true);
        store.on('load',me.onLoad,me);
        me.on('select',me.onSelect,me);
-       store.load();
     },
     
     onLoad: function(store,records,success){
@@ -31,8 +30,6 @@ Ext.define('Superfastmatch.view.DocumentBrowser', {
         if (records.length){
             me.getSelectionModel().select(0);
         }
-        me.doLayout();
-        me.getView().refresh();
     },
     
     onSelect: function(selModel,selected){

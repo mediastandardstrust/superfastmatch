@@ -5,6 +5,7 @@ Ext.define('Superfastmatch.store.Documents', {
     storeId: 'Documents',
     pageSize: 10,
     remoteSort: true,
+    autoLoad: true,
 
     priorPage: 1,
     cursors: {},
