@@ -31,6 +31,7 @@ Ext.define('Superfastmatch.view.DocumentBrowser', {
         if (records.length){
             me.getSelectionModel().select(0);
         }
+        me.doLayout();
     },
     
     onSelect: function(selModel,selected){
