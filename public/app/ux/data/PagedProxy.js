@@ -1,6 +1,5 @@
 Ext.define('Ext.ux.data.PagedProxy', {
     extend: 'Ext.data.proxy.Rest',
-    alternateClassName: 'Ext.data.PagedProxy',
     alias: 'proxy.paged',
     requires: ['Ext.ux.data.FormWriter'],
 

@@ -2,9 +2,16 @@ Ext.define('Superfastmatch.model.Document', {
     extend: 'Ext.data.Model',
     requires: ['Ext.ux.data.PagedProxy','Ext.ux.data.TimedJsonReader'],
     uses: ['Superfastmatch.model.Fragment'],
+    
     proxy: {
         type: 'paged',
         url: '/document/',
+        buildUrl: function(request){
+            if (request.operation.doctypes){
+                request.url=this.getUrl(request)+request.operation.doctypes+'/';
+            }
+            return this.superclass.buildUrl.apply(this, arguments);
+        },
         reader: {
             type: 'timedjson',
             root: 'rows'

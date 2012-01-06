@@ -19,8 +19,8 @@ Ext.define('Superfastmatch.view.ResultsContainer', {
                     forceFit: true,
                     flex: 1,
                     viewConfig: {
-                        id: '',
-                        itemId: 'DocumentsView'
+                        itemId: 'DocumentsView',
+                        emptyText: 'No Matching Documents Found'
                     },
                     columns: [],
                     selModel: Ext.create('Ext.selection.RowModel', {
@@ -59,7 +59,8 @@ Ext.define('Superfastmatch.view.ResultsContainer', {
                         }
                     ],
                     viewConfig: {
-                        itemId: 'FragmentView'
+                        itemId: 'FragmentView',
+                        emptyText: 'No Fragments Found'
                     }
                 }
             ]
@@ -100,6 +101,14 @@ Ext.define('Superfastmatch.view.ResultsContainer', {
         documents.reconfigure(search.documents(),search.documents().model.getColumns());
         me.enable();
         me.setLoading(false);
+    },
+    
+    clearMatches: function(){
+        var me=this;
+            documents=me.down('#Documents'),
+        documents.getStore().removeAll();
+        me.allFragments.removeAll();
+        me.selectedFragments.removeAll();
     },
 
     highlightFragment: function(view,record){

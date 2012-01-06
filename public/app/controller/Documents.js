@@ -24,9 +24,14 @@ Ext.define('Superfastmatch.controller.Documents', {
     },
     
     onDocumentSelected: function(results){
-        this.getResults().loadMatches(results);
-        this.getText().lockText(results.get('text'));
-        this.getText().setLoading(false);
+        if(results){
+            this.getResults().loadMatches(results);
+            this.getText().lockText(results.get('text'));
+            this.getText().setLoading(false);   
+        }else{
+            this.getResults().clearMatches();
+            this.getText().lockText("No Matching Text");
+        }
     },
     
     onDocumentsLoading: function(){

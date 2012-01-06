@@ -10,6 +10,7 @@ Ext.define('Superfastmatch.store.Documents', {
     priorPage: 1,
     cursors: {},
     
+    
     constructor: function(){
         var me = this;
         me.callParent(arguments);

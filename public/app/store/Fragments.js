@@ -11,8 +11,9 @@ Ext.define('Superfastmatch.store.Fragments', {
                     return instance.get('hash')+":"+instance.get('length');
                 }
             });
-        // me.suspendEvents();
         me.removeAll();
+        tempStore.suspendEvents();
+        me.suspendEvents();
         Ext.each(docs,function(doc){
             doc.fragments().each(function(fragment){
                 tempStore.add(fragment); 
@@ -35,6 +36,6 @@ Ext.define('Superfastmatch.store.Fragments', {
             });
         }
         // me.sync();
-        // me.resumeEvents();
+        me.resumeEvents();
     }
 });
