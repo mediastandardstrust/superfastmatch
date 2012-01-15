@@ -47430,7 +47430,7 @@ Ext.define('Ext.data.Store', {
         
         
         if (!me.hasPendingRequests() && me.suspendPurge) {
-            me.suspendParge = false;
+            me.suspendPurge = false;
             return;
         }
 

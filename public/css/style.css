@@ -10,3 +10,7 @@ pre.wrap {
 span.highlight{
   background-color: #F9A803;
 }
+
+.highlighted{
+  background-color: #F9A803 !important;
+}

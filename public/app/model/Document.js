@@ -10,16 +10,23 @@ Ext.define('Superfastmatch.model.Document', {
             if (request.operation.doctypes){
                 request.url=this.getUrl(request)+request.operation.doctypes+'/';
             }
-            return this.superclass.buildUrl.apply(this, arguments);
+            return this.superclass.buildUrl.apply(this,arguments);
         },
         reader: {
             type: 'timedjson',
             root: 'rows'
         }
     },
-    associations: [
-        { type: 'hasMany', model: 'Superfastmatch.model.Fragment', name:"fragments",reader: 'array'},
-        { type: 'belongsTo', model: 'Superfastmatch.model.Search', getterName:"getSearch" }
+    associations: [{
+            type: 'hasMany',
+            model: 'Superfastmatch.model.Fragment',
+            name: 'fragments',
+            reader: 'array'
+        },{
+            type: 'belongsTo', 
+            model: 'Superfastmatch.model.Search', 
+            getterName:"getSearch"
+        }
     ],
     statics:{
         getColumns: function(){

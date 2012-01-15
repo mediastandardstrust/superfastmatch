@@ -48058,14 +48058,14 @@ Ext.define('Ext.data.Store', {
 
         me.prefetchData.addAll(records);
         
-        
+
         
         
         
         
         
         if (!me.hasPendingRequests() && me.suspendPurge) {
-            me.suspendParge = false;
+            me.suspendPurge = false;
             return;
         }
 

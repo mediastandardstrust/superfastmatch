@@ -11,7 +11,7 @@ Ext.define('Superfastmatch.view.SearchForm', {
     bodyPadding: 10,
     title: 'Search',
     tpl: Ext.create('Ext.XTemplate','<pre class="wrap">{text}</pre>'),
-    autoScroll: true,
+    overflowY: 'auto',
 
     config: {
         showDocked: true,   
@@ -19,18 +19,15 @@ Ext.define('Superfastmatch.view.SearchForm', {
 
     buildItems: function(){
         return {
-            items: [
-                {
-                    xtype: 'textareafield',
-                    itemId: 'SearchText',
-                    name: 'text',
-                    labelAlign: 'top',
-                    allowBlank: false,
-                    blankText: 'Please paste some text!',
-                    emptyText: 'Paste your search text here.',
-                    anchor: '100%'
-                }
-            ]
+            items: [Ext.create('Ext.form.field.TextArea',{
+                itemId: 'SearchText',
+                name: 'text',
+                labelAlign: 'top',
+                allowBlank: false,
+                blankText: 'Please paste some text!',
+                emptyText: 'Paste your search text here.',
+                anchor: '100%'                
+            })]
         };
     },
 
@@ -97,7 +94,9 @@ Ext.define('Superfastmatch.view.SearchForm', {
             searchText=me.down('#SearchText');
         searchText.hide();
         me.enable();
+        console.log('!');
         me.update({text:text});
+        console.log('!!');
     },
     
     unlockText: function(){

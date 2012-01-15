@@ -22,7 +22,7 @@ Ext.define('Superfastmatch.controller.Documents', {
               }
         });
     },
-    
+
     onDocumentSelected: function(results){
         if(results){
             this.getResults().loadMatches(results);

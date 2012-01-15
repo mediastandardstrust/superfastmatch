@@ -44,5 +44,11 @@ Ext.define('Superfastmatch.view.DocumentPanel', {
         var me = this;
         Ext.applyIf(me,me.buildItems());
         me.callParent(arguments);
-    }
+        me.on('activate',me.onActivate);
+    },
+    
+    onActivate: function(){
+        this.down('#DocumentBrowser').load();
+    },
+    
 });

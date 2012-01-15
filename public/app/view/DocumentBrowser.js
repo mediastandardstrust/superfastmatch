@@ -10,6 +10,7 @@ Ext.define('Superfastmatch.view.DocumentBrowser', {
     columns:[],
     viewConfig: {
         itemId: 'DocumentBrowserView',
+        loadMask: true,
         emptyText: 'No Saved Documents Found'
     },
         
@@ -38,10 +39,22 @@ Ext.define('Superfastmatch.view.DocumentBrowser', {
            load: me.onLoad,
            scope: me
        });
-       me.on('select',me.onSelect,me);
+       me.on({
+           select: me.onSelect,
+           scope: me
+       });
        me.down('#DocTypeFilter').on('change',me.onDoctypeFilterChange,me);
     },
     
+    
+    load: function(){
+        var me=this,
+            paging=me.down('#DocumentPaging');
+        if (me.getStore().count()==0){
+            paging.moveFirst();   
+        }
+    },
+
     onDoctypeFilterChange: function(field){
         if(field.isValid()){
           this.down('#DocumentPaging').doRefresh();  
@@ -59,6 +72,7 @@ Ext.define('Superfastmatch.view.DocumentBrowser', {
     onLoad: function(store,records,success){
         var me=this;
         me.reconfigure(store,store.model.getColumns());
+        me.getView().refresh();
         if (records.length){
             me.getSelectionModel().select(0);
         }else{
@@ -71,8 +85,8 @@ Ext.define('Superfastmatch.view.DocumentBrowser', {
             search=Ext.ModelManager.getModel('Superfastmatch.model.Search'),
             id=selected.get('doctype')+'/'+selected.get('docid')+'/';
         me.fireEvent('documentsloading');
-        search.load(id,{
-            url: '/document/',
+        search.load(null,{
+            url: '/document/'+id,
             success: me.onResults,
             scope: me
         });

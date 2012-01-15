@@ -7,7 +7,6 @@ Ext.define('Superfastmatch.model.Search', {
     proxy:{
         type: 'paged',
         url: '/search/',
-        // appendId: false,
         reader: {
             type: 'timedjson'
         }
@@ -15,11 +14,7 @@ Ext.define('Superfastmatch.model.Search', {
     associations:[{
                     type: 'hasMany',
                     model: 'Superfastmatch.model.Document',
-                    name: 'documents',
-                    reader:{
-                           type: 'json',
-                           root: 'rows',
-                       }
+                    name: 'documents'
                 }],
             
     // Hack to reload data from save

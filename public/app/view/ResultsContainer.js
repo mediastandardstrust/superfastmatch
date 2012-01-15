@@ -1,87 +1,97 @@
 Ext.define('Superfastmatch.view.ResultsContainer', {
     extend: 'Ext.container.Container',
     alias: 'widget.resultscontainer',
-    requires: ['Superfastmatch.store.Fragments'],
+    requires: ['Superfastmatch.store.Fragments','Ext.grid.PagingScroller'],
 
     itemId: 'Results',
     layout: {
        align: 'stretch',
        type: 'vbox'
     },
+    
+    fragmentStore: undefined,
 
     buildItems: function(){
         return {
-            items: [
-                {
-                    xtype: 'gridpanel',
-                    itemId: 'Documents',
-                    title: 'Matching Documents',
-                    forceFit: true,
-                    flex: 1,
-                    viewConfig: {
-                        itemId: 'DocumentsView',
-                        emptyText: 'No Matching Documents Found'
-                    },
-                    columns: [],
-                    selModel: Ext.create('Ext.selection.RowModel', {
-                        allowDeselect: true,
-                        mode: 'SIMPLE'
+            items: [Ext.create('Ext.grid.Panel',{
+                        itemId: 'Documents',
+                        title: 'Matching Documents',
+                        forceFit: true,
+                        flex: 1,
+                        viewConfig: {
+                            itemId: 'DocumentsView',
+                            emptyText: 'No Matching Documents Found'
+                        },
+                        columns: [],
+                        selModel: Ext.create('Ext.selection.RowModel', {
+                            allowDeselect: true,
+                            mode: 'SINGLE'
+                        })              
+                    }),
+                    Ext.create('Ext.grid.Panel',{
+                        itemId: 'Fragments',
+                        title: 'Fragments (All Documents)',
+                        forceFit: true,
+                        loadMask: true,
+                        flex: 2,
+                        columns: [
+                            {
+                                xtype: 'gridcolumn',
+                                itemId: 'FragmentTextColumn',
+                                dataIndex: 'from',
+                                flex: 8,
+                                text: 'Text',
+                                renderer: function(val,meta,record){
+                                    return '<pre class="wrap">'+ record.get('text') +'</pre>';
+                                },
+                            },
+                            {
+                                xtype: 'numbercolumn',
+                                dataIndex: 'length',
+                                flex: 1,
+                                text: 'Length',
+                                format: '0,000'
+                            },
+                            {
+                                xtype: 'numbercolumn',
+                                dataIndex: 'count',
+                                flex: 1,
+                                text: 'Count',
+                                format: '0,000'
+                            },
+                            {
+                                xtype: 'numbercolumn',
+                                dataIndex: 'docCount',
+                                flex: 1,
+                                text: 'Documents',
+                                format: '0,000'
+                           }
+                        ],
+                        viewConfig: {
+                            itemId: 'FragmentView',
+                            emptyText: 'No Fragments Found',
+                            loadMask: false
+                        },
+                        disableSelection: true
                     })
-                },
-                {
-                    xtype: 'gridpanel',
-                    itemId: 'Fragments',
-                    title: 'Fragments',
-                    forceFit: true,
-                    flex: 2,
-                    columns: [
-                        {
-                            xtype: 'gridcolumn',
-                            id: '',
-                            itemId: 'FragmentTextColumn',
-                            dataIndex: 'text',
-                            flex: 8,
-                            text: 'Text'
-                        },
-                        {
-                            xtype: 'numbercolumn',
-                            dataIndex: 'length',
-                            flex: 1,
-                            text: 'Length',
-                            format: '0,000'
-                        },
-                        {
-                            xtype: 'numbercolumn',
-                            dataIndex: 'count',
-                            flex: 1,
-                            text: 'Count',
-                            format: '0,000'
-                        }
-                    ],
-                    viewConfig: {
-                        itemId: 'FragmentView',
-                        emptyText: 'No Fragments Found'
-                    }
-                }
             ]
         };
     },
     
-    allFragments: '',
-    selectedFragments: '',
-
     initComponent: function() {
         var me = this;
         Ext.applyIf(me,me.buildItems());
         me.callParent(arguments);
-        me.allFragments=Ext.create('Superfastmatch.store.Fragments');
-        me.selectedFragments=Ext.create('Superfastmatch.store.Fragments');
-        me.down('#FragmentTextColumn').renderer=me.columnWrap;
-        me.down('#Documents').on({
-            reconfigure:     me.buildFragments,
-            selectionchange: me.buildFragments,
-            scope:           me
-        });
+        me.fragmentStore=Ext.create('Superfastmatch.store.Fragments');
+        me.down('#Fragments').addDocked(Ext.create('Ext.toolbar.Paging',{
+            itemId: 'FragmentPaging',
+            displayInfo: true,
+            dock: 'bottom',
+            store: me.fragmentStore
+        }));
+        me.down('#Fragments').reconfigure(me.fragmentStore);
+        me.down('#FragmentPaging').bindStore(me.fragmentStore,true);
+        me.down('#Documents').on('selectionchange',me.filterFragments,me);
         me.down('#Fragments').on({
            itemmouseenter: me.highlightFragment,
            itemmouseleave: me.unHighlightFragment,
@@ -91,59 +101,66 @@ Ext.define('Superfastmatch.view.ResultsContainer', {
     },
     
     loading: function(){
-        this.setLoading(true);
+        this.down('#Documents').setLoading(true);
+        this.down('#Fragments').setLoading(true);
     },
     
     loadMatches: function(search){
         var me=this;
             documents=me.down('#Documents'),
-            fragments=me.down('#Fragments');
+            fragments=me.down('#Fragments'),
+            paging=me.down('#FragmentPaging'),
+            records=[];
         documents.reconfigure(search.documents(),search.documents().model.getColumns());
         me.enable();
-        me.setLoading(false);
+        documents.setLoading(false);
+        fragments.setLoading(false);
+        me.fragmentStore.loadDocuments(search.documents().data.items);
+        paging.moveFirst();
     },
     
     clearMatches: function(){
         var me=this;
             documents=me.down('#Documents'),
         documents.getStore().removeAll();
-        me.allFragments.removeAll();
-        me.selectedFragments.removeAll();
     },
 
     highlightFragment: function(view,record){
-        this.fireEvent('highlightchange',{action:'enter',start: record.get('from'),length: record.get('length')});
+        var me=this,
+            documents=me.down('#Documents');
+            currentDocument=record.get('documents');
+        me.fireEvent('highlightchange',{action:'enter',start: record.get('from'),length: record.get('length')});
+        documents.getStore().filterBy(function(record,id){
+            return currentDocument.hasOwnProperty(record.get('doctype')+':'+record.get('docid'));
+        })
+        documents.setTitle('Matching Documents ("'+Ext.String.ellipsis(record.get('text',100,true))+'...")');
     },
     
     unHighlightFragment: function(view,record){
-        this.fireEvent('highlightchange',{action:'leave',start: record.get('from'),length: record.get('length')});
+        var me=this,
+            documents=me.down('#Documents');
+        me.fireEvent('highlightchange',{action:'leave',start: record.get('from'),length: record.get('length')});
+        documents.getStore().clearFilter();
+        documents.setTitle('Matching Documents');
     },
 
-    buildFragments: function(){
+    filterFragments: function(selmodel,selected){
         var me=this,
-            documents=me.down('#Documents'),
-            fragments=me.down('#Fragments'),
-            selected=documents.getSelectionModel().getSelection();
-        fragments.suspendEvents();
+            fragments=me.down('#Fragments');
         if (selected.length==0){
-            me.allFragments.suspendEvents();
-            me.allFragments.loadDocuments(documents.getStore().data.items);
-            me.allFragments.resumeEvents();
-            fragments.reconfigure(me.allFragments);
+            me.fragmentStore.clearFilter();
             fragments.setTitle('Fragments (All Documents)');
         }else{
-            me.selectedFragments.suspendEvents();
-            me.selectedFragments.loadDocuments(selected);
-            me.selectedFragments.resumeEvents();
-            fragments.reconfigure(me.selectedFragments);
-            fragments.setTitle('Fragments ('+selected.length+' Document'+((selected.length>1)?'s':'')+')');
+            var doc=selected[0].get('doctype')+':'+selected[0].get('docid');
+            me.fragmentStore.remoteFilter=false;
+            me.fragmentStore.clearFilter();
+            me.fragmentStore.remoteFilter=true;
+            me.fragmentStore.filter([{
+                filterFn:function(record){
+                    return record.get('documents').hasOwnProperty(doc);
+                }
+            }]);
+            fragments.setTitle('Fragments ('+doc+')');
         }
-        fragments.resumeEvents();
-    },
-
-    columnWrap: function(val){
-        return '<div style="white-space:normal !important;"><pre class="wrap">'+ val +'</pre></div>';
-    },
-    
-    
+    } 
 });
