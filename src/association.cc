@@ -356,6 +356,10 @@ namespace superfastmatch
         metadata.insert(*it);
       }
     }
+    TemplateDictionary* metaDict=docDict->AddSectionDictionary("META");
+    metaDict->SetValue("KEY","fragment_count");
+    metaDict->SetIntValue("VALUE",results_->size());
+    metadata.insert("fragment_count");
     for(vector<Result>::const_iterator it=results_->begin(),ite=results_->end();it!=ite;++it){
       TemplateDictionary* fragmentDict=docDict->AddSectionDictionary("FRAGMENT");
       fragmentDict->SetIntValue("FROM",it->uc_left);

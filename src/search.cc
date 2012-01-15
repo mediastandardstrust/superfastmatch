@@ -53,11 +53,13 @@ namespace superfastmatch{
       DocumentPtr other=registry_->getDocumentManager()->getDocument(it2->second.doc_type,it2->second.doc_id,DocumentManager::META);
       AssociationPtr association(new Association(registry_,doc,other));
       performance->add(association->getInstrument());
-      associations.push_back(association);
-      if (doc->isPermanent()){
-        association->save();
+      if (association->getResultCount()>0){
+        associations.push_back(association);
+        if (doc->isPermanent()){
+          association->save();
+        }
+        count++;  
       }
-      count++;
     }
   }
   
