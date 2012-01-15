@@ -18,4 +18,4 @@ fixtures/pan*
 fixtures/con*
 superfastmatch
 cachegrind.out*
-
+!public/app/ux/data/
