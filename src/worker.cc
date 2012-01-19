@@ -166,7 +166,7 @@ namespace superfastmatch{
     }else{
       process_static(req,res);
     }
-    registry_->getTemplateCache()->ExpandWithData(res.template_name,DO_NOT_STRIP,&res.dict,NULL,&resbody);
+    registry_->getTemplateCache()->ExpandWithData(res.template_name,STRIP_BLANK_LINES,&res.dict,NULL,&resbody);
 
     stringstream time;
     time << setiosflags(ios::fixed) << setprecision(4) << kyotocabinet::time()-start << " secs";
@@ -176,7 +176,6 @@ namespace superfastmatch{
   }
 
   void Worker::process_search(const RESTRequest& req,RESTResponse& res){
-    res.dict.SetTemplateGlobalValue("TITLE","Search");
     switch (req.verb){
       case HTTPClient::MPOST:{
           SearchPtr search=Search::createTemporarySearch(registry_,req.reqbody);
@@ -200,7 +199,6 @@ namespace superfastmatch{
   }
 
   void Worker::process_document(const RESTRequest& req,RESTResponse& res){
-    res.dict.SetTemplateGlobalValue("TITLE","Document");
     if (req.first_is_numeric && req.second_is_numeric){
       uint32_t doctype = kc::atoi(req.first_id.data());
       uint32_t docid = kc::atoi(req.second_id.data());
@@ -266,13 +264,11 @@ namespace superfastmatch{
   }
   
   void Worker::process_help(const RESTRequest& req,RESTResponse& res){
-    res.dict.SetTemplateGlobalValue("TITLE","Help");
     res.template_name=HELP_PAGE;
     res.code=200;
   }
   
   void Worker::process_association(const RESTRequest& req, RESTResponse& res){
-    res.dict.SetTemplateGlobalValue("TITLE","Association");
     uint32_t doctype=0;
     uint32_t docid=0;
     if (req.first_is_numeric){
@@ -297,7 +293,6 @@ namespace superfastmatch{
   }
     
   void Worker::process_index(const RESTRequest& req,RESTResponse& res){
-    res.dict.SetTemplateGlobalValue("TITLE","Index");
     switch(req.verb){
       case HTTPClient::MGET:
         if (req.cursor_is_numeric){
@@ -316,7 +311,6 @@ namespace superfastmatch{
   }
   
   void Worker::process_queue(const RESTRequest& req,RESTResponse& res){
-    res.dict.SetTemplateGlobalValue("TITLE","Queue");
     switch (req.verb){
       case HTTPClient::MGET:
         if (req.cursor_is_numeric){
@@ -356,14 +350,12 @@ namespace superfastmatch{
   }
   
   void Worker::process_histograms(const RESTRequest& req,RESTResponse& res){
-    res.dict.SetTemplateGlobalValue("TITLE","Histograms");
     registry_->getPostings()->fill_histogram_dictionary(&res.dict);
     res.template_name=HISTOGRAMS_PAGE;
     res.code=200;
   }
   
   void Worker::process_performance(const RESTRequest& req,RESTResponse& res){
-    res.dict.SetTemplateGlobalValue("TITLE","Performance");
     registry_->fillPerformanceDictionary(&res.dict);
     res.template_name=PERFORMANCE_PAGE;
     res.code=200;
@@ -381,7 +373,6 @@ namespace superfastmatch{
     delete [] buffer;
     registry_->fill_status_dictionary(&res.dict);
     registry_->getPostings()->fill_status_dictionary(&res.dict);
-    res.dict.SetTemplateGlobalValue("TITLE","Status");
     res.template_name=STATUS_PAGE;
     res.code=200;
   }

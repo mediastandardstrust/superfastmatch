@@ -2,6 +2,8 @@
 
 namespace superfastmatch
 {
+  RegisterTemplateFilename(DOCUMENTS_JSON, "JSON/documents.tpl");
+  
   //-----------------------
   // Instrument definitions
   //-----------------------
@@ -270,17 +272,24 @@ namespace superfastmatch
     stream << "Document(" << document.doctype() << "," << document.docid() << ")";
     return stream;
   }
-  
-  void Document::fillDocumentDictionary(TemplateDictionary* dict){
+
+  void Document::fillJSONDictionary(TemplateDictionary* dict,set<string>& metadata){
     vector<string> keys;
     if (getMetaKeys(keys)){
       for (vector<string>::iterator it=keys.begin();it!=keys.end();it++){
-        TemplateDictionary* meta_dict=dict->AddSectionDictionary("META");
-        meta_dict->SetValue("KEY",*it);
-        meta_dict->SetValue("VALUE",getMeta(&(*it->c_str())));
-      } 
+        TemplateDictionary* metaDict;
+        string value=getMeta(&(*it->c_str()));
+        bool isNumber=isNumeric(value);
+        if(isNumber){
+          metaDict=dict->AddSectionDictionary("NUMBER");          
+        }else{
+          metaDict=dict->AddSectionDictionary("STRING");
+        }
+        metaDict->SetValue("KEY",*it);
+        metaDict->SetValue("VALUE",value);
+        metadata.insert(*it);
+      }
     }
-    dict->SetValue("TEXT",getText());
   }
   
   bool operator< (Document& lhs,Document& rhs){

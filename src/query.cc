@@ -3,6 +3,7 @@
 
 namespace superfastmatch
 {
+  RegisterTemplateFilename(QUERY_JSON, "JSON/query.tpl");
   RegisterTemplateFilename(DOCUMENTS_JSON, "JSON/documents.tpl");
 
   ostream& operator<<(ostream &stream,const DocPair& pair){
@@ -270,37 +271,25 @@ namespace superfastmatch
   } 
   
   void DocumentQuery::fillJSONDictionary(TemplateDictionary* dict){
-    TemplateDictionary* documents_dict=dict->AddIncludeDictionary("DATA");
-    documents_dict->SetFilename(DOCUMENTS_JSON);
-    set<string> keys_set;
-    vector<DocumentPtr> docs;
-    vector<string> keys;
+    TemplateDictionary* queryDict=dict->AddIncludeDictionary("DATA");
+    queryDict->SetFilename(QUERY_JSON);
+    TemplateDictionary* documentsDict=queryDict->AddIncludeDictionary("DOCUMENTS");
+    documentsDict->SetFilename(DOCUMENTS_JSON);
+    set<string> metadata;
     for(vector<DocPair>::const_iterator it=getSourceDocPairs().begin(),ite=getSourceDocPairs().end();it!=ite;++it){
       DocumentPtr doc=registry_->getDocumentManager()->getDocument(it->doc_type,it->doc_id,DocumentManager::META);
-      docs.push_back(doc);
-      if (doc->getMetaKeys(keys)){
-        for (vector<string>::iterator it=keys.begin();it!=keys.end();it++){
-          keys_set.insert(*it);
-        }
-      }
+      TemplateDictionary* docDict = documentsDict->AddSectionDictionary("DOCUMENT");
+      doc->fillJSONDictionary(docDict,metadata);
     }
-    for (set<string>::const_iterator it=keys_set.begin(),ite=keys_set.end();it!=ite;++it){
-      TemplateDictionary* fields_dict=documents_dict->AddSectionDictionary("FIELDS");
+    for (set<string>::const_iterator it=metadata.begin(),ite=metadata.end();it!=ite;++it){
+      TemplateDictionary* fields_dict=documentsDict->AddSectionDictionary("FIELDS");
       fields_dict->SetValue("FIELD",*it);
     }
-    for (vector<DocumentPtr>::iterator it=docs.begin(),ite=docs.end();it!=ite;++it){
-      TemplateDictionary* doc_dict = documents_dict->AddSectionDictionary("DOCUMENT");
-      for (set<string>::const_iterator it2=keys_set.begin(),ite2=keys_set.end();it2!=ite2;++it2){
-        TemplateDictionary* meta_dict=doc_dict->AddSectionDictionary("META");
-        meta_dict->SetValue("KEY",*it2);
-        meta_dict->SetValue("VALUE",(*it)->getMeta(&(*it2->c_str())));
-      }
-    }
-    documents_dict->SetIntValue("TOTAL",registry_->getDocumentDB()->count());
-    documents_dict->SetValue("CURRENT",getCursor());
-    documents_dict->SetValue("FIRST",getFirst());
-    documents_dict->SetValue("LAST",getLast());
-    documents_dict->SetValue("PREVIOUS",getPrevious());
-    documents_dict->SetValue("NEXT",getNext());
+    queryDict->SetIntValue("TOTAL",registry_->getDocumentDB()->count());
+    queryDict->SetValue("CURRENT",getCursor());
+    queryDict->SetValue("FIRST",getFirst());
+    queryDict->SetValue("LAST",getLast());
+    queryDict->SetValue("PREVIOUS",getPrevious());
+    queryDict->SetValue("NEXT",getNext());
   }
 }

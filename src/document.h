@@ -61,7 +61,7 @@ namespace superfastmatch
     uint32_t doctype();
     uint32_t docid();
     
-    void fillDocumentDictionary(TemplateDictionary* dict);
+    void fillJSONDictionary(TemplateDictionary* dict,set<string>& metadata);
     
     friend std::ostream& operator<< (std::ostream& stream, Document& document);
     friend bool operator< (Document& lhs,Document& rhs);

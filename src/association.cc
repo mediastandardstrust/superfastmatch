@@ -347,21 +347,14 @@ namespace superfastmatch
   
   void Association::fillJSONDictionary(TemplateDictionary* dict,set<string>& metadata){
     TemplateDictionary* docDict=dict->AddSectionDictionary("DOCUMENT");
-    vector<string> keys;
-    if (to_document_->getMetaKeys(keys)){
-      for (vector<string>::iterator it=keys.begin();it!=keys.end();it++){
-        TemplateDictionary* metaDict=docDict->AddSectionDictionary("META");
-        metaDict->SetValue("KEY",*it);
-        metaDict->SetValue("VALUE",to_document_->getMeta(&(*it->c_str())));
-        metadata.insert(*it);
-      }
-    }
-    TemplateDictionary* metaDict=docDict->AddSectionDictionary("META");
+    to_document_->fillJSONDictionary(docDict,metadata);
+    TemplateDictionary* metaDict=docDict->AddSectionDictionary("NUMBER");
     metaDict->SetValue("KEY","fragment_count");
     metaDict->SetIntValue("VALUE",results_->size());
     metadata.insert("fragment_count");
+    TemplateDictionary* fragmentsDict=docDict->AddSectionDictionary("FRAGMENTS");
     for(vector<Result>::const_iterator it=results_->begin(),ite=results_->end();it!=ite;++it){
-      TemplateDictionary* fragmentDict=docDict->AddSectionDictionary("FRAGMENT");
+      TemplateDictionary* fragmentDict=fragmentsDict->AddSectionDictionary("FRAGMENT");
       fragmentDict->SetIntValue("FROM",it->uc_left);
       fragmentDict->SetIntValue("TO",it->uc_right);
       fragmentDict->SetIntValue("LENGTH",it->uc_length);

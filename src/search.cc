@@ -3,8 +3,8 @@
 #include "association.h"
 
 namespace superfastmatch{
-  RegisterTemplateFilename(ASSOCIATION, "association.tpl");
   RegisterTemplateFilename(SEARCH_JSON, "JSON/search.tpl");
+  RegisterTemplateFilename(DOCUMENTS_JSON, "JSON/documents.tpl");
 
   Search::Search(Registry* registry,DocumentPtr doc,const string& name):
   registry_(registry),
@@ -66,12 +66,14 @@ namespace superfastmatch{
   void Search::fillJSONDictionary(TemplateDictionary* dict,const bool includeDoc){
     TemplateDictionary* searchDict=dict->AddIncludeDictionary("DATA");
     searchDict->SetFilename(SEARCH_JSON);
-    set<string> keys;
+    TemplateDictionary* documentsDict=searchDict->AddIncludeDictionary("DOCUMENTS");
+    documentsDict->SetFilename(DOCUMENTS_JSON);
+    set<string> metadata;
     for (vector<AssociationPtr>::iterator it=associations.begin(),ite=associations.end();it!=ite;++it){
-      (*it)->fillJSONDictionary(searchDict,keys);
+      (*it)->fillJSONDictionary(documentsDict,metadata);
     }
-    for (set<string>::const_iterator it=keys.begin(),ite=keys.end();it!=ite;++it){
-      TemplateDictionary* fields_dict=searchDict->AddSectionDictionary("FIELDS");
+    for (set<string>::const_iterator it=metadata.begin(),ite=metadata.end();it!=ite;++it){
+      TemplateDictionary* fields_dict=documentsDict->AddSectionDictionary("FIELDS");
       fields_dict->SetValue("FIELD",*it);
     }
     if(includeDoc){
