@@ -94,9 +94,7 @@ Ext.define('Superfastmatch.view.SearchForm', {
             searchText=me.down('#SearchText');
         searchText.hide();
         me.enable();
-        console.log('!');
         me.update({text:text});
-        console.log('!!');
     },
     
     unlockText: function(){

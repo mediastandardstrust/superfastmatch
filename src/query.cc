@@ -174,7 +174,7 @@ namespace superfastmatch
   const string& DocumentQuery::getPrevious(){
     if (previous_.empty() && getSourceDocPairs().size()>0){
       string cursor=getCursor(getSourceDocPairs().front());
-      vector<DocPair> pairs=getDocPairs(source_,order_by_,cursor,limit_+1,!desc_);
+      vector<DocPair> pairs=getDocPairs(source_,order_by_,cursor,limit_+2,!desc_);
       if (pairs.size()>0){
         previous_=getCommand(pairs.back());
       }else{

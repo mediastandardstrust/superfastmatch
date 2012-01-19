@@ -21,7 +21,7 @@ Ext.define('Superfastmatch.store.Fragments', {
     },
     
     loadDocuments: function(docs){
-        console.log("started");
+        console.log("Started processing documents");
         var me=this,
             records=[],
             tempStore=Ext.create('Ext.data.Store',{
@@ -51,6 +51,6 @@ Ext.define('Superfastmatch.store.Fragments', {
             });
         });
         me.getProxy().data=records;
-        console.log("finished");
+        console.log("Finished processing documents");
     }
 });

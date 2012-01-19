@@ -46,7 +46,6 @@ Ext.define('Superfastmatch.view.DocumentBrowser', {
        me.down('#DocTypeFilter').on('change',me.onDoctypeFilterChange,me);
     },
     
-    
     load: function(){
         var me=this,
             paging=me.down('#DocumentPaging');

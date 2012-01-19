@@ -48,7 +48,9 @@ Ext.define('Superfastmatch.store.Documents', {
     },
     
     sort: function() {
-        this.currentPage=1,
+        this.priorPage=1;
+        this.currentPage=1;
+        this.cursors.current='';
         this.callParent(arguments);
     }
 });
