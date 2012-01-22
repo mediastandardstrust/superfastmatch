@@ -5,18 +5,12 @@
         "rows"      :[
                         {{#DOCUMENT}}
                         {
-                            {{#STRING}}
-                            "{{KEY}}":"{{VALUE}}",
-                            {{/STRING}}
-                            {{#NUMBER}}
-                            "{{KEY}}":{{VALUE}},
-                            {{/NUMBER}}
-                            {{#DATE}}
-                            "{{KEY}}":new Date({{VALUE}}),
-                            {{/DATE}}
-                            {{#FRAGMENTS}}
-                            "fragments" : [{{#FRAGMENT}}[{{FROM}},{{TO}},{{LENGTH}},{{HASH}}]{{#FRAGMENT_separator}},{{/FRAGMENT_separator}}{{/FRAGMENT}}]
-                            {{/FRAGMENTS}}
+                          {{#FRAGMENTS}}
+                          "fragments" : [{{#FRAGMENT}}[{{FROM}},{{TO}},{{LENGTH}},{{HASH}}]{{#FRAGMENT_separator}},{{/FRAGMENT_separator}}{{/FRAGMENT}}],
+                          {{/FRAGMENTS}}
+                          {{#META}}
+                          "{{KEY}}": {{#NUMBER}}{{VALUE}}{{/NUMBER}}{{#STRING}}"{{VALUE}}"{{/STRING}}{{#DATE}}new Date({{VALUE}}){{/DATE}}{{#META_separator}},{{/META_separator}}
+                          {{/META}}
                         }{{#DOCUMENT_separator}},{{/DOCUMENT_separator}}
                         {{/DOCUMENT}}
                      ]

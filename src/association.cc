@@ -348,9 +348,10 @@ namespace superfastmatch
   void Association::fillJSONDictionary(TemplateDictionary* dict,set<string>& metadata){
     TemplateDictionary* docDict=dict->AddSectionDictionary("DOCUMENT");
     to_document_->fillJSONDictionary(docDict,metadata);
-    TemplateDictionary* metaDict=docDict->AddSectionDictionary("NUMBER");
+    TemplateDictionary* metaDict=docDict->AddSectionDictionary("META");
+    TemplateDictionary* valDict=metaDict->AddSectionDictionary("NUMBER");
     metaDict->SetValue("KEY","fragment_count");
-    metaDict->SetIntValue("VALUE",results_->size());
+    valDict->SetIntValue("VALUE",results_->size());
     metadata.insert("fragment_count");
     TemplateDictionary* fragmentsDict=docDict->AddSectionDictionary("FRAGMENTS");
     for(vector<Result>::const_iterator it=results_->begin(),ite=results_->end();it!=ite;++it){
