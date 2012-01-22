@@ -108,14 +108,13 @@ Ext.define('Superfastmatch.view.SearchForm', {
     
     highlightChange: function(eventArgs){
         var me=this,
-            searchText=me.down('#SearchText'),
             textEl=me.body.dom,
-            text=RegExp.escape((textEl.textContent|| textEl.innerText).substr(eventArgs.start,eventArgs.length)).trim();
+            text=RegExp.escape(eventArgs.text).trim();
         if (eventArgs.action==='enter'){
             highlightText(textEl,text,'highlight',true);
-            Ext.get(Ext.query('span',textEl)).scrollIntoView(textEl);            
+            Ext.get(Ext.query('span',textEl)).scrollIntoView(textEl,false);            
         }else if(eventArgs.action==='leave'){
-            removeHighlighting('highlight',textEl);            
+            removeHighlighting('highlight',textEl);
         }
     }
 });

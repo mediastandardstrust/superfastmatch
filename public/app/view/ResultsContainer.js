@@ -10,6 +10,7 @@ Ext.define('Superfastmatch.view.ResultsContainer', {
     },
     
     fragmentStore: undefined,
+    currentSearch: undefined,
 
     buildItems: function(){
         return {
@@ -111,12 +112,13 @@ Ext.define('Superfastmatch.view.ResultsContainer', {
             fragments=me.down('#Fragments'),
             paging=me.down('#FragmentPaging'),
             records=[];
+        me.currentSearch=search.get('text');
         documents.reconfigure(search.documents(),search.documents().model.getColumns());
         me.enable();
-        documents.setLoading(false);
-        fragments.setLoading(false);
         me.fragmentStore.loadDocuments(search.documents().data.items);
         paging.moveFirst();
+        documents.setLoading(false);
+        fragments.setLoading(false);
     },
     
     clearMatches: function(){
@@ -128,18 +130,24 @@ Ext.define('Superfastmatch.view.ResultsContainer', {
     highlightFragment: function(view,record){
         var me=this,
             documents=me.down('#Documents');
-            currentDocument=record.get('documents');
-        me.fireEvent('highlightchange',{action:'enter',start: record.get('from'),length: record.get('length')});
+            currentDocument=record.get('documents'),
+            start=record.get('from'),
+            length=record.get('length'),
+            text=me.currentSearch.substr(start,length);
+        me.fireEvent('highlightchange',{action:'enter',text: text,start: start,length: length});
         documents.getStore().filterBy(function(record,id){
             return currentDocument.hasOwnProperty(record.get('doctype')+':'+record.get('docid'));
         })
-        documents.setTitle('Matching Documents ("'+Ext.String.ellipsis(record.get('text',100,true))+'...")');
+        documents.setTitle('Matching Documents ("'+Ext.String.ellipsis(record.get('text'),100,true)+'...")');
     },
     
     unHighlightFragment: function(view,record){
         var me=this,
-            documents=me.down('#Documents');
-        me.fireEvent('highlightchange',{action:'leave',start: record.get('from'),length: record.get('length')});
+            documents=me.down('#Documents'),
+            start=record.get('from'),
+            lengh=record.get('length'),
+            text=me.currentSearch.substr(start,length);
+        me.fireEvent('highlightchange',{action:'leave',text: text,start: start,length: length});
         documents.getStore().clearFilter();
         documents.setTitle('Matching Documents');
     },
