@@ -330,7 +330,6 @@ namespace superfastmatch
     return doc->remove();
   }
   
-
   DocumentPtr DocumentManager::getDocument(const uint32_t doctype, const uint32_t docid,const int32_t state){
     assert((doctype>0) && (docid>0));
     DocumentPtr doc(new Document(doctype,docid,true,registry_));
