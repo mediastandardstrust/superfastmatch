@@ -20,6 +20,10 @@ Ext.define('Superfastmatch.store.Documents', {
         });
     },
 
+    resetCursors: function(){
+      this.cursors={};
+    },
+
     beforeLoad: function(store,operation){
         var me=this,
             pageDifference=me.currentPage-me.priorPage;

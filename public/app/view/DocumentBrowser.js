@@ -56,7 +56,8 @@ Ext.define('Superfastmatch.view.DocumentBrowser', {
 
     onDoctypeFilterChange: function(field){
         if(field.isValid()){
-          this.down('#DocumentPaging').doRefresh();  
+          this.getStore().resetCursors();
+          this.down('#DocumentPaging').moveFirst();  
         }
     },
     
