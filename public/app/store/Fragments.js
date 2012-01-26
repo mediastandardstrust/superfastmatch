@@ -45,7 +45,7 @@ Ext.define('Superfastmatch.store.Fragments', {
             records.push({
                 from: first.get('from'),
                 length: first.get('length'),
-                text: Ext.String.ellipsis(first.getText(),100,true),
+                text: Ext.String.ellipsis(first.getText(),300,true),
                 count: group.children.length,
                 documents: documents
             });

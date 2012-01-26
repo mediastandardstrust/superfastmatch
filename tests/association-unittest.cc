@@ -104,3 +104,26 @@ TEST_F(AssociationTest, ManagerTemporaryTest){
   EXPECT_EQ(1U,search->associations.size());
   EXPECT_EQ(0U,registry_.getAssociationDB()->count());
 }
+
+TEST_F(AssociationTest,DanteTest){
+  EXPECT_CALL(registry_,getWindowSize())
+    .WillRepeatedly(Return(30));
+  EXPECT_CALL(registry_,getWhiteSpaceThreshold())
+    .WillRepeatedly(Return(15));
+  vector<uint32_t> hashes1;
+  vector<uint32_t> hashes2;
+  UpperCaseRabinKarp("the\nfirst",3,3,hashes1);
+  UpperCaseRabinKarp("the first",3,3,hashes2);
+  EXPECT_THAT(hashes1,ContainerEq(hashes2));
+  DocumentPtr doc1 = registry_.getDocumentManager()->createPermanentDocument(1,1,"text=I%20need%20not%20dilate%20here%20on%20the%20characteristics%20of%20the%0Afirst%20epoch%20of%20Italian%20Poetry%3B%20since%20the%20extent&title=Doc1");
+  DocumentPtr doc2 = registry_.getDocumentManager()->createPermanentDocument(1,2,"text=I%20need%20not%20dilate%20here%20on%20the%20characteristics%20of%0Athe%20first%20epoch%20of%20Italian%20Poetry%3B%20since%20the%20extent&title=Doc2");
+  EXPECT_EQ(100U,doc2->getText().length());
+  EXPECT_EQ(doc1->getText().length(),doc2->getText().length());
+  registry_.getPostings()->addDocument(doc1);
+  registry_.getPostings()->addDocument(doc2);
+  registry_.getPostings()->finishTasks();
+  SearchPtr search=Search::createPermanentSearch(&registry_,doc1->doctype(),doc1->docid());
+  EXPECT_EQ(1U,search->associations.size());
+  EXPECT_EQ(100U,search->associations[0]->getResult(0).length);
+  EXPECT_EQ(2U,registry_.getAssociationDB()->count());
+}

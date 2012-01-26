@@ -27,6 +27,7 @@ typedef unsigned __int64 uint64_t;
 #include <tr1/memory>
 #include <tr1/unordered_set>
 #include <ctemplate/template.h>
+#include <xmmintrin.h>
 
 #define DISALLOW_COPY_AND_ASSIGN(TypeName) \
   TypeName(const TypeName&);               \
@@ -52,6 +53,7 @@ namespace superfastmatch{
 
   // Global consts
   const uint64_t MAX_HASH=(1L<<32)-1;
+  const unsigned char WHITESPACE=47;
   
   // Unicode helpers
   #define isutf(c) (((c)&0xC0)!=0x80)
@@ -66,7 +68,7 @@ namespace superfastmatch{
   #define likely(x) __builtin_expect(!!(x), 1)
   #define unlikely(x) __builtin_expect(!!(x), 0)
   
-  #define IsWhiteSpace(ch)((1ULL<<(ch-47))&0x2FFFFFFC07FE)==0
+  #define IsWhiteSpace(ch)((ch<=WHITESPACE)|(((1ULL<<(ch-47))&0x2FFFFFFC07FE)==0))
   
   inline bool notAlphaNumeric(char c){
     return IsWhiteSpace(c);
@@ -80,6 +82,16 @@ namespace superfastmatch{
     uint64_t u3 = ~(u1-0x7b7b7b7b7b7b7b7bul);
     uint64_t u4 = (u2 & u3) & (~upper & 0x8080808080808080ul);
     return upper-=(u4 >> 2); 
+  }
+  
+  // Taken from http://www.azillionmonkeys.com/qed/asmexample.html
+  inline uint64_t Normalise(uint64_t upper){
+    uint64_t u1 = 0x8080808080808080ul | upper;
+    uint64_t u2 = u1-0x6161616161616161ul;
+    uint64_t u3 = ~(u1-0x7b7b7b7b7b7b7b7bul);
+    uint64_t u4 = (u2 & u3) & (~upper & 0x8080808080808080ul);
+    upper-=(u4 >> 2); 
+    return uint64_t(_mm_max_pu8(__m64(upper),__m64(0x2F2F2F2F2F2F2F2Ful)));
   }
   
   inline uint64_t fmix ( uint64_t h )
@@ -105,7 +117,7 @@ namespace superfastmatch{
     uint64_t highBase=1;
     for (size_t i=0;i<window_size;i++){
       highBase=(i==0)?1:highBase*base;
-      whitespace+=32*highBase;
+      whitespace+=WHITESPACE*highBase;
     }
     return fmix(whitespace);
   }
@@ -123,10 +135,10 @@ namespace superfastmatch{
     uint64_t whitespaceHash=0;
     for (size_t i=0;i<window_size;i++){
       highBase=(i==0)?1:highBase*base;
-      char c=toupper(text[window_size-i-1]);
+      unsigned char c=Normalise(text[window_size-i-1])&0xFF;
       hash+=c*highBase;
       whitespaceHash+=32*highBase;
-      whitespace+=IsWhiteSpace(c);
+      whitespace+=(c==WHITESPACE);
     }
     const uint64_t high=highBase;
     whitespaceHash=fmix(whitespaceHash);
@@ -136,15 +148,15 @@ namespace superfastmatch{
     vector<uint32_t>::iterator ite=hashes.end();
     size_t split=(limit-1)/8;
     for (size_t i=split;i>0;i--){
-      uint64_t uf=UpperCase(*f++);
-      uint64_t ub=UpperCase(*b++);
+      uint64_t uf=Normalise(*f++);
+      uint64_t ub=Normalise(*b++);
       for (size_t j=8;j>0;j--){
         uint32_t front=uf&0xFF;
         uint32_t back=ub&0xFF;
         uf>>=8;
         ub>>=8;
-        whitespace-=IsWhiteSpace(front);
-        whitespace+=IsWhiteSpace(back);
+        whitespace-=(front==WHITESPACE);
+        whitespace+=(back==WHITESPACE);
         uint32_t mask=((whitespace<whitespace_threshold)-1);
         hash-=front*high;
         hash*=base;
@@ -156,13 +168,13 @@ namespace superfastmatch{
       }
     }
     for (size_t i=split*8+1;i<limit;i++){
-      char front=toupper(text[i-1]);
-      char back=toupper(text[i+window_size-1]);
+      unsigned char front=Normalise(text[i-1])&0xFF;
+      unsigned char back=Normalise(text[i+window_size-1])&0xFF;
       hash-=front*high;
       hash*=base;
       hash+=back;
-      whitespace-=IsWhiteSpace(front);
-      whitespace+=IsWhiteSpace(back);
+      whitespace-=(front==WHITESPACE);
+      whitespace+=(back==WHITESPACE);
       *it=(whitespace<whitespace_threshold)?(fmix(hash)):whitespaceHash;
       // cout << text.substr(i,window_size) << ":" << char(front) << ":" << int(IsWhiteSpace(front)) << ":" << char(back) << ":" << int(IsWhiteSpace(back)) << ":" << hash  << ":" << *it << ":" << whitespace << "!" << endl; 
       assert(it!=ite);
