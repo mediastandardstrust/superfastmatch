@@ -27,7 +27,7 @@ typedef unsigned __int64 uint64_t;
 #include <tr1/memory>
 #include <tr1/unordered_set>
 #include <ctemplate/template.h>
-#include <xmmintrin.h>
+#include <emmintrin.h>
 
 #define DISALLOW_COPY_AND_ASSIGN(TypeName) \
   TypeName(const TypeName&);               \
@@ -90,8 +90,11 @@ namespace superfastmatch{
     uint64_t u2 = u1-0x6161616161616161ul;
     uint64_t u3 = ~(u1-0x7b7b7b7b7b7b7b7bul);
     uint64_t u4 = (u2 & u3) & (~upper & 0x8080808080808080ul);
-    upper-=(u4 >> 2); 
-    return uint64_t(_mm_max_pu8(__m64(upper),__m64(0x2F2F2F2F2F2F2F2Ful)));
+    upper-=(u4 >> 2);
+    const __m64 ceiling=__m64(0x2F2F2F2F2F2F2F2Ful);
+    __m64 u=__m64(upper);
+    __m64 m=_mm_max_pu8(u,ceiling);
+    return uint64_t(m);
   }
   
   inline uint64_t fmix ( uint64_t h )
@@ -135,7 +138,7 @@ namespace superfastmatch{
     uint64_t whitespaceHash=0;
     for (size_t i=0;i<window_size;i++){
       highBase=(i==0)?1:highBase*base;
-      unsigned char c=Normalise(text[window_size-i-1])&0xFF;
+      uint64_t c=Normalise(text[window_size-i-1])&0xFF;
       hash+=c*highBase;
       whitespaceHash+=32*highBase;
       whitespace+=(c==WHITESPACE);
@@ -168,8 +171,8 @@ namespace superfastmatch{
       }
     }
     for (size_t i=split*8+1;i<limit;i++){
-      unsigned char front=Normalise(text[i-1])&0xFF;
-      unsigned char back=Normalise(text[i+window_size-1])&0xFF;
+      uint64_t front=Normalise(text[i-1])&0xFF;
+      uint64_t back=Normalise(text[i+window_size-1])&0xFF;
       hash-=front*high;
       hash*=base;
       hash+=back;
