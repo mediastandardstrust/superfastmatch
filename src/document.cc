@@ -283,11 +283,7 @@ namespace superfastmatch
           bool isNumber=isNumeric(value);
           TemplateDictionary* valDict;
           if(isNumber){
-            if ((it->length()>=4)&&(it->compare(it->length()-4,4,"date")==0)){
-              valDict=metaDict->AddSectionDictionary("DATE");
-            }else{
-              valDict=metaDict->AddSectionDictionary("NUMBER");
-            }
+            valDict=metaDict->AddSectionDictionary("NUMBER");
           }else{
             valDict=metaDict->AddSectionDictionary("STRING");
           }

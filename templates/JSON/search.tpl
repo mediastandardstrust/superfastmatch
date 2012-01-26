@@ -1,7 +1,6 @@
-{{%AUTOESCAPE context="JSON"}}
     "documents" :{
         {{>DOCUMENTS}}
     },
     {{#SOURCE}}
-    "text"      : "{{TEXT}}"
-{{/SOURCE}}
+    "text"      : "{{TEXT:o}}"
+    {{/SOURCE}}
