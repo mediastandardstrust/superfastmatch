@@ -3,5 +3,5 @@
         {{>DOCUMENTS}}
     },
     {{#SOURCE}}
-    "text"      : "{{TEXT}}"
+    "text"      : "{{TEXT:json_escape}}"
 {{/SOURCE}}
