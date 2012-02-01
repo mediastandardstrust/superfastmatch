@@ -35,6 +35,8 @@ Ext.define('Superfastmatch.model.Document', {
                 if ((field.name!='doctype')&&(field.name!='docid')&&(field.name!='characters')){
                     if(field.name.search(/date$/)!=-1){
                       columns.push({header:field.name.humanize(),dataIndex:field.name,renderer: function(v){return v?Ext.util.Format.date(new Date(v),'m/d/Y'):'';}});
+                    }else if(field.name.search(/url$/)!=-1){
+                      columns.push({header:field.name.humanize(),dataIndex:field.name,xtype: 'templatecolumn',tpl: '<a href="{'+field.name+'}" target="_blank">{'+field.name+'}</a>'});
                     }else{
                       columns.push({header:field.name.humanize(),dataIndex:field.name});
                     }
