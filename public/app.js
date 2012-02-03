@@ -19,7 +19,7 @@ Ext.application({
     models: ['Fragment','Search','Document'],
     controllers: ['Searches','Documents'],
     requires: ['Superfastmatch.view.MainViewPort'],
-    launch: function() {
+    launch: function(){
         Ext.QuickTips.init();
         var cmp1 = Ext.create('Superfastmatch.view.MainViewPort', {
             renderTo: Ext.getBody()

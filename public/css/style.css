@@ -14,3 +14,13 @@ span.highlight{
 .highlighted{
   background-color: #F9A803 !important;
 }
+
+.x-action-col-cell img { height: 16px; width: 16px; } 
+
+.icon-go{
+  background-image: url(/img/icons/page_go.png) !important;;
+}
+
+.icon-side{
+  background-image: url(/img/icons/page_copy.png) !important;;
+}

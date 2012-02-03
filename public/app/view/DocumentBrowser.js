@@ -20,7 +20,21 @@ Ext.define('Superfastmatch.view.DocumentBrowser', {
        me.callParent(arguments);
        me.addDocked(Ext.create('Ext.toolbar.Paging',{
            itemId: 'DocumentPaging',
+           store: store,
+           listeners:{
+             afterrender: {
+               fn: function(){
+                 Ext.each(this.items.getRange(3,6),function(){this.hide()});
+               }
+             },
+             change: {
+               fn: function(){
+                 Ext.each(this.items.getRange(0,2),function(){this.enable()});
+               }
+             }
+           },
            displayInfo: true,
+           displayMsg: '{2} Documents',
            items: ['-','Doc Types',Ext.create('Ext.form.field.Text',{
                itemId: 'DocTypeFilter',
                emptyText: 'eg. 1-3:6',
@@ -33,7 +47,6 @@ Ext.define('Superfastmatch.view.DocumentBrowser', {
            dock: 'bottom'
        }));
        me.addEvents('documentselected','documentsloading');
-       me.down('#DocumentPaging').bindStore(store,true);
        store.on({
            beforeload: me.onBeforeLoad,
            load: me.onLoad,
@@ -46,18 +59,23 @@ Ext.define('Superfastmatch.view.DocumentBrowser', {
        me.down('#DocTypeFilter').on('change',me.onDoctypeFilterChange,me);
     },
     
-    load: function(){
+    load: function(doc){
         var me=this,
             paging=me.down('#DocumentPaging');
-        if (me.getStore().count()==0){
-            paging.moveFirst();   
+        if (doc){
+          this.getStore().cursors.current=doc['doctype']+":"+doc['doctype']+":"+doc['docid'];
+          this.getStore().currentPage=2;
+          paging.doRefresh();
+        }
+        else if(me.getStore().count()==0){
+          paging.moveFirst();
         }
     },
 
     onDoctypeFilterChange: function(field){
         if(field.isValid()){
           this.getStore().resetCursors();
-          this.down('#DocumentPaging').moveFirst();  
+          this.down('#DocumentPaging').moveFirst();
         }
     },
     
@@ -65,7 +83,7 @@ Ext.define('Superfastmatch.view.DocumentBrowser', {
         var me=this,
             doctypes=me.down('#DocTypeFilter');
         if (doctypes.isValid()){
-            operation.doctypes=doctypes.getValue();     
+            operation.doctypes=doctypes.getValue();
         }
     },
     

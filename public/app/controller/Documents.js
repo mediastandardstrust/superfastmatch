@@ -2,6 +2,14 @@ Ext.define('Superfastmatch.controller.Documents', {
     extend: 'Ext.app.Controller',
     refs: [
         {
+            ref: 'tabs',
+            selector: '#Tabs'
+        },
+        {
+            ref: 'browser',
+            selector: '#DocumentPanel #DocumentBrowser'
+        },
+        {
             ref: 'results',
             selector: '#DocumentPanel #Results'
         },
@@ -19,8 +27,17 @@ Ext.define('Superfastmatch.controller.Documents', {
               },
               '#DocumentPanel > #Results' : {
                   highlightchange: this.onHighlightChange
+              },
+              '#Results' :{
+                  showdocument: this.onDocumentShow
               }
         });
+        this.application.on("documentshow",this.onDocumentShow);
+    },
+
+    onDocumentShow: function(doc){
+      this.getTabs().setActiveTab('DocumentPanel');
+      this.getBrowser().load(doc);
     },
 
     onDocumentSelected: function(results){

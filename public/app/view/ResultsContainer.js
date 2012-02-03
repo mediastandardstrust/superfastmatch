@@ -8,7 +8,7 @@ Ext.define('Superfastmatch.view.ResultsContainer', {
        align: 'stretch',
        type: 'vbox'
     },
-    
+
     fragmentStore: undefined,
     currentSearch: undefined,
 
@@ -79,6 +79,26 @@ Ext.define('Superfastmatch.view.ResultsContainer', {
         };
     },
     
+    buildActions: function(){
+      var me=this;
+      return {xtype:'actioncolumn',header: 'Actions',minWidth:50,maxWidth:50,items: [{
+            handler:function (grid, rowIndex, colIndex) {
+                var rec = grid.getStore().getAt(rowIndex);
+                me.fireEvent('showdocument',{doctype:rec.get('doctype'),docid:rec.get('docid')});
+            },
+            getClass: function(){return 'icon-go';},
+            tooltip: 'Go to Document'
+          },{
+            handler:function (grid, rowIndex, colIndex) {
+                var rec = grid.getStore().getAt(rowIndex);
+                me.fireEvent('comparedocument',{doctype:rec.get('doctype'),docid:rec.get('docid')});
+            },
+            getClass: function(){return 'icon-side';},
+            tooltip: 'View Documents side-by-side'
+          }]
+      }
+    },
+    
     initComponent: function() {
         var me = this;
         Ext.applyIf(me,me.buildItems());
@@ -98,7 +118,7 @@ Ext.define('Superfastmatch.view.ResultsContainer', {
            itemmouseleave: me.unHighlightFragment,
            scope:          me
         });
-        me.addEvents('highlightchange');
+        me.addEvents('highlightchange','showdocument','comparedocument');
     },
     
     loading: function(){
@@ -111,9 +131,10 @@ Ext.define('Superfastmatch.view.ResultsContainer', {
             documents=me.down('#Documents'),
             fragments=me.down('#Fragments'),
             paging=me.down('#FragmentPaging'),
-            records=[];
+            records=[],
+            columns=search.documents().model.getColumns().concat(me.buildActions());
         me.currentSearch=search.get('text');
-        documents.reconfigure(search.documents(),search.documents().model.getColumns());
+        documents.reconfigure(search.documents(),columns);
         me.enable();
         me.fragmentStore.loadDocuments(search.documents().data.items);
         paging.moveFirst();
