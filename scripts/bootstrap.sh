@@ -9,7 +9,7 @@ curl http://gflags.googlecode.com/files/gflags-2.0.tar.gz -o external/gflags-2.0
 curl http://fallabs.com/kyotocabinet/pkg/kyotocabinet-1.2.72.tar.gz -o external/kyotocabinet-1.2.72.tar.gz
 curl http://fallabs.com/kyototycoon/pkg/kyototycoon-0.9.52.tar.gz -o external/kyototycoon-0.9.52.tar.gz
 curl http://www.oberhumer.com/opensource/lzo/download/lzo-2.06.tar.gz -o external/lzo-2.06.tar.gz
-curl http://http://sparsehash.googlecode.com/files/sparsehash-2.0.1.tar.gz -o external/sparsehash-2.0.1.tar.gz
+curl http://sparsehash.googlecode.com/files/sparsehash-2.0.1.tar.gz -o external/sparsehash-2.0.1.tar.gz
 
 cd external && for i in *.tar.gz; do tar xzvf $i; done
 if [[ "$unamestr" == 'Linux' ]]; then
