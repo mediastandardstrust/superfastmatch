@@ -1,6 +1,5 @@
     "documents" :{
         {{>DOCUMENTS}}
-    },
-    {{#SOURCE}}
+    }{{#SOURCE}},
     "text"      : "{{TEXT:o}}"
     {{/SOURCE}}
