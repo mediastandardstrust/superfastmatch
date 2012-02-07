@@ -24,7 +24,7 @@ Superfastmatch depends on these libraries:
 
 [Kyoto Tycoon](http://fallabs.com/kyototycoon/)
 
-You might be able to get away with installing the .deb packages on the listed project pages, but this is untested. The trunk of sparsehash is required for this [patch](http://code.google.com/p/google-sparsehash/source/detail?r=76);
+You might be able to get away with installing the .deb packages on the listed project pages, but this is untested.
 
 The easier route is to run:
 
@@ -101,6 +101,13 @@ to see what is happening. And then finally, in another terminal window, run:
 to load some example documents and associate them with each other. You can view the results in the browser at:
 
     http://127.0.0.1:8080/document/
+
+Daemonizing
+-----------
+
+See contrib/init.d for an example init.d script. Makes use of fuser which may require:
+
+    sudo apt-get install psmisc
 
 Feedback
 --------

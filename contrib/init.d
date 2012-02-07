@@ -1,6 +1,6 @@
 #! /bin/sh
 ### BEGIN INIT INFO
-# Provides:          us.churnalism.com
+# Provides:          ft.churnalism.com
 # Required-Start:    $local_fs $remote_fs $network $syslog
 # Required-Stop:     $local_fs $remote_fs $network $syslog
 # Default-Start:     2 3 4 5
@@ -15,13 +15,12 @@
 
 # configuration variables
 prog="superfastmatch"
-cmd="/srv/superfastmatch/superfastmatch"
-data_path="/srv/superfastmatch/data"
+cmd="/path/to/superfastmatch/superfastmatch"
+data_path="/path/to/hashes/"
 port="8080"
-timeout="30"
 slot_count="4"
 thread_count="4"
-log_file="/var/logs/superfastmatch.log"
+log_file="/path/to/superfastmatch.log"
 retval=0
 
 # start the server
@@ -32,10 +31,7 @@ start(){
     printf 'No such directory: %s\n' "$data_path"
     retval=1
   else
-    cmd="$cmd -port $port -timeout $timeout -slot_count $slot_count -thread_count $thread_count -log_file $log_file -daemonize"
-    if [ -n "$logfile" ] ; then
-      cmd="$cmd >> $logfile"
-    fi
+    cmd="$cmd -port $port -slot_count $slot_count -thread_count $thread_count -log_file $log_file -daemonize"
     printf "Executing: %s\n" "$cmd"
     $cmd
     if [ "$?" -eq 0 ] ; then
@@ -50,9 +46,7 @@ start(){
 # stop the server
 stop(){
   printf 'Stopping the SuperFastMatch server\n'
-  pid=`fuser "$log_file"`
-  printf "Sending the terminal signal to the process: %s\n" "$pid"
-  kill -TERM "$pid"
+  fuser -k -s "$log_file"
 }
 
 # check permission
