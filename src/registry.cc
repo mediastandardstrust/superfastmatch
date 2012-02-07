@@ -224,20 +224,16 @@ namespace superfastmatch{
   associationManager_(0),
   queueManager_(0)
   {
+    logger_->open(getLogFile().c_str());
+    if (isDaemonized() && !daemonize()){
+      logger_->log(Logger::ERROR, "Failed to daemonize!");
+    }
+    if (!openDatabases()){
+      logger_->log(Logger::ERROR,"Error opening databases");
+    }
     instruments_.push_back(InstrumentGroupPtr(new InstrumentGroup("Worker Instruments",100,20)));
     instruments_.push_back(InstrumentGroupPtr(new InstrumentGroup("Queue Instruments",100,20)));
     instruments_.push_back(InstrumentGroupPtr(new InstrumentGroup("Index Instruments",100,20)));
-    logger_->open(getLogFile().c_str());
-    uint32_t cache=FLAGS_cache/16;
-    if (not(documentDB_->open(getDataPath()+"/document.kch#log=+#logkinds=error#bnum=20m#opts=c#zcomp=lzo#msiz="+toString(cache*12)+"m",getMode()) && \
-            queueDB_->open(getDataPath()+"/queue.kct#log=+#logkinds=error#bnum=1m#opts=lc#zcomp=lzo",getMode()) && \
-            payloadDB_->open(getDataPath()+"/payload.kch#log=+#logkinds=error#bnum=100k#opts=c#zcomp=lzo#msiz="+toString(cache)+"m",getMode()) && \
-            metaDB_->open(getDataPath()+"/meta.kct#log=+#logkinds=error#bnum=1m#opts=lc#zcomp=lzo#msiz="+toString(cache)+"m",getMode()) && \
-            orderedMetaDB_->open(getDataPath()+"/orderedmeta.kct#log=+#logkinds=error#bnum=1m#opts=lc#zcomp=lzo#msiz="+toString(cache)+"m",getMode()) && \
-            associationDB_->open(getDataPath()+"/association.kct#log=+#logkinds=error#bnum=1m#opts=lc#zcomp=lzo#msiz="+toString(cache)+"m",getMode()) && \
-            miscDB_->open(getDataPath()+"/misc.kch#log=+#logkinds=error",getMode()))){
-      logger_->log(Logger::ERROR,"Error opening databases");
-    }
     postings_ = new Posting(this);
     documentManager_ = new DocumentManager(this);
     associationManager_ = new AssociationManager(this);
@@ -282,6 +278,17 @@ namespace superfastmatch{
     delete associationManager_;
     delete queueManager_;
     delete logger_;
+  }
+  
+  bool FlagsRegistry::openDatabases(){
+    uint32_t cache=FLAGS_cache/16;
+    return documentDB_->open(getDataPath()+"/document.kch#log=+#logkinds=error#bnum=20m#opts=c#zcomp=lzo#msiz="+toString(cache*12)+"m",getMode()) && \
+           queueDB_->open(getDataPath()+"/queue.kct#log=+#logkinds=error#bnum=1m#opts=lc#zcomp=lzo",getMode()) && \
+           payloadDB_->open(getDataPath()+"/payload.kch#log=+#logkinds=error#bnum=100k#opts=c#zcomp=lzo#msiz="+toString(cache)+"m",getMode()) && \
+           metaDB_->open(getDataPath()+"/meta.kct#log=+#logkinds=error#bnum=1m#opts=lc#zcomp=lzo#msiz="+toString(cache)+"m",getMode()) && \
+           orderedMetaDB_->open(getDataPath()+"/orderedmeta.kct#log=+#logkinds=error#bnum=1m#opts=lc#zcomp=lzo#msiz="+toString(cache)+"m",getMode()) && \
+           associationDB_->open(getDataPath()+"/association.kct#log=+#logkinds=error#bnum=1m#opts=lc#zcomp=lzo#msiz="+toString(cache)+"m",getMode()) && \
+           miscDB_->open(getDataPath()+"/misc.kch#log=+#logkinds=error",getMode());
   }
   
   void FlagsRegistry::fillPerformanceDictionary(TemplateDictionary* dict){

@@ -47,12 +47,6 @@ int main(int argc, char** argv) {
   // set up the logger
   serv.set_logger(registry->getLogger(), Logger::INFO | Logger::SYSTEM | Logger::ERROR);
   
-  // Daemonize
-  if (registry->isDaemonized() && !daemonize()){
-    serv.log(Logger::SYSTEM, "Failed to daemonize!");
-    delete registry;
-    return 1;
-  }
   serv.log(Logger::SYSTEM, "================ [START]: pid=%d", getpid());
   g_serv = &serv;
 

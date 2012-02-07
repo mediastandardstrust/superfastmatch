@@ -145,6 +145,7 @@ namespace superfastmatch{
     void fillPerformanceDictionary(TemplateDictionary* dict);
       
   private:
+    bool openDatabases();
     void fill_db_dictionary(TemplateDictionary* dict, kc::PolyDB* db, const string name);
     void status(std::ostream& s, kc::PolyDB* db);
   };
