@@ -2,7 +2,11 @@
 
 namespace superfastmatch{
 
-  Logger::Logger() : strm_(NULL), lock_() {}
+  Logger::Logger(const bool debug):
+  debug_(debug),
+  strm_(NULL),
+  lock_()
+  {}
 
   Logger::~Logger() {
     if (strm_) close();
@@ -37,6 +41,7 @@ namespace superfastmatch{
 
   void Logger::log(Kind kind, const char* message) {
     if (!strm_) return;
+    if (kind==kt::HTTPServer::Logger::DEBUG && !debug_) return;
     char date[48];
     kt::datestrwww(kc::nan(), kc::INT32MAX, 6, date);
     const char* kstr = "MISC";

@@ -8,10 +8,11 @@ namespace superfastmatch{
 
   class Logger : public kt::HTTPServer::Logger {
   private:
+    bool debug_;
     std::ostream* strm_;
     kc::Mutex lock_;
   public:
-    explicit Logger();
+    explicit Logger(const bool debug);
 
     ~Logger();
 

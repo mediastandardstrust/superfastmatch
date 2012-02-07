@@ -3,11 +3,8 @@ TODO
 
 * Write test for massive search documents
 * Make association task work for specified doctypes
-* Make association task multithreaded
-* Better ordering of search results and fragments within an association
 * Create an AssociationCursor and respective page
 * Create a Fragment class and associated page
-* Update init.d with correct settings and paths
 * JSON versions of appropriate templates
 * Implement Document caching
 * Refactor paging into class
@@ -16,6 +13,9 @@ TODO
 DONE
 ----
 
+* ~~Update init.d with correct settings and paths~~
+* ~~Make association task multithreaded~~
+* ~~Better ordering of search results and fragments within an association~~
 * ~~Allow ordering of documents by metadata~~
 * ~~Separate queue payload out to speed up queue page and refactor Command to be polymorphic~~
 * ~~Implement search page~~

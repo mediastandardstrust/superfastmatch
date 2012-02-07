@@ -44,6 +44,8 @@ namespace superfastmatch{
     virtual string getPublicPath() const=0;
     virtual string getAddress() const=0;
     virtual uint32_t getPort() const=0;
+    virtual bool isDaemonized() const=0;
+    virtual string getLogFile() const=0;
 
     // Instrumentation
     virtual InstrumentGroupPtr getInstrumentGroup(const int32_t group)=0;
@@ -119,6 +121,8 @@ namespace superfastmatch{
     string getAddress() const;
     uint32_t getPort() const;
     double getTimeout() const;
+    bool isDaemonized() const;
+    string getLogFile() const;
     InstrumentGroupPtr getInstrumentGroup(const int32_t group);
 
     uint32_t getMode();

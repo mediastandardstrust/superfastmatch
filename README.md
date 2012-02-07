@@ -90,11 +90,7 @@ otherwise this will be much faster:
 
     ./superfastmatch -debug -reset -window_size 30
 
-in another terminal window run:
-
-    tail -f debug.log
-    
-to see what is happening. And then finally, in another terminal window, run:
+And then finally, in another terminal window, run:
 
     ./scripts/gutenberg.sh
     

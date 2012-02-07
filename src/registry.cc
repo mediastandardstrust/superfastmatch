@@ -8,6 +8,10 @@
 namespace superfastmatch{
   // Command line flags
   
+  DEFINE_bool(daemonize,false,"Run process in the background");
+
+  DEFINE_string(log_file,"-","File to write logs to (defaults to stdout)");
+  
   DEFINE_int32(port, 8080, "What port to listen on");
   static const bool port_dummy = google::RegisterFlagValidator(&FLAGS_port, &ValidatePort);
 
@@ -46,7 +50,8 @@ namespace superfastmatch{
 
   DEFINE_bool(debug_templates,false,"Forces template reload for every template file change");
   
-  DEFINE_bool(debug,false,"Outputs debug information to debug.log");
+  DEFINE_bool(debug,false,"Outputs debug information to specified log_file");
+
 
   uint32_t FlagsRegistry::getHashWidth() const{
     return FLAGS_hash_width;
@@ -126,12 +131,20 @@ namespace superfastmatch{
   };
   
   string FlagsRegistry::getAddress() const{
-    return FLAGS_address;    
+    return FLAGS_address;
   };
   
   uint32_t FlagsRegistry::getPort() const{
-    return FLAGS_port;    
+    return FLAGS_port;
   };
+  
+  bool FlagsRegistry::isDaemonized() const{
+    return FLAGS_daemonize;
+  }
+  
+  string FlagsRegistry::getLogFile() const{
+    return FLAGS_log_file;
+  }
   
   uint32_t FlagsRegistry::getMode(){
     return kc::PolyDB::OWRITER|kc::PolyDB::OCREATE|(FLAGS_reset?(kc::PolyDB::OTRUNCATE):0);
@@ -205,7 +218,7 @@ namespace superfastmatch{
   associationDB_(new kc::PolyDB()),
   miscDB_(new kc::PolyDB()),
   templates_(mutable_default_template_cache()),
-  logger_(new Logger()),
+  logger_(new Logger(FLAGS_debug)),
   postings_(0),
   documentManager_(0),
   associationManager_(0),
@@ -214,9 +227,7 @@ namespace superfastmatch{
     instruments_.push_back(InstrumentGroupPtr(new InstrumentGroup("Worker Instruments",100,20)));
     instruments_.push_back(InstrumentGroupPtr(new InstrumentGroup("Queue Instruments",100,20)));
     instruments_.push_back(InstrumentGroupPtr(new InstrumentGroup("Index Instruments",100,20)));
-    if (FLAGS_debug){
-      logger_->open("debug.log");
-    }
+    logger_->open(getLogFile().c_str());
     uint32_t cache=FLAGS_cache/16;
     if (not(documentDB_->open(getDataPath()+"/document.kch#log=+#logkinds=error#bnum=20m#opts=c#zcomp=lzo#msiz="+toString(cache*12)+"m",getMode()) && \
             queueDB_->open(getDataPath()+"/queue.kct#log=+#logkinds=error#bnum=1m#opts=lc#zcomp=lzo",getMode()) && \
@@ -225,7 +236,7 @@ namespace superfastmatch{
             orderedMetaDB_->open(getDataPath()+"/orderedmeta.kct#log=+#logkinds=error#bnum=1m#opts=lc#zcomp=lzo#msiz="+toString(cache)+"m",getMode()) && \
             associationDB_->open(getDataPath()+"/association.kct#log=+#logkinds=error#bnum=1m#opts=lc#zcomp=lzo#msiz="+toString(cache)+"m",getMode()) && \
             miscDB_->open(getDataPath()+"/misc.kch#log=+#logkinds=error",getMode()))){
-      cout << "Error opening databases" << endl;
+      logger_->log(Logger::ERROR,"Error opening databases");
     }
     postings_ = new Posting(this);
     documentManager_ = new DocumentManager(this);

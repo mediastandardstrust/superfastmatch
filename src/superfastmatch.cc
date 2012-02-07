@@ -7,10 +7,6 @@
 
 using namespace superfastmatch;
 
-DEFINE_bool(daemonize,false,"Run process in the background");
-
-DEFINE_string(log_path,"-","Where to put the log files");
-
 // the flag whether the server is alive
 HTTPServer* g_serv = NULL;
 
@@ -49,17 +45,15 @@ int main(int argc, char** argv) {
   serv.set_worker(&worker, registry->getThreadCount());
 
   // set up the logger
-  Logger logger;
-  logger.open(FLAGS_log_path.c_str());
-  serv.set_logger(&logger, Logger::INFO | Logger::SYSTEM | Logger::ERROR);
+  serv.set_logger(registry->getLogger(), Logger::INFO | Logger::SYSTEM | Logger::ERROR);
   
   // Daemonize
-  if (FLAGS_daemonize && !daemonize()){
+  if (registry->isDaemonized() && !daemonize()){
     serv.log(Logger::SYSTEM, "Failed to daemonize!");
+    delete registry;
     return 1;
   }
   serv.log(Logger::SYSTEM, "================ [START]: pid=%d", getpid());
-
   g_serv = &serv;
 
   // start the server and block until it stops
@@ -67,9 +61,7 @@ int main(int argc, char** argv) {
   
   // clean up connections and other resources
   serv.finish();
-
-  delete registry;
-
   serv.log(Logger::SYSTEM, "================ [FINISH]: pid=%d", getpid());
+  delete registry;
   return 0;
 }
