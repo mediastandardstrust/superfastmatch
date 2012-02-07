@@ -72,6 +72,10 @@ class MockRegistry : public Registry {
       TemplateCache*());
   MOCK_METHOD0(getLogger,
       Logger*());
+  MOCK_CONST_METHOD0(isDaemonized,
+      bool());
+  MOCK_CONST_METHOD0(getLogFile,
+      string());
   MOCK_METHOD0(getPostings,
       Posting*());
   MOCK_METHOD0(getDocumentManager,

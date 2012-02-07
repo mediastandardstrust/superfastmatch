@@ -65,7 +65,7 @@ void BaseTest::SetUp(){
   associationManager_ = new AssociationManager(&registry_);
   queueManager_ = new QueueManager(&registry_);
   postings_ = new Posting(&registry_);
-  logger_ = new Logger();
+  logger_ = new Logger(false);
   EXPECT_CALL(registry_,getDocumentManager())
     .WillRepeatedly(Return(documentManager_));
   EXPECT_CALL(registry_,getAssociationManager())
