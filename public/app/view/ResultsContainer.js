@@ -1,7 +1,7 @@
 Ext.define('Superfastmatch.view.ResultsContainer', {
     extend: 'Ext.container.Container',
     alias: 'widget.resultscontainer',
-    requires: ['Superfastmatch.store.Fragments','Ext.grid.PagingScroller'],
+    requires: ['Superfastmatch.store.Fragments'],
 
     itemId: 'Results',
     layout: {
@@ -91,7 +91,7 @@ Ext.define('Superfastmatch.view.ResultsContainer', {
           },{
             handler:function (grid, rowIndex, colIndex) {
                 var rec = grid.getStore().getAt(rowIndex);
-                me.fireEvent('comparedocument',{doctype:rec.get('doctype'),docid:rec.get('docid')});
+                me.fireEvent('comparedocument',{search: me.currentSearch,match: rec});
             },
             getClass: function(){return 'icon-side';},
             tooltip: 'View Documents side-by-side'
@@ -133,7 +133,7 @@ Ext.define('Superfastmatch.view.ResultsContainer', {
             paging=me.down('#FragmentPaging'),
             records=[],
             columns=search.documents().model.getColumns().concat(me.buildActions());
-        me.currentSearch=search.get('text');
+        me.currentSearch=search;
         documents.reconfigure(search.documents(),columns);
         me.enable();
         me.fragmentStore.loadDocuments(search.documents().data.items);
@@ -154,7 +154,7 @@ Ext.define('Superfastmatch.view.ResultsContainer', {
             currentDocument=record.get('documents'),
             start=record.get('from'),
             length=record.get('length'),
-            text=me.currentSearch.substr(start,length);
+            text=me.currentSearch.get('text').substr(start,length);
         me.fireEvent('highlightchange',{action:'enter',text: text,start: start,length: length});
         documents.getStore().filterBy(function(record,id){
             return currentDocument.hasOwnProperty(record.get('doctype')+':'+record.get('docid'));
@@ -167,7 +167,7 @@ Ext.define('Superfastmatch.view.ResultsContainer', {
             documents=me.down('#Documents'),
             start=record.get('from'),
             lengh=record.get('length'),
-            text=me.currentSearch.substr(start,length);
+            text=me.currentSearch.get('text').substr(start,length);
         me.fireEvent('highlightchange',{action:'leave',text: text,start: start,length: length});
         documents.getStore().clearFilter();
         documents.setTitle('Matching Documents');

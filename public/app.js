@@ -17,7 +17,7 @@ Ext.state.Manager.setProvider(
 Ext.application({
     name: 'Superfastmatch',
     models: ['Fragment','Search','Document'],
-    controllers: ['Searches','Documents'],
+    controllers: ['Searches','Documents','Compare'],
     requires: ['Superfastmatch.view.MainViewPort'],
     launch: function(){
         Ext.QuickTips.init();

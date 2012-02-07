@@ -1,3 +1,11 @@
+Object.increment=function(obj,key){
+  if (obj.hasOwnProperty(key)){
+    return obj[key]+=1;
+  }else{
+    return obj[key]=1;
+  }
+}
+
 RegExp.escape = function(text) {
     return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
 }

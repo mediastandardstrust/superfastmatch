@@ -6,7 +6,6 @@ Ext.define('Superfastmatch.store.Documents', {
     pageSize: 10,
     remoteSort: true,
 
-    priorPage: 1,
     cursors: {},
     
     constructor: function(){
@@ -18,42 +17,43 @@ Ext.define('Superfastmatch.store.Documents', {
             scope: me
         });
     },
-
-    resetCursors: function(){
-      this.cursors={};
-    },
-
-    beforeLoad: function(store,operation){
-        var me=this,
-            pageDifference=me.currentPage-me.priorPage;
-        if (pageDifference==0){
-            operation.start=me.cursors.current?me.cursors.current:'';
-        }else if (pageDifference<-1){
-            operation.start=me.cursors.first;
-        }else if (pageDifference==-1){
-            operation.start=me.cursors.previous;
-        }else if(pageDifference==1){
-            operation.start=me.cursors.next;
-        }else if(pageDifference>1){
-            operation.start=me.cursors.last;
-        };
-    },
     
     onLoad: function(store,records,successful){
-        if (successful){
-            store.cursors=store.getProxy().getReader().rawData.cursors;
-        }
-    },
-
-    loadPage: function(page, options) {
-        this.priorPage=this.currentPage;
-        this.callParent(arguments);
+      if (successful){
+        store.cursors=store.getProxy().getReader().rawData.cursors;
+      }
     },
     
-    sort: function() {
-        this.priorPage=1;
-        this.currentPage=1;
-        this.cursors.current='';
-        this.callParent(arguments);
+    beforeLoad: function(store,operation){
+      if (operation.start==0){
+        operation.start='';
+      }
+    },
+    
+    move: function(position){
+      var me=this;
+      if (me.cursors.hasOwnProperty(position)){
+        me.load({
+          start: me.cursors[position]
+        });
+      }else{
+        me.load();
+      }
+    },
+    
+    moveFirst: function(){
+      this.move('first');
+    },
+    
+    moveLast: function(){
+      this.move('last');
+    },
+    
+    movePrevious: function(){
+      this.move('previous');
+    },
+    
+    moveNext: function(){
+      this.move('next');
     }
 });

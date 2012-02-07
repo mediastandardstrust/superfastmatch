@@ -32,7 +32,6 @@ Ext.define('Superfastmatch.controller.Documents', {
                   showdocument: this.onDocumentShow
               }
         });
-        this.application.on("documentshow",this.onDocumentShow);
     },
 
     onDocumentShow: function(doc){

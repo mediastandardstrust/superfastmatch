@@ -13,41 +13,61 @@ Ext.define('Superfastmatch.view.DocumentBrowser', {
         loadMask: true,
         emptyText: 'No Saved Documents Found'
     },
-        
+    store: Ext.create('Superfastmatch.store.Documents'),
+    
+    buildToolBar: function(){
+      var me=this;
+      return Ext.create('Ext.toolbar.Toolbar',{
+        itemId: 'DocumentPaging',
+        dock: 'bottom',
+        items:  [{
+                  itemId: 'first',
+                  tooltip: 'First Page',
+                  iconCls: Ext.baseCSSPrefix + 'tbar-page-first',
+                  handler: me.store.moveFirst,
+                  scope: me.store
+                },{
+                  itemId: 'prev',
+                  tooltip: 'Previous Page',
+                  iconCls: Ext.baseCSSPrefix + 'tbar-page-prev',
+                  handler: me.store.movePrevious,
+                  scope: me.store
+                },
+                '-',
+                'Doc Types:',
+                Ext.create('Ext.form.field.Text',{
+                     itemId: 'DocTypeFilter',
+                     emptyText: 'eg. 1-3:6',
+                     width:80,
+                     regex:/^[\d:\-]*\d$/,
+                     regexText: 'You can filter documents by ranges of Doc Type. For Example:.<br/>1-3 Show Doc Types 1,2 and 3<br/>1:4-5 Show Doc types 1, 4 and 5'
+                }),
+                '-',
+                {
+                  itemId: 'next',
+                  tooltip: 'Next Page',
+                  iconCls: Ext.baseCSSPrefix + 'tbar-page-next',
+                  handler: me.store.moveNext,
+                  scope: me.store
+                },{
+                  itemId: 'last',
+                  tooltip: 'Last Page',
+                  iconCls: Ext.baseCSSPrefix + 'tbar-page-last',
+                  handler: me.store.moveLast,
+                  scope: me.store
+                },
+                '->',
+                'Documents:'
+              ]
+      });
+    },
+    
     initComponent: function() {
-       var me=this,
-           store=Ext.create('Superfastmatch.store.Documents');
+       var me=this;
        me.callParent(arguments);
-       me.addDocked(Ext.create('Ext.toolbar.Paging',{
-           itemId: 'DocumentPaging',
-           store: store,
-           listeners:{
-             afterrender: {
-               fn: function(){
-                 Ext.each(this.items.getRange(3,6),function(){this.hide()});
-               }
-             },
-             change: {
-               fn: function(){
-                 Ext.each(this.items.getRange(0,2),function(){this.enable()});
-               }
-             }
-           },
-           displayInfo: true,
-           displayMsg: '{2} Documents',
-           items: ['-','Doc Types',Ext.create('Ext.form.field.Text',{
-               itemId: 'DocTypeFilter',
-               emptyText: 'eg. 1-3:6',
-               width:150,
-               regex:/^[\d:\-]*\d$/,
-               regexText: 'You can filter documents by ranges of Doc Type. For Example:.<br/>1-3 Show Doc Types 1,2 and 3<br/>1:4-5 Show Doc types 1, 4 and 5'
-               }),
-               '-'
-           ],    
-           dock: 'bottom'
-       }));
+       me.addDocked(me.buildToolBar());
        me.addEvents('documentselected','documentsloading');
-       store.on({
+       me.store.on({
            beforeload: me.onBeforeLoad,
            load: me.onLoad,
            scope: me
@@ -60,23 +80,20 @@ Ext.define('Superfastmatch.view.DocumentBrowser', {
     },
     
     load: function(doc){
-        var me=this,
-            paging=me.down('#DocumentPaging');
+        var me=this;
         if (doc){
-          this.getStore().cursors.current=doc['doctype']+":"+doc['doctype']+":"+doc['docid'];
-          this.getStore().currentPage=2;
-          paging.doRefresh();
+          me.getStore().sorters.clear();
+          me.getStore().load({start: doc['doctype']+":"+doc['doctype']+":"+doc['docid']});
         }
         else if(me.getStore().count()==0){
-          paging.moveFirst();
+          me.getStore().moveFirst();
         }
     },
 
     onDoctypeFilterChange: function(field){
-        if(field.isValid()){
-          this.getStore().resetCursors();
-          this.down('#DocumentPaging').moveFirst();
-        }
+      if(field.isValid()){
+        this.getStore().moveFirst();
+      }
     },
     
     onBeforeLoad: function(store,operation,options){

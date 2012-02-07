@@ -37,10 +37,14 @@ Ext.define('Superfastmatch.store.Fragments', {
         });
         Ext.each(tempStore.getGroups(),function(group){
             var first=group.children[0],
-                documents={};
+                documents={},
+                from={},
+                to={};
             Ext.each(group.children,function(child){
-                var document=child.getDocument();
-                documents[document.get('doctype')+':'+document.get('docid')]=1;
+                var doc=child.getDocument();
+                Object.increment(documents,doc.get('doctype')+':'+doc.get('docid'));
+                Object.increment(from,doc.get('from'));
+                Object.increment(to,doc.get('to'));
             });
             records.push({
                 from: first.get('from'),
