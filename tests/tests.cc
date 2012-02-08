@@ -15,6 +15,8 @@ void BaseTest::SetUp(){
   queueDB_->open("%");
   payloadDB_->open("%");
   miscDB_->open("%");
+  EXPECT_CALL(registry_,isClosing())
+    .WillRepeatedly(Return(false));
   EXPECT_CALL(registry_,getWindowSize())
     .WillRepeatedly(Return(4));
   EXPECT_CALL(registry_,getPostingWindowSize())
