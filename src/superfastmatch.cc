@@ -31,21 +31,20 @@ int main(int argc, char** argv) {
   google::ParseCommandLineFlags(&argc, &argv, true);
 
   // set up the registry
-  // Registry registry;
-  FlagsRegistry* registry = new FlagsRegistry();
+  FlagsRegistry registry;
 
   // prepare the worker
-  Worker worker(registry);
+  Worker worker(&registry);
 
   // prepare the server
   HTTPServer serv;
   stringstream network;
-  network << registry->getAddress() << ":" <<registry->getPort();
-  serv.set_network(network.str(), registry->getTimeout());
-  serv.set_worker(&worker, registry->getThreadCount());
+  network << registry.getAddress() << ":" <<registry.getPort();
+  serv.set_network(network.str(), registry.getTimeout());
+  serv.set_worker(&worker, registry.getThreadCount());
 
   // set up the logger
-  serv.set_logger(registry->getLogger(), Logger::INFO | Logger::SYSTEM | Logger::ERROR);
+  serv.set_logger(registry.getLogger(), Logger::INFO | Logger::SYSTEM | Logger::ERROR);
   
   serv.log(Logger::SYSTEM, "================ [START]: pid=%d", getpid());
   g_serv = &serv;
@@ -54,8 +53,8 @@ int main(int argc, char** argv) {
   serv.start();
 
   // clean up connections and other resources
+  registry.close();
   serv.finish();
   serv.log(Logger::SYSTEM, "================ [FINISH]: pid=%d", getpid());
-  delete registry;
   return 0;
 }

@@ -23,6 +23,7 @@ namespace superfastmatch{
   // Interface class for easy mocking in tests
   class Registry{
   public:
+    virtual bool isClosing()=0;
     // Settings
     virtual uint32_t getHashWidth() const=0;
     virtual uint32_t getHashMask() const=0;
@@ -90,11 +91,15 @@ namespace superfastmatch{
     AssociationManager* associationManager_;
     QueueManager* queueManager_;
     vector<InstrumentGroupPtr> instruments_;
+    bool isClosing_;
 
   public:
     FlagsRegistry();
     ~FlagsRegistry();
     
+    bool isClosing();
+    void close();
+        
     enum InstrumentGroups{
       WORKER,
       QUEUE,

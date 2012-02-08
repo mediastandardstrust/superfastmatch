@@ -282,6 +282,9 @@ namespace superfastmatch
     for(vector<DocPair>::iterator it=pairs.begin(),ite=pairs.end();it!=ite;++it){
       DocumentPtr doc=registry_->getDocumentManager()->getDocument(it->doc_type,it->doc_id,DocumentManager::TEXT|DocumentManager::POSTING_HASHES);
       addDocument(doc);
+      if(registry_->isClosing()){
+        break;
+      }
     }
     finishTasks();
     stringstream message;

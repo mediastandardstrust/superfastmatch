@@ -1,6 +1,7 @@
 #include "queue.h"
 
 namespace superfastmatch{
+
   QueueManager::QueueManager(Registry* registry):
   registry_(registry){}
 
@@ -36,7 +37,7 @@ namespace superfastmatch{
     size_t count=0;
     CommandAction previousAction=NullAction;
     CommandPtr command = getQueuedCommand();
-    while (command){
+    while (command && !registry_->isClosing()){
       if((previousAction!=NullAction)&&(previousAction!=command->getAction())){
         registry_->getPostings()->finishTasks();
       }
@@ -53,7 +54,7 @@ namespace superfastmatch{
     registry_->getPostings()->finishTasks();
     return count;
   }
-
+  
   void QueueManager::fillDictionary(TemplateDictionary* dict,const uint64_t cursor){
     TemplateDictionary* pager_dict=dict->AddIncludeDictionary("PAGING");
     pager_dict->SetFilename(PAGING);

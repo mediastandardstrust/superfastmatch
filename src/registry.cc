@@ -222,7 +222,8 @@ namespace superfastmatch{
   postings_(0),
   documentManager_(0),
   associationManager_(0),
-  queueManager_(0)
+  queueManager_(0),
+  isClosing_(false)
   {
     logger_->open(getLogFile().c_str());
     if (isDaemonized() && !daemonize()){
@@ -278,6 +279,14 @@ namespace superfastmatch{
     delete associationManager_;
     delete queueManager_;
     delete logger_;
+  }
+  
+  bool FlagsRegistry::isClosing(){
+    return isClosing_;
+  }
+  
+  void FlagsRegistry::close(){
+    isClosing_=true;
   }
   
   bool FlagsRegistry::openDatabases(){

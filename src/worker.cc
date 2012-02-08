@@ -114,8 +114,11 @@ namespace superfastmatch{
     if(!registry_->getPostings()->isReady()){
       registry_->getPostings()->init();
     }
-    else if (registry_->getQueueManager()->processQueue()>0){
-      serv->log(Logger::INFO,"Finished processing command queue");
+    size_t count=registry_->getQueueManager()->processQueue();
+    if(count>0){ 
+      stringstream s;
+      s << "Finished processing "<< count << " items in command queue";
+      registry_->getLogger()->log(Logger::INFO,&s);
     };
   }
 
