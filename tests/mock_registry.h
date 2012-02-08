@@ -11,7 +11,9 @@ class MockRegistry : public Registry {
  public:
    MockRegistry();
    virtual ~MockRegistry();
-   
+  
+  MOCK_METHOD0(isClosing,
+      bool());
   MOCK_CONST_METHOD0(getHashWidth,
       uint32_t());
   MOCK_CONST_METHOD0(getHashMask,
