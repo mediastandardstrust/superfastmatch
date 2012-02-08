@@ -48,7 +48,7 @@ start(){
 # stop the server
 stop(){
   printf 'Stopping the SuperFastMatch server\n'
-  fuser -k -s "$log_file"
+  fuser -k -TERM -s "$log_file"
 }
 
 # check permission
