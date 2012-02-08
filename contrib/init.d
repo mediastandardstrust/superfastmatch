@@ -1,6 +1,6 @@
 #! /bin/sh
 ### BEGIN INIT INFO
-# Provides:          ft.churnalism.com
+# Provides:          churnalism.com
 # Required-Start:    $local_fs $remote_fs $network $syslog
 # Required-Stop:     $local_fs $remote_fs $network $syslog
 # Default-Start:     2 3 4 5
@@ -15,12 +15,14 @@
 
 # configuration variables
 prog="superfastmatch"
-cmd="/path/to/superfastmatch/superfastmatch"
-data_path="/path/to/hashes/"
+cmd="/path/to/superfastmatch"
+data_path="/path/to/data/"
 port="8080"
 slot_count="4"
 thread_count="4"
 log_file="/path/to/superfastmatch.log"
+template_path="/path/to/superfastmatch/templates/"
+public_path="/path/to/superfastmatch/public/"
 retval=0
 
 # start the server
@@ -31,7 +33,7 @@ start(){
     printf 'No such directory: %s\n' "$data_path"
     retval=1
   else
-    cmd="$cmd -port $port -slot_count $slot_count -thread_count $thread_count -log_file $log_file -daemonize"
+    cmd="$cmd -debug -port $port -slot_count $slot_count -thread_count $thread_count -log_file $log_file -data_path $data_path -public_path $public_path -template_path $template_path -daemonize"
     printf "Executing: %s\n" "$cmd"
     $cmd
     if [ "$?" -eq 0 ] ; then
