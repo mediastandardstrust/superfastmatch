@@ -12,7 +12,7 @@ DATA = ./data
 
 # Targets
 MYBINS = superfastmatch
-OBJS =  src/worker.o src/queue.o src/posting.o src/document.o src/logger.o src/registry.o src/command.o src/postline.o src/association.o src/query.o src/task.o src/codec.o src/instrumentation.o src/search.o
+OBJS = src/worker.o src/api.o src/queue.o src/posting.o src/document.o src/logger.o src/registry.o src/command.o src/postline.o src/association.o src/query.o src/task.o src/codec.o src/instrumentation.o src/search.o
 MAIN = src/superfastmatch.o
 
 # Building binaries
@@ -20,7 +20,7 @@ INCLUDES = -Isrc -Itests -I/usr/local/ -Itests/utils/
 #LDFLAGS = -Wl,-no_pie
 CXXFLAGS = -Wall -Wextra -funsigned-char -m64 -mtune=native -O3 -g
 PROFILEFLAGS = -D_GLIBCXX_PROFILE -D_GLIBCXX_PROFILE_MAX_WARN_COUNT=10000
-LIBS =  -lstdc++ -lz -lm -lc -lpthread -lkyototycoon -lkyotocabinet -lctemplate -lgflags -llzo2
+LIBS =  -lstdc++ -lz -lm -lc -lpthread -lkyototycoon -lkyotocabinet -lctemplate -lgflags -llzo2 -lre2
 CXX = g++ $(INCLUDES)
 #CXX = icc $(INCLUDES)
 
@@ -33,7 +33,7 @@ DEBUGENV = gdb
 # Test variables
 #================================================================
 
-TESTS = tests/command-unittest.o tests/postline-unittest.o tests/document-unittest.o tests/association-unittest.o tests/posting-unittest.o tests/benchmark.o tests/hash-unittest.o tests/query-unittest.o tests/instrumentation-unittest.o
+TESTS = tests/command-unittest.o tests/postline-unittest.o tests/document-unittest.o tests/association-unittest.o tests/posting-unittest.o tests/benchmark.o tests/hash-unittest.o tests/query-unittest.o tests/instrumentation-unittest.o tests/api-unittest.o
 GTEST_DIR = tests/utils
 
 #================================================================
