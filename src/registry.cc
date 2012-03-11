@@ -6,6 +6,9 @@
 #include <queue.h>
 
 namespace superfastmatch{
+  // Templates
+  RegisterTemplateFilename(STATUS_PAGE, "status_page.tpl");
+  
   // Command line flags
   
   DEFINE_bool(daemonize,false,"Run process in the background");
@@ -318,22 +321,33 @@ namespace superfastmatch{
     index_dict->SetValue("INSTRUMENTS",s.str());
   }
   
-  void FlagsRegistry::fill_db_dictionary(TemplateDictionary* dict, kc::PolyDB* db, const string name){
+  void FlagsRegistry::fillStatusDictionary(TemplateDictionary* dict){
+    // TODO: This section needs to be conditional on TCMALLOC being linked and present
+    size_t memory=0;
+    const int kBufferSize = 16 << 12;
+    char* buffer = new char[kBufferSize];
+    // MallocExtension::instance()->GetNumericProperty("generic.current_allocated_bytes",&memory);
+    // MallocExtension::instance()->GetStats(buffer,kBufferSize);
+    dict->SetFormattedValue("MEMORY","%.4f",double(memory)/1024/1024/1024);
+    dict->SetValue("MEMORY_STATS",string(buffer));
+    delete [] buffer;
+    // End TCMALLOC section
+    dict->SetIntValue("WHITESPACE_HASH",getWhiteSpaceHash());
+    fillDbDictionary(dict,getQueueDB(),"Queue DB");
+    fillDbDictionary(dict,getPayloadDB(),"Payload DB");
+    fillDbDictionary(dict,getDocumentDB(),"Document DB");
+    fillDbDictionary(dict,getMetaDB(),"Meta DB");
+    fillDbDictionary(dict,getOrderedMetaDB(),"Ordered Meta DB");
+    fillDbDictionary(dict,getAssociationDB(),"Association DB");
+    fillDbDictionary(dict,getMiscDB(),"Misc DB");
+  }
+
+  void FlagsRegistry::fillDbDictionary(TemplateDictionary* dict, kc::PolyDB* db, const string name){
     stringstream s;
     status(s,db);
     TemplateDictionary* db_dict = dict->AddSectionDictionary("DB");
     db_dict->SetValue("NAME",name);
     db_dict->SetValue("STATS",s.str());       
-  }
-  
-  void FlagsRegistry::fill_status_dictionary(TemplateDictionary* dict){
-    fill_db_dictionary(dict,getQueueDB(),"Queue DB");
-    fill_db_dictionary(dict,getPayloadDB(),"Payload DB");
-    fill_db_dictionary(dict,getDocumentDB(),"Document DB");
-    fill_db_dictionary(dict,getMetaDB(),"Meta DB");
-    fill_db_dictionary(dict,getOrderedMetaDB(),"Ordered Meta DB");
-    fill_db_dictionary(dict,getAssociationDB(),"Association DB");
-    fill_db_dictionary(dict,getMiscDB(),"Misc DB");
   }
   
   void FlagsRegistry::status(std::ostream& s, kc::PolyDB* db){

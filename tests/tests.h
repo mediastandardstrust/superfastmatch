@@ -25,6 +25,8 @@
 #include <queue.h>
 #include <query.h>
 #include <search.h>
+#include <worker.h>
+#include <api.h>
 #include <mock_registry.h>
 
 using namespace testing;
@@ -48,6 +50,8 @@ protected:
   Posting* postings_;
   MockRegistry registry_;
   Logger* logger_;
+  Api* api_;
+  TemplateCache* templates_;
   
   virtual void SetUp();
   virtual void TearDown();

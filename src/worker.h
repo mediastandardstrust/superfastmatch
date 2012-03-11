@@ -17,8 +17,39 @@ using namespace std;
 using namespace kyototycoon;
 
 namespace superfastmatch{
-  struct RESTRequest;
-  struct RESTResponse;
+  struct RESTRequest{
+    const HTTPClient::Method& verb;
+    const string& path;
+    string url;
+    const map<string, string>& reqheads;
+    const string& reqbody;
+    map<string,string> values;
+    string resource;
+    string first_id;
+    string second_id;
+    bool first_is_numeric;
+    bool second_is_numeric;
+    string cursor;
+    bool cursor_is_numeric;
+      
+    RESTRequest(const HTTPClient::Method& method,
+            const string& path,
+            const map<string, string>& reqheads,
+            const string& reqbody,
+            const map<string, string>& misc);
+  };
+  
+  struct RESTResponse{
+      map<string, string>& resheads;
+      TemplateDictionary dict;
+      string template_name;
+      int32_t code;
+      string content_type;
+      stringstream message;
+      string& body;
+    
+      RESTResponse(map<string,string>& resheads,string& resbody);
+  };
   
   class Worker : public HTTPServer::Worker {
   private:

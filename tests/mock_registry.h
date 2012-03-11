@@ -90,7 +90,7 @@ class MockRegistry : public Registry {
       InstrumentGroupPtr(const int32_t group));
   MOCK_METHOD1(fillPerformanceDictionary,
       void(TemplateDictionary* dict));
-  MOCK_METHOD1(fill_status_dictionary,
+  MOCK_METHOD1(fillStatusDictionary,
       void(TemplateDictionary* dict));
 };
 

@@ -20,26 +20,12 @@ namespace superfastmatch{
 	RegisterTemplateFilename(SUCCESS_JSON, "JSON/success.tpl");
 	RegisterTemplateFilename(FAILURE_JSON, "JSON/failure.tpl");
 	
-  struct RESTRequest{
-    const HTTPClient::Method& verb;
-    const string& path;
-    string url;
-    const map<string, string>& reqheads;
-    const string& reqbody;
-    map<string,string> values;
-    string resource;
-    string first_id;
-    string second_id;
-    bool first_is_numeric;
-    bool second_is_numeric;
-    string cursor;
-    bool cursor_is_numeric;
-      
-    RESTRequest(const HTTPClient::Method& method,
-            const string& path,
-            const map<string, string>& reqheads,
-            const string& reqbody,
-            const map<string, string>& misc):
+
+  RESTRequest::RESTRequest(const HTTPClient::Method& method,
+                           const string& path,
+                           const map<string, string>& reqheads,
+                           const string& reqbody,
+                           const map<string, string>& misc):
     verb(method),
     path(path),
     reqheads(reqheads),
@@ -82,25 +68,13 @@ namespace superfastmatch{
         }
       }
     }
-  };
   
-  class RESTResponse{
-  public:
-    map<string, string>& resheads;
-    TemplateDictionary dict;
-    string template_name;
-    int32_t code;
-    string content_type;
-    stringstream message;
-    string& body;
-    
-    RESTResponse(map<string,string>& resheads,string& resbody):
-    resheads(resheads),
-    dict("response"),
-    content_type("text/html"),
-    body(resbody)
-    {}
-  };
+  RESTResponse::RESTResponse(map<string,string>& resheads,string& resbody):
+  resheads(resheads),
+  dict("response"),
+  content_type("text/html"),
+  body(resbody)
+  {}
 
   Worker::Worker(Registry* registry):
   registry_(registry)
@@ -299,9 +273,9 @@ namespace superfastmatch{
     switch(req.verb){
       case HTTPClient::MGET:
         if (req.cursor_is_numeric){
-          registry_->getPostings()->fill_list_dictionary(&res.dict,kc::atoi(req.cursor.c_str()));
+          registry_->getPostings()->fillListDictionary(&res.dict,kc::atoi(req.cursor.c_str()));
         }else{
-          registry_->getPostings()->fill_list_dictionary(&res.dict,0);
+          registry_->getPostings()->fillListDictionary(&res.dict,0);
         }
         res.template_name=INDEX_PAGE;
         res.code=200;
@@ -353,7 +327,7 @@ namespace superfastmatch{
   }
   
   void Worker::process_histograms(const RESTRequest& req,RESTResponse& res){
-    registry_->getPostings()->fill_histogram_dictionary(&res.dict);
+    registry_->getPostings()->fillHistogramDictionary(&res.dict);
     res.template_name=HISTOGRAMS_PAGE;
     res.code=200;
   }
@@ -374,8 +348,8 @@ namespace superfastmatch{
     res.dict.SetValue("MEMORY_STATS",string(buffer));
     res.dict.SetIntValue("WHITESPACE_HASH",registry_->getWhiteSpaceHash());
     delete [] buffer;
-    registry_->fill_status_dictionary(&res.dict);
-    registry_->getPostings()->fill_status_dictionary(&res.dict);
+    registry_->fillStatusDictionary(&res.dict);
+    registry_->getPostings()->fillStatusDictionary(&res.dict);
     res.template_name=STATUS_PAGE;
     res.code=200;
   }

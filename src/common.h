@@ -318,6 +318,27 @@ namespace superfastmatch{
           return m_map;
       }
   };
+  
+  template <typename T>
+  class create_vector
+  {
+  public:
+      create_vector(const T& val)
+      {
+          vec.push_back(val);
+      }
+      inline create_vector& operator()(T val)
+      {
+          vec.push_back(val);
+          return *this;
+      }
+      inline std::vector<T> end()
+      {
+          return vec;
+      }
+  private:
+      std::vector<T> vec;
+  };
 }
 
 #endif

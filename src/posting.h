@@ -49,7 +49,7 @@ namespace superfastmatch
     void lockSlotForReading();
     void unlockSlotForReading();
     
-    uint32_t fill_list_dictionary(TemplateDictionary* dict,uint32_t start);
+    uint32_t fillListDictionary(TemplateDictionary* dict,uint32_t start);
     void fillHistograms(histogram_t& hash_hist,histogram_t& gaps_hist);
   };
 
@@ -75,9 +75,9 @@ namespace superfastmatch
     uint64_t deleteDocument(DocumentPtr doc);
     bool isReady();
 
-    void fill_status_dictionary(TemplateDictionary* dict);
-    void fill_list_dictionary(TemplateDictionary* dict,uint32_t start);
-    void fill_histogram_dictionary(TemplateDictionary* dict);
+    void fillStatusDictionary(TemplateDictionary* dict);
+    void fillListDictionary(TemplateDictionary* dict,uint32_t start);
+    void fillHistogramDictionary(TemplateDictionary* dict);
   private:
     void lockSlotsForReading();
     void unlockSlotsForReading();

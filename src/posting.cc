@@ -155,7 +155,7 @@ namespace superfastmatch
     return queue_.count();
   }
   
-  uint32_t PostingSlot::fill_list_dictionary(TemplateDictionary* dict,uint32_t start){
+  uint32_t PostingSlot::fillListDictionary(TemplateDictionary* dict,uint32_t start){
     PostLine line(registry_->getMaxLineLength());
     index_lock_.lock_reader();
     uint32_t count=0;
@@ -404,7 +404,7 @@ namespace superfastmatch
     return ready_;
   }
   
-  void Posting::fill_status_dictionary(TemplateDictionary* dict){
+  void Posting::fillStatusDictionary(TemplateDictionary* dict){
     size_t hash_count=0;
     for (size_t i=0;i<slots_.size();i++){
       hash_count+=slots_[i]->getHashCount();
@@ -419,10 +419,10 @@ namespace superfastmatch
     dict->SetIntValue("AVERAGE_DOC_LENGTH",(doc_count_>0)?total_doc_length_/doc_count_:0);
   }
   
-  void Posting::fill_list_dictionary(TemplateDictionary* dict,uint32_t start){
+  void Posting::fillListDictionary(TemplateDictionary* dict,uint32_t start){
     uint32_t count=0;
     for (size_t i=0;i<slots_.size();i++){
-      count+=slots_[i]->fill_list_dictionary(dict,start);
+      count+=slots_[i]->fillListDictionary(dict,start);
       if (count>=registry_->getPageSize()){
         break;
       }
@@ -440,7 +440,7 @@ namespace superfastmatch
     page_dict->SetValueAndShowSection("PAGE",toString(registry_->getMaxHashCount()-registry_->getPageSize()),"LAST");
   }
 
-  void Posting::fill_histogram_dictionary(TemplateDictionary* dict){
+  void Posting::fillHistogramDictionary(TemplateDictionary* dict){
     histogram_t hash_hist;
     histogram_t gaps_hist;
     for (uint32_t i=0;i<slots_.size();i++){
@@ -485,6 +485,6 @@ namespace superfastmatch
         row_dict->SetValueAndShowSection("DOC_COUNTS",toString(it2->second[*it]),"COLUMN"); 
       }
     } 
-    fill_status_dictionary(dict);
+    fillStatusDictionary(dict);
   }
 }

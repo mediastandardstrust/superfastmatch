@@ -68,6 +68,9 @@ void BaseTest::SetUp(){
   queueManager_ = new QueueManager(&registry_);
   postings_ = new Posting(&registry_);
   logger_ = new Logger(false);
+  templates_ = new TemplateCache();
+  templates_->SetTemplateRootDirectory("templates");
+
   EXPECT_CALL(registry_,getDocumentManager())
     .WillRepeatedly(Return(documentManager_));
   EXPECT_CALL(registry_,getAssociationManager())
@@ -78,6 +81,11 @@ void BaseTest::SetUp(){
     .WillRepeatedly(Return(postings_));
   EXPECT_CALL(registry_,getLogger())
     .WillRepeatedly(Return(logger_));
+  EXPECT_CALL(registry_,getTemplateCache())
+    .WillRepeatedly(Return(templates_));
+  EXPECT_CALL(registry_,fillStatusDictionary(NotNull()))
+    .WillRepeatedly(Return());
+  api_= new Api(&registry_);
 }
     
 void BaseTest::TearDown(){
@@ -100,6 +108,8 @@ void BaseTest::TearDown(){
   delete queueManager_;
   delete postings_;
   delete logger_;
+  delete api_;
+  delete templates_;
 }
 
 TestDocument::TestDocument(const char* filename){

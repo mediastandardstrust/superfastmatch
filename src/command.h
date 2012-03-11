@@ -38,9 +38,9 @@ namespace superfastmatch{
        string name;
        ActionDetail(){};
        ActionDetail(const uint32_t priority, const Method method,const string name):
-       priority(priority),
-       method(method),
-       name(name){};
+         priority(priority),
+         method(method),
+         name(name){};
      };
      typedef map<CommandAction,Command::ActionDetail> action_map;
      typedef map<CommandStatus,string> status_map;

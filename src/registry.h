@@ -71,7 +71,7 @@ namespace superfastmatch{
     
     // Display
     virtual void fillPerformanceDictionary(TemplateDictionary* dict)=0;
-    virtual void fill_status_dictionary(TemplateDictionary* dict)=0;
+    virtual void fillStatusDictionary(TemplateDictionary* dict)=0;
   };
 
   class FlagsRegistry : public Registry
@@ -146,12 +146,12 @@ namespace superfastmatch{
     AssociationManager* getAssociationManager();
     QueueManager* getQueueManager();
 
-    void fill_status_dictionary(TemplateDictionary* dict);
+    void fillStatusDictionary(TemplateDictionary* dict);
     void fillPerformanceDictionary(TemplateDictionary* dict);
       
   private:
     bool openDatabases();
-    void fill_db_dictionary(TemplateDictionary* dict, kc::PolyDB* db, const string name);
+    void fillDbDictionary(TemplateDictionary* dict, kc::PolyDB* db, const string name);
     void status(std::ostream& s, kc::PolyDB* db);
   };
 }
