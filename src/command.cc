@@ -112,9 +112,12 @@ namespace superfastmatch{
   
   bool Command::dropDocument(){
     DocumentPtr doc=registry_->getDocumentManager()->getDocument(getDocType(),getDocId());
-    assert(registry_->getAssociationManager()->removeAssociations(doc));
-    assert(registry_->getPostings()->deleteDocument(doc));
-    return registry_->getDocumentManager()->removePermanentDocument(doc);
+    if (doc){
+      assert(registry_->getAssociationManager()->removeAssociations(doc));
+      assert(registry_->getPostings()->deleteDocument(doc));
+      return registry_->getDocumentManager()->removePermanentDocument(doc); 
+    }
+    return true;
   }
   
   uint32_t Command::getDocType(){

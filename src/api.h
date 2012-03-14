@@ -5,7 +5,6 @@
 #include <kthttp.h>
 #include <registry.h>
 #include <worker.h>
-#include <common.h>
 
 namespace superfastmatch{
   // Forward Declarations
@@ -19,6 +18,8 @@ namespace superfastmatch{
   typedef shared_ptr<Matcher> MatcherPtr;
   typedef shared_ptr<re2::RE2> RE2Ptr;
   typedef map<response_t,string> response_map;
+  typedef pair<string,string> capture_t;
+  typedef map<string,capture_t> capture_map;
   typedef void(Api::*ApiMethod)(const ApiParams& params,ApiResponse& response);
   
   // Classes
@@ -40,6 +41,7 @@ namespace superfastmatch{
     map<string,string> resource;
     map<string,string> query;
     map<string,string> form;
+    string body;
     //TODO: Remove this
     string url;    
 
@@ -66,7 +68,9 @@ namespace superfastmatch{
   private:
     const static size_t METHOD_COUNT; 
     const static size_t API_COUNT; 
+    const static capture_map captures_;
     const static ApiCall calls_[]; 
+
     
     Registry* registry_;
     vector<MatcherPtr> matchers_;;
@@ -90,7 +94,14 @@ namespace superfastmatch{
     void GetDocuments(const ApiParams& params,ApiResponse& response);
     void CreateDocument(const ApiParams& params,ApiResponse& response); 
     void CreateAndAssociateDocument(const ApiParams& params,ApiResponse& response);
+    void DeleteDocument(const ApiParams& params,ApiResponse& response);
+    void AssociateDocument(const ApiParams& params,ApiResponse& response);
+    void AssociateDocuments(const ApiParams& params,ApiResponse& response);
+    void GetIndex(const ApiParams& params,ApiResponse& response);
+    void GetQueue(const ApiParams& params,ApiResponse& response);
+    void GetPerformance(const ApiParams& params,ApiResponse& response);      
     void GetStatus(const ApiParams& params,ApiResponse& response);
+    void GetHistogram(const ApiParams& params,ApiResponse& response);
     void GetDescription(const ApiParams& params,ApiResponse& response);
   };
 }

@@ -85,6 +85,8 @@ void BaseTest::SetUp(){
     .WillRepeatedly(Return(templates_));
   EXPECT_CALL(registry_,fillStatusDictionary(NotNull()))
     .WillRepeatedly(Return());
+  EXPECT_CALL(registry_,getInstrumentGroup(Ge(0)))
+    .WillRepeatedly(Return(InstrumentGroupPtr(new InstrumentGroup("dummy",100,100))));
   api_= new Api(&registry_);
 }
     
