@@ -78,7 +78,8 @@ namespace superfastmatch
     bool valid_;
 
   public:
-    explicit DocumentQuery(Registry* registry, const string& command="");
+    explicit DocumentQuery(Registry* registry);
+    explicit DocumentQuery(Registry* registry,const string& source,const string& target, const map<string,string>& query);
   
     bool isValid();
     const vector<DocPair>& getSourceDocPairs(bool unlimited=false);

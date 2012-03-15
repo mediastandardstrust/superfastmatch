@@ -99,7 +99,8 @@ namespace superfastmatch{
   }
 
   bool Command::addAssociations(){
-    DocumentQuery query(registry_,"/"+toString(getDocType())+"/");
+    //TODO Make use of query with source and target
+    DocumentQuery query(registry_);
     vector<DocPair> pairs=query.getSourceDocPairs(true);
     AssociationTaskQueue queue(registry_);
     queue.start(registry_->getSlotCount());

@@ -62,51 +62,48 @@ namespace superfastmatch
     return doctypes_;
   }
   
-  DocumentQuery::DocumentQuery(Registry* registry, const string& command):
+  DocumentQuery::DocumentQuery(Registry* registry):
   registry_(registry),
   order_by_("doctype"),
+  limit_(registry->getPageSize()),
+  desc_(false),
+  valid_(true)
+  {}
+  
+  
+  DocumentQuery::DocumentQuery(Registry* registry,const string& source,const string& target, const map<string,string>& query):
+  registry_(registry),
+  order_by_("doctype"),
+  limit_(registry->getPageSize()),
   desc_(false),
   valid_(true)
   {
-    map<string,string> elements,parameters;
-    vector<string> paths,sections,parameter;
-    urlbreak(command.c_str(),&elements);
-    path_=elements["path"];
-    kc::strsplit(path_, '/', &paths);
-    if (paths.size()>3){
-      valid_&=target_.parse(paths[3]);
+    if (source.size()>0){
+      valid_&=source_.parse(source);
     }
-    if(paths.size()>2){
-      valid_&=source_.parse(paths[2]);
+    if (target.size()>0){
+      valid_&=target_.parse(target);
     }
-    kc::strsplit(elements["query"],'&',&sections);
-    for(vector<string>::iterator it=sections.begin(),ite=sections.end();it!=ite;++it){
-      kc::strsplit(*it,'=',&parameter);
-      if(parameter.size()==2){
-        size_t ksiz,vsiz;
-        char* kbuf = kc::urldecode(parameter[0].c_str(), &ksiz);
-        char* vbuf = kc::urldecode(parameter[1].c_str(), &vsiz);
-        parameters[kbuf]=vbuf;
-        delete[] kbuf;
-        delete[] vbuf;
-      }
+    map<string,string>::const_iterator cursor=query.find("cursor");
+    if (cursor!=query.end()){
+      cursor_=cursor->second;
     }
-    cursor_=parameters["cursor"];
-    if (parameters.find("order_by")!=parameters.end()){
-      if (parameters["order_by"][0]=='-'){
-        order_by_=parameters["order_by"].substr(1);
+    map<string,string>::const_iterator order_by=query.find("order_by");
+    if (order_by!=query.end()){
+      if (order_by->second[0]=='-'){
+        order_by_=order_by->second.substr(1);
         desc_=true;
       }else{
-        order_by_=parameters["order_by"];
+        order_by_=order_by->second;
         desc_=false;
       }
     }
-    limit_=kc::atoi(parameters["limit"].c_str());
-    if (limit_==0){
-      limit_=registry->getPageSize();
+    map<string,string>::const_iterator limit=query.find("limit");
+    if(limit!=query.end()){
+      limit_=kc::atoi(limit->second.c_str());      
     }
   }
-
+  
   bool DocumentQuery::isValid(){
     return valid_;
   }

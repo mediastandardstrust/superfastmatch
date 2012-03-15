@@ -19,23 +19,25 @@ namespace superfastmatch{
   // ApiParams members
   // -------------------
     
-  ApiParams::ApiParams(const HTTPClient::Method verb,const string& body, const map<string,string>& misc):
+  ApiParams::ApiParams(const HTTPClient::Method verb,const string& body, const string& querystring):
   body(body)
   {
     if (verb==HTTPClient::MPOST || verb==HTTPClient::MPUT){
       wwwformtomap(body,&form);
     }
-    map<string,string>::const_iterator it=misc.find("query");
-    if (it!=misc.end()){
-      vector<string> queries,parts;
-      kc::strsplit(it->second,"&",&queries);
-      for (vector<string>::const_iterator it2=queries.begin();it2!=queries.end();it2++){
-        kc::strsplit(*it2,"=",&parts);
-        if (parts.size()==2){
-          query[parts[0]]=query[parts[1]];
-        }
-      }  
-    }
+    vector<string> queries,parts;
+    kc::strsplit(querystring,"&",&queries);
+    for (vector<string>::const_iterator it=queries.begin();it!=queries.end();++it){
+      kc::strsplit(*it,"=",&parts);
+      if (parts.size()==2){
+        size_t ksiz,vsiz;
+        char* kbuf = kc::urldecode(parts[0].c_str(), &ksiz);
+        char* vbuf = kc::urldecode(parts[1].c_str(), &vsiz);
+        query[kbuf]=vbuf;
+        delete[] kbuf;
+        delete[] vbuf;
+      }
+    }  
   }
 
   // -------------------
@@ -91,8 +93,7 @@ namespace superfastmatch{
                    string& resbody,
                    const map<string, string>& misc)
   {
-    ApiParams params(verb,reqbody,misc);
-    params.url=misc.find("url")->second;    //TODO: Remove this
+    ApiParams params(verb,reqbody,misc.find("query")->second);
     ApiResponse response;
     string lowercase_path(path);
     kc::strtolower(&lowercase_path);
@@ -149,104 +150,104 @@ namespace superfastmatch{
 
   const ApiCall Api::calls_[Api::API_COUNT]={
     ApiCall(HTTPClient::MPOST,
-            "^search/?$",
+            "^/search/?$",
             create_map<response_t,string>(response_t(200,"application/json"),SUCCESS_JSON)\
                                          (response_t(500,"application/json"),SUCCESS_JSON),  
             "Search for text in all documents",
             &Api::DoSearch),
     ApiCall(HTTPClient::MPOST,
-            "^search/<target>/?$",
+            "^/search/<target>/?$",
             create_map<response_t,string>(response_t(200,"application/json"),SUCCESS_JSON)\
                                          (response_t(500,"application/json"),SUCCESS_JSON),  
             "Search for text in the specified target doctype range",
             &Api::DoSearch),                        
     ApiCall(HTTPClient::MGET,
-            "^document/?$",
+            "^/document/?$",
             create_map<response_t,string>(response_t(200,"application/json"),SUCCESS_JSON)\
                                          (response_t(500,"application/json"),FAILURE_JSON),
             "Get metadata and text of all documents",
             &Api::GetDocuments),
     ApiCall(HTTPClient::MGET,
-            "^document/<doctype>/?$",
+            "^/document/<source>/?$",
             create_map<response_t,string>(response_t(200,"application/json"),SUCCESS_JSON)\
                                          (response_t(500,"application/json"),FAILURE_JSON),
             "Get metadata and text of all documents with specified doctype",
             &Api::GetDocuments),
     ApiCall(HTTPClient::MGET,
-            "^document/<doctype>/<docid>/?$",
-            create_map<response_t,string>(response_t(202,"application/json"),SUCCESS_JSON)\
+            "^/document/<doctype>/<docid>/?$",
+            create_map<response_t,string>(response_t(200,"application/json"),SUCCESS_JSON)\
                                          (response_t(404,"application/json"),FAILURE_JSON),
             "Get metadata and text of existing document",
             &Api::GetDocument),
     ApiCall(HTTPClient::MPOST,
-           "^document/<doctype>/<docid>/?$",
+           "^/document/<doctype>/<docid>/?$",
            create_map<response_t,string>(response_t(202,"application/json"),SUCCESS_JSON)\
                                         (response_t(500,"application/json"),FAILURE_JSON),
            "Create a new document",
            &Api::CreateDocument),
     ApiCall(HTTPClient::MPUT,
-           "^document/<doctype>/<docid>/?$",
+           "^/document/<doctype>/<docid>/?$",
            create_map<response_t,string>(response_t(202,"application/json"),SUCCESS_JSON)\
                                         (response_t(500,"application/json"),FAILURE_JSON),
            "Create and associate a new document",
            &Api::CreateAndAssociateDocument),
     ApiCall(HTTPClient::MDELETE,
-           "^document/<doctype>/<docid>/?$",
+           "^/document/<doctype>/<docid>/?$",
            create_map<response_t,string>(response_t(202,"application/json"),SUCCESS_JSON),
            "Delete a document",
            &Api::DeleteDocument),
     ApiCall(HTTPClient::MPOST,
-          "^association/<doctype>/<docid>/?$",
+          "^/association/<doctype>/<docid>/?$",
           create_map<response_t,string>(response_t(202,"application/json"),SUCCESS_JSON),
           "Associate a document",
           &Api::AssociateDocument),
     ApiCall(HTTPClient::MPOST,
-          "^association/<doctype>/<docid>/<target>/?$",
+          "^/association/<doctype>/<docid>/<target>/?$",
           create_map<response_t,string>(response_t(202,"application/json"),SUCCESS_JSON),
           "Associate a document with a set of documents that match the specified target doc type range",
           &Api::AssociateDocument),
     ApiCall(HTTPClient::MPOST,
-          "^associations/?$",
+          "^/associations/?$",
           create_map<response_t,string>(response_t(202,"application/json"),SUCCESS_JSON),
           "Associate all documents",
           &Api::AssociateDocuments),   
     ApiCall(HTTPClient::MPOST,
-          "^associations/<source>/?$",
+          "^/associations/<source>/?$",
           create_map<response_t,string>(response_t(202,"application/json"),SUCCESS_JSON),
           "Associate a set of documents which match the specified source doc type range",
           &Api::AssociateDocuments),
     ApiCall(HTTPClient::MPOST,
-          "^associations/<source>/<target>/?$",
+          "^/associations/<source>/<target>/?$",
           create_map<response_t,string>(response_t(202,"application/json"),SUCCESS_JSON),
           "Associate a set of documents which match the specified source doc type range with the target doc type range",
           &Api::AssociateDocuments),
     ApiCall(HTTPClient::MGET,
-           "^index/?$",
+           "^/index/?$",
            create_map<response_t,string>(response_t(200,"application/json"),SUCCESS_JSON),
            "Get the index data",
            &Api::GetIndex),
     ApiCall(HTTPClient::MGET,
-           "^queue/?$",
+           "^/queue/?$",
            create_map<response_t,string>(response_t(200,"application/json"),SUCCESS_JSON),
            "Get the queue data",
            &Api::GetQueue),
     ApiCall(HTTPClient::MGET,
-           "^performance/?$",
+           "^/performance/?$",
            create_map<response_t,string>(response_t(200,"application/json"),SUCCESS_JSON),
            "Get the performace data",
            &Api::GetPerformance),                                                                                                                                                                                                                                                                                 
     ApiCall(HTTPClient::MGET,
-           "^status/?$",
+           "^/status/?$",
            create_map<response_t,string>(response_t(200,"application/json"),SUCCESS_JSON),
            "Get the status of the superfastmatch instance",
            &Api::GetStatus),
     ApiCall(HTTPClient::MGET,
-          "^histogram/?$",
+          "^/histogram/?$",
           create_map<response_t,string>(response_t(200,"application/json"),SUCCESS_JSON),
           "Get a histogram of the index",
           &Api::GetHistogram),
     ApiCall(HTTPClient::MGET,
-           "^describe/?$",
+           "^/describe/?$",
            create_map<response_t,string>(response_t(200,"text/html"),DESCRIPTION_HTML),
            "Describe the superfastmatch API",
            &Api::GetDescription)                                                 
@@ -259,7 +260,7 @@ namespace superfastmatch{
   void Api::DoSearch(const ApiParams& params,ApiResponse& response){
     map<string,string>::const_iterator text=params.form.find("text");
     if (text!=params.form.end()){
-      SearchPtr search=Search::createTemporarySearch(registry_,text->second);
+      SearchPtr search=Search::createTemporarySearch(registry_,params.body);
       search->fillJSONDictionary(&response.dict,false);
       response.type=response_t(200,"application/json");
     }else{
@@ -282,7 +283,11 @@ namespace superfastmatch{
   }
   
   void Api::GetDocuments(const ApiParams& params,ApiResponse& response){
-    DocumentQuery query(registry_,params.url); //TODO change query constructor
+    string source;
+    if (params.resource.find("source")!=params.resource.end()){
+      source=params.resource.find("source")->second;
+    }
+    DocumentQuery query(registry_,source,"",params.query);
     if (query.isValid()){
       query.fillJSONDictionary(&response.dict);
       response.type=response_t(200,"application/json");

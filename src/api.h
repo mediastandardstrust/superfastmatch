@@ -4,7 +4,7 @@
 #include <re2/filtered_re2.h>
 #include <kthttp.h>
 #include <registry.h>
-#include <worker.h>
+#include <queue.h>
 
 namespace superfastmatch{
   // Forward Declarations
@@ -42,10 +42,8 @@ namespace superfastmatch{
     map<string,string> query;
     map<string,string> form;
     string body;
-    //TODO: Remove this
-    string url;    
 
-    ApiParams(const HTTPClient::Method verb,const string& body, const map<string,string>& misc);
+    ApiParams(const HTTPClient::Method verb,const string& body, const string& querystring);
   };
   
   struct ApiResponse{
