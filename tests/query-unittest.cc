@@ -30,15 +30,15 @@ DocumentQueryPtr testQuery(Registry* registry,const string& source, const string
 TEST_F(DocumentQueryTest,DocRangeParsingTest){
   testDocTypeRange("",0,true);
   testDocTypeRange("1",1,true);
-  testDocTypeRange("1;",0,false);
+  testDocTypeRange("1:",0,false);
   testDocTypeRange("1-10",10,true);
-  testDocTypeRange("1-10;21-40",30,true);
+  testDocTypeRange("1-10:21-40",30,true);
   testDocTypeRange("0",0,false);
   testDocTypeRange("1-0",0,false);
-  testDocTypeRange("6-5",1,true);
-  testDocTypeRange("6-5;1-10",10,true);
-  testDocTypeRange("6-5;1-10;",0,false);
-  testDocTypeRange("6-5-34;1-10",0,false);
+  testDocTypeRange("6-5",2,true);
+  testDocTypeRange("6-5:1-10",10,true);
+  testDocTypeRange("6-5:1-10:",0,false);
+  testDocTypeRange("6-5-34:1-10",0,false);
 }
 
 TEST_F(DocumentQueryTest,EndToEndTest){
@@ -52,6 +52,10 @@ TEST_F(DocumentQueryTest,EndToEndTest){
   testQuery(&registry_,"","","",6,6,true,"","doctype",false,limit);
   testQuery(&registry_,"1","","",3,6,true,"","doctype",false,limit);
   testQuery(&registry_,"1-2","1-2","",6,6,true,"","doctype",false,limit);
+  testQuery(&registry_,"2-1","2-1","",6,6,true,"","doctype",false,limit);
+  testQuery(&registry_,"1:2","1:2","",6,6,true,"","doctype",false,limit);
+  testQuery(&registry_,"2:1","2:1","",6,6,true,"","doctype",false,limit);
+  testQuery(&registry_,"2:1-5","2:1-5","",6,6,true,"","doctype",false,limit);
   testQuery(&registry_,"1-2","1-2","order_by=title",6,6,true,"","title",false,limit);
   testQuery(&registry_,"1-2","1-2","order_by=title&cursor=Also+a+test",6,6,true,"Also a test","title",false,limit);
   testQuery(&registry_,"1-2","1-2","order_by=title&cursor=Final+test",2,2,true,"Final test","title",false,limit);

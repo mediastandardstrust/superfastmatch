@@ -21,17 +21,17 @@ namespace superfastmatch
     istringstream iss(range);
     string section;
     while(!iss.eof()){
-      getline(iss,section,';');
+      getline(iss,section,':');
       size_t splits = count(section.begin(),section.end(),'-');
       if (splits>1){
         valid=false;
         continue;
       }else if (splits==1){
         size_t split=section.find("-");
-        uint32_t start=kc::atoi(section.substr(0,split).c_str());
-        uint32_t end=kc::atoi(section.substr(split+1).c_str());
-        start = min(start,end);
-        end = max(start,end);
+        uint32_t first=kc::atoi(section.substr(0,split).c_str());
+        uint32_t second=kc::atoi(section.substr(split+1).c_str());
+        uint32_t start = min(first,second);
+        uint32_t end = max(first,second);
         if (start!=0 && end!=0){
           for (uint32_t i=start;i<=end;i++){
             doctypes_.insert(i);
