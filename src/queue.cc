@@ -7,15 +7,15 @@ namespace superfastmatch{
 
   QueueManager::~QueueManager(){}
 
-  CommandPtr QueueManager::createCommand(const CommandAction action,const uint32_t doc_type,const uint32_t doc_id,const string& payload){
+  CommandPtr QueueManager::createCommand(const CommandAction action,const uint32_t doc_type,const uint32_t doc_id,const string& source, const string& target, const string& payload){
     uint64_t queue_id=registry_->getMiscDB()->increment("QueueCounter",1);
     uint64_t payload_id=registry_->getMiscDB()->increment("PayloadCounter",1);
-    return CommandPtr(new Command(registry_,action,queue_id,payload_id,doc_type,doc_id,payload));
+    return CommandPtr(new Command(registry_,action,queue_id,payload_id,doc_type,doc_id,source,target,payload));
   }
 
-  CommandPtr QueueManager::insertCommand(const CommandAction action,const uint64_t queue_id,const uint32_t doc_type,const uint32_t doc_id,const string& payload){
+  CommandPtr QueueManager::insertCommand(const CommandAction action,const uint64_t queue_id,const uint32_t doc_type,const uint32_t doc_id, const string& source, const string& target,const string& payload){
     uint64_t payload_id=registry_->getMiscDB()->increment("PayloadCounter",1);
-    return CommandPtr(new Command(registry_,action,queue_id,payload_id,doc_type,doc_id,payload));
+    return CommandPtr(new Command(registry_,action,queue_id,payload_id,doc_type,doc_id,source,target,payload));
   }
 
   CommandPtr QueueManager::getQueuedCommand(){

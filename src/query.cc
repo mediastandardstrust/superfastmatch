@@ -62,13 +62,20 @@ namespace superfastmatch
     return doctypes_;
   }
   
-  DocumentQuery::DocumentQuery(Registry* registry):
+  DocumentQuery::DocumentQuery(Registry* registry,const string& source,const string& target):
   registry_(registry),
   order_by_("doctype"),
   limit_(registry->getPageSize()),
   desc_(false),
   valid_(true)
-  {}
+  {
+    if (source.size()>0){
+      valid_&=source_.parse(source);
+    }
+    if (target.size()>0){
+      valid_&=target_.parse(target);
+    }    
+  }
   
   
   DocumentQuery::DocumentQuery(Registry* registry,const string& source,const string& target, const map<string,string>& query):
@@ -136,6 +143,10 @@ namespace superfastmatch
       target_pairs_=getDocPairs(target_,order_by_,cursor_,unlimited?numeric_limits<uint64_t>::max():limit_,desc_);
     }
     return target_pairs_;
+  }
+  
+  bool DocumentQuery::isInTargetRange(const uint32_t doctype){
+    return target_.isInRange(doctype);
   }
   
   const string& DocumentQuery::getFirst(){

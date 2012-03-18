@@ -73,8 +73,9 @@ namespace superfastmatch
   // AssociationTask members
   // -----------------------
   
-  AssociationTask::AssociationTask(const DocPair pair):
-  pair_(pair)
+  AssociationTask::AssociationTask(const DocPair* pair,DocumentQueryPtr query):
+  pair_(pair),
+  query_(query)  
   {}
   
   // ----------------------------
@@ -87,7 +88,7 @@ namespace superfastmatch
 
   void AssociationTaskQueue::do_task(Task* task){
     AssociationTask* ptask = (AssociationTask*)task;
-    SearchPtr search=Search::createPermanentSearch(registry_,ptask->pair_.doc_type,ptask->pair_.doc_id);
+    SearchPtr search=Search::createPermanentSearch(registry_,ptask->pair_->doc_type,ptask->pair_->doc_id,ptask->query_);
     registry_->getInstrumentGroup(FlagsRegistry::QUEUE)->merge(search->performance);
     delete ptask;
   }

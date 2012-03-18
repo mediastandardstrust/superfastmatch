@@ -19,7 +19,7 @@ namespace superfastmatch{
   // ApiParams members
   // -------------------
     
-  ApiParams::ApiParams(const HTTPClient::Method verb,const string& body, const string& querystring):
+ApiParams::ApiParams(const HTTPClient::Method verb,const string& body, const string& querystring):
   body(body)
   {
     if (verb==HTTPClient::MPOST || verb==HTTPClient::MPUT){
@@ -302,7 +302,7 @@ namespace superfastmatch{
     uint32_t docid = kc::atoi(params.resource.find("docid")->second.c_str());
     map<string,string>::const_iterator text=params.form.find("text");
     if (text!=params.form.end()){
-      CommandPtr addCommand = registry_->getQueueManager()->createCommand(AddDocument,doctype,docid,params.body);
+      CommandPtr addCommand = registry_->getQueueManager()->createCommand(AddDocument,doctype,docid,"","",params.body);
       addCommand->fillDictionary(&response.dict);
       response.type=response_t(202,"application/json");        
     }else{
@@ -321,7 +321,7 @@ namespace superfastmatch{
   void Api::DeleteDocument(const ApiParams& params,ApiResponse& response){
     uint32_t doctype = kc::atoi(params.resource.find("doctype")->second.c_str());
     uint32_t docid = kc::atoi(params.resource.find("docid")->second.c_str());
-    CommandPtr deleteCommand = registry_->getQueueManager()->createCommand(DropDocument,doctype,docid,"");
+    CommandPtr deleteCommand = registry_->getQueueManager()->createCommand(DropDocument,doctype,docid,"","","");
     deleteCommand->fillDictionary(&response.dict);
     response.type=response_t(202,"application/json");        
   }
@@ -329,14 +329,21 @@ namespace superfastmatch{
   void Api::AssociateDocument(const ApiParams& params,ApiResponse& response){
     uint32_t doctype = kc::atoi(params.resource.find("doctype")->second.c_str());
     uint32_t docid = kc::atoi(params.resource.find("docid")->second.c_str());
-    CommandPtr associateCommand = registry_->getQueueManager()->createCommand(AddAssociation,doctype,docid,"");
+    CommandPtr associateCommand = registry_->getQueueManager()->createCommand(AddAssociation,doctype,docid,"","","");
     associateCommand->fillDictionary(&response.dict);
     response.type=response_t(202,"application/json");
   }
   
   void Api::AssociateDocuments(const ApiParams& params,ApiResponse& response){
-    //TODO: Implement!
-    CommandPtr associateCommand = registry_->getQueueManager()->createCommand(AddAssociations,0,0,"");
+    string source;
+    string target;
+    if (params.resource.find("source")!=params.resource.end()){
+      source=params.resource.find("source")->second;
+    }
+    if (params.resource.find("target")!=params.resource.end()){
+      target=params.resource.find("target")->second;
+    }
+    CommandPtr associateCommand = registry_->getQueueManager()->createCommand(AddAssociations,0,0,source,target,"");
     associateCommand->fillDictionary(&response.dict);
     response.type=response_t(202,"application/json");
   }

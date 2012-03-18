@@ -18,7 +18,7 @@ TestResponsePtr TestAPI(Api* api,const HTTPClient::Method method,const string& p
 }
 
 TEST_F(BaseTest,DocumentApiTest){
-  TestAPI(api_,HTTPClient::MGET,"/document","","",200);
+  TestAPI(api_,HTTPClient::MGET,"/document","","",200); 
   TestAPI(api_,HTTPClient::MGET,"/document/","","",200);
   TestAPI(api_,HTTPClient::MGET,"/document/5","","",200);
   TestAPI(api_,HTTPClient::MGET,"/document/5/","","",200);
@@ -74,9 +74,9 @@ TEST_F(BaseTest,AssociateDocumentRangeApiTest){
   TestAPI(api_,HTTPClient::MPOST,"/document/5/1/","","text=Always+Look+On+The+Bright+Side+Of+Life",202);
   registry_.getQueueManager()->processQueue();
   EXPECT_EQ(3,registry_.getDocumentDB()->count());
-  // TestAPI(api_,HTTPClient::MPOST,"/associations/1/","","",202);
-  // registry_.getQueueManager()->processQueue();
-  // EXPECT_EQ(4,registry_.getAssociationDB()->count());
+  TestAPI(api_,HTTPClient::MPOST,"/associations/1/4/","","",202);
+  registry_.getQueueManager()->processQueue();
+  EXPECT_EQ(2,registry_.getAssociationDB()->count());
   // TestAPI(api_,HTTPClient::MPOST,"/associations/1-4/","","",202);
   // registry_.getQueueManager()->processQueue();
   // EXPECT_EQ(6,registry_.getAssociationDB()->count());

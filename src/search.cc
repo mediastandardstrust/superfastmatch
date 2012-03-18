@@ -6,9 +6,10 @@ namespace superfastmatch{
   RegisterTemplateFilename(SEARCH_JSON, "JSON/search.tpl");
   RegisterTemplateFilename(DOCUMENTS_JSON, "JSON/documents.tpl");
 
-  Search::Search(Registry* registry,DocumentPtr doc,const string& name):
+  Search::Search(Registry* registry,DocumentPtr doc,DocumentQueryPtr target,const string& name):
   registry_(registry),
   doc(doc),
+  target(target),
   performance(new InstrumentGroup(name,registry->getNumResults(),registry->getNumResults()))
   {
     performance->add(doc->getInstrument());
@@ -16,21 +17,23 @@ namespace superfastmatch{
 
   SearchPtr Search::createTemporarySearch(Registry* registry,const string& text){
     DocumentPtr doc=registry->getDocumentManager()->createTemporaryDocument(text);
-    SearchPtr search=SearchPtr(new Search(registry,doc,"Create Temporary Search"));
+    DocumentQueryPtr target(new DocumentQuery(registry,"",""));
+    SearchPtr search=SearchPtr(new Search(registry,doc,target,"Create Temporary Search"));
     search->execute();
     return search;
   }
 
   SearchPtr Search::createAnonymousSearch(Registry* registry,const string& text){
     DocumentPtr doc=registry->getDocumentManager()->createTemporaryDocument(text);
-    SearchPtr search=SearchPtr(new Search(registry,doc,"Create Anonymous Search"));
+    DocumentQueryPtr target(new DocumentQuery(registry,"",""));
+    SearchPtr search=SearchPtr(new Search(registry,doc,target,"Create Anonymous Search"));
     search->execute();
     return search;
   }
   
-  SearchPtr Search::createPermanentSearch(Registry* registry,const uint32_t doctype,const uint32_t docid){
+  SearchPtr Search::createPermanentSearch(Registry* registry,const uint32_t doctype,const uint32_t docid,DocumentQueryPtr target){
     DocumentPtr doc=registry->getDocumentManager()->getDocument(doctype,docid);
-    SearchPtr search=SearchPtr(new Search(registry,doc,"Create Permanent Search"));
+    SearchPtr search=SearchPtr(new Search(registry,doc,target,"Create Permanent Search"));
     search->execute();
     return search;
   }
@@ -39,7 +42,8 @@ namespace superfastmatch{
     DocumentPtr doc=registry->getDocumentManager()->getDocument(doctype,docid,DocumentManager::TEXT|DocumentManager::META);
     SearchPtr search;
     if (doc){
-      search=SearchPtr(new Search(registry,doc,"Get Permanent Search"));
+      DocumentQueryPtr target(new DocumentQuery(registry,"",""));
+      search=SearchPtr(new Search(registry,doc,target,"Get Permanent Search"));
       search->associations=registry->getAssociationManager()->getAssociations(doc,DocumentManager::META);      
     }
     return search;

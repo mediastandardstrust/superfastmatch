@@ -53,6 +53,8 @@ namespace superfastmatch{
      CommandAction action_;
      uint32_t doc_type_;
      uint32_t doc_id_;
+     string source_;
+     string target_;
      string* payload_;
 
      static const char* key_format;
@@ -76,6 +78,7 @@ namespace superfastmatch{
      uint32_t getDocType();
      uint32_t getDocId();
      uint64_t getQueueId();
+     DocumentQueryPtr getDocumentQuery();
      uint64_t getPayloadId();
      string& getPayload();
      CommandAction getAction();
@@ -83,7 +86,16 @@ namespace superfastmatch{
      void fillDictionary(TemplateDictionary* dict);
 
    private:
-     Command(Registry* registry,const CommandAction action,const uint64_t queue_id,const uint64_t payload_id,const uint32_t doc_type,const uint32_t doc_id,const string& payload);
+     Command(Registry* registry,
+             const CommandAction action,
+             const uint64_t queue_id,
+             const uint64_t payload_id,
+             const uint32_t doc_type,
+             const uint32_t doc_id,
+             const string& source,
+             const string& target,
+             const string& payload);
+     
      Command(Registry* registry,const string& key,const string& value);
      DISALLOW_COPY_AND_ASSIGN(Command);
    };

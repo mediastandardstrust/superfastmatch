@@ -276,7 +276,7 @@ namespace superfastmatch
   bool Posting::init(){
     // Load the stored docs
     double start = kc::time();
-    DocumentQuery query(registry_);
+    DocumentQuery query(registry_,"","");
     assert(query.isValid());
     vector<DocPair> pairs=query.getSourceDocPairs(true);
     for(vector<DocPair>::iterator it=pairs.begin(),ite=pairs.end();it!=ite;++it){
@@ -379,7 +379,7 @@ namespace superfastmatch
       }
     }
     for (search_t::iterator it=search.results.begin(),ite=search.results.end();it!=ite;it++){
-      if ((it->second.count>0)){
+      if ((it->second.count>0)&&(search.target->isInTargetRange(it->first.doc_type))){
         search.pruned_results.insert(pair<DocTally,DocPair>(it->second,it->first));
       }
     }

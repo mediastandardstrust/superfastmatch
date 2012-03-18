@@ -61,9 +61,10 @@ namespace superfastmatch
   class AssociationTask : public kc::TaskQueue::Task{
   friend class AssociationTaskQueue;
   private:
-    const DocPair pair_;
+    const DocPair* pair_;
+    DocumentQueryPtr query_;
   public:
-    AssociationTask(const DocPair pair);
+    AssociationTask(const DocPair* pair,DocumentQueryPtr query);
   };
 }
 #endif

@@ -42,12 +42,14 @@ namespace superfastmatch{
 
   // Global Forward Declarations
   class Document;
+  class DocumentQuery;
   class Association;
   class Command;
   class Instrument;
 
   // Global Typedefs
   typedef shared_ptr<Document> DocumentPtr;
+  typedef shared_ptr<DocumentQuery> DocumentQueryPtr;
   typedef shared_ptr<Association> AssociationPtr;
   typedef shared_ptr<Command> CommandPtr;
 

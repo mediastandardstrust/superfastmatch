@@ -9,10 +9,18 @@ namespace superfastmatch{
 
   const Command::status_map Command::statuses=create_map<CommandStatus,string>(Queued,"Queued")(Active,"Active")(Finished,"Finished")(Failed,"Failed");
 
-  const char* Command::key_format    = "%u:%020lu:%03u:%u:%010u:%010u";
+  const char* Command::key_format    = "%u|%020lu|%03u|%u|%010u|%010u|%s|%s";
   const char* Command::cursor_format = "%u:%020lu";
   
-  Command::Command(Registry* registry,const CommandAction action,const uint64_t queue_id,const uint64_t payload_id,const uint32_t doc_type,const uint32_t doc_id,const string& payload):
+  Command::Command(Registry* registry,
+                   const CommandAction action,
+                   const uint64_t queue_id,
+                   const uint64_t payload_id,
+                   const uint32_t doc_type,
+                   const uint32_t doc_id,
+                   const string& source,
+                   const string& target,
+                   const string& payload):
   registry_(registry),
   queue_id_(queue_id),
   payload_id_(payload_id),
@@ -20,6 +28,8 @@ namespace superfastmatch{
   action_(action),
   doc_type_(doc_type),
   doc_id_(doc_id),
+  source_(source),
+  target_(target),
   payload_(new string(payload))
   {
     action_map::const_iterator action_it=actions.find(action);
@@ -35,9 +45,16 @@ namespace superfastmatch{
   registry_(registry),
   payload_(0)
   {
-    if(sscanf(key.c_str(),key_format,&status_,&queue_id_,&priority_,&action_,&doc_type_,&doc_id_)!=6){
-      throw "Bad parse of Command key!";
-    }
+    vector<string> parts;
+    assert(kc::strsplit(key,'|',&parts)==8);
+    status_=(CommandStatus)kc::atoi(parts[0].c_str());
+    queue_id_=kc::atoi(parts[1].c_str()); // This will fail after 9223372036854780000 queue items :)
+    priority_=kc::atoi(parts[2].c_str());
+    action_=(CommandAction)kc::atoi(parts[3].c_str());
+    doc_type_=kc::atoi(parts[4].c_str());
+    doc_id_=kc::atoi(parts[5].c_str());
+    source_=parts[6];
+    target_=parts[7];
     payload_id_=kc::atoi(value.c_str());
   }
   
@@ -46,7 +63,7 @@ namespace superfastmatch{
   }
   
   string Command::getKey(){
-    return kc::strprintf(key_format,status_,queue_id_,priority_,action_,doc_type_,doc_id_);
+    return kc::strprintf(key_format,status_,queue_id_,priority_,action_,doc_type_,doc_id_,source_.c_str(),target_.c_str());
   }
   
   uint64_t Command::getQueueId(){
@@ -89,23 +106,23 @@ namespace superfastmatch{
       registry_->getPostings()->addDocument(doc);
       return true;
     }
-    registry_->getQueueManager()->insertCommand(DropDocument,getQueueId(),getDocType(),getDocId(),"");
+    registry_->getQueueManager()->insertCommand(DropDocument,getQueueId(),getDocType(),getDocId(),source_,target_,"");
     return false;
   }
   
   bool Command::addAssociation(){
-    SearchPtr search=Search::createPermanentSearch(registry_,getDocType(),getDocId());
+    DocumentQuery query(registry_,source_,target_);
+    SearchPtr search=Search::createPermanentSearch(registry_,getDocType(),getDocId(),getDocumentQuery());
     return true;
   }
 
   bool Command::addAssociations(){
-    //TODO Make use of query with source and target
-    DocumentQuery query(registry_);
+    DocumentQuery query(registry_,source_,target_);
     vector<DocPair> pairs=query.getSourceDocPairs(true);
     AssociationTaskQueue queue(registry_);
     queue.start(registry_->getSlotCount());
     for(vector<DocPair>::iterator it=pairs.begin(),ite=pairs.end();it!=ite;++it){
-      queue.add_task(new AssociationTask(*it));
+      queue.add_task(new AssociationTask(&*it,getDocumentQuery()));
     }
     queue.finish();
     return true;
@@ -127,6 +144,10 @@ namespace superfastmatch{
   
   uint32_t Command::getDocId(){
     return doc_id_;
+  }
+  
+  DocumentQueryPtr Command::getDocumentQuery(){
+    return DocumentQueryPtr(new DocumentQuery(registry_,source_,target_));
   }
   
   string& Command::getPayload(){

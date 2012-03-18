@@ -32,11 +32,12 @@ namespace superfastmatch{
   class Search{
   private:
     Registry* registry_;
-    Search(Registry* registry_,DocumentPtr doc,const string& name);
+    Search(Registry* registry_,DocumentPtr doc,DocumentQueryPtr target,const string& name);
     void execute();
     DISALLOW_COPY_AND_ASSIGN(Search);
   public:
     DocumentPtr doc;
+    DocumentQueryPtr target;
     search_t results;
     inverted_search_t pruned_results;
     vector<AssociationPtr> associations;
@@ -47,7 +48,7 @@ namespace superfastmatch{
     // Factory methods
     static SearchPtr createTemporarySearch(Registry* registry,const string& text);
     static SearchPtr createAnonymousSearch(Registry* registry,const string& text);
-    static SearchPtr createPermanentSearch(Registry* registry,const uint32_t doctype,const uint32_t docid);
+    static SearchPtr createPermanentSearch(Registry* registry,const uint32_t doctype,const uint32_t docid,DocumentQueryPtr target );
     static SearchPtr getPermanentSearch(Registry* registry,const uint32_t doctype,const uint32_t docid);
   };  
 }

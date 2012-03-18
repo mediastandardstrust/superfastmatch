@@ -78,12 +78,13 @@ namespace superfastmatch
     bool valid_;
 
   public:
-    explicit DocumentQuery(Registry* registry);
+    explicit DocumentQuery(Registry* registry,const string& source,const string& target);
     explicit DocumentQuery(Registry* registry,const string& source,const string& target, const map<string,string>& query);
   
     bool isValid();
     const vector<DocPair>& getSourceDocPairs(bool unlimited=false);
     const vector<DocPair>& getTargetDocPairs(bool unlimited=false);
+    bool isInTargetRange(const uint32_t doctype);
     const string& getCursor() const;
     const string& getOrder() const;
     const string& getFirst();

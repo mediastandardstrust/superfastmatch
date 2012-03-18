@@ -84,7 +84,8 @@ TEST_F(AssociationTest, ManagerPermanentTest){
   registry_.getPostings()->addDocument(doc2);
   registry_.getPostings()->finishTasks();
   EXPECT_NE(0U,registry_.getPostings()->getHashCount());
-  SearchPtr search=Search::createPermanentSearch(&registry_,doc1->doctype(),doc1->docid());
+  DocumentQueryPtr query(new DocumentQuery(&registry_,"",""));
+  SearchPtr search=Search::createPermanentSearch(&registry_,doc1->doctype(),doc1->docid(),query);
   EXPECT_EQ(1U,search->associations.size());
   EXPECT_EQ(2U,registry_.getAssociationDB()->count());
   DocumentPtr doc3 = registry_.getDocumentManager()->getDocument(1,1);
@@ -122,7 +123,8 @@ TEST_F(AssociationTest,DanteTest){
   registry_.getPostings()->addDocument(doc1);
   registry_.getPostings()->addDocument(doc2);
   registry_.getPostings()->finishTasks();
-  SearchPtr search=Search::createPermanentSearch(&registry_,doc1->doctype(),doc1->docid());
+  DocumentQueryPtr query(new DocumentQuery(&registry_,"",""));
+  SearchPtr search=Search::createPermanentSearch(&registry_,doc1->doctype(),doc1->docid(),query);
   EXPECT_EQ(1U,search->associations.size());
   EXPECT_EQ(100U,search->associations[0]->getResult(0).length);
   EXPECT_EQ(2U,registry_.getAssociationDB()->count());
