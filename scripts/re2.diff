@@ -1,0 +1,42 @@
+diff -r 2d252384c5e8 libre2.symbols
+--- a/libre2.symbols	Mon Mar 05 14:20:36 2012 -0500
++++ b/libre2.symbols	Mon Mar 19 20:13:15 2012 +0000
+@@ -10,6 +10,7 @@
+ 		_ZlsRSoRKN3re211StringPieceE;
+ 		# re2::FilteredRE2*
+ 		_ZN3re211FilteredRE2*;
++		_ZNK3re211FilteredRE2*;
+ 	local:
+ 		*;
+ };
+diff -r 2d252384c5e8 libre2.symbols.darwin
+--- a/libre2.symbols.darwin	Mon Mar 05 14:20:36 2012 -0500
++++ b/libre2.symbols.darwin	Mon Mar 19 20:13:15 2012 +0000
+@@ -9,3 +9,5 @@
+ __ZlsRSoRKN3re211StringPieceE
+ # re2::FilteredRE2*
+ __ZN3re211FilteredRE2*
++__ZNK3re211FilteredRE2*
++
+diff -r 2d252384c5e8 testinstall.cc
+--- a/testinstall.cc	Mon Mar 05 14:20:36 2012 -0500
++++ b/testinstall.cc	Mon Mar 19 20:13:15 2012 +0000
+@@ -7,10 +7,17 @@
+ int main(void) {
+ 	FilteredRE2 f;
+ 	int id;
++	vector<int> ids;
+ 	f.Add("a.*b.*c", RE2::DefaultOptions, &id);
++	ids.push_back(id);
++	f.Add("abc", RE2::DefaultOptions, &id);
++	ids.push_back(id);
+ 	vector<string> v;
+ 	f.Compile(&v);
+-
++	if (f.FirstMatch("axbyc",ids)!=ids[0]){
++		printf("FAIL\n");
++		return 2;
++	}
+ 	if(RE2::FullMatch("axbyc", "a.*b.*c")) {
+ 		printf("PASS\n");
+ 		return 0;
