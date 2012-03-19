@@ -48,7 +48,7 @@ Ext.define('Superfastmatch.view.MainViewPort', {
                     {
                         xtype: 'HTMLPanel',
                         loader: {
-                            url: '/help/'
+                            url: '/describe/'
                         },
                         title: 'Documentation'
                     },
