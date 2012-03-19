@@ -2,6 +2,8 @@
 #include "queue.h"
 
 namespace superfastmatch{
+	RegisterTemplateFilename(COMMAND_JSON, "JSON/command.tpl");
+
   const Command::action_map Command::actions=create_map<CommandAction,ActionDetail>(DropDocument,Command::ActionDetail(1,&Command::dropDocument,"Drop Document"))\
                                                                                    (AddDocument,Command::ActionDetail(2,&Command::addDocument,"Add Document"))\
                                                                                    (AddAssociations,Command::ActionDetail(3,&Command::addAssociations,"Add Associations"))\
@@ -167,12 +169,16 @@ namespace superfastmatch{
   }
   
   void Command::fillDictionary(TemplateDictionary* dict){
-    TemplateDictionary* command_dict=dict->AddSectionDictionary("COMMAND");
-    command_dict->SetValue("STATUS",statuses.find(status_)->second);
-    command_dict->SetValue("ACTION",actions.find(action_)->second.name);
-    command_dict->SetIntValue("ID",queue_id_);
-    command_dict->SetIntValue("PRIORITY",priority_);
-    command_dict->SetIntValue("DOC_TYPE",doc_type_);
-    command_dict->SetIntValue("DOC_ID",doc_id_);
+    TemplateDictionary* commandSectionDict=dict->AddSectionDictionary("COMMAND");
+    TemplateDictionary* commandDict=commandSectionDict->AddIncludeDictionary("DATA");
+    commandDict->SetFilename(COMMAND_JSON);
+    commandDict->SetValue("STATUS",statuses.find(status_)->second);
+    commandDict->SetValue("ACTION",actions.find(action_)->second.name);
+    commandDict->SetIntValue("QUEUE_ID",queue_id_);
+    commandDict->SetIntValue("PRIORITY",priority_);
+    commandDict->SetIntValue("DOC_TYPE",doc_type_);
+    commandDict->SetIntValue("DOC_ID",doc_id_);
+    commandDict->SetValue("SOURCE",source_);
+    commandDict->SetValue("TARGET",target_);
   }
 }

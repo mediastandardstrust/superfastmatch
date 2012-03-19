@@ -5,7 +5,6 @@
 #include <kcplantdb.h>
 #include <kccompress.h>
 #include <logger.h>
-#include <templates.h>
 #include <instrumentation.h>
 
 using namespace std;

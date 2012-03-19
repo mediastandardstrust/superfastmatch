@@ -3,6 +3,7 @@
 namespace superfastmatch{
   
 	RegisterTemplateFilename(SUCCESS_JSON, "JSON/success.tpl");
+	RegisterTemplateFilename(QUEUED_JSON, "JSON/queued.tpl");
 	RegisterTemplateFilename(FAILURE_JSON, "JSON/failure.tpl");
 	RegisterTemplateFilename(DESCRIPTION_HTML, "HTML/description.tpl");
 
@@ -181,44 +182,44 @@ ApiParams::ApiParams(const HTTPClient::Method verb,const string& body, const str
             &Api::GetDocument),
     ApiCall(HTTPClient::MPOST,
            "^/document/<doctype>/<docid>/?$",
-           create_map<response_t,string>(response_t(202,"application/json"),SUCCESS_JSON)\
+           create_map<response_t,string>(response_t(202,"application/json"),QUEUED_JSON)\
                                         (response_t(500,"application/json"),FAILURE_JSON),
            "Create a new document",
            &Api::CreateDocument),
     ApiCall(HTTPClient::MPUT,
            "^/document/<doctype>/<docid>/?$",
-           create_map<response_t,string>(response_t(202,"application/json"),SUCCESS_JSON)\
+           create_map<response_t,string>(response_t(202,"application/json"),QUEUED_JSON)\
                                         (response_t(500,"application/json"),FAILURE_JSON),
            "Create and associate a new document",
            &Api::CreateAndAssociateDocument),
     ApiCall(HTTPClient::MDELETE,
            "^/document/<doctype>/<docid>/?$",
-           create_map<response_t,string>(response_t(202,"application/json"),SUCCESS_JSON),
+           create_map<response_t,string>(response_t(202,"application/json"),QUEUED_JSON),
            "Delete a document",
            &Api::DeleteDocument),
     ApiCall(HTTPClient::MPOST,
           "^/association/<doctype>/<docid>/?$",
-          create_map<response_t,string>(response_t(202,"application/json"),SUCCESS_JSON),
+          create_map<response_t,string>(response_t(202,"application/json"),QUEUED_JSON),
           "Associate a document",
           &Api::AssociateDocument),
     ApiCall(HTTPClient::MPOST,
           "^/association/<doctype>/<docid>/<target>/?$",
-          create_map<response_t,string>(response_t(202,"application/json"),SUCCESS_JSON),
+          create_map<response_t,string>(response_t(202,"application/json"),QUEUED_JSON),
           "Associate a document with a set of documents that match the specified target doc type range",
           &Api::AssociateDocument),
     ApiCall(HTTPClient::MPOST,
           "^/associations/?$",
-          create_map<response_t,string>(response_t(202,"application/json"),SUCCESS_JSON),
+          create_map<response_t,string>(response_t(202,"application/json"),QUEUED_JSON),
           "Associate all documents",
           &Api::AssociateDocuments),   
     ApiCall(HTTPClient::MPOST,
           "^/associations/<source>/?$",
-          create_map<response_t,string>(response_t(202,"application/json"),SUCCESS_JSON),
+          create_map<response_t,string>(response_t(202,"application/json"),QUEUED_JSON),
           "Associate a set of documents which match the specified source doc type range",
           &Api::AssociateDocuments),
     ApiCall(HTTPClient::MPOST,
           "^/associations/<source>/<target>/?$",
-          create_map<response_t,string>(response_t(202,"application/json"),SUCCESS_JSON),
+          create_map<response_t,string>(response_t(202,"application/json"),QUEUED_JSON),
           "Associate a set of documents which match the specified source doc type range with the target doc type range",
           &Api::AssociateDocuments),
     ApiCall(HTTPClient::MGET,

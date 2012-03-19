@@ -3,7 +3,6 @@
 
 #include "common.h"
 #include "registry.h"
-#include "templates.h"
 #include "document.h"
 #include "search.h"
 #include "instrumentation.h"

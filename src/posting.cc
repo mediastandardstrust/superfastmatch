@@ -9,6 +9,7 @@
 namespace superfastmatch
 {
   RegisterTemplateFilename(HISTOGRAM, "histogram.tpl");
+  RegisterTemplateFilename(POSTING_JSON,"JSON/posting.tpl")
   
   // -------------------
   // PostingSlot members
@@ -420,6 +421,8 @@ namespace superfastmatch
   }
   
   void Posting::fillListDictionary(TemplateDictionary* dict,uint32_t start){
+    TemplateDictionary* postingDict=dict->AddIncludeDictionary("DATA");
+    postingDict->SetFilename(POSTING_JSON);
     uint32_t count=0;
     for (size_t i=0;i<slots_.size();i++){
       count+=slots_[i]->fillListDictionary(dict,start);
@@ -427,17 +430,14 @@ namespace superfastmatch
         break;
       }
     }
-    TemplateDictionary* page_dict=dict->AddIncludeDictionary("PAGING");
-    page_dict->SetFilename(PAGING);
-    page_dict->SetValueAndShowSection("PAGE",toString(0),"FIRST");
+    postingDict->SetIntValue("FIRST",0);
     if (start>registry_->getPageSize()){
-      page_dict->SetValueAndShowSection("PAGE",toString(start-registry_->getPageSize()),"PREVIOUS"); 
+      postingDict->SetIntValue("PREVIOUS",start-registry_->getPageSize()); 
+    }else{
+      postingDict->SetIntValue("PREVIOUS",0); 
     }
-    else{
-      page_dict->SetValueAndShowSection("PAGE",toString(0),"PREVIOUS"); 
-    }
-    page_dict->SetValueAndShowSection("PAGE",toString(min(registry_->getMaxHashCount()-registry_->getPageSize(),start+registry_->getPageSize())),"NEXT");
-    page_dict->SetValueAndShowSection("PAGE",toString(registry_->getMaxHashCount()-registry_->getPageSize()),"LAST");
+    postingDict->SetIntValue("NEXT",min(registry_->getMaxHashCount()-registry_->getPageSize(),start+registry_->getPageSize())); 
+    postingDict->SetIntValue("LAST",registry_->getMaxHashCount()-registry_->getPageSize()); 
   }
 
   void Posting::fillHistogramDictionary(TemplateDictionary* dict){

@@ -1,6 +1,7 @@
 #include "queue.h"
 
 namespace superfastmatch{
+	RegisterTemplateFilename(QUEUE_JSON, "JSON/queue.tpl");
 
   QueueManager::QueueManager(Registry* registry):
   registry_(registry){}
@@ -56,8 +57,8 @@ namespace superfastmatch{
   }
   
   void QueueManager::fillDictionary(TemplateDictionary* dict,const uint64_t cursor){
-    TemplateDictionary* pager_dict=dict->AddIncludeDictionary("PAGING");
-    pager_dict->SetFilename(PAGING);
+    TemplateDictionary* queueDict=dict->AddIncludeDictionary("DATA");
+    queueDict->SetFilename(QUEUE_JSON);
     kc::PolyDB::Cursor* queue_cursor=registry_->getQueueDB()->cursor();
     size_t count;
     string start;
@@ -67,7 +68,7 @@ namespace superfastmatch{
     CommandPtr command;
     if(queue_cursor->jump() && queue_cursor->get(&key,&value)){
       command = getCommand(key,value);
-      pager_dict->SetValueAndShowSection("PAGE",toString(command->getQueueId()),"FIRST");
+      queueDict->SetIntValue("FIRST",command->getQueueId());
     }
     if(queue_cursor->jump_back()){
       count=registry_->getPageSize()-1;
@@ -76,7 +77,7 @@ namespace superfastmatch{
       }
       if (queue_cursor->get(&key,&value)){
         command = getCommand(key,value);
-        pager_dict->SetValueAndShowSection("PAGE",toString(command->getQueueId()),"LAST");
+        queueDict->SetIntValue("LAST",command->getQueueId());
         start=key; 
       }
     }
@@ -96,18 +97,18 @@ namespace superfastmatch{
     }
     if(queue_cursor->get(&key,&value)){
       command = getCommand(key,value);
-      pager_dict->SetValueAndShowSection("PAGE",toString(command->getQueueId()),"PREVIOUS");
+      queueDict->SetIntValue("PREVIOUS",command->getQueueId());
     }
     queue_cursor->jump(start);
     count=registry_->getPageSize();
     while(count>0 && queue_cursor->get(&key,&value,true)){
       command = getCommand(key,value);
-      command->fillDictionary(dict);
+      command->fillDictionary(queueDict);
       count--;
     }
     if(queue_cursor->get(&key,&value)){
       command = getCommand(key,value);
-      pager_dict->SetValueAndShowSection("PAGE",toString(command->getQueueId()),"NEXT");
+      queueDict->SetIntValue("NEXT",command->getQueueId());
     }
     delete queue_cursor;
   }

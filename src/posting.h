@@ -5,7 +5,6 @@
 #include <boost/pool/pool_alloc.hpp>
 #include <common.h>
 #include <instrumentation.h>
-#include <templates.h>
 #include <postline.h>
 #include <query.h>
 #include <task.h>

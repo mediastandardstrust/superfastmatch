@@ -10,7 +10,6 @@
 #include <command.h>
 #include <document.h>
 #include <search.h>
-#include <templates.h>
 #include <api.h>
 
 using namespace std;
