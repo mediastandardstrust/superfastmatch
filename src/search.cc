@@ -81,7 +81,7 @@ namespace superfastmatch{
     if(includeDoc){
       TemplateDictionary* sourceDict=searchDict->AddSectionDictionary("SOURCE");
       sourceDict->SetValue("TEXT",doc->getText());
-	  doc->fillJSONDictionary(sourceDict, metadata);
+	    doc->fillJSONDictionary(sourceDict, metadata);
     }
   }
 }
