@@ -2,7 +2,7 @@
         {{>DOCUMENTS}}
     }{{#SOURCE}},
     {{#META}}
-    "{{KEY:o}}": {{#NUMBER}}{{VALUE}}{{/NUMBER}}{{#STRING}}"{{VALUE:o}}"{{/STRING}}{{#META_separator}},{{/META_separator}}
+    "{{KEY:o}}": {{#NUMBER}}{{VALUE}}{{/NUMBER}}{{#STRING}}"{{VALUE:o}}"{{/STRING}},
     {{/META}}
     "text"      : "{{TEXT:o}}"
     {{/SOURCE}}
