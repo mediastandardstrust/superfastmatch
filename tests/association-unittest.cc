@@ -101,7 +101,8 @@ TEST_F(AssociationTest, ManagerTemporaryTest){
   registry_.getPostings()->addDocument(doc1);
   registry_.getPostings()->finishTasks();
   EXPECT_NE(0U,registry_.getPostings()->getHashCount());
-  SearchPtr search=Search::createTemporarySearch(&registry_,"text=Always+Look+On+The+Bright+Side+Of+Life+and+this+is+a+long+sentence&title=Doc2");
+  DocumentQueryPtr target(new DocumentQuery(&registry_,"",""));
+  SearchPtr search=Search::createTemporarySearch(&registry_,"text=Always+Look+On+The+Bright+Side+Of+Life+and+this+is+a+long+sentence&title=Doc2",target);
   EXPECT_EQ(1U,search->associations.size());
   EXPECT_EQ(0U,registry_.getAssociationDB()->count());
 }

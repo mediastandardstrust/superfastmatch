@@ -8,7 +8,8 @@ TEST_F(PostingTest,SearchTest){
   registry_.getPostings()->addDocument(doc1);
   registry_.getPostings()->addDocument(doc2);
   registry_.getPostings()->finishTasks();
-  SearchPtr search=Search::createTemporarySearch(&registry_,"text=the+same+sentence");
+  DocumentQueryPtr target(new DocumentQuery(&registry_,"",""));
+  SearchPtr search=Search::createTemporarySearch(&registry_,"text=the+same+sentence",target);
   EXPECT_EQ(0U,search->doc->doctype());
   EXPECT_EQ(0U,search->doc->docid());
   EXPECT_EQ(2U,search->results.size());

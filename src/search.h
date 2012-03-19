@@ -46,9 +46,9 @@ namespace superfastmatch{
     void fillJSONDictionary(TemplateDictionary* dict,const bool includeDoc);
     
     // Factory methods
-    static SearchPtr createTemporarySearch(Registry* registry,const string& text);
-    static SearchPtr createAnonymousSearch(Registry* registry,const string& text);
-    static SearchPtr createPermanentSearch(Registry* registry,const uint32_t doctype,const uint32_t docid,DocumentQueryPtr target );
+    static SearchPtr createTemporarySearch(Registry* registry,const string& text,DocumentQueryPtr target);
+    static SearchPtr createAnonymousSearch(Registry* registry,const string& text,DocumentQueryPtr target);
+    static SearchPtr createPermanentSearch(Registry* registry,const uint32_t doctype,const uint32_t docid,DocumentQueryPtr target);
     static SearchPtr getPermanentSearch(Registry* registry,const uint32_t doctype,const uint32_t docid);
   };  
 }

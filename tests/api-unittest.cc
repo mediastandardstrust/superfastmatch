@@ -58,6 +58,25 @@ TEST_F(BaseTest,DocumentPutApiTest){
   EXPECT_EQ(0,registry_.getAssociationDB()->count());
 }
 
+TEST_F(BaseTest,SearchApiTest){
+  TestAPI(api_,HTTPClient::MPOST,"/document/1/1","","text=This+is+a+long+sentence+where+the+phrase+Always+Look+On+The+Bright+Side+Of+Life",202);
+  TestAPI(api_,HTTPClient::MPOST,"/document/4/4/","","text=Always+Look+On+The+Bright+Side+Of+Life+and+this+is+a+long+sentence",202);
+  registry_.getQueueManager()->processQueue();
+  EXPECT_EQ(2,registry_.getDocumentDB()->count());
+  string result=TestAPI(api_,HTTPClient::MPOST,"/search/","","text=Always+Look+On+The+Bright+Side+Of+Life",200)->body;
+  EXPECT_THAT(result,HasSubstr("\"docid\": 1"));
+  EXPECT_THAT(result,HasSubstr("\"doctype\": 1"));
+  EXPECT_THAT(result,HasSubstr("\"docid\": 4"));
+  EXPECT_THAT(result,HasSubstr("\"doctype\": 4"));
+  result=TestAPI(api_,HTTPClient::MPOST,"/search/1/","","text=Always+Look+On+The+Bright+Side+Of+Life",200)->body;
+  EXPECT_THAT(result,HasSubstr("\"docid\": 1"));
+  EXPECT_THAT(result,HasSubstr("\"doctype\": 1"));
+  EXPECT_THAT(result,Not(HasSubstr("\"docid\": 4")));
+  EXPECT_THAT(result,Not(HasSubstr("\"doctype\": 4")));
+  TestAPI(api_,HTTPClient::MPOST,"/search/1-43-5/","","text=Always+Look+On+The+Bright+Side+Of+Life",500);
+  TestAPI(api_,HTTPClient::MPOST,"/search/1/","","teasxt=Always+Look+On+The+Bright+Side+Of+Life",500);
+}
+
 TEST_F(BaseTest,AssociateAllDocumentsApiTest){
   TestAPI(api_,HTTPClient::MPOST,"/document/1/1","","text=This+is+a+long+sentence+where+the+phrase+Always+Look+On+The+Bright+Side+Of+Life",202);
   TestAPI(api_,HTTPClient::MPOST,"/document/4/4/","","text=Always+Look+On+The+Bright+Side+Of+Life+and+this+is+a+long+sentence",202);
@@ -77,26 +96,13 @@ TEST_F(BaseTest,AssociateDocumentRangeApiTest){
   TestAPI(api_,HTTPClient::MPOST,"/associations/1/4/","","",202);
   registry_.getQueueManager()->processQueue();
   EXPECT_EQ(2,registry_.getAssociationDB()->count());
-  // TestAPI(api_,HTTPClient::MPOST,"/associations/1-4/","","",202);
-  // registry_.getQueueManager()->processQueue();
-  // EXPECT_EQ(6,registry_.getAssociationDB()->count());
-  // TestAPI(api_,HTTPClient::MPOST,"/associations/5/1:4/","","",202);
-  // registry_.getQueueManager()->processQueue();
-  // EXPECT_EQ(6,registry_.getAssociationDB()->count());
+  TestAPI(api_,HTTPClient::MPOST,"/associations/1-4/","","",202);
+  registry_.getQueueManager()->processQueue();
+  EXPECT_EQ(6,registry_.getAssociationDB()->count());
+  TestAPI(api_,HTTPClient::MPOST,"/associations/5/1:4/","","",202);
+  registry_.getQueueManager()->processQueue();
+  EXPECT_EQ(6,registry_.getAssociationDB()->count());
 }
-
-// TEST_F(BaseTest,AssociateDocumentsApiTest){
-//   TestAPI(api_,HTTPClient::MPOST,"/document/1/1","","text=This+is+a+long+sentence+where+the+phrase+Always+Look+On+The+Bright+Side+Of+Life",202);
-//   TestAPI(api_,HTTPClient::MPOST,"/document/4/4/","","text=Always+Look+On+The+Bright+Side+Of+Life+and+this+is+a+long+sentence",202);
-//   registry_.getQueueManager()->processQueue();
-//   EXPECT_EQ(2,registry_.getDocumentDB()->count());
-//   TestAPI(api_,HTTPClient::MPOST,"/association/1/1/","","",202);
-//   registry_.getQueueManager()->processQueue();
-//   EXPECT_EQ(2,registry_.getAssociationDB()->count());
-//   TestAPI(api_,HTTPClient::MPOST,"/association/4/4/","","",202);
-//   registry_.getQueueManager()->processQueue();
-//   EXPECT_EQ(2,registry_.getAssociationDB()->count());
-// }
 
 TEST_F(BaseTest,QueueApiTest){
   TestAPI(api_,HTTPClient::MGET,"/queue","","",200);

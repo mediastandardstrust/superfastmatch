@@ -15,17 +15,15 @@ namespace superfastmatch{
     performance->add(doc->getInstrument());
   }
 
-  SearchPtr Search::createTemporarySearch(Registry* registry,const string& text){
+  SearchPtr Search::createTemporarySearch(Registry* registry,const string& text,DocumentQueryPtr target){
     DocumentPtr doc=registry->getDocumentManager()->createTemporaryDocument(text);
-    DocumentQueryPtr target(new DocumentQuery(registry,"",""));
     SearchPtr search=SearchPtr(new Search(registry,doc,target,"Create Temporary Search"));
     search->execute();
     return search;
   }
 
-  SearchPtr Search::createAnonymousSearch(Registry* registry,const string& text){
+  SearchPtr Search::createAnonymousSearch(Registry* registry,const string& text,DocumentQueryPtr target){
     DocumentPtr doc=registry->getDocumentManager()->createTemporaryDocument(text);
-    DocumentQueryPtr target(new DocumentQuery(registry,"",""));
     SearchPtr search=SearchPtr(new Search(registry,doc,target,"Create Anonymous Search"));
     search->execute();
     return search;

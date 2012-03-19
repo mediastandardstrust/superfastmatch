@@ -144,8 +144,8 @@ ApiParams::ApiParams(const HTTPClient::Method verb,const string& body, const str
   const size_t Api::API_COUNT=19;
 
   const capture_map Api::captures_=create_map<string,capture_t >\
-                                   ("<doctype>",capture_t("(?P<doctype>\\d+)","A document type with a value greater than 0"))\
-                                   ("<docid>",capture_t("(?P<docid>\\d+)","A document id with a value greater than 0"))\
+                                   ("<doctype>",capture_t("(?P<doctype>\\d+)","A document type with a value between 1 and 4294967295"))\
+                                   ("<docid>",capture_t("(?P<docid>\\d+)","A document id with a value greater than 1 and 4294967295"))\
                                    ("<source>",capture_t("(?P<source>(((\\d+-\\d+):?|(\\d+):?))+)","A range of doctypes. Eg. 1-2:5:7-9 which is equivalent to [1,2,5,7,8,9]"))\
                                    ("<target>",capture_t("(?P<target>(((\\d+-\\d+):?|(\\d+):?))+)","A range of doctypes. Eg. 1-2:5:7-9 which is equivalent to [1,2,5,7,8,9]")); 
 
@@ -154,83 +154,85 @@ ApiParams::ApiParams(const HTTPClient::Method verb,const string& body, const str
             "^/search/?$",
             create_map<response_t,string>(response_t(200,"application/json"),SUCCESS_JSON)\
                                          (response_t(500,"application/json"),SUCCESS_JSON),  
-            "Search for text in all documents",
+            "Search for text in all documents. There must be a form field with name text, otherwise returns response code 500.",
             &Api::DoSearch),
     ApiCall(HTTPClient::MPOST,
             "^/search/<target>/?$",
             create_map<response_t,string>(response_t(200,"application/json"),SUCCESS_JSON)\
                                          (response_t(500,"application/json"),SUCCESS_JSON),  
-            "Search for text in the specified target doctype range",
+            "Search for text in the specified target doctype range. There must be a form field with name text and <target> must be correctly formed, otherwise returns response code 500.",
             &Api::DoSearch),                        
     ApiCall(HTTPClient::MGET,
             "^/document/?$",
-            create_map<response_t,string>(response_t(200,"application/json"),SUCCESS_JSON)\
-                                         (response_t(500,"application/json"),FAILURE_JSON),
-            "Get metadata and text of all documents",
+            create_map<response_t,string>(response_t(200,"application/json"),SUCCESS_JSON),
+            "Get metadata and text of all documents.",
             &Api::GetDocuments),
     ApiCall(HTTPClient::MGET,
             "^/document/<source>/?$",
             create_map<response_t,string>(response_t(200,"application/json"),SUCCESS_JSON)\
                                          (response_t(500,"application/json"),FAILURE_JSON),
-            "Get metadata and text of all documents with specified doctype",
+            "Get metadata and text of all documents with specified doctype. If <source> is badly formed returns response code 500.",
             &Api::GetDocuments),
     ApiCall(HTTPClient::MGET,
             "^/document/<doctype>/<docid>/?$",
             create_map<response_t,string>(response_t(200,"application/json"),SUCCESS_JSON)\
                                          (response_t(404,"application/json"),FAILURE_JSON),
-            "Get metadata and text of existing document",
+            "Get metadata and text of existing document. If document does not exist returns 404.",
             &Api::GetDocument),
     ApiCall(HTTPClient::MPOST,
            "^/document/<doctype>/<docid>/?$",
            create_map<response_t,string>(response_t(202,"application/json"),QUEUED_JSON)\
                                         (response_t(500,"application/json"),FAILURE_JSON),
-           "Create a new document",
+           "Create a new document asynchronously. There must be a form field with name text, otherwise returns response code 500.",
            &Api::CreateDocument),
     ApiCall(HTTPClient::MPUT,
            "^/document/<doctype>/<docid>/?$",
            create_map<response_t,string>(response_t(202,"application/json"),QUEUED_JSON)\
                                         (response_t(500,"application/json"),FAILURE_JSON),
-           "Create and associate a new document",
+           "Create and associate a new document asynchronously. There must be a form field with name text, otherwise returns response code 500.",
            &Api::CreateAndAssociateDocument),
     ApiCall(HTTPClient::MDELETE,
            "^/document/<doctype>/<docid>/?$",
            create_map<response_t,string>(response_t(202,"application/json"),QUEUED_JSON),
-           "Delete a document",
+           "Delete a document asynchronously.",
            &Api::DeleteDocument),
     ApiCall(HTTPClient::MPOST,
           "^/association/<doctype>/<docid>/?$",
           create_map<response_t,string>(response_t(202,"application/json"),QUEUED_JSON),
-          "Associate a document",
+          "Associate a document asynchronously. If document does not exist, queued item marked as failed",
           &Api::AssociateDocument),
     ApiCall(HTTPClient::MPOST,
           "^/association/<doctype>/<docid>/<target>/?$",
-          create_map<response_t,string>(response_t(202,"application/json"),QUEUED_JSON),
-          "Associate a document with a set of documents that match the specified target doc type range",
+          create_map<response_t,string>(response_t(202,"application/json"),QUEUED_JSON)\
+                                       (response_t(500,"application/json"),FAILURE_JSON),                                                                                                                                                                 
+          "Associate a document asynchronously with a set of documents that match the specified target doc type range. If <target> is badly formed returns response code 500.",
           &Api::AssociateDocument),
     ApiCall(HTTPClient::MPOST,
           "^/associations/?$",
           create_map<response_t,string>(response_t(202,"application/json"),QUEUED_JSON),
-          "Associate all documents",
+          "Associate all documents asynchronously.",
           &Api::AssociateDocuments),   
     ApiCall(HTTPClient::MPOST,
           "^/associations/<source>/?$",
-          create_map<response_t,string>(response_t(202,"application/json"),QUEUED_JSON),
-          "Associate a set of documents which match the specified source doc type range",
+          create_map<response_t,string>(response_t(202,"application/json"),QUEUED_JSON)\
+                                       (response_t(500,"application/json"),FAILURE_JSON),
+          "Associate a set of documents asynchronously which match the specified source doc type range. If <source> is badly formed returns response code 500.",
           &Api::AssociateDocuments),
     ApiCall(HTTPClient::MPOST,
           "^/associations/<source>/<target>/?$",
-          create_map<response_t,string>(response_t(202,"application/json"),QUEUED_JSON),
-          "Associate a set of documents which match the specified source doc type range with the target doc type range",
+          create_map<response_t,string>(response_t(202,"application/json"),QUEUED_JSON)\
+                                       (response_t(500,"application/json"),FAILURE_JSON),
+          "Associate a set of documents asynchronously which match the specified source doc type range with the target doc type range. If <source> or <target> are badly formed returns response code 500.",
           &Api::AssociateDocuments),
     ApiCall(HTTPClient::MGET,
            "^/index/?$",
            create_map<response_t,string>(response_t(200,"application/json"),SUCCESS_JSON),
-           "Get the index data",
+           "Get the index data. Not fully implemented yet.",
            &Api::GetIndex),
     ApiCall(HTTPClient::MGET,
            "^/queue/?$",
            create_map<response_t,string>(response_t(200,"application/json"),SUCCESS_JSON),
-           "Get the queue data",
+           "Get the queue data. Not fully implemented yet.",
            &Api::GetQueue),
     ApiCall(HTTPClient::MGET,
            "^/performance/?$",
@@ -240,17 +242,17 @@ ApiParams::ApiParams(const HTTPClient::Method verb,const string& body, const str
     ApiCall(HTTPClient::MGET,
            "^/status/?$",
            create_map<response_t,string>(response_t(200,"application/json"),SUCCESS_JSON),
-           "Get the status of the superfastmatch instance",
+           "Get the status of the superfastmatch instance. Not fully implemented yet.",
            &Api::GetStatus),
     ApiCall(HTTPClient::MGET,
           "^/histogram/?$",
           create_map<response_t,string>(response_t(200,"application/json"),SUCCESS_JSON),
-          "Get a histogram of the index",
+          "Get a histogram of the index. Not fully implemented yet.",
           &Api::GetHistogram),
     ApiCall(HTTPClient::MGET,
            "^/describe/?$",
            create_map<response_t,string>(response_t(200,"text/html"),DESCRIPTION_HTML),
-           "Describe the superfastmatch API",
+           "Describe the superfastmatch API.",
            &Api::GetDescription)                                                 
   };
 
@@ -260,13 +262,22 @@ ApiParams::ApiParams(const HTTPClient::Method verb,const string& body, const str
 
   void Api::DoSearch(const ApiParams& params,ApiResponse& response){
     map<string,string>::const_iterator text=params.form.find("text");
-    if (text!=params.form.end()){
-      SearchPtr search=Search::createTemporarySearch(registry_,params.body);
+    string t;
+    if (params.resource.find("target")!=params.resource.end()){
+      t=params.resource.find("target")->second;
+    }
+    DocumentQueryPtr target(new DocumentQuery(registry_,"",t));
+    if (text==params.form.end()){
+      response.type=response_t(500,"application/json");
+      response.dict.SetValue("MESSAGE","No text field specified");    
+    }  
+    else if(!target->isValid()){
+      response.type=response_t(500,"application/json");
+      response.dict.SetValue("MESSAGE","Target is invalid");    
+    }else{
+      SearchPtr search=Search::createTemporarySearch(registry_,params.body,target);
       search->fillJSONDictionary(&response.dict,false);
       response.type=response_t(200,"application/json");
-    }else{
-      response.type=response_t(500,"application/json");
-      response.dict.SetValue("MESSAGE","No text field specified");  
     }
   }
 
@@ -293,8 +304,8 @@ ApiParams::ApiParams(const HTTPClient::Method verb,const string& body, const str
       query.fillJSONDictionary(&response.dict);
       response.type=response_t(200,"application/json");
     }else{
-      response.type=response_t(404,"application/json");        
-      response.dict.SetValue("MESSAGE","Invalid query.");
+      response.type=response_t(500,"application/json");        
+      response.dict.SetValue("MESSAGE","Source is invalid.");
     }
   }
   
@@ -344,9 +355,15 @@ ApiParams::ApiParams(const HTTPClient::Method verb,const string& body, const str
     if (params.resource.find("target")!=params.resource.end()){
       target=params.resource.find("target")->second;
     }
-    CommandPtr associateCommand = registry_->getQueueManager()->createCommand(AddAssociations,0,0,source,target,"");
-    associateCommand->fillDictionary(&response.dict);
-    response.type=response_t(202,"application/json");
+    DocumentQuery query(registry_,source,target,params.query);
+    if (query.isValid()){
+      CommandPtr associateCommand = registry_->getQueueManager()->createCommand(AddAssociations,0,0,source,target,"");
+      associateCommand->fillDictionary(&response.dict);
+      response.type=response_t(202,"application/json");      
+    }else{
+      response.type=response_t(500,"application/json");   
+      response.dict.SetValue("MESSAGE","Source or target is badly formed.");
+    }
   }
   
   void Api::GetIndex(const ApiParams& params,ApiResponse& response){
@@ -376,6 +393,24 @@ ApiParams::ApiParams(const HTTPClient::Method verb,const string& body, const str
   }
   
   void Api::GetDescription(const ApiParams& params,ApiResponse& response){
-    response.type=response_t(200,"application/json");
+    for(size_t i=0;i<Api::API_COUNT;i++){
+      HTTPClient::Method verb=calls_[i].verb;
+      TemplateDictionary* resourceDict=response.dict.AddSectionDictionary("RESOURCE");
+      resourceDict->SetValue("URL",calls_[i].match.substr(1,calls_[i].match.size()-3));
+      resourceDict->SetValue("METHOD",verb==HTTPClient::MGET?"GET":verb==HTTPClient::MPOST?"POST":verb==HTTPClient::MPUT?"PUT":"DELETE");
+      resourceDict->SetValue("DESCRIPTION",calls_[i].description);
+      resourceDict->SetIntValue("RESPONSE_COUNT",calls_[i].responses.size());
+      for (response_map::const_iterator it=calls_[i].responses.begin(),ite=calls_[i].responses.end();it!=ite;++it){
+        TemplateDictionary* responseDict=resourceDict->AddSectionDictionary("RESPONSE");        
+        responseDict->SetIntValue("CODE",it->first.first);
+        responseDict->SetValue("CONTENT_TYPE",it->first.second);
+      }
+    }
+    for(capture_map::const_iterator it=captures_.begin(),ite=captures_.end();it!=ite;++it){
+      TemplateDictionary* parameterDict=response.dict.AddSectionDictionary("PARAMETER");
+      parameterDict->SetValue("TITLE",it->first);
+      parameterDict->SetValue("DESCRIPTION",it->second.second);
+    }
+    response.type=response_t(200,"text/html");
   }
 }
