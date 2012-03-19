@@ -1,7 +1,6 @@
 #include <tests.h>
 
 typedef BaseTest DocumentQueryTest;
-typedef shared_ptr<DocumentQuery> DocumentQueryPtr;
 
 void testDocTypeRange(const string& range, const uint32_t count,const bool valid){
   DocTypeRange r;
