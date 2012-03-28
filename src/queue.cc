@@ -59,6 +59,7 @@ namespace superfastmatch{
   void QueueManager::fillDictionary(TemplateDictionary* dict,const uint64_t cursor){
     TemplateDictionary* queueDict=dict->AddIncludeDictionary("DATA");
     queueDict->SetFilename(QUEUE_JSON);
+    queueDict->SetIntValue("TOTAL",registry_->getQueueDB()->count());
     kc::PolyDB::Cursor* queue_cursor=registry_->getQueueDB()->cursor();
     size_t count;
     string start;

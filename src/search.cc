@@ -30,9 +30,12 @@ namespace superfastmatch{
   }
   
   SearchPtr Search::createPermanentSearch(Registry* registry,const uint32_t doctype,const uint32_t docid,DocumentQueryPtr target){
+    SearchPtr search;
     DocumentPtr doc=registry->getDocumentManager()->getDocument(doctype,docid);
-    SearchPtr search=SearchPtr(new Search(registry,doc,target,"Create Permanent Search"));
-    search->execute();
+    if(doc){
+      search=SearchPtr(new Search(registry,doc,target,"Create Permanent Search"));
+      search->execute();      
+    }
     return search;
   }
 

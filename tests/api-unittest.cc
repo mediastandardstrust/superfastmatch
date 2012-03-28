@@ -133,6 +133,7 @@ TEST_F(BaseTest,HistogramApiTest){
   TestAPI(api_,HTTPClient::MGET,"/histogram/","","",200);
 }
 
-
-
-
+TEST_F(BaseTest,AssociateNonExistentDocumentApiTest){
+  TestAPI(api_,HTTPClient::MPOST,"/association/1/1/","","",202);
+  registry_.getQueueManager()->processQueue();
+}
