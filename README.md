@@ -20,6 +20,8 @@ Superfastmatch depends on these libraries:
 
 [Google sparsehash](http://code.google.com/p/google-sparsehash/)
 
+[RE2](http://code.google.com/p/re2/)
+
 [Kyoto Cabinet](http://fallabs.com/kyotocabinet/)
 
 [Kyoto Tycoon](http://fallabs.com/kyototycoon/)
@@ -34,7 +36,7 @@ and wait for everything to build. The script will ask you for your sudo password
 
 On Ubuntu you'll need to do this first:
 
-    sudo apt-get install libunwind7-dev subversion curl build-essential zlib1g-dev 
+    sudo apt-get install libunwind7-dev mercurial curl build-essential zlib1g-dev
 
 And you might also need a:
 
@@ -50,6 +52,7 @@ On Fedora/Amazon AMI this will to allow bootstrap.sh to complete:
     sudo yum install gcc
     sudo yum install gcc-c++
     sudo yum install zlib-devel
+    sudo yum install mercurial
     wget http://download.savannah.gnu.org/releases/libunwind/libunwind-0.99.tar.gz
     tar xzf libunwind-0.99.tar.gz
     cd libunwind-0.99

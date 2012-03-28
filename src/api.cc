@@ -145,7 +145,7 @@ ApiParams::ApiParams(const HTTPClient::Method verb,const string& body, const str
 
   const capture_map Api::captures_=create_map<string,capture_t >\
                                    ("<doctype>",capture_t("(?P<doctype>\\d+)","A document type with a value between 1 and 4294967295"))\
-                                   ("<docid>",capture_t("(?P<docid>\\d+)","A document id with a value greater than 1 and 4294967295"))\
+                                   ("<docid>",capture_t("(?P<docid>\\d+)","A document id with a value between  1 and 4294967295"))\
                                    ("<source>",capture_t("(?P<source>(((\\d+-\\d+):?|(\\d+):?))+)","A range of doctypes. Eg. 1-2:5:7-9 which is equivalent to [1,2,5,7,8,9]"))\
                                    ("<target>",capture_t("(?P<target>(((\\d+-\\d+):?|(\\d+):?))+)","A range of doctypes. Eg. 1-2:5:7-9 which is equivalent to [1,2,5,7,8,9]")); 
 

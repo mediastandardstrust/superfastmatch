@@ -16,6 +16,9 @@ data/
 fixtures/federal
 fixtures/pan*
 fixtures/con*
+fixtures/juxta
 superfastmatch
 cachegrind.out*
 !public/app/ux/data/
+
+.tm_properties
