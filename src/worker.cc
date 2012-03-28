@@ -94,15 +94,17 @@ namespace superfastmatch{
         if (sbuf.isdir) {
           code = 403;
         } else {
-          map<string,string>::const_iterator etag=reqheads.find("if-none-match");
-          if ((etag!=reqheads.end())&&(etag->second.compare(toString(sbuf.mtime))==0)){
+          char* modified = new char[48];
+          datestrhttp(sbuf.mtime,kc::INT32MAX,modified);
+          map<string,string>::const_iterator since=reqheads.find("if-modified-since");
+          if ((since!=reqheads.end()) && (kc::stricmp(modified,since->second.c_str())==0)){
             code=304;
           }else{
             int64_t size;
             char* buf = kc::File::read_file(apath, &size, 256LL << 20);
             if (buf) {
               code = 200;
-              resheads["ETag"]=toString(sbuf.mtime);
+              resheads["Last-Modified"]=modified;
               const char* type = media_type(apath);
               if (type) resheads["content-type"] = type;
               resbody.append(buf, size);
@@ -111,6 +113,7 @@ namespace superfastmatch{
               code = 403;
             } 
           }
+          delete[] modified;
         }
       } else {
         code = 404;

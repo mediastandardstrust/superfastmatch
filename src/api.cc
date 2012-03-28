@@ -153,14 +153,14 @@ ApiParams::ApiParams(const HTTPClient::Method verb,const string& body, const str
     ApiCall(HTTPClient::MPOST,
             "^/search/?$",
             create_map<response_t,string>(response_t(200,"application/json"),SUCCESS_JSON)\
-                                         (response_t(500,"application/json"),SUCCESS_JSON),  
-            "Search for text in all documents. There must be a form field with name text, otherwise returns response code 500.",
+                                         (response_t(400,"application/json"),FAILURE_JSON),  
+            "Search for text in all documents. There must be a form field with name text, otherwise returns response code 400.",
             &Api::DoSearch),
     ApiCall(HTTPClient::MPOST,
             "^/search/<target>/?$",
             create_map<response_t,string>(response_t(200,"application/json"),SUCCESS_JSON)\
-                                         (response_t(500,"application/json"),SUCCESS_JSON),  
-            "Search for text in the specified target doctype range. There must be a form field with name text and <target> must be correctly formed, otherwise returns response code 500.",
+                                         (response_t(400,"application/json"),FAILURE_JSON),  
+            "Search for text in the specified target doctype range. There must be a form field with name text and <target> must be correctly formed, otherwise returns response code 400.",
             &Api::DoSearch),                        
     ApiCall(HTTPClient::MGET,
             "^/document/?$",
@@ -170,8 +170,8 @@ ApiParams::ApiParams(const HTTPClient::Method verb,const string& body, const str
     ApiCall(HTTPClient::MGET,
             "^/document/<source>/?$",
             create_map<response_t,string>(response_t(200,"application/json"),SUCCESS_JSON)\
-                                         (response_t(500,"application/json"),FAILURE_JSON),
-            "Get metadata and text of all documents with specified doctype. If <source> is badly formed returns response code 500.",
+                                         (response_t(400,"application/json"),FAILURE_JSON),
+            "Get metadata and text of all documents with specified doctype. If <source> is badly formed returns response code 400.",
             &Api::GetDocuments),
     ApiCall(HTTPClient::MGET,
             "^/document/<doctype>/<docid>/?$",
@@ -182,14 +182,14 @@ ApiParams::ApiParams(const HTTPClient::Method verb,const string& body, const str
     ApiCall(HTTPClient::MPOST,
            "^/document/<doctype>/<docid>/?$",
            create_map<response_t,string>(response_t(202,"application/json"),QUEUED_JSON)\
-                                        (response_t(500,"application/json"),FAILURE_JSON),
-           "Create a new document asynchronously. There must be a form field with name text, otherwise returns response code 500.",
+                                        (response_t(400,"application/json"),FAILURE_JSON),
+           "Create a new document asynchronously. There must be a form field with name text, otherwise returns response code 400.",
            &Api::CreateDocument),
     ApiCall(HTTPClient::MPUT,
            "^/document/<doctype>/<docid>/?$",
            create_map<response_t,string>(response_t(202,"application/json"),QUEUED_JSON)\
-                                        (response_t(500,"application/json"),FAILURE_JSON),
-           "Create and associate a new document asynchronously. There must be a form field with name text, otherwise returns response code 500.",
+                                        (response_t(400,"application/json"),FAILURE_JSON),
+           "Create and associate a new document asynchronously. There must be a form field with name text, otherwise returns response code 400.",
            &Api::CreateAndAssociateDocument),
     ApiCall(HTTPClient::MDELETE,
            "^/document/<doctype>/<docid>/?$",
@@ -204,8 +204,8 @@ ApiParams::ApiParams(const HTTPClient::Method verb,const string& body, const str
     ApiCall(HTTPClient::MPOST,
           "^/association/<doctype>/<docid>/<target>/?$",
           create_map<response_t,string>(response_t(202,"application/json"),QUEUED_JSON)\
-                                       (response_t(500,"application/json"),FAILURE_JSON),                                                                                                                                                                 
-          "Associate a document asynchronously with a set of documents that match the specified target doc type range. If <target> is badly formed returns response code 500.",
+                                       (response_t(400,"application/json"),FAILURE_JSON),                                                                                                                                                                 
+          "Associate a document asynchronously with a set of documents that match the specified target doc type range. If <target> is badly formed returns response code 400.",
           &Api::AssociateDocument),
     ApiCall(HTTPClient::MPOST,
           "^/associations/?$",
@@ -215,14 +215,14 @@ ApiParams::ApiParams(const HTTPClient::Method verb,const string& body, const str
     ApiCall(HTTPClient::MPOST,
           "^/associations/<source>/?$",
           create_map<response_t,string>(response_t(202,"application/json"),QUEUED_JSON)\
-                                       (response_t(500,"application/json"),FAILURE_JSON),
-          "Associate a set of documents asynchronously which match the specified source doc type range. If <source> is badly formed returns response code 500.",
+                                       (response_t(400,"application/json"),FAILURE_JSON),
+          "Associate a set of documents asynchronously which match the specified source doc type range. If <source> is badly formed returns response code 400.",
           &Api::AssociateDocuments),
     ApiCall(HTTPClient::MPOST,
           "^/associations/<source>/<target>/?$",
           create_map<response_t,string>(response_t(202,"application/json"),QUEUED_JSON)\
-                                       (response_t(500,"application/json"),FAILURE_JSON),
-          "Associate a set of documents asynchronously which match the specified source doc type range with the target doc type range. If <source> or <target> are badly formed returns response code 500.",
+                                       (response_t(400,"application/json"),FAILURE_JSON),
+          "Associate a set of documents asynchronously which match the specified source doc type range with the target doc type range. If <source> or <target> are badly formed returns response code 400.",
           &Api::AssociateDocuments),
     ApiCall(HTTPClient::MGET,
            "^/index/?$",
@@ -268,11 +268,11 @@ ApiParams::ApiParams(const HTTPClient::Method verb,const string& body, const str
     }
     DocumentQueryPtr target(new DocumentQuery(registry_,"",t));
     if (text==params.form.end()){
-      response.type=response_t(500,"application/json");
+      response.type=response_t(400,"application/json");
       response.dict.SetValue("MESSAGE","No text field specified");    
     }  
     else if(!target->isValid()){
-      response.type=response_t(500,"application/json");
+      response.type=response_t(400,"application/json");
       response.dict.SetValue("MESSAGE","Target is invalid");    
     }else{
       SearchPtr search=Search::createTemporarySearch(registry_,params.body,target);
@@ -304,7 +304,7 @@ ApiParams::ApiParams(const HTTPClient::Method verb,const string& body, const str
       query.fillJSONDictionary(&response.dict);
       response.type=response_t(200,"application/json");
     }else{
-      response.type=response_t(500,"application/json");        
+      response.type=response_t(400,"application/json");        
       response.dict.SetValue("MESSAGE","Source is invalid.");
     }
   }
@@ -318,7 +318,7 @@ ApiParams::ApiParams(const HTTPClient::Method verb,const string& body, const str
       addCommand->fillDictionary(&response.dict);
       response.type=response_t(202,"application/json");        
     }else{
-      response.type=response_t(500,"application/json");   
+      response.type=response_t(400,"application/json");   
       response.dict.SetValue("MESSAGE","No text field specified");     
     }
   }
@@ -361,7 +361,7 @@ ApiParams::ApiParams(const HTTPClient::Method verb,const string& body, const str
       associateCommand->fillDictionary(&response.dict);
       response.type=response_t(202,"application/json");      
     }else{
-      response.type=response_t(500,"application/json");   
+      response.type=response_t(400,"application/json");   
       response.dict.SetValue("MESSAGE","Source or target is badly formed.");
     }
   }

@@ -25,8 +25,8 @@ TEST_F(BaseTest,DocumentApiTest){
   TestAPI(api_,HTTPClient::MGET,"/document/5/1","","",404);
   TestAPI(api_,HTTPClient::MGET,"/document/5/1/","","",404);
   TestAPI(api_,HTTPClient::MPOST,"/document/","","",-1);
-  TestAPI(api_,HTTPClient::MPOST,"/document/5/1","","",500);
-  TestAPI(api_,HTTPClient::MPOST,"/document/5/1/","","",500);
+  TestAPI(api_,HTTPClient::MPOST,"/document/5/1","","",400);
+  TestAPI(api_,HTTPClient::MPOST,"/document/5/1/","","",400);
   TestAPI(api_,HTTPClient::MPOST,"/document/5/1","","text=testing+123",202);
   TestAPI(api_,HTTPClient::MPOST,"/document/5/1/","","text=testing+123",202);
   TestAPI(api_,HTTPClient::MPUT,"/document/5/1","","text=testing+123",202);
@@ -34,8 +34,8 @@ TEST_F(BaseTest,DocumentApiTest){
   registry_.getQueueManager()->processQueue();
   TestAPI(api_,HTTPClient::MGET,"/document/5/1","","",200);
   TestAPI(api_,HTTPClient::MGET,"/document/5/1/","","",200);
-  TestAPI(api_,HTTPClient::MPOST,"/search","","",500);
-  TestAPI(api_,HTTPClient::MPOST,"/search/","","",500);
+  TestAPI(api_,HTTPClient::MPOST,"/search","","",400);
+  TestAPI(api_,HTTPClient::MPOST,"/search/","","",400);
   TestAPI(api_,HTTPClient::MPOST,"/search","","text=testing+123",200);
   TestAPI(api_,HTTPClient::MPOST,"/search/","","text=testing+123",200);
   TestAPI(api_,HTTPClient::MDELETE,"/document/5/1","","",202);
@@ -73,8 +73,8 @@ TEST_F(BaseTest,SearchApiTest){
   EXPECT_THAT(result,HasSubstr("\"doctype\": 1"));
   EXPECT_THAT(result,Not(HasSubstr("\"docid\": 4")));
   EXPECT_THAT(result,Not(HasSubstr("\"doctype\": 4")));
-  TestAPI(api_,HTTPClient::MPOST,"/search/1-43-5/","","text=Always+Look+On+The+Bright+Side+Of+Life",500);
-  TestAPI(api_,HTTPClient::MPOST,"/search/1/","","teasxt=Always+Look+On+The+Bright+Side+Of+Life",500);
+  TestAPI(api_,HTTPClient::MPOST,"/search/1-43-5/","","text=Always+Look+On+The+Bright+Side+Of+Life",400);
+  TestAPI(api_,HTTPClient::MPOST,"/search/1/","","teasxt=Always+Look+On+The+Bright+Side+Of+Life",400);
 }
 
 TEST_F(BaseTest,AssociateAllDocumentsApiTest){
