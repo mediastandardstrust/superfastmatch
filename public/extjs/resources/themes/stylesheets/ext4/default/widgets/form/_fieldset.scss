@@ -8,10 +8,14 @@
         display: block; /* preserve margins in IE */
         position: relative;
     }
-    
+
+    // Insane IE bug: Fieldset padding-top is rendered *outside* the border!
+    // So we transfer the padding-top to the body element.
     .#{$prefix}ie .#{$prefix}fieldset {
         padding-top: 0;
-        padding-bottom: $fieldset-padding;
+        .#{$prefix}fieldset-body {
+            padding-top: $fieldset-padding;
+        }
     }
     
     .#{$prefix}fieldset-header {
@@ -22,6 +26,9 @@
 
         .#{$prefix}fieldset-header-text {
             float: left;
+        }
+        .#{$prefix}fieldset-header-text-collapsible {
+            cursor: pointer;
         }
         
         .#{$prefix}form-item,

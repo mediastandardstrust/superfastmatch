@@ -9,9 +9,9 @@
             border-top-color: $grid-header-background-color;
         }
 
-        // Still needs left and right border even if it's not visible so that its available width can be calculated correctly
+        // Hide using visibility so that its available width can be calculated correctly
         .#{$prefix}grid-header-ct-hidden {
-            border-top-width: 0 !important;
+            visibility: hidden;
         }
     }
 
@@ -52,13 +52,16 @@
         padding: 0;
         border: 1px solid $panel-body-border-color;
 
+        // Body border provided by headerCt only when in accordion layout.
+        border-bottom-color: $grid-header-background-color;
+
         @if $supports-gradients or $compile-all {
             @include background-gradient($grid-header-background-color, $grid-header-background-gradient);
         }
     }
 
     .#{$prefix}accordion-item .#{$prefix}grid-header-ct {
-        border: 0 none;
+        border-width: 0 0 1px 0!important;
     }
 
     .#{$prefix}column-header {
@@ -97,7 +100,7 @@
         zoom: 1;
         position: relative;
         white-space: nowrap;
-        line-height: 22px;
+        line-height: $grid-header-line-height;
         padding: $grid-header-padding;
 
         .#{$prefix}column-header-text {
@@ -306,8 +309,7 @@
 
     .#{$prefix}ie6,
     .#{$prefix}ie7,
-    .#{$prefix}quirks .#{$prefix}ie8,
-    .#{$prefix}strict .#{$prefix}ie8 {
+    .#{$prefix}quirks .#{$prefix}ie8 {
         .#{$prefix}grid-header-row {
             position: absolute;
         }
@@ -354,7 +356,7 @@
         border-right: 1px solid $grid-cell-with-col-lines-border-color;
     }
 
-    .#{$prefix}property-grid {
+    .#{$prefix}property-grid {      
         .#{$prefix}grid-row .#{$prefix}grid-property-name .#{$prefix}grid-cell-inner,
         .#{$prefix}grid-row-over .#{$prefix}grid-property-name .#{$prefix}grid-cell-inner {
             padding-left: 12px;
@@ -708,7 +710,10 @@
             padding: 0 $grid-row-editor-field-padding-horizontal;
         }
         .#{$prefix}form-cb-wrap {
-            padding-top: $grid-row-editor-checkbox-padding-top;
+            padding-top: $grid-row-editor-cb-wrap-padding-top;
+        }
+        .#{$prefix}form-checkbox {
+            margin-left: $grid-row-editor-checkbox-margin-left;
         }
         .#{$prefix}form-display-field {
             font: $grid-editor-font;
@@ -808,7 +813,7 @@
         padding: 4px;
         height: 32px;
 
-        .#{$prefix}strict & {
+        .#{$prefix}strict .#{$prefix}ie7m & {
             width: 192px;
             height: 24px;
         }

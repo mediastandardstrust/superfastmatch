@@ -36,7 +36,7 @@
         cursor: pointer;
         cursor: hand;
 
-        * {
+        button {
             cursor: pointer;
             cursor: hand;
         }
@@ -192,10 +192,6 @@
     .#{$prefix}tab-default-disabled {
         cursor: default;
 
-        * {
-            cursor: default;
-        }
-
         border-color: $tab-border-color-disabled;
         @include background-gradient($tab-base-color-disabled, $tab-background-gradient-disabled);
 
@@ -210,22 +206,29 @@
         }
     }
 
-    .#{$prefix}tab {
-        button, a {
-            position: relative;
+    .#{$prefix}tab button {
+        position: relative;
+    }
 
-            .#{$prefix}tab-icon {
-                position: absolute;
-                background-repeat: no-repeat;
-                background-position: 0 -1px;
-                top: 0;
-                left: 0;
-                right: auto;
-                bottom: 0;
-                width: 18px;
-                height: 18px;
-            }
-        }
+    .#{$prefix}tab-icon {
+        position: absolute;
+        background-repeat: no-repeat;
+        background-position: 0 -1px;
+        top: 0;
+        left: 0;
+        right: auto;
+        bottom: 0;
+        width: 18px;
+        height: 18px;
+    }
+
+    .#{$prefix}tab-default-disabled .#{$prefix}tab-icon {
+        @include opacity(.5);
+    }
+
+    /* In IE a disabled icon needs to be hidden or the opacity effect covers some of the text */
+    .#{$prefix}tab-noicon .#{$prefix}tab-icon {
+        display: none;
     }
 
     //over
@@ -349,7 +352,7 @@
     }
 
     .#{$prefix}tab-close-btn {
-        position: absolute !important;
+        position: absolute;
         top: $tab-closable-icon-top;
         right: $tab-closable-icon-right;
         width: $tab-closable-icon-width;
@@ -361,12 +364,20 @@
         background-image: theme-background-image($theme-name, $tab-closable-icon);
         @include opacity(.6);
     }
+
     .#{$prefix}nbr .#{$prefix}tab-close-btn {
         top: $nbr-tab-closable-icon-top;
         right: $nbr-tab-closable-icon-right;
     }
-    .#{$prefix}tab-close-btn:hover {
+
+    /* Include the element name otherwise Internet Explorer 7 & 8 take a performance hit */
+    a.#{$prefix}tab-close-btn:hover {
         @include opacity(1);
+    }
+
+    /* Include the element name to raise the specificity to equal the :hover */
+    .#{$prefix}tab-default-disabled a.#{$prefix}tab-close-btn {
+        @include opacity(.3);
     }
 
     @if not $supports-border-radius or $compile-all {

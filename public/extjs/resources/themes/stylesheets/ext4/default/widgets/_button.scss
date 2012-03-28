@@ -15,12 +15,12 @@
         white-space: nowrap;
         
         vertical-align: middle;
-        
+
         * {
             cursor: pointer;
             cursor: hand;
         }
-        
+
         background-repeat: no-repeat;
         
         em {
@@ -31,9 +31,14 @@
                 text-decoration: none;
                 display: inline-block;
                 color: inherit;
+
+                // This is needed for IE7 in strict mode to ensure that the icon element has the correct opacity on a
+                // disabled link button. It seems only to be needed for buttons that are narrower than their icon
+                // element
+                zoom: 1;
             }
         }
-        
+
         button {
             margin: 0;
             padding: 0;      
@@ -640,6 +645,7 @@
     .#{$prefix}btn-#{$ui}-icon,
     .#{$prefix}btn-#{$ui}-noicon {
         button,
+        a,
         .#{$prefix}btn-inner {
             height: $icon-size;
             line-height: $icon-size;
@@ -648,7 +654,8 @@
 
     //icons
     .#{$prefix}btn-#{$ui}-icon {
-        button {
+        button,
+        a {
             padding: 0;
             width: $icon-size !important;
             height: $icon-size;
@@ -665,7 +672,8 @@
     }
     
     .#{$prefix}btn-#{$ui}-icon-text-left {
-        button {
+        button,
+        a {
             height: $icon-size;
         }
         .#{$prefix}btn-inner {
@@ -690,7 +698,8 @@
     }
 
     .#{$prefix}btn-#{$ui}-icon-text-right {
-        button {
+        button,
+        a {
             height: $icon-size;
         }
         .#{$prefix}btn-inner {

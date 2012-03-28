@@ -1,3 +1,20 @@
+/*
+This file is part of Ext JS 4.1
+
+Copyright (c) 2011-2012 Sencha Inc
+
+Contact:  http://www.sencha.com/contact
+
+Pre-release code in the Ext repository is intended for development purposes only and will
+not always be stable. 
+
+Use of pre-release code is permitted with your application at your own risk under standard
+Ext license terms. Public redistribution is prohibited.
+
+For early licensing, please contact us at licensing@sencha.com
+
+Build date: 2012-03-13 14:31:45 (92d45716fd5f49811568ad9d756992f1cced424d)
+*/
 /**
  * @var {string} $prefix
  * The prefix to be applied to all CSS selectors. If this is changed, it must also be changed in your
@@ -7830,26 +7847,25 @@ input, textarea, select {
     font-weight: normal !important; }
   /* line 109, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
   .x-datepicker-month .x-btn-split-right {
-    background: no-repeat right center !important;
     background-image: url('../../resources/themes/images/neptune/button/s-arrow-light.gif');
     padding-right: 12px; }
 
-/* line 117, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
+/* line 115, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
 .x-datepicker-next {
   text-align: right; }
 
-/* line 121, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
+/* line 119, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
 .x-datepicker-month {
   text-align: center; }
-  /* line 125, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
+  /* line 123, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
   .x-datepicker-month button {
     color: #2669B4 !important; }
 
-/* line 131, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
+/* line 129, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
 table.x-datepicker-inner {
   width: 100%;
   table-layout: fixed; }
-  /* line 135, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
+  /* line 133, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
   table.x-datepicker-inner th {
     width: 25px;
     height: 19px;
@@ -7860,19 +7876,19 @@ table.x-datepicker-inner {
     text-align: right;
     border-collapse: separate;
     cursor: default; }
-    /* line 157, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
+    /* line 155, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
     table.x-datepicker-inner th span {
       display: block;
       padding-right: 7px; }
-  /* line 163, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
+  /* line 161, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
   table.x-datepicker-inner tr {
     height: 20px; }
-  /* line 167, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
+  /* line 165, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
   table.x-datepicker-inner td {
     height: 19px;
     text-align: right;
     padding: 0; }
-  /* line 175, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
+  /* line 173, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
   table.x-datepicker-inner a {
     padding: 3px 5px 3px 3px;
     display: block;
@@ -7880,16 +7896,16 @@ table.x-datepicker-inner {
     color: #666567;
     text-decoration: none;
     text-align: right; }
-  /* line 185, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
+  /* line 183, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
   table.x-datepicker-inner .x-datepicker-active {
     cursor: pointer;
     color: black; }
-  /* line 191, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
+  /* line 189, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
   table.x-datepicker-inner a:hover,
   table.x-datepicker-inner .x-datepicker-disabled a:hover {
     text-decoration: none !important;
     background: #F2FAFF; }
-  /* line 198, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
+  /* line 196, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
   table.x-datepicker-inner .x-datepicker-selected a {
     color: #fff;
     background-color: #0E56B0;
@@ -7899,12 +7915,12 @@ table.x-datepicker-inner {
     -ms-border-radius: 4px;
     -khtml-border-radius: 4px;
     border-radius: 4px; }
-  /* line 210, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
+  /* line 208, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
   table.x-datepicker-inner .x-datepicker-today a {
     color: #28A02A;
     position: relative;
     top: -1px; }
-    /* line 220, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
+    /* line 218, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
     table.x-datepicker-inner .x-datepicker-today a:hover {
       background: #28A02A;
       color: #fff;
@@ -7914,7 +7930,7 @@ table.x-datepicker-inner {
       -ms-border-radius: 4px;
       -khtml-border-radius: 4px;
       border-radius: 4px; }
-  /* line 227, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
+  /* line 225, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
   table.x-datepicker-inner .x-datepicker-today.x-datepicker-selected a {
     background: #28A02A;
     color: #fff;
@@ -7924,54 +7940,54 @@ table.x-datepicker-inner {
     -ms-border-radius: 4px;
     -khtml-border-radius: 4px;
     border-radius: 4px; }
-  /* line 233, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
+  /* line 231, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
   table.x-datepicker-inner .x-datepicker-today span {
     font-weight: bold; }
-  /* line 240, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
+  /* line 238, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
   table.x-datepicker-inner .x-datepicker-prevday a,
   table.x-datepicker-inner .x-datepicker-nextday a {
     text-decoration: none !important;
     color: #aaa; }
-  /* line 246, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
+  /* line 244, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
   table.x-datepicker-inner .x-datepicker-disabled a {
     cursor: default;
     background-color: #eee;
     color: #bbb; }
 
-/* line 254, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
+/* line 252, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
 .x-datepicker-footer,
 .x-monthpicker-buttons {
   position: relative;
   text-align: center; }
-  /* line 267, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
+  /* line 265, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
   .x-datepicker-footer .x-btn,
   .x-monthpicker-buttons .x-btn {
     position: relative;
     margin: 4px; }
 
-/* line 273, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
+/* line 271, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
 .x-item-disabled .x-datepicker-inner a:hover {
   background: none; }
 
-/* line 278, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
+/* line 276, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
 .x-datepicker .x-monthpicker {
   position: absolute;
   left: 0;
   top: 0; }
 
-/* line 285, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
+/* line 283, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
 .x-monthpicker {
   border: 1px solid #dddddc;
   background-color: white; }
 
-/* line 291, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
+/* line 289, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
 .x-monthpicker-months,
 .x-monthpicker-years {
   float: left;
   height: 167px;
   width: 88px; }
 
-/* line 298, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
+/* line 296, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
 .x-monthpicker-item {
   float: left;
   margin: 4px 0 5px 0;
@@ -7981,7 +7997,7 @@ table.x-datepicker-inner {
   height: 18px;
   width: 43px;
   border: 0 none; }
-  /* line 312, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
+  /* line 310, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
   .x-monthpicker-item a {
     display: block;
     margin: 0 5px 0 5px;
@@ -7989,27 +8005,27 @@ table.x-datepicker-inner {
     color: black;
     border: 1px solid white;
     line-height: 17px; }
-    /* line 325, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
+    /* line 323, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
     .x-monthpicker-item a:hover {
       background-color: #1398ff; }
-    /* line 329, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
+    /* line 327, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
     .x-monthpicker-item a.x-monthpicker-selected {
       background-color: #129aff;
       border: 1px solid #0c599b; }
 
-/* line 336, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
+/* line 334, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
 .x-monthpicker-months {
   border-right: 1px solid #dddddc;
   width: 87px; }
 
-/* line 341, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
+/* line 339, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
 .x-monthpicker-years .x-monthpicker-item {
   width: 44px; }
 
-/* line 345, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
+/* line 343, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
 .x-monthpicker-yearnav {
   height: 28px; }
-  /* line 348, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
+  /* line 346, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
   .x-monthpicker-yearnav button {
     background-image: url('../../resources/themes/images/neptune/tools/tool-sprites.gif');
     height: 15px;
@@ -8017,61 +8033,61 @@ table.x-datepicker-inner {
     padding: 0;
     margin: 6px 12px 5px 15px;
     border: 0; }
-    /* line 356, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
+    /* line 354, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
     .x-monthpicker-yearnav button::-moz-focus-inner {
       border: 0;
       padding: 0; }
 
-/* line 363, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
+/* line 361, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
 .x-monthpicker-yearnav-next {
   background-position: 0 -120px; }
 
-/* line 367, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
+/* line 365, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
 .x-monthpicker-yearnav-next-over {
   cursor: pointer;
   cursor: hand;
   background-position: -15px -120px; }
 
-/* line 373, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
+/* line 371, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
 .x-monthpicker-yearnav-prev {
   background-position: 0 -105px; }
 
-/* line 377, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
+/* line 375, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
 .x-monthpicker-yearnav-prev-over {
   cursor: pointer;
   cursor: hand;
   background-position: -15px -105px; }
 
-/* line 384, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
+/* line 382, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
 .x-monthpicker-small .x-monthpicker-item {
   margin: 2px 0 2px 0; }
-/* line 388, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
+/* line 386, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
 .x-monthpicker-small .x-monthpicker-yearnav {
   height: 23px; }
-/* line 392, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
+/* line 390, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
 .x-monthpicker-small .x-monthpicker-months, .x-monthpicker-small .x-monthpicker-years {
   height: 136px; }
 
-/* line 402, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
+/* line 400, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
 .x-quirks .x-ie7 .x-monthpicker-buttons .x-btn,
 .x-quirks .x-ie8 .x-monthpicker-buttons .x-btn {
   margin-top: 2px; }
-/* line 408, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
+/* line 406, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
 .x-quirks .x-monthpicker-small .x-monthpicker-yearnav button {
   margin-top: 3px;
   margin-bottom: 3px; }
 
-/* line 414, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
+/* line 412, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
 .x-ie6 .x-monthpicker-small .x-monthpicker-yearnav button {
   margin-top: 3px;
   margin-bottom: 3px; }
 
-/* line 424, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
+/* line 422, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
 .x-nlg .x-datepicker-header {
   background-image: url('../../resources/themes/images/neptune/datepicker/datepicker-header-bg.gif');
   background-repeat: repeat-x;
   background-position: top left; }
-/* line 433, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
+/* line 431, ../themes/stylesheets/neptune/default/widgets/_datepicker.scss */
 .x-nlg .x-datepicker-footer,
 .x-nlg .x-monthpicker-buttons {
   background-image: url('../../resources/themes/images/neptune/datepicker/datepicker-footer-bg.gif');
@@ -8268,10 +8284,10 @@ table.x-datepicker-inner {
 .x-ie .x-menu-item-disabled .x-menu-item-text {
   background-color: transparent; }
 /* line 196, ../themes/stylesheets/neptune/default/widgets/_menu.scss */
-.x-strict .x-ie .x-menu-icon-separator {
+.x-strict .x-ie7m .x-ie .x-menu-icon-separator {
   width: 1px; }
 /* line 200, ../themes/stylesheets/neptune/default/widgets/_menu.scss */
-.x-strict .x-ie .x-menu-item-separator {
+.x-strict .x-ie7m .x-ie .x-menu-item-separator {
   height: 1px; }
 
 /* line 209, ../themes/stylesheets/neptune/default/widgets/_menu.scss */
@@ -8295,7 +8311,7 @@ table.x-datepicker-inner {
   border-bottom: 2px solid #D7DCE0; }
 /* line 15, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-panel .x-grid-header-ct-hidden {
-  border-bottom-width: 0 !important; }
+  visibility: hidden; }
 
 /* line 24, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-grid-view {
@@ -8323,19 +8339,20 @@ table.x-datepicker-inner {
 
 /* line 51, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-grid-header-ct {
+  border-bottom-color: white;
   background-image: none;
   background-color: white;
   border-bottom: 2px solid #D7DCE0 !important; }
 
-/* line 66, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 69, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-panel .x-grid-header-ct {
   border-bottom-width: 2px; }
 
-/* line 71, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 74, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-accordion-item .x-grid-header-ct {
-  border: 0 none; }
+  border-width: 0 0 1px 0!important; }
 
-/* line 75, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 78, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-column-header {
   padding: 0;
   position: absolute;
@@ -8350,33 +8367,33 @@ table.x-datepicker-inner {
   background-image: none;
   background-color: white; }
 
-/* line 100, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 103, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-group-header {
   padding: 0;
   border-left-width: 0; }
 
-/* line 104, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 107, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-group-sub-header {
   background: transparent;
   -webkit-border-image: none;
   border-top: 1px solid #eaeaea;
   border-left-width: 0; }
 
-/* line 111, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 114, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-column-header-inner {
   position: relative;
   white-space: nowrap;
   line-height: 22px;
   padding: 4px 6px; }
-  /* line 118, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+  /* line 121, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
   .x-column-header-inner .x-column-header-text {
     white-space: nowrap; }
 
-/* line 123, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 126, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-column-header-sortable {
   color: #0e4dad; }
 
-/* line 144, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 147, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-column-header-trigger {
   display: none;
   height: 100%;
@@ -8388,41 +8405,41 @@ table.x-datepicker-inner {
   z-index: 2;
   cursor: pointer; }
 
-/* line 162, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 165, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-column-header-over .x-column-header-trigger, .x-column-header-open .x-column-header-trigger {
   display: block; }
 
-/* line 167, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 170, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-column-header-align-right {
   text-align: right; }
-  /* line 170, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+  /* line 173, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
   .x-column-header-align-right .x-column-header-text {
     padding-right: 0.5ex;
     margin-right: 6px; }
 
-/* line 175, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 178, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-column-header-align-center {
   text-align: center; }
 
-/* line 178, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 181, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-column-header-align-left {
   text-align: left; }
 
-/* line 183, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 186, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-column-header-sort-ASC .x-column-header-text {
   padding-right: 16px;
   background: no-repeat top right;
   background-position-y: 1px;
   background-image: url('../../resources/themes/images/neptune/grid/sort.png'); }
 
-/* line 189, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 192, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-column-header-sort-DESC .x-column-header-text {
   padding-right: 16px;
   background: no-repeat top right;
   background-position-y: -47px;
   background-image: url('../../resources/themes/images/neptune/grid/sort.png'); }
 
-/* line 197, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 200, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-grid-row {
   height: 24px;
   vertical-align: top;
@@ -8432,7 +8449,7 @@ table.x-datepicker-inner {
   border-color: #f1f2f4;
   border-style: solid;
   border-width: 0; }
-  /* line 206, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+  /* line 209, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
   .x-grid-row .x-grid-cell {
     color: #22262a;
     font: normal 11px "Helvetica Neue", Arial, Verdana, sans-serif;
@@ -8441,11 +8458,11 @@ table.x-datepicker-inner {
     border-style: solid;
     border-width: 0; }
 
-/* line 225, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 228, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-grid-with-row-lines .x-grid-cell {
   border-width: 0; }
 
-/* line 229, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 232, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-grid-rowwrap-div {
   border-width: 0;
   border-color: #f1f2f4;
@@ -8453,30 +8470,30 @@ table.x-datepicker-inner {
   border-top-color: white;
   overflow: hidden; }
 
-/* line 239, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 242, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-grid-row-alt .x-grid-cell,
 .x-grid-row-alt .x-grid-rowwrap-div {
   background-color: #f7f7f8; }
 
-/* line 244, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 247, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-grid-row-over .x-grid-cell,
 .x-grid-row-over .x-grid-rowwrap-div {
   border-color: transparent;
   background-color: #a6ddff;
   color: black; }
-  /* line 249, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+  /* line 252, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
   .x-grid-row-over .x-grid-cell .x-grid-cell,
   .x-grid-row-over .x-grid-rowwrap-div .x-grid-cell {
     color: black; }
 
-/* line 255, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 258, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-grid-row-focused .x-grid-cell,
 .x-grid-row-focused .x-grid-rowwrap-div {
   border-color: #cdd2d7;
   color: #0a0b0c;
   background-color: #e1e4e7; }
 
-/* line 262, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 265, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-grid-row-selected .x-grid-cell,
 .x-grid-row-selected .x-grid-rowwrap-div {
   border-style: solid;
@@ -8485,48 +8502,48 @@ table.x-datepicker-inner {
   background-color: #0e4dad !important;
   text-shadow: #0a387e 0 -1px 0; }
 
-/* line 272, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 275, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-grid-rowwrap-div .x-grid-cell,
 .x-grid-rowwrap-div .x-grid-cell-inner {
   border-width: 0;
   background: transparent; }
 
-/* line 279, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 282, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-grid-row-body-hidden {
   display: none; }
 
-/* line 283, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 286, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-grid-rowbody {
   font: normal 11px "Helvetica Neue", Arial, Verdana, sans-serif;
   padding: 4px; }
-  /* line 286, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+  /* line 289, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
   .x-grid-rowbody p {
     margin: 5px 5px 10px 5px; }
 
-/* line 292, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 295, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-grid-cell {
   overflow: hidden;
   font: normal 11px "Helvetica Neue", Arial, Verdana, sans-serif; }
 
-/* line 298, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 301, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-grid-cell-inner {
   padding: 6px 8px; }
 
-/* line 304, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 307, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-grid-with-row-lines .x-grid-cell-inner {
   line-height: 13px;
   padding-bottom: 4px; }
 
-/* line 310, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 313, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-action-col-cell .x-grid-cell-inner {
   line-height: 0;
   padding: 2px; }
 
-/* line 315, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 318, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-grid-with-row-lines .x-action-col-cell .x-grid-cell-inner {
   padding-top: 1px; }
 
-/* line 319, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 322, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-grid-row .x-grid-cell-special {
   padding: 0;
   border-right: 1px solid #e0e3e6; }
@@ -8537,14 +8554,13 @@ table.x-datepicker-inner {
     other browser, because it is not a non-standard thing to do and those other
     browsers will do whacky things with it.
 */
-/* line 336, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 338, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-ie6 .x-grid-header-row,
 .x-ie7 .x-grid-header-row,
-.x-quirks .x-ie8 .x-grid-header-row,
-.x-strict .x-ie8 .x-grid-header-row {
+.x-quirks .x-ie8 .x-grid-header-row {
   position: absolute; }
 
-/* line 341, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 343, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-grid-row-over .x-grid-cell-special {
   border-right: 1px solid #e0e3e6;
   background-image: none;
@@ -8556,7 +8572,7 @@ table.x-datepicker-inner {
   background-image: -ms-linear-gradient(top, #f3faff, #bae5ff 3%, #92d5ff);
   background-image: linear-gradient(top, #f3faff, #bae5ff 3%, #92d5ff); }
 
-/* line 346, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 348, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-grid-row-selected .x-grid-cell-special {
   border-right: 1px solid #0078d7;
   background-image: none;
@@ -8568,31 +8584,31 @@ table.x-datepicker-inner {
   background-image: -ms-linear-gradient(top, #1b6eed, #1055c0 3%, #0c459a);
   background-image: linear-gradient(top, #1b6eed, #1055c0 3%, #0c459a); }
 
-/* line 352, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 354, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-grid-dirty-cell {
   background-image: url('../../resources/themes/images/neptune/grid/dirty.gif');
   background-position: 0 0;
   background-repeat: no-repeat; }
 
-/* line 364, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 366, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-nlg .x-grid-cell-special {
   background-repeat: repeat-y;
   background-position: top right; }
-/* line 370, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 372, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-nlg .x-grid-row .x-grid-cell-special,
 .x-nlg .x-grid-row-over .x-grid-cell-special {
   background-image: url('../../resources/themes/images/neptune/grid/cell-special-bg.gif'); }
-/* line 376, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 378, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-nlg .x-grid-row-focused .x-grid-cell-special,
 .x-nlg .x-grid-row-selected .x-grid-cell-special {
   background-image: url('../../resources/themes/images/neptune/grid/cell-special-selected-bg.gif'); }
 
-/* line 382, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 384, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-grid-with-col-lines .x-grid-cell {
   padding-right: 0;
   border-right: 1px solid #e0e3e6; }
 
-/* line 389, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 391, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-property-grid .x-grid-row .x-grid-property-name .x-grid-cell-inner,
 .x-property-grid .x-grid-row-over .x-grid-property-name .x-grid-cell-inner {
   padding-left: 12px;
@@ -8600,28 +8616,28 @@ table.x-datepicker-inner {
   background-repeat: no-repeat;
   background-position: -16px 2px; }
 
-/* line 399, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 401, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-grid-with-row-lines.x-property-grid .x-grid-row .x-grid-property-name .x-grid-cell-inner,
 .x-grid-with-row-lines.x-property-grid .x-grid-row-over .x-grid-property-name .x-grid-cell-inner {
   background-position: -16px 1px; }
 
-/* line 405, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 407, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-quirks .x-ie .x-grid-row .x-grid-property-name .x-grid-cell-inner {
   background-position: -16px 2px; }
 
-/* line 425, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 427, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-grid-view .x-grid-td-expander {
   vertical-align: top; }
 
-/* line 430, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 432, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-grid-td-expander {
   background: repeat-y right transparent; }
 
-/* line 436, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 438, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-grid-view .x-grid-td-expander .x-grid-cell-inner {
   padding: 0 !important; }
 
-/* line 442, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 444, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-grid-row-expander {
   background-image: url('../../resources/themes/images/neptune/grid/group-collapse.gif');
   background-color: transparent;
@@ -8631,11 +8647,11 @@ table.x-datepicker-inner {
   background-repeat: no-repeat;
   background-position: 0 -2px; }
 
-/* line 453, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 455, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-grid-row-collapsed .x-grid-row-expander {
   background-image: url('../../resources/themes/images/neptune/grid/group-expand.gif'); }
 
-/* line 458, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 460, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-grid-resize-marker {
   position: absolute;
   z-index: 5;
@@ -8643,7 +8659,7 @@ table.x-datepicker-inner {
   width: 1px;
   background-color: #0f0f0f; }
 
-/* line 468, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 470, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .col-move-top,
 .col-move-bottom {
   width: 9px;
@@ -8656,58 +8672,58 @@ table.x-datepicker-inner {
   z-index: 20000;
   background: no-repeat left top transparent; }
 
-/* line 480, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 482, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .col-move-top {
   background-image: url('../../resources/themes/images/neptune/grid/col-move-top.gif'); }
 
-/* line 484, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 486, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .col-move-bottom {
   background-image: url('../../resources/themes/images/neptune/grid/col-move-bottom.gif'); }
 
-/* line 489, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 491, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-tbar-page-number {
   width: 30px; }
 
-/* line 500, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 502, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-grid-group-hd {
   height: 24px; }
-  /* line 504, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+  /* line 506, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
   .x-grid-group-hd .x-grid-cell-inner {
     background: #e0e3e6;
     cursor: pointer;
     padding: 4px 8px 6px 8px; }
 
-/* line 517, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 519, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-grid-group-title {
   color: #090a0b;
   font: bold 12px "Helvetica Neue", Arial, Verdana, sans-serif; }
 
-/* line 531, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 533, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-grid-group-collapsed .x-grid-group-body {
   display: none; }
 
-/* line 535, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 537, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-grid-group-collapsed .x-grid-group-title {
   background-image: url('../../resources/themes/images/neptune/grid/group-expand.gif'); }
 
-/* line 539, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 541, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-group-by-icon {
   background-image: url('../../resources/themes/images/neptune/grid/group-by.gif'); }
 
-/* line 543, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 545, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-show-groups-icon {
   background-image: url('../../resources/themes/images/neptune/grid/group-by.gif'); }
 
-/* line 547, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 549, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-column-header-checkbox .x-column-header-inner {
   padding: 0; }
 
-/* line 551, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 553, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-grid-cell-special .x-grid-cell-inner {
   padding-left: 4px;
   padding-right: 4px; }
 
-/* line 557, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 559, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-grid-row-checker,
 .x-column-header-checkbox .x-column-header-text {
   height: 14px;
@@ -8718,113 +8734,113 @@ table.x-datepicker-inner {
   background-repeat: no-repeat;
   background-color: transparent; }
 
-/* line 569, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 571, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-column-header-checkbox .x-column-header-text {
   display: block;
   margin: 4px 5px; }
 
 /* IE6, IE7, and all IE Quirks mode need line-height to be the same as checkbox height or the header/row height will be too tall */
-/* line 578, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 580, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-quirks .x-ie .x-grid-row-checker,
 .x-quirks .x-ie .x-column-header-checkbox .x-column-header-text, .x-ie7m .x-grid-row-checker, .x-ie7m .x-column-header-checkbox .x-column-header-text {
   line-height: 14px; }
 
-/* line 584, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 586, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-grid-hd-checker-on .x-column-header-text {
   background-image: url('../../resources/themes/images/neptune/grid/checked.gif'); }
 
-/* line 588, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 590, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-grid-cell-row-checker .x-grid-cell-inner {
   padding-top: 4px;
   padding-bottom: 2px;
   line-height: 18px; }
 
-/* line 593, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 595, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-grid-with-row-lines .x-grid-cell-row-checker .x-grid-cell-inner {
   padding-top: 3px; }
 
-/* line 596, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 598, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-grid-row-checker {
   margin-left: 1px;
   background-position: 50% -2px; }
 
-/* line 603, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 605, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-grid-row-selected .x-grid-row-checker,
 .x-grid-row-checked .x-grid-row-checker {
   background-image: url('../../resources/themes/images/neptune/grid/checked.gif'); }
 
-/* line 608, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 610, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-tbar-page-first {
   background-image: url('../../resources/themes/images/neptune/grid/page-first.gif') !important; }
 
-/* line 612, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 614, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-tbar-loading {
   background-image: url('../../resources/themes/images/neptune/grid/refresh.gif') !important; }
 
-/* line 616, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 618, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-tbar-page-last {
   background-image: url('../../resources/themes/images/neptune/grid/page-last.gif') !important; }
 
-/* line 620, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 622, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-tbar-page-next {
   background-image: url('../../resources/themes/images/neptune/grid/page-next.gif') !important; }
 
-/* line 624, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 626, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-tbar-page-prev {
   background-image: url('../../resources/themes/images/neptune/grid/page-prev.gif') !important; }
 
-/* line 629, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 631, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-item-disabled .x-tbar-loading {
   background-image: url('../../resources/themes/images/neptune/grid/refresh-disabled.gif') !important; }
-/* line 633, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 635, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-item-disabled .x-tbar-page-first {
   background-image: url('../../resources/themes/images/neptune/grid/page-first-disabled.gif') !important; }
-/* line 637, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 639, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-item-disabled .x-tbar-page-last {
   background-image: url('../../resources/themes/images/neptune/grid/page-last-disabled.gif') !important; }
-/* line 641, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 643, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-item-disabled .x-tbar-page-next {
   background-image: url('../../resources/themes/images/neptune/grid/page-next-disabled.gif') !important; }
-/* line 645, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 647, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-item-disabled .x-tbar-page-prev {
   background-image: url('../../resources/themes/images/neptune/grid/page-prev-disabled.gif') !important; }
 
-/* line 651, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 653, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-hmenu-sort-asc .x-menu-item-icon {
   background-image: url('../../resources/themes/images/neptune/grid/hmenu-asc.gif'); }
 
-/* line 655, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 657, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-hmenu-sort-desc .x-menu-item-icon {
   background-image: url('../../resources/themes/images/neptune/grid/hmenu-desc.gif'); }
 
-/* line 659, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 661, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-hmenu-lock .x-menu-item-icon {
   background-image: url('../../resources/themes/images/neptune/grid/hmenu-lock.gif'); }
 
-/* line 663, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 665, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-hmenu-unlock .x-menu-item-icon {
   background-image: url('../../resources/themes/images/neptune/grid/hmenu-unlock.gif'); }
 
-/* line 667, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 669, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-group-by-icon {
   background-image: url('../../resources/themes/images/neptune/grid/group-by.gif'); }
 
-/* line 671, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 673, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-cols-icon .x-menu-item-icon {
   background-image: url('../../resources/themes/images/neptune/grid/columns.gif'); }
 
-/* line 675, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 677, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-show-groups-icon {
   background-image: url('../../resources/themes/images/neptune/grid/group-by.gif'); }
 
-/* line 680, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 682, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-grid-drop-indicator {
   position: absolute;
   height: 1px;
   line-height: 0px;
   background-color: #77BC71;
   overflow: visible; }
-  /* line 687, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+  /* line 689, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
   .x-grid-drop-indicator .x-grid-drop-indicator-left {
     position: absolute;
     top: -8px;
@@ -8832,7 +8848,7 @@ table.x-datepicker-inner {
     background-image: url('../../resources/themes/images/neptune/grid/dd-insert-arrow-right.png');
     height: 16px;
     width: 16px; }
-  /* line 696, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+  /* line 698, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
   .x-grid-drop-indicator .x-grid-drop-indicator-right {
     position: absolute;
     top: -8px;
@@ -8841,128 +8857,128 @@ table.x-datepicker-inner {
     height: 16px;
     width: 16px; }
 
-/* line 707, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 709, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-ie6 .x-grid-drop-indicator-left {
   background-image: url('../../resources/themes/images/neptune/grid/dd-insert-arrow-right.gif'); }
-/* line 711, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 713, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-ie6 .x-grid-drop-indicator-right {
   background-image: url('../../resources/themes/images/neptune/grid/dd-insert-arrow-left.gif'); }
 
-/* line 719, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 721, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-grid-editor .x-form-text {
   padding: 0 4px; }
-/* line 722, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 724, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-grid-editor .x-form-cb-wrap {
   padding-top: 3px; }
 
-/* line 728, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 730, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-grid-row-editor {
   position: absolute !important;
   z-index: 1;
   overflow: visible !important; }
-  /* line 734, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+  /* line 736, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
   .x-grid-row-editor .x-form-text {
     padding: 0 2px; }
-  /* line 737, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+  /* line 739, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
   .x-grid-row-editor .x-form-cb-wrap {
     padding-top: 2px; }
-  /* line 740, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+  /* line 742, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
   .x-grid-row-editor .x-form-display-field {
     font: normal 11px/19px "Helvetica Neue", Arial, Verdana, sans-serif;
     padding-top: 0;
     padding-left: 2px; }
-  /* line 746, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+  /* line 748, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
   .x-grid-row-editor .x-panel-body {
     background-color: #2696f6;
     border-top: 1px solid #167cce !important;
     border-bottom: 1px solid #167cce !important; }
 
-/* line 756, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 758, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-grid-editor .x-form-cb-wrap, .x-grid-row-editor .x-form-cb-wrap {
   text-align: center; }
-/* line 759, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 761, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-grid-editor .x-form-trigger, .x-grid-row-editor .x-form-trigger {
   height: 24px; }
-/* line 763, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 765, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-grid-editor .x-form-trigger-wrap .x-form-spinner-up, .x-grid-editor .x-form-trigger-wrap .x-form-spinner-down, .x-grid-row-editor .x-form-trigger-wrap .x-form-spinner-up, .x-grid-row-editor .x-form-trigger-wrap .x-form-spinner-down {
   background-image: url('../../resources/themes/images/neptune/form/spinner-small.gif');
   height: 10px !important; }
 
-/* line 771, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 773, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-grid .x-grid-editor .x-form-text, .x-grid .x-grid-row-editor .x-form-text {
   font: normal 11px/19px "Helvetica Neue", Arial, Verdana, sans-serif;
   height: 22px; }
 
-/* line 779, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 781, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-border-box .x-grid-editor .x-form-trigger,
 .x-border-box .x-grid-row-editor .x-form-trigger {
   height: 24px; }
-/* line 782, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 784, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-border-box .x-grid-editor .x-form-text,
 .x-border-box .x-grid-row-editor .x-form-text {
   height: 24px;
   padding-bottom: 1px; }
 
-/* line 790, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 792, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-ie .x-grid-editor .x-form-text {
   padding-left: 5px; }
-/* line 793, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 795, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-ie .x-grid-row-editor .x-form-text {
   padding-left: 3px; }
 
-/* line 799, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 801, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-ie8m .x-grid-editor .x-form-text,
 .x-ie8m .x-grid-row-editor .x-form-text {
   padding-top: 1px; }
 
-/* line 806, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 808, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-ie6 .x-grid-editor .x-form-text,
 .x-ie6 .x-grid-row-editor .x-form-text,
 .x-strict .x-ie7 .x-grid-editor .x-form-text,
 .x-strict .x-ie7 .x-grid-row-editor .x-form-text {
   height: 21px; }
 
-/* line 812, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 814, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-quirks .x-ie9 .x-grid-editor .x-form-text, .x-quirks .x-ie9 .x-grid-row-editor .x-form-text {
   line-height: 21px; }
 
-/* line 821, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 823, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-opera .x-grid-editor .x-form-text {
   padding-left: 5px; }
-/* line 824, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 826, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-opera .x-grid-row-editor .x-form-text {
   padding-left: 3px; }
 
-/* line 835, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 837, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-grid-row-editor-buttons {
   background-color: #2696f6;
   position: absolute;
   bottom: -31px;
   padding: 4px;
   height: 32px; }
-  /* line 842, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
-  .x-strict .x-grid-row-editor-buttons {
+  /* line 844, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+  .x-strict .x-ie7m .x-grid-row-editor-buttons {
     width: 192px;
     height: 24px; }
-  /* line 848, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+  /* line 850, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
   .x-grid-row-editor-buttons-ml, .x-grid-row-editor-buttons-mr, .x-grid-row-editor-buttons-bl, .x-grid-row-editor-buttons-br, .x-grid-row-editor-buttons-bc {
     position: absolute;
     overflow: hidden; }
-  /* line 853, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+  /* line 855, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
   .x-grid-row-editor-buttons-bl, .x-grid-row-editor-buttons-br {
     width: 4px;
     height: 4px;
     bottom: 0px;
     background-image: url('../../resources/themes/images/neptune/panel/panel-default-framed-corners.gif'); }
-  /* line 859, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+  /* line 861, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
   .x-grid-row-editor-buttons-bl {
     left: 0px;
     background-position: 0px -16px; }
-  /* line 863, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+  /* line 865, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
   .x-grid-row-editor-buttons-br {
     right: 0px;
     background-position: 0px -20px; }
-  /* line 867, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+  /* line 869, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
   .x-grid-row-editor-buttons-bc {
     position: absolute;
     left: 4px;
@@ -8970,24 +8986,24 @@ table.x-datepicker-inner {
     width: 192px;
     height: 1px;
     background-color: #167cce; }
-  /* line 875, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+  /* line 877, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
   .x-grid-row-editor-buttons-ml, .x-grid-row-editor-buttons-mr {
     height: 27px;
     width: 1px;
     top: 1px;
     background-color: #167cce; }
-  /* line 881, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+  /* line 883, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
   .x-grid-row-editor-buttons-ml {
     left: 0px; }
-  /* line 884, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+  /* line 886, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
   .x-grid-row-editor-buttons-mr {
     background-position: 0px -20px;
     right: 0px; }
 
-/* line 891, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 893, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-grid-row-editor-errors ul {
   margin-left: 5px; }
-/* line 894, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 896, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-grid-row-editor-errors li {
   list-style: disc;
   margin-left: 15px; }
@@ -10386,7 +10402,7 @@ textarea.x-form-invalid-field {
   padding-top: 1px; }
 
 /* line 45, ../themes/stylesheets/neptune/default/widgets/_progress-bar.scss */
-.x-strict .x-progress {
+.x-strict .x-ie7m .x-progress {
   height: 18px; }
 
 /* line 87, ../themes/stylesheets/neptune/default/widgets/_progress-bar.scss */
@@ -11090,23 +11106,23 @@ textarea.x-form-invalid-field {
   background-repeat: repeat-x;
   background-image: url('../../resources/themes/images/neptune/tab/tab-default-bottom-disabled-bg.gif'); }
 
-/* line 5, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
+/* line 25, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
 .x-autowidth-table table.x-grid-table {
   table-layout: auto;
   width: auto !important; }
 
-/* line 13, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
+/* line 33, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
 .x-tree-elbow-plus,
 .x-tree-elbow-minus,
 .x-tree-elbow-end-plus,
 .x-tree-elbow-end-minus {
   cursor: pointer; }
 
-/* line 17, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
+/* line 37, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
 .x-tree-icon {
   margin-right: 4px; }
 
-/* line 32, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
+/* line 52, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
 .x-tree-elbow,
 .x-tree-elbow-line,
 .x-tree-elbow-end,
@@ -11122,7 +11138,7 @@ textarea.x-form-invalid-field {
   height: 24px;
   width: 20px; }
 
-/* line 47, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
+/* line 67, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
 .x-tree-lines .x-tree-elbow,
 .x-tree-lines .x-tree-elbow-line,
 .x-tree-lines .x-tree-elbow-end,
@@ -11134,92 +11150,91 @@ textarea.x-form-invalid-field {
 .x-tree-icon-end-plus,
 .x-tree-icon-leaf,
 .x-tree-icon-parent {
-  background-image: url('../../resources/themes/images/neptune/icons.png'); }
+  background-image: url('../../resources/themes/images/neptune/tree/elbows.png'); }
 
-/* line 53, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
+/* line 73, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
 .x-tree-elbow-plus,
 .x-tree-elbow-end-plus {
-  background-position-x: -20px;
-  background-position-y: -24px; }
+  background-image: url('../../resources/themes/images/neptune/tree/icons-gray.png');
+  background-position: 0px 0; }
 
-/* line 59, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
+/* line 79, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
 .x-grid-tree-node-expanded .x-tree-elbow-plus,
 .x-grid-tree-node-expanded .x-tree-elbow-end-plus {
-  background-image: url('../../resources/themes/images/neptune/icons.png');
-  background-position-x: -40px;
-  background-position-y: -24px; }
+  background-image: url('../../resources/themes/images/neptune/tree/icons-gray.png');
+  background-position: -20px 0; }
 
-/* line 67, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
+/* line 86, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
 .x-tree-lines .x-tree-elbow-plus {
-  background-position-x: -100px;
-  background-position-y: -24px; }
-/* line 72, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
-.x-tree-lines .x-tree-elbow-end-plus {
-  background-position-x: -120px;
-  background-position-y: -24px; }
-/* line 77, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
-.x-tree-lines .x-grid-tree-node-expanded .x-tree-elbow-plus {
-  background-position-x: -140px;
-  background-position-y: -24px; }
-/* line 82, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
-.x-tree-lines .x-grid-tree-node-expanded .x-tree-elbow-end-plus {
-  background-position-x: -160px;
-  background-position-y: -24px; }
-
+  background-image: url('../../resources/themes/images/neptune/tree/icons-gray.png');
+  background-position: -80px 0; }
 /* line 91, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
+.x-tree-lines .x-tree-elbow-end-plus {
+  background-image: url('../../resources/themes/images/neptune/tree/icons-gray.png');
+  background-position: -100px 0; }
+/* line 96, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
+.x-tree-lines .x-grid-tree-node-expanded .x-tree-elbow-plus {
+  background-image: url('../../resources/themes/images/neptune/tree/icons-gray.png');
+  background-position: -120px 0; }
+/* line 101, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
+.x-tree-lines .x-grid-tree-node-expanded .x-tree-elbow-end-plus {
+  background-image: url('../../resources/themes/images/neptune/tree/icons-gray.png');
+  background-position: -140px 0; }
+
+/* line 110, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
 .x-tree-arrows .x-tree-elbow-plus,
 .x-tree-arrows .x-tree-elbow-end-plus {
-  background-position-x: -60px; }
-/* line 96, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
+  background-position: -40px 0; }
+/* line 115, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
 .x-tree-arrows .x-grid-tree-node-expanded .x-tree-elbow-plus,
 .x-tree-arrows .x-grid-tree-node-expanded .x-tree-elbow-end-plus {
-  background-position-x: -80px; }
-
-/* line 103, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
-.x-tree-arrows.x-tree-lines .x-tree-elbow-plus {
-  background-position-x: -180px; }
-/* line 107, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
-.x-tree-arrows.x-tree-lines .x-tree-elbow-end-plus {
-  background-position-x: -200px; }
-/* line 111, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
-.x-tree-arrows.x-tree-lines .x-grid-tree-node-expanded .x-tree-elbow-plus {
-  background-position-x: -220px; }
-/* line 115, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
-.x-tree-arrows.x-tree-lines .x-grid-tree-node-expanded .x-tree-elbow-end-plus {
-  background-position-x: -240px; }
+  background-position: -60px 0; }
 
 /* line 122, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
+.x-tree-arrows.x-tree-lines .x-tree-elbow-plus {
+  background-position: -160px 0; }
+/* line 126, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
+.x-tree-arrows.x-tree-lines .x-tree-elbow-end-plus {
+  background-position: -180px 0; }
+/* line 130, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
+.x-tree-arrows.x-tree-lines .x-grid-tree-node-expanded .x-tree-elbow-plus {
+  background-position: -200px 0; }
+/* line 134, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
+.x-tree-arrows.x-tree-lines .x-grid-tree-node-expanded .x-tree-elbow-end-plus {
+  background-position: -220px 0; }
+
+/* line 141, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
 .x-tree-icon-parent {
-  background-position-x: -260px !important;
-  background-position-y: -120px !important; }
+  background-position: -240px 0 !important;
+  background-image: url('../../resources/themes/images/neptune/tree/icons-orange.png'); }
 
-/* line 127, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
+/* line 146, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
 .x-grid-tree-node-expanded .x-tree-icon-parent {
-  background-position-x: -320px !important; }
+  background-position: -300px 0 !important; }
 
-/* line 131, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
+/* line 150, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
 .x-tree-icon-leaf {
-  background-position-x: -380px !important; }
+  background-position: -360px 0 !important; }
 
-/* line 137, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
+/* line 156, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
 .x-tree-lines .x-tree-icon-parent {
   width: 20px;
-  background-position-x: -280px !important; }
-/* line 142, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
+  background-position: -260px 0 !important; }
+/* line 161, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
 .x-tree-lines .x-grid-tree-node-expanded .x-tree-icon-parent {
-  background-position-x: -340px !important; }
+  background-position: -320px 0 !important; }
 
-/* line 148, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
+/* line 167, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
 .x-tree-icon-leaf {
   width: 20px;
-  background-position-x: -380px !important;
-  background-position-y: -120px !important; }
+  background-position: -360px 0 !important;
+  background-image: url('../../resources/themes/images/neptune/tree/icons-orange.png'); }
 
-/* line 155, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
+/* line 174, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
 .x-tree-lines .x-tree-icon-leaf {
-  background-position-x: -400px !important; }
+  background-position: -380px 0 !important; }
 
-/* line 169, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
+/* line 188, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
 .x-grid-row-selected .x-tree-elbow-plus,
 .x-grid-row-selected .x-tree-elbow-minus,
 .x-grid-row-selected .x-tree-elbow-end-plus,
@@ -11228,36 +11243,39 @@ textarea.x-form-invalid-field {
 .x-grid-row-selected .x-tree-icon-end-plus,
 .x-grid-row-selected .x-tree-icon-leaf,
 .x-grid-row-selected .x-tree-icon-parent {
-  background-position-y: -96px !important; }
+  background-image: url('../../resources/themes/images/neptune/tree/icons-white.png') !important; }
 
-/* line 176, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
+/* line 195, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
 .x-tree-lines .x-tree-elbow-line {
-  background-position-y: -24px; }
-/* line 180, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
+  background-image: url('../../resources/themes/images/neptune/tree/elbows.png');
+  background-position: 0 48px; }
+/* line 200, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
 .x-tree-lines .x-tree-elbow {
-  background-position: 0px 0; }
-/* line 184, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
+  background-image: url('../../resources/themes/images/neptune/tree/elbows.png');
+  background-position: 0 0px; }
+/* line 205, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
 .x-tree-lines .x-tree-elbow-end {
-  background-position-y: -48px; }
+  background-image: url('../../resources/themes/images/neptune/tree/elbows.png');
+  background-position: 0 24px; }
 
-/* line 201, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
+/* line 223, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
 .x-grid-cell-treecolumn .x-grid-cell-inner {
   padding: 0;
   line-height: 23px; }
 
-/* line 206, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
+/* line 228, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
 .x-grid-with-row-lines .x-grid-cell-treecolumn .x-grid-cell-inner {
   line-height: 21px; }
 
-/* line 210, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
+/* line 232, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
 .x-tree-panel .x-grid-cell-inner {
   cursor: pointer; }
-  /* line 212, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
+  /* line 234, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
   .x-tree-panel .x-grid-cell-inner img {
     display: inline-block;
     vertical-align: top; }
 
-/* line 252, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
+/* line 274, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
 .x-tree-checkbox {
   margin: 4px 3px 0 0;
   display: inline-block;
@@ -11269,52 +11287,52 @@ textarea.x-form-invalid-field {
   overflow: hidden;
   padding: 0;
   border: 0; }
-  /* line 265, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
+  /* line 287, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
   .x-tree-checkbox::-moz-focus-inner {
     padding: 0;
     border: 0; }
 
-/* line 271, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
+/* line 293, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
 .x-grid-with-row-lines .x-tree-checkbox {
   margin-top: 3px; }
 
-/* line 275, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
+/* line 297, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
 .x-tree-checkbox-checked {
   background-position: 0 -17px; }
 
-/* line 279, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
+/* line 301, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
 .x-tree-drop-ok-append .x-dd-drop-icon {
   background-image: url('../../resources/themes/images/neptune/tree/drop-append.gif'); }
 
-/* line 283, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
+/* line 305, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
 .x-tree-drop-ok-above .x-dd-drop-icon {
   background-image: url('../../resources/themes/images/neptune/tree/drop-above.gif'); }
 
-/* line 287, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
+/* line 309, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
 .x-tree-drop-ok-below .x-dd-drop-icon {
   background-image: url('../../resources/themes/images/neptune/tree/drop-below.gif'); }
 
-/* line 291, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
+/* line 313, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
 .x-tree-drop-ok-between .x-dd-drop-icon {
   background-image: url('../../resources/themes/images/neptune/tree/drop-between.gif'); }
 
-/* line 295, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
+/* line 317, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
 .x-grid-tree-loading .x-tree-icon {
   background-image: url('../../resources/themes/images/neptune/tree/loading.gif'); }
 
-/* line 299, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
+/* line 321, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
 .x-tree-ddindicator {
   height: 1px;
   border-width: 1px 0px 0px;
   border-style: dotted;
   border-color: green; }
 
-/* line 306, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
+/* line 328, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
 .x-grid-tree-loading span {
   font-style: italic;
   color: #444444; }
 
-/* line 311, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
+/* line 333, ../themes/stylesheets/neptune/default/widgets/_tree.scss */
 .x-tree-animator-wrap {
   overflow: hidden; }
 
@@ -11324,16 +11342,17 @@ textarea.x-form-invalid-field {
   -moz-box-orient: vertical;
   display: inline-block;
   vertical-align: middle;
-  *vertical-align: auto; }
+  *vertical-align: auto;
+  overflow: hidden; }
   /* line 7, ../../../../../.gem/ruby/1.8/gems/compass-0.11.5/frameworks/compass/stylesheets/compass/css3/_inline-block.scss */
   .x-surface {
     *display: inline; }
 
-/* line 6, ../themes/stylesheets/neptune/default/widgets/_drawcomponent.scss */
+/* line 7, ../themes/stylesheets/neptune/default/widgets/_drawcomponent.scss */
 .rvml {
   behavior: url(#default#VML); }
 
-/* line 14, ../themes/stylesheets/neptune/default/widgets/_drawcomponent.scss */
+/* line 15, ../themes/stylesheets/neptune/default/widgets/_drawcomponent.scss */
 .x-vml-sprite {
   position: absolute;
   left: 0;
@@ -11341,7 +11360,7 @@ textarea.x-form-invalid-field {
   width: 1px;
   height: 1px; }
 
-/* line 22, ../themes/stylesheets/neptune/default/widgets/_drawcomponent.scss */
+/* line 23, ../themes/stylesheets/neptune/default/widgets/_drawcomponent.scss */
 .x-vml-group {
   position: absolute;
   left: 0;
@@ -11349,7 +11368,7 @@ textarea.x-form-invalid-field {
   width: 1000px;
   height: 1000px; }
 
-/* line 30, ../themes/stylesheets/neptune/default/widgets/_drawcomponent.scss */
+/* line 31, ../themes/stylesheets/neptune/default/widgets/_drawcomponent.scss */
 .x-vml-measure-span {
   position: absolute;
   left: -9999em;
@@ -11358,7 +11377,7 @@ textarea.x-form-invalid-field {
   margin: 0;
   display: inline; }
 
-/* line 39, ../themes/stylesheets/neptune/default/widgets/_drawcomponent.scss */
+/* line 40, ../themes/stylesheets/neptune/default/widgets/_drawcomponent.scss */
 .x-vml-base {
   position: relative;
   top: 0;
@@ -11366,7 +11385,7 @@ textarea.x-form-invalid-field {
   overflow: hidden;
   display: inline-block; }
 
-/* line 47, ../themes/stylesheets/neptune/default/widgets/_drawcomponent.scss */
+/* line 48, ../themes/stylesheets/neptune/default/widgets/_drawcomponent.scss */
 .x-vml-base {
   position: relative;
   top: 0;

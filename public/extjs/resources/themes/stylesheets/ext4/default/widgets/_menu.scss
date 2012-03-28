@@ -156,7 +156,7 @@
                 }
             }
             
-            .#{$prefix}strict & {
+            .#{$prefix}strict .#{$prefix}ie7m & {
                 .#{$prefix}menu-icon-separator {
                     width: 1px;
                 }

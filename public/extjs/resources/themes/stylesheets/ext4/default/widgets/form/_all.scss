@@ -19,6 +19,11 @@
     td.#{$prefix}form-item-pad {
         height: 5px;
     }
+
+    // Allow for positioned child elements, e.g. custom icons
+    .#{$prefix}form-item-body {
+        position: relative;
+    }
     
     // No padding when inside an Editor
     .#{$prefix}editor .#{$prefix}form-item-body {
