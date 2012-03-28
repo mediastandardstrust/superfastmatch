@@ -94,7 +94,8 @@ ApiParams::ApiParams(const HTTPClient::Method verb,const string& body, const str
                    string& resbody,
                    const map<string, string>& misc)
   {
-    ApiParams params(verb,reqbody,misc.find("query")->second);
+    map<string,string>::const_iterator it=misc.find("query");
+    ApiParams params(verb,reqbody,it!=misc.end()?it->second:"");
     ApiResponse response;
     string lowercase_path(path);
     kc::strtolower(&lowercase_path);
