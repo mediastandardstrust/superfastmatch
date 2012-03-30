@@ -11,7 +11,7 @@ namespace superfastmatch{
   
   // Command line flags
   
-  DEFINE_bool(daemonize,false,"Run process in the background");
+  DEFINE_bool(daemonize,false,"Run process in the background. File paths must be absolute if this is true.");
 
   DEFINE_string(log_file,"-","File to write logs to (defaults to stdout)");
   

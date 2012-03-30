@@ -9,6 +9,7 @@
 namespace superfastmatch{
   // Forward Declarations
   class Api;
+  class QueryParameter;
   struct ApiParams;
   struct ApiResponse;
   struct Matcher;
@@ -17,24 +18,46 @@ namespace superfastmatch{
   typedef pair<int,string> response_t;
   typedef shared_ptr<Matcher> MatcherPtr;
   typedef shared_ptr<re2::RE2> RE2Ptr;
+  typedef shared_ptr<QueryParameter> QueryParameterPtr;
   typedef map<response_t,string> response_map;
   typedef pair<string,string> capture_t;
   typedef map<string,capture_t> capture_map;
+  typedef map<string,QueryParameterPtr> query_map;
   typedef void(Api::*ApiMethod)(const ApiParams& params,ApiResponse& response);
   
   // Classes
+  class QueryParameter{
+  private:
+    const string name_;
+    const string description_;
+    const string default_value_;
+    const re2::RE2 validator_;
+    
+  public:
+    QueryParameter(const string& name,
+                   const string& description,
+                   const string& default_value,
+                   const string& validator);
+    
+    void validate(string& value);
+    void fillDictionary(TemplateDictionary* dict);
+  };
+  
   struct ApiCall{
     const HTTPClient::Method verb;
     const string match;
     const response_map responses;
+    const set<string> queries;
     const string description;
     const ApiMethod method;
     
     ApiCall(const HTTPClient::Method verb,
             const char* match,
             const response_map& responses,
+            const set<string>& queries,
             const char* description,
-            const ApiMethod method);
+            const ApiMethod method
+            );
   };
   
   struct ApiParams{
@@ -43,7 +66,7 @@ namespace superfastmatch{
     map<string,string> form;
     string body;
 
-    ApiParams(const HTTPClient::Method verb,const string& body, const string& querystring);
+    ApiParams(const HTTPClient::Method verb,const string& body);
   };
   
   struct ApiResponse{
@@ -67,9 +90,10 @@ namespace superfastmatch{
     const static size_t METHOD_COUNT; 
     const static size_t API_COUNT; 
     const static capture_map captures_;
+    const static query_map queries_;
+
     const static ApiCall calls_[]; 
 
-    
     Registry* registry_;
     vector<MatcherPtr> matchers_;;
     
@@ -86,6 +110,7 @@ namespace superfastmatch{
     
   private:
     int MatchApiCall(MatcherPtr matcher,const string& path,ApiParams& params);
+    void MatchQuery(const ApiCall* call,const string& query,ApiParams& params);
     
     void DoSearch(const ApiParams& params,ApiResponse& response);
     void GetDocument(const ApiParams& params,ApiResponse& response);
@@ -101,6 +126,7 @@ namespace superfastmatch{
     void GetStatus(const ApiParams& params,ApiResponse& response);
     void GetHistogram(const ApiParams& params,ApiResponse& response);
     void GetDescription(const ApiParams& params,ApiResponse& response);
+    DISALLOW_COPY_AND_ASSIGN(Api);
   };
 }
 
