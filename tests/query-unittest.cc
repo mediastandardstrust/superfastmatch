@@ -9,7 +9,20 @@ void testDocTypeRange(const string& range, const uint32_t count,const bool valid
 }
 
 DocumentQueryPtr buildQuery(Registry* registry,const string& source, const string& target,const string& querystring){
-  ApiParams params(HTTPClient::MGET,"",querystring);
+  ApiParams params(HTTPClient::MGET,"");
+  vector<string> queries,parts;
+  strsplit(querystring,"&",&queries);
+  for (vector<string>::const_iterator it=queries.begin();it!=queries.end();++it){
+    strsplit(*it,"=",&parts);
+    if (parts.size()==2){
+      size_t ksiz,vsiz;
+      char* kbuf = urldecode(parts[0].c_str(), &ksiz);
+      char* vbuf = urldecode(parts[1].c_str(), &vsiz);
+      params.query[kbuf]=vbuf;
+      delete[] kbuf;
+      delete[] vbuf;
+    }
+  } 
   return DocumentQueryPtr(new DocumentQuery(registry,source,target,params.query));
 }
 
