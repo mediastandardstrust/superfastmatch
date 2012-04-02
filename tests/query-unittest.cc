@@ -93,6 +93,11 @@ TEST_F(DocumentQueryTest,PagingTest){
   testQuery(&registry_,"1","","limit=1000",300,1000,true,"","doctype",false,1000);
   testQuery(&registry_,"1","1","limit=1000",300,300,true,"","doctype",false,1000);
   testQuery(&registry_,"","","limit=100",100,100,true,"","doctype",false,100);
+
+  testQuery(&registry_,"","","cursor=1:1:1",limit,limit,true,"1:1:1","doctype",false,limit);
+  testQuery(&registry_,"","","cursor=1:1",limit,limit,true,"1:1","doctype",false,limit);
+  testQuery(&registry_,"","","cursor=1",limit,limit,true,"1","doctype",false,limit);
+  testQuery(&registry_,"","","cursor=1:1:2",limit,limit,true,"1:1:2","doctype",false,limit);
   
   DocumentQueryPtr query=buildQuery(&registry_,"","","limit=100");
   EXPECT_STREQ("",query->getFirst().c_str());

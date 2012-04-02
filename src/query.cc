@@ -206,31 +206,27 @@ namespace superfastmatch
   }
   
   const string DocumentQuery::parseCursor(const string& cursor)const{
-    size_t splits = count(cursor.begin(),cursor.end(),':');
-    if (splits!=2){
-      return cursor;
-    }
-    size_t csiz;
     size_t first=cursor.find(":");
     size_t second=cursor.find(":",first+1);
     string parsed=cursor.substr(0,first);
-    char* decoded = kc::urldecode(parsed.c_str(),&csiz);
-    parsed=decoded;
-    delete[] decoded;
     parsed=padIfNumber(parsed);
-    uint32_t doctype=kc::atoi(cursor.substr(first+1,second).c_str());
-    if (doctype!=0){
-      char key[4];
-      doctype=kc::hton32(doctype);
-      memcpy(key,&doctype,4);
-      parsed+=string(key,4);
+    if (first!=string::npos){
+      uint32_t doctype=kc::atoi(cursor.substr(first+1,second).c_str());
+      if (doctype!=0){
+        char key[4];
+        doctype=kc::hton32(doctype);
+        memcpy(key,&doctype,4);
+        parsed+=string(key,4);
+      }  
     }
-    uint32_t docid=kc::atoi(cursor.substr(second+1).c_str());
-    if (docid!=0){
-      char key[4];
-      docid=kc::hton32(docid);
-      memcpy(key,&docid,4);
-      parsed+=string(key,4);
+    if (second!=string::npos){
+      uint32_t docid=kc::atoi(cursor.substr(second+1).c_str());
+      if (docid!=0){
+        char key[4];
+        docid=kc::hton32(docid);
+        memcpy(key,&docid,4);
+        parsed+=string(key,4);
+      } 
     }
     return parsed;
   }
