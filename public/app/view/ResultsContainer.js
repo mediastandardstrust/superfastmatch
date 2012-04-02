@@ -5,8 +5,8 @@ Ext.define('Superfastmatch.view.ResultsContainer', {
 
     itemId: 'Results',
     layout: {
-       align: 'stretch',
-       type: 'vbox'
+       type: 'vbox',
+       align: 'stretch'
     },
 
     fragmentStore: undefined,
@@ -23,7 +23,7 @@ Ext.define('Superfastmatch.view.ResultsContainer', {
                             itemId: 'DocumentsView',
                             emptyText: 'No Matching Documents Found'
                         },
-                        columns: [],
+                        columns: [{text:'Meta'}],
                         selModel: Ext.create('Ext.selection.RowModel', {
                             allowDeselect: true,
                             mode: 'SINGLE'
