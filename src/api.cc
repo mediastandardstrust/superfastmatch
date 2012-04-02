@@ -42,10 +42,10 @@ namespace superfastmatch{
   // ApiParams members
   // -------------------
     
-  ApiParams::ApiParams(const HTTPClient::Method verb,const string& body):
-  body(body)
+  ApiParams::ApiParams(const HTTPClient::Method verb,const string& body)
   {
     if (verb==HTTPClient::MPOST || verb==HTTPClient::MPUT){
+      this->body=body;
       wwwformtomap(body,&form);
     }
   }
@@ -126,7 +126,10 @@ namespace superfastmatch{
   } 
   
   int Api::MatchApiCall(MatcherPtr matcher,const string& path,ApiParams& params){
-    int id=matcher->f.FirstMatch(path,matcher->atom_indices);
+    int id=-1;
+    if (matcher->f.NumRegexps()>0){
+      id=matcher->f.FirstMatch(path,matcher->atom_indices);      
+    }
     if (id!=-1){
       RE2Ptr regex=matcher->regexes[id];
       string* captures=new string[regex->NumberOfCapturingGroups()];
