@@ -170,10 +170,10 @@ namespace superfastmatch
     if (next_.empty() && getSourceDocPairs().size()>0){
       string cursor=getCursor(getSourceDocPairs().back());
       vector<DocPair> pairs=getDocPairs(source_,order_by_,cursor,2,desc_);
-      if (pairs.size()>0){
-        next_=getCommand(pairs.back());
+      if (pairs.size()==1){
+        next_="";
       }else{
-        next_=getLast();
+        next_=getCommand(pairs.back());
       }
     }
     return next_;

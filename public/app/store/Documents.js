@@ -54,6 +54,8 @@ Ext.define('Superfastmatch.store.Documents', {
     },
     
     moveNext: function(){
-      this.move('next');
+      if(this.cursors['next']){
+        this.move('next');
+      };
     }
 });
