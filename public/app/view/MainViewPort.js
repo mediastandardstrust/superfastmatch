@@ -15,7 +15,8 @@ Ext.define('Superfastmatch.view.MainViewPort', {
       return {
           items: [
             {
-                xtype: 'statefultab',
+                xtype: 'tab',
+                // xtype: 'statefultab',
                 id: 'Tabs',
                 items: [
                     {

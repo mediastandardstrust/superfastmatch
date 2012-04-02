@@ -9,10 +9,10 @@ Ext.Loader.setConfig({
 
 Ext.Ajax.timeout = 60000; // 60 seconds
 
-Ext.state.Manager.setProvider(
-    new Ext.state.CookieProvider({
-        expires: new Date(new Date().getTime()+(1000*60*60*24*365)), //1 year from now
-}));
+// Ext.state.Manager.setProvider(
+//     new Ext.state.CookieProvider({
+//         expires: new Date(new Date().getTime()+(1000*60*60*24*365)), //1 year from now
+// }));
 
 Ext.application({
     name: 'Superfastmatch',
