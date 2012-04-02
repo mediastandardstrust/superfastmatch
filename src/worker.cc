@@ -105,6 +105,7 @@ namespace superfastmatch{
             if (buf) {
               code = 200;
               resheads["Last-Modified"]=modified;
+              resheads["Cache-Control"]="no-cache";
               const char* type = media_type(apath);
               if (type) resheads["content-type"] = type;
               resbody.append(buf, size);
