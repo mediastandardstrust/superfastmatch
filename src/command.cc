@@ -87,8 +87,8 @@ namespace superfastmatch{
     }
     status_=status;
     if (status==Finished){
-      return  registry_->getPayloadDB()->remove(toString(payload_id_)) &&\
-              registry_->getQueueDB()->set(getKey(),"");
+      registry_->getPayloadDB()->remove(toString(payload_id_));
+      return registry_->getQueueDB()->set(getKey(),"");
     }
     return registry_->getQueueDB()->set(getKey(),toString(payload_id_));
   }
