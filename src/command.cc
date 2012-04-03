@@ -155,7 +155,11 @@ namespace superfastmatch{
   string& Command::getPayload(){
     if (payload_==0){
       payload_=new string();
-      assert(registry_->getPayloadDB()->get(toString(payload_id_),payload_));
+      if(not registry_->getPayloadDB()->get(toString(payload_id_),payload_)){
+        stringstream message;
+        message << "Payload not found for command with key: " << getKey();
+        registry_->getLogger()->log(Logger::DEBUG,&message);
+      }
     }
     return *payload_;
   }
