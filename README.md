@@ -121,7 +121,7 @@ This is still an early release halfway between Alpha and Beta! There are known i
 Acknowledgements
 ----------------
 
-Thanks to [Martin Moore](http://martinjemoore.com/) and [Ben Campbell](http://scumways.com) at [Media Standards Trust](http://mediastandardstrust.org) for ongoing support for the project and to [Tom Lee](http://sunlightfoundation.com/people/tlee/) and [James Turk](http://sunlightfoundation.com/people/jturk/) at [Sunlight Labs](http://sunlightlabs.com) for being willing testers, early adopters and proponents of open source!
+Thanks to [Martin Moore](http://martinjemoore.com/) and [Ben Campbell](http://scumways.com) at [Media Standards Trust](http://mediastandardstrust.org) for ongoing support for the project and to [Tom Lee](http://sunlightfoundation.com/people/tlee/), [Drew Vogel](http://sunlightfoundation.com/people/dvogel/), [Kaitlin Lee](http://sunlightfoundation.com/people/klee/) and [James Turk](http://sunlightfoundation.com/people/jturk/) at [Sunlight Labs](http://sunlightlabs.com) for being willing testers, early adopters and proponents of open source!
 
 Thanks also to [Mikio Hirabayashi](http://fallabs.com) for assistance and the excellent open source [Kyoto Cabinet](http://fallabs.com/kyotocabinet/) and [Kyoto Tycoon](http://fallabs.com/kyototycoon/), to [Craig Silverstein](http://code.google.com/u/@VxVXRFZYBRdBWwU%3D/) for accepting and improving this [patch](http://code.google.com/p/google-sparsehash/source/detail?r=76), to [Neil Fraser](http://neil.fraser.name/) for useful hints and inspiration from [Diff-Match-Patch](http://code.google.com/p/google-diff-match-patch/) and to [Austin Appleby](http://code.google.com/p/smhasher/) for hashing advice.
 
