@@ -2,16 +2,16 @@
 <html>
   <body>
     <style type="text/css">
-    table{ 
+    table.api{ 
       border-collapse:collapse;
     }
-    th,td{
+    table.api th,table.api td{
       border: 1px solid #000;
       padding: 4px;
     }
     </style>
     <h1>API</h1>
-    <table>
+    <table class="api">
       <thead>
         <tr>
           <th>URL</th>
@@ -42,7 +42,7 @@
       </tbody>
     </table>
     <h2>Parameters</h2>
-    <table>
+    <table class="api">
       <thead>
         <tr>
           <th>Parameter</th>
@@ -59,7 +59,7 @@
       </tbody>
     </table>
     <h2>Query String Parameters</h2>
-    <table>
+    <table class="api">
       <thead>
         <tr>
           <th>Parameter</th>
