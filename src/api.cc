@@ -153,6 +153,7 @@ namespace superfastmatch{
 
   void Api::MatchQuery(const ApiCall* call,const string& query,ApiParams& params){
     vector<string> queries,parts;
+    map<string,string> temp;
     kc::strsplit(query,"&",&queries);
     for (vector<string>::const_iterator it=queries.begin();it!=queries.end();++it){
       kc::strsplit(*it,"=",&parts);
@@ -160,16 +161,16 @@ namespace superfastmatch{
         size_t ksiz,vsiz;
         char* kbuf = kc::urldecode(parts[0].c_str(), &ksiz);
         char* vbuf = kc::urldecode(parts[1].c_str(), &vsiz);
-        set<string>::const_iterator q=call->queries.find(kbuf);
-        if (q!=call->queries.end()){
-          string value(vbuf,vsiz);
-          queries_.find(kbuf)->second->validate(value);
-          params.query[kbuf]=value;
-        }
+        temp[kbuf]=vbuf;
         delete[] kbuf;
         delete[] vbuf;
       }
-    } 
+    }
+    for(set<string>::const_iterator it=call->queries.begin(),ite=call->queries.end();it!=ite;++it){
+      string value=temp[*it];
+      queries_.find(*it)->second->validate(value);
+      params.query[*it]=value;
+    }
   }
 
   // --------------------
@@ -230,14 +231,14 @@ namespace superfastmatch{
            create_map<response_t,string>(response_t(202,"application/json"),QUEUED_JSON)\
                                         (response_t(400,"application/json"),FAILURE_JSON),
            set<string>(),
-           "Create a new document asynchronously. There must be a form field with name text, otherwise returns response code 400.",
+           "Create a new document asynchronously. There must be a form field with name text and a string of length greater than 0, otherwise returns response code 400.",
            &Api::CreateDocument),
     ApiCall(HTTPClient::MPUT,
            "^/document/<doctype>/<docid>/?$",
            create_map<response_t,string>(response_t(202,"application/json"),QUEUED_JSON)\
                                         (response_t(400,"application/json"),FAILURE_JSON),
            set<string>(),
-           "Create and associate a new document asynchronously. There must be a form field with name text, otherwise returns response code 400.",
+           "Create and associate a new document asynchronously. There must be a form field with name text and a string of length greater than 0, otherwise returns response code 400.",
            &Api::CreateAndAssociateDocument),
     ApiCall(HTTPClient::MDELETE,
            "^/document/<doctype>/<docid>/?$",
@@ -373,13 +374,13 @@ namespace superfastmatch{
     uint32_t doctype = kc::atoi(params.resource.find("doctype")->second.c_str());
     uint32_t docid = kc::atoi(params.resource.find("docid")->second.c_str());
     map<string,string>::const_iterator text=params.form.find("text");
-    if (text!=params.form.end()){
+    if (text!=params.form.end() && text->second.size()>0){
       CommandPtr addCommand = registry_->getQueueManager()->createCommand(AddDocument,doctype,docid,"","",params.body);
       addCommand->fillDictionary(&response.dict);
       response.type=response_t(202,"application/json");        
     }else{
       response.type=response_t(400,"application/json");   
-      response.dict.SetValue("MESSAGE","No text field specified");     
+      response.dict.SetValue("MESSAGE","No text field specified or is empty");     
     }
   }
 
@@ -432,7 +433,9 @@ namespace superfastmatch{
   }
   
   void Api::GetQueue(const ApiParams& params,ApiResponse& response){
-    registry_->getQueueManager()->fillDictionary(&response.dict);
+    uint64_t start = kc::atoi(params.query.find("start")->second.c_str());
+    uint64_t limit = kc::atoi(params.query.find("limit")->second.c_str());
+    registry_->getQueueManager()->fillDictionary(&response.dict,start,limit);
     response.type=response_t(200,"application/json");    
   }
   
