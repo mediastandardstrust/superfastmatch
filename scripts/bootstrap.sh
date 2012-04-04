@@ -32,3 +32,4 @@ cd sparsehash* && ./configure && make && sudo make install && cd ..
 cd lzo-2.06 && ./configure && make && sudo make install && cd ..
 cd re2 && hg import ../../scripts/re2.diff -u superfastmatch -m "fix symbols" && make && sudo make install && cd ..
 cd ..
+sudo ldconfig
