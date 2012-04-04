@@ -222,6 +222,7 @@ namespace superfastmatch{
     ApiCall(HTTPClient::MGET,
             "^/document/<doctype>/<docid>/?$",
             create_map<response_t,string>(response_t(200,"application/json"),SUCCESS_JSON)\
+                                         (response_t(400,"application/json"),FAILURE_JSON)\
                                          (response_t(404,"application/json"),FAILURE_JSON),
             set<string>(),
             "Get metadata and text of existing document. If document does not exist returns 404.",
@@ -345,13 +346,18 @@ namespace superfastmatch{
   void Api::GetDocument(const ApiParams& params,ApiResponse& response){
     uint32_t doctype = kc::atoi(params.resource.find("doctype")->second.c_str());
     uint32_t docid = kc::atoi(params.resource.find("docid")->second.c_str());
-    SearchPtr search=Search::getPermanentSearch(registry_,doctype,docid);
-    if (search){
-      search->fillJSONDictionary(&response.dict,true);
-      response.type=response_t(200,"application/json");
+    if(doctype==0 || docid==0){
+      response.type=response_t(400,"application/json");   
+      response.dict.SetValue("MESSAGE","Doc Type and Doc Id must be non-zero");     
     }else{
-      response.type=response_t(404,"application/json");        
-      response.dict.SetValue("MESSAGE","Document not found.");
+      SearchPtr search=Search::getPermanentSearch(registry_,doctype,docid);
+      if (search){
+        search->fillJSONDictionary(&response.dict,true);
+        response.type=response_t(200,"application/json");
+      }else{
+        response.type=response_t(404,"application/json");        
+        response.dict.SetValue("MESSAGE","Document not found.");
+      }
     }
   }
   
@@ -374,7 +380,10 @@ namespace superfastmatch{
     uint32_t doctype = kc::atoi(params.resource.find("doctype")->second.c_str());
     uint32_t docid = kc::atoi(params.resource.find("docid")->second.c_str());
     map<string,string>::const_iterator text=params.form.find("text");
-    if (text!=params.form.end() && text->second.size()>0){
+    if(doctype==0 || docid==0){
+      response.type=response_t(400,"application/json");   
+      response.dict.SetValue("MESSAGE","Doc Type and Doc Id must be non-zero");     
+    }else if (text!=params.form.end() && text->second.size()>0){
       CommandPtr addCommand = registry_->getQueueManager()->createCommand(AddDocument,doctype,docid,"","",params.body);
       addCommand->fillDictionary(&response.dict);
       response.type=response_t(202,"application/json");        

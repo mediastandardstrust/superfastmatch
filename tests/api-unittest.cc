@@ -45,6 +45,15 @@ TEST_F(BaseTest,DocumentApiTest){
   registry_.getQueueManager()->processQueue();
   TestAPI(api_,HTTPClient::MGET,"/document/5/1","","",404);
   TestAPI(api_,HTTPClient::MGET,"/document/5/1/","","",404);
+  TestAPI(api_,HTTPClient::MGET,"/document/0/0/","","",400);
+  TestAPI(api_,HTTPClient::MGET,"/document/0/1/","","",400);
+  TestAPI(api_,HTTPClient::MGET,"/document/1/0/","","",400); 
+  TestAPI(api_,HTTPClient::MPUT,"/document/0/1","","text=testing+123",400);
+  TestAPI(api_,HTTPClient::MPUT,"/document/1/0/","","text=testing+123",400);
+  TestAPI(api_,HTTPClient::MPUT,"/document/0/0/","","text=testing+123",400); 
+  TestAPI(api_,HTTPClient::MPOST,"/document/0/1","","text=testing+123",400);
+  TestAPI(api_,HTTPClient::MPOST,"/document/1/0/","","text=testing+123",400);
+  TestAPI(api_,HTTPClient::MPOST,"/document/0/0/","","text=testing+123",400); 
 }
 
 TEST_F(BaseTest,DocumentPutApiTest){
@@ -143,3 +152,16 @@ TEST_F(BaseTest,AssociateNonExistentDocumentApiTest){
   TestAPI(api_,HTTPClient::MPOST,"/association/1/1/","","",202);
   registry_.getQueueManager()->processQueue();
 }
+
+// TEST_F(BaseTest,FullIndexDeleteApiTest){
+//   for (size_t i=1;i<=10000;i++){
+//     TestAPI(api_,HTTPClient::MPOST,"/document/5/"+toString(i),"","text=This+is+a+long+sentence+where+the+phrase+Always+Look+On+The+Bright+Side+Of+Life",202);    
+//   }
+//   registry_.getQueueManager()->processQueue();
+//   for (size_t i=1;i<=10000;i++){
+//     TestAPI(api_,HTTPClient::MPOST,"/document/1/"+toString(i),"","text=This+is+a+long+sentence+where+the+phrase+Always+Look+On+The+Bright+Side+Of+Life",202);    
+//     TestAPI(api_,HTTPClient::MDELETE,"/document/1/"+toString(i),"","text=This+is+a+long+sentence+where+the+phrase+Always+Look+On+The+Bright+Side+Of+Life",202);    
+//   }
+//   registry_.getQueueManager()->processQueue();
+// }
+
