@@ -1,3 +1,10 @@
+hg version 2>&1 >/dev/null
+if [ "$?" -eq 127 ]; then
+	echo "Cannot run `hg`"
+	echo "You need to install mercurial."
+	exit
+fi
+
 mkdir external
 unamestr=`uname`
 if [[ "$unamestr" == 'Linux' ]]; then
@@ -23,5 +30,5 @@ cd kyotocabinet* && ./configure && make && sudo make install && cd ..
 cd kyototycoon* && ./configure && make && sudo make install && cd ..
 cd sparsehash* && ./configure && make && sudo make install && cd ..
 cd lzo-2.06 && ./configure && make && sudo make install && cd ..
-cd re2 && hg import ../../scripts/re2.diff -u superfastmatch -m "fix symbols" && make && sudo make install && cd..
+cd re2 && hg import ../../scripts/re2.diff -u superfastmatch -m "fix symbols" && make && sudo make install && cd ..
 cd ..
