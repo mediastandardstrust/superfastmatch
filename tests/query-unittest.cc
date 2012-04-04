@@ -9,7 +9,20 @@ void testDocTypeRange(const string& range, const uint32_t count,const bool valid
 }
 
 DocumentQueryPtr buildQuery(Registry* registry,const string& source, const string& target,const string& querystring){
-  ApiParams params(HTTPClient::MGET,"",querystring);
+  ApiParams params(HTTPClient::MGET,"");
+  vector<string> queries,parts;
+  strsplit(querystring,"&",&queries);
+  for (vector<string>::const_iterator it=queries.begin();it!=queries.end();++it){
+    strsplit(*it,"=",&parts);
+    if (parts.size()==2){
+      size_t ksiz,vsiz;
+      char* kbuf = urldecode(parts[0].c_str(), &ksiz);
+      char* vbuf = urldecode(parts[1].c_str(), &vsiz);
+      params.query[kbuf]=vbuf;
+      delete[] kbuf;
+      delete[] vbuf;
+    }
+  } 
   return DocumentQueryPtr(new DocumentQuery(registry,source,target,params.query));
 }
 
@@ -80,6 +93,11 @@ TEST_F(DocumentQueryTest,PagingTest){
   testQuery(&registry_,"1","","limit=1000",300,1000,true,"","doctype",false,1000);
   testQuery(&registry_,"1","1","limit=1000",300,300,true,"","doctype",false,1000);
   testQuery(&registry_,"","","limit=100",100,100,true,"","doctype",false,100);
+
+  testQuery(&registry_,"","","cursor=1:1:1",limit,limit,true,"1:1:1","doctype",false,limit);
+  testQuery(&registry_,"","","cursor=1:1",limit,limit,true,"1:1","doctype",false,limit);
+  testQuery(&registry_,"","","cursor=1",limit,limit,true,"1","doctype",false,limit);
+  testQuery(&registry_,"","","cursor=1:1:2",limit,limit,true,"1:1:2","doctype",false,limit);
   
   DocumentQueryPtr query=buildQuery(&registry_,"","","limit=100");
   EXPECT_STREQ("",query->getFirst().c_str());

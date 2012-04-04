@@ -332,24 +332,24 @@ namespace superfastmatch{
   };
   
   template <typename T>
-  class create_vector
+  class create_set
   {
   public:
-      create_vector(const T& val)
+      create_set(const T& val)
       {
-          vec.push_back(val);
+          set.insert(val);
       }
-      inline create_vector& operator()(T val)
+      create_set& operator()(T val)
       {
-          vec.push_back(val);
+          set.insert(val);
           return *this;
       }
-      inline std::vector<T> end()
+      operator std::set<T>()
       {
-          return vec;
+          return set;
       }
   private:
-      std::vector<T> vec;
+      std::set<T> set;
   };
 }
 

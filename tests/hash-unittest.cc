@@ -126,7 +126,7 @@ TEST_P(HashTest,SlowCollisionTest){
   RecordProperty("Distribution",t.str().c_str());
 }
 
-TEST_P(HashTest,SpeedTest){
+TEST_P(HashTest,SlowSpeedTest){
   string text(doc_->getText());
   timeval t1, t2;
   double elapsedTime;

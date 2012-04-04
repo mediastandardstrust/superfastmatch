@@ -56,12 +56,13 @@ namespace superfastmatch{
     return count;
   }
   
-  void QueueManager::fillDictionary(TemplateDictionary* dict,const uint64_t cursor){
+  void QueueManager::fillDictionary(TemplateDictionary* dict,const uint64_t start,const uint64_t limit){
     TemplateDictionary* queueDict=dict->AddIncludeDictionary("DATA");
     queueDict->SetFilename(QUEUE_JSON);
+    queueDict->SetIntValue("TOTAL",registry_->getQueueDB()->count());
     kc::PolyDB::Cursor* queue_cursor=registry_->getQueueDB()->cursor();
     size_t count;
-    string start;
+    string cursor;
     vector<string> keys;
     string key;
     string value;
@@ -71,27 +72,27 @@ namespace superfastmatch{
       queueDict->SetIntValue("FIRST",command->getQueueId());
     }
     if(queue_cursor->jump_back()){
-      count=registry_->getPageSize()-1;
+      count=limit-1;
       while(count--){ 
         queue_cursor->step_back();
       }
       if (queue_cursor->get(&key,&value)){
         command = getCommand(key,value);
         queueDict->SetIntValue("LAST",command->getQueueId());
-        start=key; 
+        cursor=key; 
       }
     }
-    if (cursor && (registry_->getQueueDB()->match_prefix(kc::strprintf("%u:%020lu",Queued,cursor),&keys,1)==1 ||\
-                   registry_->getQueueDB()->match_prefix(kc::strprintf("%u:%020lu",Active,cursor),&keys,1)==1 ||\
-                   registry_->getQueueDB()->match_prefix(kc::strprintf("%u:%020lu",Failed,cursor),&keys,1)==1 ||\
-                   registry_->getQueueDB()->match_prefix(kc::strprintf("%u:%020lu",Finished,cursor),&keys,1)==1 ||\
-                   registry_->getQueueDB()->match_prefix(kc::strprintf("%u",Active),&keys,1)==1 ||\
-                   registry_->getQueueDB()->match_prefix(kc::strprintf("%u",Queued),&keys,1)==1))
+    if (start && (registry_->getQueueDB()->match_prefix(kc::strprintf("%u|%020lu",Queued,start),&keys,1)==1 ||\
+                  registry_->getQueueDB()->match_prefix(kc::strprintf("%u|%020lu",Active,start),&keys,1)==1 ||\
+                  registry_->getQueueDB()->match_prefix(kc::strprintf("%u|%020lu",Failed,start),&keys,1)==1 ||\
+                  registry_->getQueueDB()->match_prefix(kc::strprintf("%u|%020lu",Finished,start),&keys,1)==1 ||\
+                  registry_->getQueueDB()->match_prefix(kc::strprintf("%u",Active),&keys,1)==1 ||\
+                  registry_->getQueueDB()->match_prefix(kc::strprintf("%u",Queued),&keys,1)==1))
     {   
-      start=keys[0];
+      cursor=keys[0];
     }
-    queue_cursor->jump(start);
-    count=registry_->getPageSize();
+    queue_cursor->jump(cursor);
+    count=limit;
     while(count--){
       queue_cursor->step_back();
     }
@@ -99,8 +100,8 @@ namespace superfastmatch{
       command = getCommand(key,value);
       queueDict->SetIntValue("PREVIOUS",command->getQueueId());
     }
-    queue_cursor->jump(start);
-    count=registry_->getPageSize();
+    queue_cursor->jump(cursor);
+    count=limit;
     while(count>0 && queue_cursor->get(&key,&value,true)){
       command = getCommand(key,value);
       command->fillDictionary(queueDict);

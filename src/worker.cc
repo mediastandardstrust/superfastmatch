@@ -32,7 +32,7 @@ namespace superfastmatch{
   {
     double start = kyotocabinet::time();
     int32_t code=api_.Invoke(path,method,reqheads,reqbody,resheads,resbody,misc);
-    if (code==-1){
+    if (code==-1 && method==HTTPClient::MGET){
       code=process_static(path,method,reqheads,reqbody,resheads,resbody,misc);
     }
     stringstream time;
@@ -105,6 +105,7 @@ namespace superfastmatch{
             if (buf) {
               code = 200;
               resheads["Last-Modified"]=modified;
+              resheads["Cache-Control"]="no-cache";
               const char* type = media_type(apath);
               if (type) resheads["content-type"] = type;
               resbody.append(buf, size);

@@ -2,19 +2,20 @@
 <html>
   <body>
     <style type="text/css">
-    table{ 
+    table.api{ 
       border-collapse:collapse;
     }
-    th,td{
+    table.api th,table.api td{
       border: 1px solid #000;
       padding: 4px;
     }
     </style>
     <h1>API</h1>
-    <table>
+    <table class="api">
       <thead>
         <tr>
           <th>URL</th>
+          <th>Query String</th>
           <th>Method</th>
           <th>Description</th>
           <th>Response Code</th>
@@ -25,6 +26,7 @@
         {{#RESOURCE}}
         <tr>
           <td rowspan="{{RESPONSE_COUNT}}">{{URL:h}}</td>
+          <td rowspan="{{RESPONSE_COUNT}}">{{#QUERY}}<a href="#{{ID}}">{{NAME}}</a>{{#QUERY_separator}}<br/>{{/QUERY_separator}}{{/QUERY}}</td>
           <td rowspan="{{RESPONSE_COUNT}}">{{METHOD:h}}</td>
           <td rowspan="{{RESPONSE_COUNT}}">{{DESCRIPTION:h}}</td>
           {{#RESPONSE}}
@@ -40,7 +42,7 @@
       </tbody>
     </table>
     <h2>Parameters</h2>
-    <table>
+    <table class="api">
       <thead>
         <tr>
           <th>Parameter</th>
@@ -54,6 +56,25 @@
           <td>{{DESCRIPTION:h}}</td>
         </tr>
         {{/PARAMETER}}
+      </tbody>
+    </table>
+    <h2>Query String Parameters</h2>
+    <table class="api">
+      <thead>
+        <tr>
+          <th>Parameter</th>
+          <th>Default Value</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#QUERIES}}
+        <tr id="{{ID:h}}">
+          <td>{{NAME:h}}</td>
+          <td>"{{DEFAULT_VALUE:h}}"</td>
+          <td>{{DESCRIPTION:h}}</td>
+        </tr>
+        {{/QUERIES}}
       </tbody>
     </table>
     

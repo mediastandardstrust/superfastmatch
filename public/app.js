@@ -9,15 +9,15 @@ Ext.Loader.setConfig({
 
 Ext.Ajax.timeout = 60000; // 60 seconds
 
-Ext.state.Manager.setProvider(
-    new Ext.state.CookieProvider({
-        expires: new Date(new Date().getTime()+(1000*60*60*24*365)), //1 year from now
-}));
+// Ext.state.Manager.setProvider(
+//     new Ext.state.CookieProvider({
+//         expires: new Date(new Date().getTime()+(1000*60*60*24*365)), //1 year from now
+// }));
 
 Ext.application({
     name: 'Superfastmatch',
     models: ['Fragment','Search','Document'],
-    controllers: ['Searches','Documents','Compare'],
+    controllers: ['Searches','Documents','Compare','Queue'],
     requires: ['Superfastmatch.view.MainViewPort'],
     launch: function(){
         Ext.QuickTips.init();

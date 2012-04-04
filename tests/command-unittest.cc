@@ -10,12 +10,6 @@ TEST_F(CommandTest,DictionaryTest){
   for (size_t i=201;i<=400;i++){
     registry_.getQueueManager()->createCommand(AddDocument,1,i,"","","text=This+is+a+test");
   }
-  // TemplateDictionary dict("test");
-  // dict.SetFilename(QUEUE_PAGE);
-  // registry_.getQueueManager()->fillDictionary(&dict);
-  // string data = dict.DumpToString();
-  // TODO write a decent test!
-  // dict.Dump();
 }
 
 TEST_F(CommandTest,PersistenceTest){

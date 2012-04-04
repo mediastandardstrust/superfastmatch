@@ -27,6 +27,8 @@ TEST_F(BaseTest,DocumentApiTest){
   TestAPI(api_,HTTPClient::MPOST,"/document/","","",-1);
   TestAPI(api_,HTTPClient::MPOST,"/document/5/1","","",400);
   TestAPI(api_,HTTPClient::MPOST,"/document/5/1/","","",400);
+  TestAPI(api_,HTTPClient::MPOST,"/document/5/1/","","text=",400);
+  TestAPI(api_,HTTPClient::MPUT,"/document/5/1/","","text=",400);
   TestAPI(api_,HTTPClient::MPOST,"/document/5/1","","text=testing+123",202);
   TestAPI(api_,HTTPClient::MPOST,"/document/5/1/","","text=testing+123",202);
   TestAPI(api_,HTTPClient::MPUT,"/document/5/1","","text=testing+123",202);
@@ -43,6 +45,15 @@ TEST_F(BaseTest,DocumentApiTest){
   registry_.getQueueManager()->processQueue();
   TestAPI(api_,HTTPClient::MGET,"/document/5/1","","",404);
   TestAPI(api_,HTTPClient::MGET,"/document/5/1/","","",404);
+  TestAPI(api_,HTTPClient::MGET,"/document/0/0/","","",400);
+  TestAPI(api_,HTTPClient::MGET,"/document/0/1/","","",400);
+  TestAPI(api_,HTTPClient::MGET,"/document/1/0/","","",400); 
+  TestAPI(api_,HTTPClient::MPUT,"/document/0/1","","text=testing+123",400);
+  TestAPI(api_,HTTPClient::MPUT,"/document/1/0/","","text=testing+123",400);
+  TestAPI(api_,HTTPClient::MPUT,"/document/0/0/","","text=testing+123",400); 
+  TestAPI(api_,HTTPClient::MPOST,"/document/0/1","","text=testing+123",400);
+  TestAPI(api_,HTTPClient::MPOST,"/document/1/0/","","text=testing+123",400);
+  TestAPI(api_,HTTPClient::MPOST,"/document/0/0/","","text=testing+123",400); 
 }
 
 TEST_F(BaseTest,DocumentPutApiTest){
@@ -108,6 +119,10 @@ TEST_F(BaseTest,QueueApiTest){
   TestAPI(api_,HTTPClient::MGET,"/queue","","",200);
   TestAPI(api_,HTTPClient::MGET,"/queue/","","",200);
   TestAPI(api_,HTTPClient::MGET,"/QUEUE/","","",200);
+  TestAPI(api_,HTTPClient::MGET,"/queue/","start=0","",200);
+  TestAPI(api_,HTTPClient::MGET,"/queue/","start=0&limit=0","",200);
+  TestAPI(api_,HTTPClient::MGET,"/queue/","start=0&limit=10","",200);
+  TestAPI(api_,HTTPClient::MGET,"/queue/","limit=10","",200);
 }
 
 TEST_F(BaseTest,IndexApiTest){
@@ -133,6 +148,20 @@ TEST_F(BaseTest,HistogramApiTest){
   TestAPI(api_,HTTPClient::MGET,"/histogram/","","",200);
 }
 
+TEST_F(BaseTest,AssociateNonExistentDocumentApiTest){
+  TestAPI(api_,HTTPClient::MPOST,"/association/1/1/","","",202);
+  registry_.getQueueManager()->processQueue();
+}
 
-
+// TEST_F(BaseTest,FullIndexDeleteApiTest){
+//   for (size_t i=1;i<=10000;i++){
+//     TestAPI(api_,HTTPClient::MPOST,"/document/5/"+toString(i),"","text=This+is+a+long+sentence+where+the+phrase+Always+Look+On+The+Bright+Side+Of+Life",202);    
+//   }
+//   registry_.getQueueManager()->processQueue();
+//   for (size_t i=1;i<=10000;i++){
+//     TestAPI(api_,HTTPClient::MPOST,"/document/1/"+toString(i),"","text=This+is+a+long+sentence+where+the+phrase+Always+Look+On+The+Bright+Side+Of+Life",202);    
+//     TestAPI(api_,HTTPClient::MDELETE,"/document/1/"+toString(i),"","text=This+is+a+long+sentence+where+the+phrase+Always+Look+On+The+Bright+Side+Of+Life",202);    
+//   }
+//   registry_.getQueueManager()->processQueue();
+// }
 

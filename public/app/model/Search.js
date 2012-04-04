@@ -1,6 +1,6 @@
 Ext.define('Superfastmatch.model.Search', {
     extend: 'Ext.data.Model',
-    requires: ['Ext.ux.data.TimedJsonReader','Ext.ux.data.PagedProxy'],
+    requires: ['Ext.ux.data.PagedProxy','Ext.ux.data.TimedJsonReader'],
     uses: ['Superfastmatch.model.Document'],
 
     fields: ['doctype','docid',{name: 'text',persist: 'false'},'responseTime'],

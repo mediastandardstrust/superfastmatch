@@ -121,7 +121,7 @@ static uint32_t nearest_pow (uint32_t num)
 //   cout << count << " collisons" << endl; 
 // }
 
-TEST_F(SearchMapTest,PrefetchMapTest){
+TEST_F(SearchMapTest,SlowPrefetchMapTest){
   search_t results;
   // results.rehash(20000);
   vector<uint32_t>::const_iterator it=SearchMapTest::input.begin(),ite=SearchMapTest::input.end();
@@ -142,7 +142,7 @@ TEST_F(SearchMapTest,PrefetchMapTest){
   // cout << count << " collisons" << endl;
 }
 
-TEST_F(SearchMapTest,SearchMapTest){
+TEST_F(SearchMapTest,SlowSearchMapTest){
   search_t results;
   results.rehash(50000);
   for (vector<uint32_t>::const_iterator it=SearchMapTest::input.begin(),ite=SearchMapTest::input.end();it!=ite;){
@@ -182,7 +182,7 @@ typedef unordered_set<DocPair,DocPairHash2,DocPairEq2> searchset_t;
 // typedef unordered_map<DocPair,DocTally,DocPairHash2,DocPairEq2> pooled_search_t;
 typedef unordered_map<DocPair,DocTally,DocPairHash2,DocPairEq2,boost::fast_pool_allocator<pair<DocPair,DocTally> > > pooled_search_t;
 
-TEST_F(SearchMapTest,PooledSearchMapTest){
+TEST_F(SearchMapTest,SlowPooledSearchMapTest){
   pooled_search_t results;
   vector<uint32_t>::const_iterator it=SearchMapTest::input.begin(),ite=SearchMapTest::input.end();
   DocTally* previous=&results[DocPair(*it++,*it++)];
@@ -231,7 +231,7 @@ public:
 
 vector<uint32_t> CodecBenchmarkTest::input;
 
-TEST_P(CodecBenchmarkTest,CodecSpeedTest){
+TEST_P(CodecBenchmarkTest,SlowCodecSpeedTest){
   timeval t1, t2;
   double elapsedTime;
   PostLineCodec* codec = GetParam();

@@ -7,13 +7,12 @@ Ext.define('Superfastmatch.view.DocumentBrowser', {
     title: 'Saved Documents',
     forceFit: true,
     flex: 1,
-    columns:[],
+    columns: [{text:'Meta'}],
     viewConfig: {
         itemId: 'DocumentBrowserView',
         loadMask: true,
         emptyText: 'No Saved Documents Found'
     },
-    store: Ext.create('Superfastmatch.store.Documents'),
     
     buildToolBar: function(){
       var me=this;
@@ -65,6 +64,7 @@ Ext.define('Superfastmatch.view.DocumentBrowser', {
     initComponent: function() {
        var me=this;
        me.callParent(arguments);
+       me.reconfigure(Ext.create('Superfastmatch.store.Documents'));
        me.addDocked(me.buildToolBar());
        me.addEvents('documentselected','documentsloading');
        me.store.on({

@@ -344,6 +344,9 @@ namespace superfastmatch
     DocumentPtr doc(new Document(doctype,docid,permanent,registry_));
     metadata_map content_map;
     kt::wwwformtomap(content,&content_map);
+    if (content_map.find("text")==content_map.end()){
+      return DocumentPtr();
+    }
     if (not doc->setText(content_map["text"])){
       return DocumentPtr();
     }

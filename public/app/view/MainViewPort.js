@@ -3,6 +3,7 @@ Ext.define('Superfastmatch.view.MainViewPort', {
     requires: [
         'Superfastmatch.view.SearchPanel',
         'Superfastmatch.view.DocumentPanel',
+        'Superfastmatch.view.QueuePanel',
         'Ext.ux.panel.HTMLPanel',
         'Ext.ux.panel.StatefulTabPanel'
     ],
@@ -15,7 +16,8 @@ Ext.define('Superfastmatch.view.MainViewPort', {
       return {
           items: [
             {
-                xtype: 'statefultab',
+                xtype: 'tabpanel',
+                // xtype: 'statefultab',
                 id: 'Tabs',
                 items: [
                     {
@@ -32,11 +34,7 @@ Ext.define('Superfastmatch.view.MainViewPort', {
                         title: 'Index'
                     },
                     {
-                        xtype: 'HTMLPanel',
-                        loader: {
-                            url: '/queue/'
-                        },
-                        title: 'Queue'
+                        xtype: 'queuepanel',
                     },
                     {
                         xtype: 'HTMLPanel',
