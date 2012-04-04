@@ -294,12 +294,12 @@ namespace superfastmatch{
   
   bool FlagsRegistry::openDatabases(){
     uint32_t cache=FLAGS_cache/16;
-    return documentDB_->open(getDataPath()+"/document.kch#log=+#logkinds=error#bnum=20m#opts=c#zcomp=lzo#msiz="+toString(cache*12)+"m",getMode()) && \
-           queueDB_->open(getDataPath()+"/queue.kct#log=+#logkinds=error#bnum=1m#opts=lc#zcomp=lzo",getMode()) && \
-           payloadDB_->open(getDataPath()+"/payload.kch#log=+#logkinds=error#bnum=100k#opts=c#zcomp=lzo#msiz="+toString(cache)+"m",getMode()) && \
-           metaDB_->open(getDataPath()+"/meta.kct#log=+#logkinds=error#bnum=1m#opts=lc#zcomp=lzo#msiz="+toString(cache)+"m",getMode()) && \
-           orderedMetaDB_->open(getDataPath()+"/orderedmeta.kct#log=+#logkinds=error#bnum=1m#opts=lc#zcomp=lzo#msiz="+toString(cache)+"m",getMode()) && \
-           associationDB_->open(getDataPath()+"/association.kct#log=+#logkinds=error#bnum=1m#opts=lc#zcomp=lzo#msiz="+toString(cache)+"m",getMode()) && \
+    return documentDB_->open(getDataPath()+"/document.kch#log=+#logkinds=error#bnum=20m#opts=c#msiz="+toString(cache*12)+"m",getMode()) && \
+           queueDB_->open(getDataPath()+"/queue.kct#log=+#logkinds=error#bnum=1m#opts=lc",getMode()) && \
+           payloadDB_->open(getDataPath()+"/payload.kch#log=+#logkinds=error#bnum=100k#opts=c#msiz="+toString(cache)+"m",getMode()) && \
+           metaDB_->open(getDataPath()+"/meta.kct#log=+#logkinds=error#bnum=1m#opts=lc#msiz="+toString(cache)+"m",getMode()) && \
+           orderedMetaDB_->open(getDataPath()+"/orderedmeta.kct#log=+#logkinds=error#bnum=1m#opts=lc#msiz="+toString(cache)+"m",getMode()) && \
+           associationDB_->open(getDataPath()+"/association.kct#log=+#logkinds=error#bnum=1m#opts=lc#msiz="+toString(cache)+"m",getMode()) && \
            miscDB_->open(getDataPath()+"/misc.kch#log=+#logkinds=error",getMode());
   }
   
