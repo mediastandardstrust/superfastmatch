@@ -77,6 +77,29 @@
         {{/QUERIES}}
       </tbody>
     </table>
+    <h2>Command Line Parameters</h2>
+    <table class="api">
+      <thead>
+        <tr>
+          <th>Parameter</th>
+          <th>Type</th>
+          <th>Default Value</th>
+          <th>Current Value</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#FLAGS}}
+        <tr>
+          <td>{{NAME:h}}</td>
+          <td>{{TYPE:h}}</td>
+          <td>{{DEFAULT_VALUE:h}}</td>
+          <td>{{CURRENT_VALUE:h}}</td>
+          <td>{{DESCRIPTION:h}}</td>
+        </tr>
+        {{/FLAGS}}
+      </tbody>
+    </table>
     
   </body>
 </html>

@@ -493,6 +493,17 @@ namespace superfastmatch{
       queryDict->SetValue("ID",it->first);
       it->second->fillDictionary(queryDict);
     }
+    vector<google::CommandLineFlagInfo> flags;
+    google::GetAllFlags(&flags);
+    const ptrdiff_t BUILTIN_FLAGS=14;
+    for (vector<google::CommandLineFlagInfo>::const_iterator it=flags.begin()+BUILTIN_FLAGS,ite=flags.end();it!=ite;++it){
+      TemplateDictionary* flagDict=response.dict.AddSectionDictionary("FLAGS");        
+      flagDict->SetValue("NAME",it->name);
+      flagDict->SetValue("TYPE",it->type);
+      flagDict->SetValue("CURRENT_VALUE",it->current_value);
+      flagDict->SetValue("DEFAULT_VALUE",it->default_value);
+      flagDict->SetValue("DESCRIPTION",it->description);
+    }
     response.type=response_t(200,"text/html");
   }
 }
