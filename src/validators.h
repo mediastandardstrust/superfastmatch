@@ -11,6 +11,8 @@ static bool ValidatePort(const char* flagname, int32_t value) {
 }
 
 static bool ValidateAddress(const char* flagname, const string& value) {
+  if (value.size() == 0)
+    return true;
   struct sockaddr_in sa;
   int result = inet_pton(AF_INET, value.c_str(), &(sa.sin_addr));
   if (result > 0)
