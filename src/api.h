@@ -2,6 +2,7 @@
 #define _SFMAPI_H
 
 #include <re2/filtered_re2.h>
+#include <gflags/gflags.h>
 #include <kthttp.h>
 #include <registry.h>
 #include <queue.h>
