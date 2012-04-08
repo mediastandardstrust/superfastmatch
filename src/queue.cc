@@ -36,9 +36,11 @@ namespace superfastmatch{
 
   size_t QueueManager::processQueue(){
     size_t count=0;
+    bool active=false;
     CommandAction previousAction=NullAction;
     CommandPtr command = getQueuedCommand();
     while (command && !registry_->isClosing()){
+      active=true;
       if((previousAction!=NullAction)&&(previousAction!=command->getAction())){
         registry_->getPostings()->finishTasks();
       }
@@ -52,7 +54,9 @@ namespace superfastmatch{
       previousAction=command->getAction();
       command = getQueuedCommand();
     }
-    registry_->getPostings()->finishTasks();
+    if (active){
+      registry_->getPostings()->finishTasks(); 
+    }
     return count;
   }
   
