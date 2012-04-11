@@ -251,3 +251,28 @@ TEST(PostLineTest,BigPostLineTest){
   delete[] backwards;
 }
 
+TEST(PostLineTest,RandomLineSlowTest){
+  const size_t SIZE=4096;
+  unsigned char* data = new unsigned char[SIZE];
+  memset(data,0,SIZE);
+  PostLine* line = new PostLine(SIZE);
+  line->load(data);
+  for (size_t i=0;i<(1UL<<24);i++){
+    bool operation=rand()%3!=1;
+    uint32_t doctype=rand()%10+1;
+    uint32_t docid=rand()%(2048)+1;
+    if (operation){
+        if (line->getLength()<(SIZE-15)){
+          line->addDocument(doctype,docid); 
+        }
+      }else{
+        line->deleteDocument(doctype,docid);
+      }
+    line->commit(data);
+  }
+  delete[] data;
+} 
+
+
+
+

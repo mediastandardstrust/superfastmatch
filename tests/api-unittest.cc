@@ -153,15 +153,17 @@ TEST_F(BaseTest,AssociateNonExistentDocumentApiTest){
   registry_.getQueueManager()->processQueue();
 }
 
-// TEST_F(BaseTest,FullIndexDeleteApiTest){
-//   for (size_t i=1;i<=10000;i++){
-//     TestAPI(api_,HTTPClient::MPOST,"/document/5/"+toString(i),"","text=This+is+a+long+sentence+where+the+phrase+Always+Look+On+The+Bright+Side+Of+Life",202);    
-//   }
-//   registry_.getQueueManager()->processQueue();
-//   for (size_t i=1;i<=10000;i++){
-//     TestAPI(api_,HTTPClient::MPOST,"/document/1/"+toString(i),"","text=This+is+a+long+sentence+where+the+phrase+Always+Look+On+The+Bright+Side+Of+Life",202);    
-//     TestAPI(api_,HTTPClient::MDELETE,"/document/1/"+toString(i),"","text=This+is+a+long+sentence+where+the+phrase+Always+Look+On+The+Bright+Side+Of+Life",202);    
-//   }
-//   registry_.getQueueManager()->processQueue();
-// }
+TEST_F(BaseTest,RandomAddDeleteApiSlowTest){
+  for (size_t i=1;i<=10000;i++){
+    bool operation=rand()%2!=1;
+    uint32_t doctype=rand()%10+2147483648;
+    uint32_t docid=rand()%(8192)+2147483648;
+    if (operation){
+      TestAPI(api_,HTTPClient::MPOST,"/document/"+toString(doctype)+"/"+toString(docid),"","text=This+is+a+long+sentence+where+the+phrase+Always+Look+On+The+Bright+Side+Of+Life",202);    
+    }else{
+      TestAPI(api_,HTTPClient::MDELETE,"/document/"+toString(doctype)+"/"+toString(docid),"","",202);    
+    }
+  }
+  registry_.getQueueManager()->processQueue();  
+}
 

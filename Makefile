@@ -18,9 +18,9 @@ MAIN = src/superfastmatch.o
 # Building binaries
 INCLUDES = -Isrc -Itests -I/usr/local/ -Itests/utils/
 #LDFLAGS = -Wl,-no_pie
-CXXFLAGS = -Wall -Wextra -funsigned-char -m64 -mtune=native -O3 -g
+CXXFLAGS = -Wall -Wextra -funsigned-char -m64 -mtune=native -g -O3
 PROFILEFLAGS = -D_GLIBCXX_PROFILE -D_GLIBCXX_PROFILE_MAX_WARN_COUNT=10000
-LIBS = -lstdc++ -lz -lm -lc -lpthread -lkyototycoon -lkyotocabinet -lctemplate -lgflags -llzo2 -lre2 
+LIBS = -lstdc++ -lz -lm -lc -lpthread -lkyototycoon -lkyotocabinet -lctemplate -lgflags -llzo2 -lre2
 CXX = g++ $(INCLUDES)
 #CXX = icc $(INCLUDES)
 

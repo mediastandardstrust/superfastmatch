@@ -86,15 +86,15 @@ namespace superfastmatch
         entry=index_.unsafe_get(hash);
         line.load(entry);
         incoming_length=line.getLength();
-        if((incoming_length+5)<=(registry_->getMaxLineLength())){
-          switch (operation){
-            case TaskPayload::AddDocument:
+        switch (operation){
+          case TaskPayload::AddDocument:
+            if((incoming_length+15)<=(registry_->getMaxLineLength())){
               noop=not line.addDocument(doctype,docid);
-              break;
-            case TaskPayload::DeleteDocument:
-              noop=not line.deleteDocument(doctype,docid);
-              break;
             }
+            break;
+          case TaskPayload::DeleteDocument:
+            noop=not line.deleteDocument(doctype,docid);
+            break;
         }
         if (!noop){
           outgoing_length=line.getLength();
