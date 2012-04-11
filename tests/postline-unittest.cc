@@ -149,23 +149,11 @@ TEST(PostLineTest,PostLineTest){
   delete[] in;
 }
 
-TEST(PostLineTest,BadParametersPostLineTest){
+TEST(PostLineTest,NonExistentDocumentPostLineTest){
   unsigned char* first = new unsigned char[8];
   memset(first,0,8);
   PostLine* line = new PostLine(512);
   line->load(first);
-  EXPECT_EQ(1U,line->getLength());
-  ASSERT_FALSE(line->addDocument(2,0));
-  EXPECT_EQ(1U,line->getLength());
-  ASSERT_FALSE(line->addDocument(0,0));
-  EXPECT_EQ(1U,line->getLength());
-  ASSERT_FALSE(line->addDocument(0,1));
-  EXPECT_EQ(1U,line->getLength());
-  ASSERT_FALSE(line->deleteDocument(0,1));
-  EXPECT_EQ(1U,line->getLength());
-  ASSERT_FALSE(line->deleteDocument(1,0));
-  EXPECT_EQ(1U,line->getLength());
-  ASSERT_FALSE(line->deleteDocument(0,0));
   EXPECT_EQ(1U,line->getLength());
   // Delete non existent document
   ASSERT_FALSE(line->deleteDocument(2,56));
@@ -253,13 +241,13 @@ TEST(PostLineTest,BigPostLineTest){
 
 TEST(PostLineTest,RandomLineSlowTest){
   const size_t SIZE=4096;
-  unsigned char* data = new unsigned char[SIZE];
-  memset(data,0,SIZE);
+  unsigned char* data = new unsigned char[SIZE+8];
+  memset(data,0,SIZE+8);
   PostLine* line = new PostLine(SIZE);
   line->load(data);
   for (size_t i=0;i<(1UL<<24);i++){
     bool operation=rand()%3!=1;
-    uint32_t doctype=rand()%10+1;
+    uint32_t doctype=rand()%3+1;
     uint32_t docid=rand()%(2048)+1;
     if (operation){
         if (line->getLength()<(SIZE-15)){
@@ -268,7 +256,9 @@ TEST(PostLineTest,RandomLineSlowTest){
       }else{
         line->deleteDocument(doctype,docid);
       }
+    EXPECT_EQ(0U,*(uint64_t*)&data[SIZE]);
     line->commit(data);
+    EXPECT_EQ(0U,*(uint64_t*)&data[SIZE]);
   }
   delete[] data;
 } 

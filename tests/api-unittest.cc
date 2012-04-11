@@ -36,6 +36,8 @@ TEST_F(BaseTest,DocumentApiTest){
   registry_.getQueueManager()->processQueue();
   TestAPI(api_,HTTPClient::MGET,"/document/5/1","","",200);
   TestAPI(api_,HTTPClient::MGET,"/document/5/1/","","",200);
+  TestAPI(api_,HTTPClient::MGET,"/document/5/1/","limit=10","",200);
+  TestAPI(api_,HTTPClient::MGET,"/document/5/1/","order_by=-title&limit=10000","",200);
   TestAPI(api_,HTTPClient::MPOST,"/search","","",400);
   TestAPI(api_,HTTPClient::MPOST,"/search/","","",400);
   TestAPI(api_,HTTPClient::MPOST,"/search","","text=testing+123",200);

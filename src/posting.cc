@@ -59,8 +59,6 @@ namespace superfastmatch
     uint32_t white_space=registry_->getWhiteSpaceHash()-offset_;
     bool white_space_seen=false;
     uint32_t hash_width=registry_->getHashWidth();
-    size_t incoming_length;
-    size_t outgoing_length;
     // Where hash width is below 32 we will get duplicates per document
     // We discard them with a no operation 
     for (hashes_vector::const_iterator it=doc->getPostingHashes().begin(),ite=doc->getPostingHashes().end();it!=ite;++it){
@@ -76,7 +74,6 @@ namespace superfastmatch
           white_space_seen=true;
         }
         unsigned char* entry=NULL;
-        bool noop=true;
         index_lock_.lock_writer();
         if (!index_.test(hash)){
           entry = new unsigned char[8];
@@ -84,27 +81,27 @@ namespace superfastmatch
           index_.set(hash,entry);
         }
         entry=index_.unsafe_get(hash);
+        assert(entry);
         line.load(entry);
-        incoming_length=line.getLength();
+        size_t incoming_length=line.getLength();
         switch (operation){
           case TaskPayload::AddDocument:
             if((incoming_length+15)<=(registry_->getMaxLineLength())){
-              noop=not line.addDocument(doctype,docid);
+              line.addDocument(doctype,docid);
+              size_t outgoing_length=line.getLength();
+              if ((outgoing_length/8)>(incoming_length/8)){
+                delete[] entry;
+                entry = new unsigned char[((outgoing_length/8)+1)*8];
+                index_.set(hash,entry);
+              }
+              line.commit(entry); 
             }
             break;
           case TaskPayload::DeleteDocument:
-            noop=not line.deleteDocument(doctype,docid);
+            if (line.deleteDocument(doctype,docid)){
+              line.commit(entry);              
+            }
             break;
-        }
-        if (!noop){
-          outgoing_length=line.getLength();
-          if ((outgoing_length/8)>(incoming_length/8)){
-            size_t size=((outgoing_length/8)+1)*8;
-            delete[] entry;
-            entry = new unsigned char[size];
-            index_.set(hash,entry);
-          }
-          line.commit(entry);
         }
         index_lock_.unlock();
       }
@@ -175,13 +172,13 @@ namespace superfastmatch
     while (it!=index_.nonempty_end() && count<registry_->getPageSize()){
       count++;
       vector<PostLineHeader>* doc_types=line.load(*it);
-      TemplateDictionary* posting_dict=dict->AddSectionDictionary("POSTING");
-      TemplateDictionary* hash_dict=posting_dict->AddSectionDictionary("HASH");
+      TemplateDictionary* hash_dict=dict->AddSectionDictionary("HASH");
+      TemplateDictionary* posting_dict=hash_dict->AddSectionDictionary("POSTING");
       hash_dict->SetIntValue("HASH",index_.get_pos(it)+offset_);
       hash_dict->SetIntValue("BYTES",line.getLength());
-      hash_dict->SetIntValue("DOC_TYPE_COUNT",doc_types->size());
       for (size_t i=0;i<doc_types->size();i++){
         posting_dict->SetIntValue("DOC_TYPE",(*doc_types)[i].doc_type);
+        posting_dict->SetIntValue("BYTES",line.getLength((*doc_types)[i].doc_type));
         vector<uint32_t>* doc_ids=line.getDocIds((*doc_types)[i].doc_type);
         uint32_t previous=0;
         for (size_t j=0;j<doc_ids->size();j++){
@@ -190,9 +187,6 @@ namespace superfastmatch
           doc_id_dict->SetIntValue("DOC_ID",(*doc_ids)[j]); 
           doc_delta_dict->SetIntValue("DOC_DELTA",(*doc_ids)[j]-previous);
           previous=(*doc_ids)[j];
-        }
-        if (i!=(doc_types->size()-1)){
-          posting_dict=dict->AddSectionDictionary("POSTING");
         }
       }
       it++;
@@ -425,7 +419,7 @@ namespace superfastmatch
     postingDict->SetFilename(POSTING_JSON);
     uint32_t count=0;
     for (size_t i=0;i<slots_.size();i++){
-      count+=slots_[i]->fillListDictionary(dict,start);
+      count+=slots_[i]->fillListDictionary(postingDict,start);
       if (count>=registry_->getPageSize()){
         break;
       }

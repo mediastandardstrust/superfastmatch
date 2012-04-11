@@ -61,9 +61,7 @@ namespace superfastmatch
   }
 
   bool PostLine::deleteDocument(const uint32_t doc_type,const uint32_t doc_id){
-    if ((doc_type==0)||(doc_id==0)){
-      return false;
-    }
+    assert((doc_type!=0)&&(doc_id!=0));
     vector<PostLineHeader>::iterator header=header_->begin();
     size_t offset=old_header_length_;
     bool noop=true;
@@ -116,9 +114,7 @@ namespace superfastmatch
   }
   
   bool PostLine::addDocument(const uint32_t doc_type,const uint32_t doc_id){
-    if ((doc_type==0)||(doc_id==0)){
-      return false;
-    }
+    assert((doc_type!=0)&&(doc_id!=0));
     updated_section_=doc_type;
     vector<PostLineHeader>::iterator header=header_->begin();
     size_t offset=old_header_length_;
