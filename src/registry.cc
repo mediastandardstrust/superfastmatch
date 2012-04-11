@@ -18,7 +18,7 @@ namespace superfastmatch{
   DEFINE_int32(port, 8080, "What port to listen on");
   static const bool port_dummy = google::RegisterFlagValidator(&FLAGS_port, &ValidatePort);
 
-  DEFINE_string(address,"127.0.0.1" , "What address to listen on");
+  DEFINE_string(address,"" , "What address to listen on (defaults to all addresses)");
   static const bool address_dummy = google::RegisterFlagValidator(&FLAGS_address, &ValidateAddress);
 
   DEFINE_int32(thread_count,8,"Number of threads for serving requests");
