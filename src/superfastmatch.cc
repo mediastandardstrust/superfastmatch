@@ -17,7 +17,7 @@ static void stopserver(int signum) {
     void *array[10];
     size_t size;
     size = backtrace(array, 10);
-    g_serv->log(Logger::ERROR, "Error: signal %d:\n", signum);
+    g_serv->log(Logger::ERROR, "Error: signal %d", signum);
     g_serv->log(Logger::ERROR, *backtrace_symbols(array, size));
   } 
   if (g_serv) g_serv->stop();

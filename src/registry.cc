@@ -1,4 +1,4 @@
-#include "registry.h"
+#include <registry.h>
 #include <gflags/gflags.h>
 #include <validators.h>
 #include <posting.h>
@@ -7,7 +7,7 @@
 
 namespace superfastmatch{
   // Templates
-  RegisterTemplateFilename(STATUS_PAGE, "status_page.tpl");
+  RegisterTemplateFilename(STATUS_JSON, "JSON/status.tpl");
   
   // Command line flags
   
