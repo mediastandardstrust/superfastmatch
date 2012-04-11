@@ -13,13 +13,6 @@ HTTPServer* g_serv = NULL;
 
 // stop the running server
 static void stopserver(int signum) {
-  if (signum==SIGSEGV && g_serv){
-    void *array[10];
-    size_t size;
-    size = backtrace(array, 10);
-    g_serv->log(Logger::ERROR, "Error: signal %d", signum);
-    g_serv->log(Logger::ERROR, *backtrace_symbols(array, size));
-  } 
   if (g_serv) g_serv->stop();
   g_serv = NULL;
 }
@@ -28,9 +21,6 @@ static void stopserver(int signum) {
 int main(int argc, char** argv) {
   // set the signal handler to stop the server
   setkillsignalhandler(stopserver);
-  
-  // handle segmentation faults
-  signal(SIGSEGV, stopserver);
 
   // set usage message
   string usage("This program allows bulk text comparison.  Sample usage:\n");
