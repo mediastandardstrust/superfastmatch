@@ -351,6 +351,28 @@ namespace superfastmatch{
   private:
       std::set<T> set;
   };
+  
+  template <typename T>
+  class create_vector
+  {
+  public:
+      create_vector(const T& val)
+      {
+          vector.push_back(val);
+      }
+      create_vector& operator()(T val)
+      {
+          vector.push_back(val);
+          return *this;
+      }
+      operator std::vector<T>()
+      {
+          return vector;
+      }
+  private:
+      std::vector<T> vector;
+  };
+  
 }
 
 #endif

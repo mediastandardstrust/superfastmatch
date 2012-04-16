@@ -80,10 +80,10 @@ static void RabinKarp(const string& text,const size_t window_size,const size_t w
 
 typedef void(*HasherFun)(const string&,const size_t,const size_t,vector<uint32_t>&);
 
-class HashTest : public TestWithParam<tuple<tuple<string,HasherFun>,TestDocument*,size_t> > {
+class HashTest : public TestWithParam<tuple<tuple<string,HasherFun>,TestDocumentPtr,size_t> > {
 public:
   HasherFun hasher_;
-  TestDocument* doc_;
+  TestDocumentPtr doc_;
   size_t window_size_;
 
   virtual void SetUp(){
@@ -159,25 +159,16 @@ TEST_P(CorrectnessTest,ShortTest){
   RecordProperty("Hasher",get<0>(GetParam()).c_str());
 }
 
-const static vector<tuple<string,HasherFun> > getHashers(){
-  vector<tuple<string,HasherFun> > hashers;
-  hashers.push_back(make_tuple<string,HasherFun>("Rabin Karp",&RabinKarp));
-  hashers.push_back(make_tuple<string,HasherFun>("Upper Case Rabin Karp",&UpperCaseRabinKarp));
-  hashers.push_back(make_tuple<string,HasherFun>("Murmur Hash 2",&MurmurHash2));
-  return hashers;
-}
+const static vector<tuple<string,HasherFun> > hashers=create_vector<tuple<string,HasherFun> >(make_tuple<string,HasherFun>("Rabin Karp",&RabinKarp))\
+                                                                                             (make_tuple<string,HasherFun>("Upper Case Rabin Karp",&UpperCaseRabinKarp))\
+                                                                                             (make_tuple<string,HasherFun>("Murmur Hash 2",&MurmurHash2));
 
-const static vector<TestDocument*> getDocs(){
-  vector<TestDocument*> docs;
-  // docs.push_back(new TestDocument("fixtures/congressional-record/2001-12.txt"));
-  docs.push_back(new TestDocument("fixtures/gutenberg/Religious/bible.txt"));
-  return docs;
-}
+const static vector<TestDocumentPtr> docs=create_vector<TestDocumentPtr>(TestDocumentPtr(new TestDocument("fixtures/gutenberg/Religious/bible.txt")));
 
 INSTANTIATE_TEST_CASE_P(RangeTests,
                         HashTest,
-                        Combine(ValuesIn(getHashers()),ValuesIn(getDocs()),Values(10,20,100)));
+                        Combine(ValuesIn(hashers),ValuesIn(docs),Values(10,20,100)));
 
 INSTANTIATE_TEST_CASE_P(CorrectnessTests,
                         CorrectnessTest,
-                        ValuesIn(getHashers()));
+                        ValuesIn(hashers));

@@ -199,6 +199,9 @@ namespace superfastmatch
 
   bool Document::initBloom(){
     if (bloom_==0){
+      if (hashes_==0){
+        throw runtime_error("Hashes not initialised, needed for Bloom");
+      }
       hashes_bloom* tempBloom = new hashes_bloom();
       for (hashes_vector::const_iterator it=getHashes().begin(),ite=getHashes().end();it!=ite;++it){
         tempBloom->set((*it)&0x3FFFFFF);

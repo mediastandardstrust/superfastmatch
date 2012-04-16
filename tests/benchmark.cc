@@ -2,11 +2,7 @@
 #include <cstdlib>
 #include <document.h>
 
-#include <ext/pool_allocator.h>
-#include <ext/bitmap_allocator.h>
-#include <boost/pool/pool_alloc.hpp>
-
-using namespace boost;
+typedef shared_ptr<PostLineCodec> PostLineCodecPtr;
 
 class SearchMapTest : public Test{
   public:
@@ -24,102 +20,6 @@ class SearchMapTest : public Test{
 };
 
 vector<uint32_t> SearchMapTest::input;
-
-static uint32_t nearest_pow (uint32_t num)
-{
-    uint32_t n = 1;
-    while (n < num)
-        n <<= 1;
-    return n;
-}
-// 
-// class Tally : public intrusive::unordered_set_base_hook<>
-// {
-//   public:
-//     uint32_t doc_type;
-//     uint32_t doc_id;
-//     uint64_t previous;
-//     uint32_t count;
-// 
-//     Tally():
-//     doc_type(0),
-//     doc_id(0),
-//     previous(0),
-//     count(0)
-//     {}
-// 
-//     inline friend bool operator== (const Tally &a, const Tally &b){
-//       return (a.doc_type==b.doc_type)&&(a.doc_id==b.doc_id);
-//     }
-// 
-//     inline friend std::size_t hash_value(const Tally &value){
-//       // return (uint64_t(value.doc_type)*0xff51afd7ed558ccd)^(value.doc_id*8745648375);
-//       std::size_t seed = 0;
-//       boost::hash_combine(seed, value.doc_type*8745648375);
-//       // boost::hash_combine(seed, value.doc_type*0xc2b2ae35);
-//       boost::hash_combine(seed, value.doc_id);
-//       return seed;
-//     }
-// };
-// 
-// typedef intrusive::unordered_set<Tally,intrusive::constant_time_size<false>,intrusive::power_2_buckets<true> > TallySet;
-// //typedef intrusive::unordered_set<Tally,intrusive::constant_time_size<false> > TallySet;
-// 
-// 
-// TEST_F(SearchMapTest,InstrusiveSetTest){
-//   vector<Tally> storage;
-//   size_t length=nearest_pow(100000);
-//   storage.reserve(length);
-//   TallySet::bucket_type buckets[length];
-//   TallySet tallies(TallySet::bucket_traits(buckets,length));
-//   vector<uint32_t>::const_iterator it=SearchMapTest::input.begin(),ite=SearchMapTest::input.end();
-//   vector<pair<Tally,TallySet::size_type> > batch;
-//   // batch.resize(1000);
-//   // for (;it!=ite;){
-//   //   for (size_t i=0;i<1000;i++){
-//   //     batch[i].first.doc_type=*it++;
-//   //     batch[i].first.doc_id=*it++;
-//   //     batch[i].second=tallies.bucket(batch[i].first);
-//   //     __builtin_prefetch(&buckets[batch[i].second],0,0);
-//   //   }
-//   //   for (size_t i=0;i<1000;i++){
-//   //     __builtin_prefetch(((void*)(buckets+batch[i].second)),0,0);
-//   //   }
-//   //   for (size_t i=0;i<1000;i++){
-//   //     TallySet::iterator tally_it=tallies.find(batch[i].first);
-//   //     if(likely(tally_it!=tallies.end())){
-//   //       tally_it->count++;
-//   //       // cout << storage.capacity() << ":" <<tally.doc_type << ":" << tally.doc_id << ":" << tally_it->count << ":" << sizeof(*tally_it) << ":" << &*tally_it << endl;
-//   //     }else{
-//   //       storage.push_back(batch[i].first);
-//   //       tallies.insert(storage.back());
-//   //     }      
-//   //   }
-//   // }
-//   Tally tally;
-//   for (;it!=ite;){
-//     vector<Tally> batch;
-//     tally.doc_type=*it++;
-//     tally.doc_id=*it++;
-//   
-//     TallySet::iterator tally_it=tallies.find(tally);
-//     if(likely(tally_it!=tallies.end())){
-//       tally_it->count++;
-//       // cout << storage.capacity() << ":" <<tally.doc_type << ":" << tally.doc_id << ":" << tally_it->count << ":" << sizeof(*tally_it) << ":" << &*tally_it << endl;
-//     }else{
-//       storage.push_back(tally);
-//       tallies.insert(storage.back());
-//     }
-//   }
-//   size_t count=0;
-//   for (size_t i=0;i<length;i++){
-//     if (tallies.bucket_size(i)>1){
-//       count++;
-//       // cout << i << ":" << tallies.bucket_size(i) << endl; 
-//     }
-//   }
-//   cout << count << " collisons" << endl; 
-// }
 
 TEST_F(SearchMapTest,SlowPrefetchMapTest){
   search_t results;
@@ -214,7 +114,7 @@ TEST_F(SearchMapTest,SlowPooledSearchMapTest){
   // }
 }
 
-class CodecBenchmarkTest : public TestWithParam<PostLineCodec*>{
+class CodecBenchmarkTest : public TestWithParam<PostLineCodecPtr>{
 public:
   static vector<uint32_t> input;
   
@@ -234,7 +134,7 @@ vector<uint32_t> CodecBenchmarkTest::input;
 TEST_P(CodecBenchmarkTest,SlowCodecSpeedTest){
   timeval t1, t2;
   double elapsedTime;
-  PostLineCodec* codec = GetParam();
+  PostLineCodecPtr codec = GetParam();
   vector<uint32_t> output;
   output.reserve(100000000);
   unsigned char* out = new unsigned char[100000000*5];
@@ -258,10 +158,10 @@ TEST_P(CodecBenchmarkTest,SlowCodecSpeedTest){
   delete[] out;
 }
 
-const static vector<PostLineCodec*> getCodecs(){
-  vector<PostLineCodec*> codecs;
-  codecs.push_back(new VarIntCodec());
-  codecs.push_back(new GroupVarIntCodec());
+const static vector<PostLineCodecPtr> getCodecs(){
+  vector<PostLineCodecPtr> codecs;
+  codecs.push_back(PostLineCodecPtr(new VarIntCodec()));
+  codecs.push_back(PostLineCodecPtr(new GroupVarIntCodec()));
   return codecs;
 }
 

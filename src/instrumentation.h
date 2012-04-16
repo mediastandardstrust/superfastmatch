@@ -87,6 +87,7 @@ namespace superfastmatch{
     InstrumentGroup(const string& name,const size_t recent_size,const size_t slowest_size);
     void add(InstrumentPtr instrument);
     void merge(InstrumentGroupPtr group);
+    void clear();
     friend std::ostream& operator<< (std::ostream& stream, InstrumentGroup& group);
   private:
     void getHistory(ostream& stream);

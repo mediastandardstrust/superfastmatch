@@ -7,16 +7,16 @@ TEST_F(AssociationTest,ShortTest){
     .WillRepeatedly(Return(4));
   DocumentPtr doc1 = registry_.getDocumentManager()->createPermanentDocument(1,1,"text=12345This1");
   DocumentPtr doc2 = registry_.getDocumentManager()->createPermanentDocument(1,2,"text=12this2");
-  Association* association = new Association(&registry_,doc1,doc2);
-  EXPECT_EQ(1U,association->getResultCount());
-  EXPECT_EQ(4U,association->getResult(0).length);
-  EXPECT_EQ(4U,association->getResult(0).uc_length);
-  EXPECT_EQ(2U,association->getResult(0).right);
-  EXPECT_EQ(2U,association->getResult(0).uc_right);
-  EXPECT_EQ(5U,association->getResult(0).left);
-  EXPECT_EQ(5U,association->getResult(0).uc_left);
-  EXPECT_STREQ("This",association->getFromResultText(0).c_str());
-  EXPECT_STREQ("this",association->getToResultText(0).c_str());
+  Association association(&registry_,doc1,doc2);
+  EXPECT_EQ(1U,association.getResultCount());
+  EXPECT_EQ(4U,association.getResult(0).length);
+  EXPECT_EQ(4U,association.getResult(0).uc_length);
+  EXPECT_EQ(2U,association.getResult(0).right);
+  EXPECT_EQ(2U,association.getResult(0).uc_right);
+  EXPECT_EQ(5U,association.getResult(0).left);
+  EXPECT_EQ(5U,association.getResult(0).uc_left);
+  EXPECT_STREQ("This",association.getFromResultText(0).c_str());
+  EXPECT_STREQ("this",association.getToResultText(0).c_str());
 }
 
 TEST_F(AssociationTest,UTF8Test){
@@ -24,16 +24,16 @@ TEST_F(AssociationTest,UTF8Test){
     .WillRepeatedly(Return(4));
   DocumentPtr doc1 = registry_.getDocumentManager()->createPermanentDocument(1,1,"text=\xf0\x90\x8d\x86\xe6\x97\xa5\xd1\x88+This+is+a+Test");
   DocumentPtr doc2 = registry_.getDocumentManager()->createPermanentDocument(1,2,"text=Unicode\xf0\x90\x8d\x86\xe6\x97\xa5\xd1\x88");
-  Association* association = new Association(&registry_,doc1,doc2);
-  EXPECT_EQ(1U,association->getResultCount());
-  EXPECT_EQ(9U,association->getResult(0).length);
-  EXPECT_EQ(3U,association->getResult(0).uc_length);
-  EXPECT_EQ(0U,association->getResult(0).left);
-  EXPECT_EQ(0U,association->getResult(0).uc_left);
-  EXPECT_EQ(7U,association->getResult(0).right);
-  EXPECT_EQ(7U,association->getResult(0).uc_right);
-  EXPECT_STREQ("\xf0\x90\x8d\x86\xe6\x97\xa5\xd1\x88",association->getFromResultText(0).c_str());
-  EXPECT_STREQ("\xf0\x90\x8d\x86\xe6\x97\xa5\xd1\x88",association->getToResultText(0).c_str());
+  Association association(&registry_,doc1,doc2);
+  EXPECT_EQ(1U,association.getResultCount());
+  EXPECT_EQ(9U,association.getResult(0).length);
+  EXPECT_EQ(3U,association.getResult(0).uc_length);
+  EXPECT_EQ(0U,association.getResult(0).left);
+  EXPECT_EQ(0U,association.getResult(0).uc_left);
+  EXPECT_EQ(7U,association.getResult(0).right);
+  EXPECT_EQ(7U,association.getResult(0).uc_right);
+  EXPECT_STREQ("\xf0\x90\x8d\x86\xe6\x97\xa5\xd1\x88",association.getFromResultText(0).c_str());
+  EXPECT_STREQ("\xf0\x90\x8d\x86\xe6\x97\xa5\xd1\x88",association.getToResultText(0).c_str());
 }
 
 TEST_F(AssociationTest,ConstructorTest){
@@ -41,40 +41,40 @@ TEST_F(AssociationTest,ConstructorTest){
   DocumentPtr doc2 = registry_.getDocumentManager()->createPermanentDocument(1,2,"text=Always+Look+On+The+Bright+Side+Of+Life+and+this+is+a+long+sentence&title=Doc2");
   EXPECT_STREQ("This is a long sentence where the phrase Always Look On The Bright Side Of Life",doc1->getText().c_str());
   EXPECT_STREQ("Always Look On The Bright Side Of Life and this is a long sentence",doc2->getText().c_str());
-  Association* association = new Association(&registry_,doc1,doc2);
-  EXPECT_EQ(2U,association->getResultCount());
-  EXPECT_EQ(38U,association->getResult(0).length);
-  EXPECT_STREQ("Always Look On The Bright Side Of Life",association->getToResultText(0).c_str());
-  EXPECT_STREQ(association->getFromResultText(0).c_str(),association->getToResultText(0).c_str());
-  EXPECT_EQ(23U,association->getResult(1).length);
-  EXPECT_STREQ("This is a long sentence",association->getFromResultText(1).c_str());
-  EXPECT_STRCASEEQ(association->getToResultText(1).c_str(),association->getFromResultText(1).c_str());
-  EXPECT_EQ(61U,association->getTotalLength());
+  Association association(&registry_,doc1,doc2);
+  EXPECT_EQ(2U,association.getResultCount());
+  EXPECT_EQ(38U,association.getResult(0).length);
+  EXPECT_STREQ("Always Look On The Bright Side Of Life",association.getToResultText(0).c_str());
+  EXPECT_STREQ(association.getFromResultText(0).c_str(),association.getToResultText(0).c_str());
+  EXPECT_EQ(23U,association.getResult(1).length);
+  EXPECT_STREQ("This is a long sentence",association.getFromResultText(1).c_str());
+  EXPECT_STRCASEEQ(association.getToResultText(1).c_str(),association.getFromResultText(1).c_str());
+  EXPECT_EQ(61U,association.getTotalLength());
   EXPECT_EQ(2U,registry_.getDocumentDB()->count());
   EXPECT_EQ(0U,registry_.getAssociationDB()->count());
-  EXPECT_EQ(true,association->save());
+  EXPECT_EQ(true,association.save());
   EXPECT_EQ(2U,registry_.getDocumentDB()->count());
   EXPECT_EQ(2U,registry_.getAssociationDB()->count());
-  Association* association2 = new Association(&registry_,doc1,doc2);
-  EXPECT_EQ(2U,association2->getResultCount());  
-  Association* association3 = new Association(&registry_,doc2,doc1);
-  EXPECT_EQ(2U,association3->getResultCount());
-  EXPECT_STRCASEEQ(association2->getFromResultText(1).c_str(),association3->getFromResultText(1).c_str());
+  Association association2(&registry_,doc1,doc2);
+  EXPECT_EQ(2U,association2.getResultCount());  
+  Association association3(&registry_,doc2,doc1);
+  EXPECT_EQ(2U,association3.getResultCount());
+  EXPECT_STRCASEEQ(association2.getFromResultText(1).c_str(),association3.getFromResultText(1).c_str());
   EXPECT_EQ(2U,registry_.getAssociationDB()->count());
 }
 
 TEST_F(AssociationTest, WhitespaceTest){
   DocumentPtr doc1 = registry_.getDocumentManager()->createTemporaryDocument("text=++++++++++++++++++++whitespace+test+with+a+long+sentence+*+*+*+*+*+*+*+*+*+*+*+*+");
   DocumentPtr doc2 = registry_.getDocumentManager()->createTemporaryDocument("text=++++++++++++++++++++whitespace+test+with+a+long+sentence+*+*+*+*+*+*+*+*+*+*+*+*+");
-  Association* association = new Association(&registry_,doc1,doc2);
-  EXPECT_STREQ("whitespace test with a long sentence",association->getToResultText(0).c_str());
+  Association association(&registry_,doc1,doc2);
+  EXPECT_STREQ("whitespace test with a long sentence",association.getToResultText(0).c_str());
 }
 
 TEST_F(AssociationTest, EndingTest){
   DocumentPtr doc1 = registry_.getDocumentManager()->createTemporaryDocument("text=This+is+Captain+Franklin");
   DocumentPtr doc2 = registry_.getDocumentManager()->createTemporaryDocument("text=This+is+Captain+Francis");
-  Association* association = new Association(&registry_,doc1,doc2);
-  EXPECT_STREQ("This is Captain Fran",association->getToResultText(0).c_str());
+  Association association(&registry_,doc1,doc2);
+  EXPECT_STREQ("This is Captain Fran",association.getToResultText(0).c_str());
 }
 
 TEST_F(AssociationTest, ManagerPermanentTest){

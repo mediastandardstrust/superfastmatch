@@ -70,6 +70,7 @@ void BaseTest::SetUp(){
   logger_ = new Logger(false);
   templates_ = new TemplateCache();
   templates_->SetTemplateRootDirectory("templates");
+  instrumentGroup_=InstrumentGroupPtr(new InstrumentGroup("dummy",100,100));
 
   EXPECT_CALL(registry_,getDocumentManager())
     .WillRepeatedly(Return(documentManager_));
@@ -86,7 +87,7 @@ void BaseTest::SetUp(){
   EXPECT_CALL(registry_,fillStatusDictionary(NotNull()))
     .WillRepeatedly(Return());
   EXPECT_CALL(registry_,getInstrumentGroup(Ge(0)))
-    .WillRepeatedly(Return(InstrumentGroupPtr(new InstrumentGroup("dummy",100,100))));
+    .WillRepeatedly(Return(instrumentGroup_));
   api_= new Api(&registry_);
 }
     
@@ -112,6 +113,8 @@ void BaseTest::TearDown(){
   delete logger_;
   delete api_;
   delete templates_;
+  instrumentGroup_->clear();
+  instrumentGroup_.reset();
 }
 
 TestDocument::TestDocument(const char* filename){
@@ -119,9 +122,11 @@ TestDocument::TestDocument(const char* filename){
   stringstream buffer;
   buffer << file.rdbuf();
   text_=buffer.str();
-  form_text_="text=";
-  form_text_+=kyotocabinet::urlencode(text_.data(),text_.size());
   EXPECT_NE(0U,text_.size());
+  const char* encoded=kyotocabinet::urlencode(text_.data(),text_.size());
+  form_text_="text=";
+  form_text_+=encoded;
+  delete[] encoded;
 }
 
 string& TestDocument::getText(){

@@ -117,7 +117,7 @@ namespace superfastmatch{
     }
     history->slowest.insert(instrument);
     if (history->slowest.size()>slowest_size_){
-      set<InstrumentPtr>::iterator last =history->slowest.end();
+      set<InstrumentPtr>::iterator last=history->slowest.end();
       last--;
       history->slowest.erase(last);
     }
@@ -141,6 +141,12 @@ namespace superfastmatch{
      }
     }
     group->lock_.unlock();
+    lock_.unlock();
+  }
+  
+  void InstrumentGroup::clear(){
+    lock_.lock_writer();
+    instruments_.clear();
     lock_.unlock();
   }
   

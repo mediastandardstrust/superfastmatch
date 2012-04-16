@@ -10,9 +10,9 @@ TEST(PostLineTest,VarIntCodecHeaderTest){
     header.push_back(item);
   }
   unsigned char* out = new unsigned char[1024];
-  PostLineCodec* codec = new VarIntCodec();
-  EXPECT_EQ(201U,codec->encodeHeader(header,out));
-  EXPECT_EQ(201U,codec->decodeHeader(out,header));
+  VarIntCodec codec;
+  EXPECT_EQ(201U,codec.encodeHeader(header,out));
+  EXPECT_EQ(201U,codec.decodeHeader(out,header));
   EXPECT_EQ(100U,header.size());
   EXPECT_EQ(1U,header[0].doc_type);
   EXPECT_EQ(1U,header[0].length);
@@ -26,10 +26,10 @@ TEST(PostLineTest,VarIntCodecSectionTest){
   vector<uint32_t> section(values,values+sizeof(values)/sizeof(uint32_t));
   const size_t length=section.size();
   unsigned char* out = new unsigned char[8];
-  PostLineCodec* codec = new VarIntCodec();
-  EXPECT_EQ(8U,codec->encodeSection(section,out));
+  VarIntCodec codec;
+  EXPECT_EQ(8U,codec.encodeSection(section,out));
   EXPECT_EQ(length,section.size());
-  EXPECT_EQ(8U,codec->decodeSection(out,8,section,true));
+  EXPECT_EQ(8U,codec.decodeSection(out,8,section,true));
   EXPECT_EQ(length,section.size());
   EXPECT_EQ(values[0],section[0]);
   EXPECT_EQ(values[5],section[5]);
@@ -41,14 +41,14 @@ TEST(PostLineTest,GroupVarIntCodecSectionTest){
   vector<uint32_t> section(values,values+sizeof(values)/sizeof(uint32_t));
   const size_t length=section.size();
   unsigned char* out = new unsigned char[12];
-  PostLineCodec* codec = new GroupVarIntCodec();
-  EXPECT_EQ(12U,codec->encodeSection(section,out));
+  GroupVarIntCodec codec;
+  EXPECT_EQ(12U,codec.encodeSection(section,out));
   EXPECT_EQ(length,section.size());
-  EXPECT_EQ(12U,codec->decodeSection(out,12,section,true));
+  EXPECT_EQ(12U,codec.decodeSection(out,12,section,true));
   EXPECT_EQ(length,section.size());
   EXPECT_EQ(values[0],section[0]);
   EXPECT_EQ(values[5],section[5]);
-  EXPECT_EQ(12U,codec->decodeSection(out,12,section,false));
+  EXPECT_EQ(12U,codec.decodeSection(out,12,section,false));
   EXPECT_EQ(length,section.size());
   EXPECT_EQ(values[0],section[0]);
   EXPECT_EQ(uint32_t(accumulate(values,values+6,0)),section[5]);
@@ -147,6 +147,7 @@ TEST(PostLineTest,PostLineTest){
   EXPECT_EQ(0U,docids->size());
   delete[] out;
   delete[] in;
+  delete line;
 }
 
 TEST(PostLineTest,NonExistentDocumentPostLineTest){
@@ -159,6 +160,7 @@ TEST(PostLineTest,NonExistentDocumentPostLineTest){
   ASSERT_FALSE(line->deleteDocument(2,56));
   EXPECT_EQ(1U,line->getLength());
   delete[] first;
+  delete line;
 }
 
 TEST(PostLineTest,RealisticPostLineTest){
@@ -203,6 +205,7 @@ TEST(PostLineTest,RealisticPostLineTest){
   EXPECT_EQ(1U,line->getLength());
   delete[] first;
   delete[] second;
+  delete line;
 }
 
 TEST(PostLineTest,BigPostLineTest){
@@ -237,6 +240,7 @@ TEST(PostLineTest,BigPostLineTest){
   }
   delete[] forwards;
   delete[] backwards;
+  delete line;
 }
 
 TEST(PostLineTest,RandomLineSlowTest){
@@ -245,7 +249,7 @@ TEST(PostLineTest,RandomLineSlowTest){
   memset(data,0,SIZE+8);
   PostLine* line = new PostLine(SIZE);
   line->load(data);
-  for (size_t i=0;i<(1UL<<24);i++){
+  for (size_t i=0;i<(1UL<<16);i++){
     bool operation=rand()%3!=1;
     uint32_t doctype=rand()%3+1;
     uint32_t docid=rand()%(2048)+1;
@@ -261,6 +265,7 @@ TEST(PostLineTest,RandomLineSlowTest){
     EXPECT_EQ(0U,*(uint64_t*)&data[SIZE]);
   }
   delete[] data;
+  delete line;
 } 
 
 

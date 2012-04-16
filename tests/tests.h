@@ -52,6 +52,7 @@ protected:
   Logger* logger_;
   Api* api_;
   TemplateCache* templates_;
+  InstrumentGroupPtr instrumentGroup_;
   
   virtual void SetUp();
   virtual void TearDown();
@@ -70,5 +71,7 @@ public:
   string& getFormText();
   size_t getUniques(const size_t window_size);
 };
+
+typedef shared_ptr<TestDocument> TestDocumentPtr;
 
 #endif

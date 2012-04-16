@@ -102,16 +102,16 @@ TEST_F(InstrumentationTest,AssociationTest){
   TestDocument koran("fixtures/gutenberg/Religious/koran.txt");
   DocumentPtr doc1 = registry_.getDocumentManager()->createTemporaryDocument(bible.getFormText());
   DocumentPtr doc2 = registry_.getDocumentManager()->createTemporaryDocument(koran.getFormText());
-  Association* association1 = new Association(&registry_,doc1,doc2);
-  Association* association2 = new Association(&registry_,doc2,doc1);
-  association1->match();
-  association2->match();
+  Association association1(&registry_,doc1,doc2);
+  Association association2(&registry_,doc2,doc1);
+  association1.match();
+  association2.match();
   stringstream s;
-  s << *association1->getInstrument();
+  s << *association1.getInstrument();
   EXPECT_TRUE(s.str().find("Average"));
   EXPECT_TRUE(s.str().find("Total"));
   s.clear();
-  s << *association2->getInstrument();
+  s << *association2.getInstrument();
   EXPECT_TRUE(s.str().find("Average"));
   EXPECT_TRUE(s.str().find("Total"));
 }

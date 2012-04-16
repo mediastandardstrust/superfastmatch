@@ -27,7 +27,9 @@ namespace superfastmatch
   
   PostingSlot::~PostingSlot(){
     queue_.finish();
-    // This doesn't clear the pointers but we don't care because we are quitting
+    for (index_t::nonempty_iterator it=index_.nonempty_begin(),ite=index_.nonempty_end();it!=ite;++it){
+      delete[] *it;
+    }
     index_.clear();
   }
   
@@ -54,17 +56,16 @@ namespace superfastmatch
 
   bool PostingSlot::alterIndex(DocumentPtr doc,TaskPayload::TaskOperation operation){
     PostLine line(registry_->getMaxLineLength());
-    uint32_t hash;
-    uint32_t hash_mask=registry_->getHashMask();
-    uint32_t white_space=registry_->getWhiteSpaceHash()-offset_;
+    const uint32_t hash_mask=registry_->getHashMask();
+    const uint32_t white_space=registry_->getWhiteSpaceHash()-offset_;
+    const uint32_t doctype=doc->doctype();
+    const uint32_t docid=doc->docid();
+    const uint32_t hash_width=registry_->getHashWidth();
     bool white_space_seen=false;
-    uint32_t hash_width=registry_->getHashWidth();
     // Where hash width is below 32 we will get duplicates per document
     // We discard them with a no operation 
     for (hashes_vector::const_iterator it=doc->getPostingHashes().begin(),ite=doc->getPostingHashes().end();it!=ite;++it){
-      hash = ((*it>>hash_width)^(*it&hash_mask))-offset_;
-      uint32_t doctype=doc->doctype();
-      uint32_t docid=doc->docid();
+      uint32_t hash = ((*it>>hash_width)^(*it&hash_mask))-offset_;
       if (hash<span_){
         if (hash==white_space){
           if (white_space_seen){
@@ -79,8 +80,9 @@ namespace superfastmatch
           entry = new unsigned char[8];
           memset(entry,0,8);
           index_.set(hash,entry);
+        }else{
+          entry=index_.unsafe_get(hash);            
         }
-        entry=index_.unsafe_get(hash);
         assert(entry);
         line.load(entry);
         size_t incoming_length=line.getLength();
@@ -91,7 +93,9 @@ namespace superfastmatch
               size_t outgoing_length=line.getLength();
               if ((outgoing_length/8)>(incoming_length/8)){
                 delete[] entry;
-                entry = new unsigned char[((outgoing_length/8)+1)*8];
+                const size_t SIZE=((outgoing_length/8)+1)*8;
+                entry = new unsigned char[SIZE];
+                memset(entry,0,SIZE);
                 index_.set(hash,entry);
               }
               line.commit(entry); 
