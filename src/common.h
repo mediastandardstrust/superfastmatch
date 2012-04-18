@@ -67,6 +67,11 @@ namespace superfastmatch{
   
   //Global utility functions
   
+  inline bool needsAllocation(const size_t incoming, const size_t outgoing, const size_t block_size, size_t& block){
+    block=(((outgoing-1)/block_size)+1)*block_size;
+    return block!=(((incoming-1)/block_size)+1)*block_size;
+  }
+    
   #define likely(x) __builtin_expect(!!(x), 1)
   #define unlikely(x) __builtin_expect(!!(x), 0)
   

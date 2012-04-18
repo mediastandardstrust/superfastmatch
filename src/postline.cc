@@ -11,7 +11,7 @@ namespace superfastmatch
   // Cursors and vectors seem to be faster.
   
   PostLine::PostLine(uint32_t max_length):
-  codec_(new GroupVarIntCodec()),
+  codec_(new VarIntCodec()),
   temp_header_(new unsigned char[max_length]),
   temp_sections_(new unsigned char[max_length]),
   old_header_length_(0),
@@ -95,19 +95,23 @@ namespace superfastmatch
     }
     updated_section_=doc_type;
     size_t old_sections_length=old_header_length_;
+    vector<PostLineHeader>::iterator emptyHeader=header_->end();
     for (vector<PostLineHeader>::iterator it=header_->begin(),ite=header_->end();it!=ite;++it){
       if (it->doc_type==updated_section_){
         old_sections_length+=header->length;
         header->length=codec_->encodeSection(section_,temp_sections_+temp_sections_length_);
         temp_sections_length_+=header->length;
         if (header->length==0){
-          header_->erase(header);
+          emptyHeader=it;
         }
       }else{
         memcpy(temp_sections_+temp_sections_length_,start_+old_sections_length,it->length);
         temp_sections_length_+=it->length;
         old_sections_length+=it->length;
       }
+    }
+    if(emptyHeader!=header_->end()){
+      header_->erase(emptyHeader); 
     }
     temp_header_length_=codec_->encodeHeader(*header_,temp_header_);
     return true;

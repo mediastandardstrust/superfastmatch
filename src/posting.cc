@@ -56,6 +56,7 @@ namespace superfastmatch
 
   bool PostingSlot::alterIndex(DocumentPtr doc,TaskPayload::TaskOperation operation){
     PostLine line(registry_->getMaxLineLength());
+    const size_t BLOCK_SIZE=8;
     const uint32_t hash_mask=registry_->getHashMask();
     const uint32_t white_space=registry_->getWhiteSpaceHash()-offset_;
     const uint32_t doctype=doc->doctype();
@@ -74,38 +75,55 @@ namespace superfastmatch
           }
           white_space_seen=true;
         }
-        unsigned char* entry=NULL;
         index_lock_.lock_writer();
-        if (!index_.test(hash)){
-          entry = new unsigned char[8];
-          memset(entry,0,8);
-          index_.set(hash,entry);
-        }else{
-          entry=index_.unsafe_get(hash);            
-        }
-        assert(entry);
-        line.load(entry);
-        size_t incoming_length=line.getLength();
         switch (operation){
-          case TaskPayload::AddDocument:
-            if((incoming_length+15)<=(registry_->getMaxLineLength())){
-              line.addDocument(doctype,docid);
-              size_t outgoing_length=line.getLength();
-              if ((outgoing_length/8)>(incoming_length/8)){
-                delete[] entry;
-                const size_t SIZE=((outgoing_length/8)+1)*8;
-                entry = new unsigned char[SIZE];
-                memset(entry,0,SIZE);
+          case TaskPayload::AddDocument:{
+              unsigned char* entry=NULL;
+              if (!index_.test(hash)){
+                entry = new unsigned char[BLOCK_SIZE]();
                 index_.set(hash,entry);
+              }else{
+                entry=index_.unsafe_get(hash);            
               }
-              line.commit(entry); 
+              assert(entry);
+              line.load(entry);
+              const size_t incoming_length=line.getLength();
+              if((incoming_length+15)<=(registry_->getMaxLineLength())){
+                line.addDocument(doctype,docid);
+                size_t new_size;
+                if (needsAllocation(incoming_length,line.getLength(),BLOCK_SIZE,new_size)){
+                  delete[] entry;
+                  entry = new unsigned char[new_size]();
+                  index_.set(hash,entry);
+                }
+                line.commit(entry); 
+              }
             }
             break;
-          case TaskPayload::DeleteDocument:
-            if (line.deleteDocument(doctype,docid)){
-              line.commit(entry);              
+          case TaskPayload::DeleteDocument:{
+              if (index_.test(hash)){
+                unsigned char* entry=index_.unsafe_get(hash);
+                assert(entry);
+                line.load(entry);
+                const size_t incoming_length=line.getLength();
+                if (line.deleteDocument(doctype,docid)){
+                  const size_t outgoing_length=line.getLength();
+                  if (outgoing_length==1){
+                    delete[] entry;
+                    index_.erase(hash);
+                  }else{
+                    size_t new_size;
+                    if (needsAllocation(incoming_length,line.getLength(),BLOCK_SIZE,new_size)){
+                      delete[] entry;
+                      entry = new unsigned char[new_size]();
+                      index_.set(hash,entry);
+                    }
+                    line.commit(entry);
+                  }
+                }
+              }
+              break;
             }
-            break;
         }
         index_lock_.unlock();
       }

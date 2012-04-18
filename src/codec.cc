@@ -60,6 +60,8 @@ namespace superfastmatch
   // VarIntCodec implementation
   // --------------------------
 
+  VarIntCodec::~VarIntCodec(){};
+
   size_t VarIntCodec::encodeHeader(const vector<PostLineHeader>& header,unsigned char* start){
     size_t offset=kc::writevarnum(start,header.size());
     for (size_t i=0;i<header.size();i++){
@@ -116,6 +118,8 @@ namespace superfastmatch
   // http://www.ir.uwaterloo.ca/book/addenda-06-index-compression.html#groupvarint
   // --------------------------
   
+  GroupVarIntCodec::~GroupVarIntCodec(){};
+  
   size_t GroupVarIntCodec::encodeHeader(const vector<PostLineHeader>& header,unsigned char* start){
     unsigned char* cursor=EncodeVarint32(start,header.size());
     for (size_t i=0;i<header.size();i++){
@@ -161,7 +165,7 @@ namespace superfastmatch
     if (padding<4){
       section.erase(section.end()-padding,section.end());
     }
-    return offset-start;
+    return offset-start;   
   }
   
   size_t GroupVarIntCodec::decodeSection(const unsigned char* start, const size_t length, vector<uint32_t>& section,bool asDeltas){

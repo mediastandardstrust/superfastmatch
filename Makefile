@@ -19,7 +19,7 @@ MAIN = src/superfastmatch.o
 INCLUDES = -Isrc -Itests -I/usr/local/ -Itests/utils/
 #LDFLAGS = -Wl,-no_pie
 CXXFLAGS = -Wall -Wextra -funsigned-char -m64 -mtune=native -g -O3
-PROFILEFLAGS = -D_GLIBCXX_PROFILE -D_GLIBCXX_PROFILE_MAX_WARN_COUNT=10000
+PROFILEFLAGS = -O1
 LIBS = -lstdc++ -lz -lm -lc -lpthread -lkyototycoon -lkyotocabinet -lctemplate -lgflags -llzo2 -lre2
 CXX = g++ $(INCLUDES)
 #CXX = icc $(INCLUDES)
@@ -78,7 +78,8 @@ production : LDFLAGS += -ltcmalloc
 production : all
 
 profile : CXXFLAGS += $(PROFILEFLAGS)
-profile : all
+profile : tests/tests
+	valgrind --suppressions=valgrind.suppressions --leak-check=full --track-origins=yes --dsymutil=yes tests/tests
 
 debug : CXXFLAGS += -O0 
 debug : all

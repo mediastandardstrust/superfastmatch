@@ -20,6 +20,7 @@ namespace superfastmatch
 
   class PostLineCodec{
   public:
+    virtual ~PostLineCodec(){};
     virtual size_t encodeHeader(const vector<PostLineHeader>& header,unsigned char* start)=0;
     virtual size_t decodeHeader(const unsigned char* start, vector<PostLineHeader>& header)=0;
     virtual size_t encodeSection(vector<uint32_t>& section,unsigned char* start)=0;
@@ -28,6 +29,7 @@ namespace superfastmatch
   
   class VarIntCodec: public PostLineCodec{
   public:
+    virtual ~VarIntCodec();
     size_t encodeHeader(const vector<PostLineHeader>& header,unsigned char* start);
     size_t decodeHeader(const unsigned char* start, vector<PostLineHeader>& header);
     size_t encodeSection(vector<uint32_t>& section,unsigned char* start);
@@ -36,6 +38,7 @@ namespace superfastmatch
   
   class GroupVarIntCodec: public PostLineCodec{
   public:
+    virtual ~GroupVarIntCodec();
     size_t encodeHeader(const vector<PostLineHeader>& header,unsigned char* start);
     size_t decodeHeader(const unsigned char* start, vector<PostLineHeader>& header);
     size_t encodeSection(vector<uint32_t>& section,unsigned char* start);

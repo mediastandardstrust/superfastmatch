@@ -1,6 +1,32 @@
 #include <tests.h>
 #include <vector>
 
+TEST(PostLineTest,AllocationTest){
+  size_t block;
+  EXPECT_FALSE(needsAllocation(5,6,8,block));
+  EXPECT_EQ(8U,block);
+  EXPECT_FALSE(needsAllocation(6,7,8,block));
+  EXPECT_EQ(8U,block);
+  EXPECT_FALSE(needsAllocation(7,8,8,block));
+  EXPECT_EQ(8U,block);
+  EXPECT_FALSE(needsAllocation(8,8,8,block));
+  EXPECT_EQ(8U,block);
+  EXPECT_TRUE(needsAllocation(8,9,8,block));
+  EXPECT_EQ(16U,block);
+  EXPECT_TRUE(needsAllocation(0,9,8,block));
+  EXPECT_EQ(16U,block);
+  EXPECT_TRUE(needsAllocation(1,9,8,block));
+  EXPECT_EQ(16U,block);
+  EXPECT_TRUE(needsAllocation(19,1,8,block));
+  EXPECT_EQ(8U,block);
+  EXPECT_TRUE(needsAllocation(19,0,8,block));
+  EXPECT_EQ(0U,block);
+  EXPECT_TRUE(needsAllocation(8,0,8,block));
+  EXPECT_EQ(0U,block);
+  EXPECT_TRUE(needsAllocation(7,0,8,block));
+  EXPECT_EQ(0U,block);
+}
+
 TEST(PostLineTest,VarIntCodecHeaderTest){
   std::vector<PostLineHeader> header;
   PostLineHeader item;
@@ -40,7 +66,7 @@ TEST(PostLineTest,GroupVarIntCodecSectionTest){
   const uint32_t values[] = {12,8,56,2,12998,3434};
   vector<uint32_t> section(values,values+sizeof(values)/sizeof(uint32_t));
   const size_t length=section.size();
-  unsigned char* out = new unsigned char[12];
+  unsigned char* out = new unsigned char[16];
   GroupVarIntCodec codec;
   EXPECT_EQ(12U,codec.encodeSection(section,out));
   EXPECT_EQ(length,section.size());
@@ -174,18 +200,18 @@ TEST(PostLineTest,RealisticPostLineTest){
   // This is the single 0 marking the end of the header!
   EXPECT_EQ(1U,line->getLength());
   line->addDocument(2,1);
-  EXPECT_EQ(8U,line->getLength());
+  EXPECT_EQ(4U,line->getLength());
   line->commit(first);
-  EXPECT_EQ(8U,line->getLength());
+  EXPECT_EQ(4U,line->getLength());
   line->addDocument(3,97);
-  EXPECT_EQ(15U,line->getLength());
+  EXPECT_EQ(7U,line->getLength());
   line->commit(first);
-  EXPECT_EQ(15U,line->getLength());
+  EXPECT_EQ(7U,line->getLength());
   line->addDocument(4,65);
-  EXPECT_EQ(22U,line->getLength());
+  EXPECT_EQ(10U,line->getLength());
   line->commit(second);
   memset(first,0,32);
-  EXPECT_EQ(22U,line->getLength());
+  EXPECT_EQ(10U,line->getLength());
   line->addDocument(4,64);
   line->commit(second);
   docids=line->getDocIds(2);
@@ -196,9 +222,15 @@ TEST(PostLineTest,RealisticPostLineTest){
   EXPECT_THAT(*docids,ElementsAre(64,65));
   line->deleteDocument(2,1);
   line->commit(second);
+  EXPECT_EQ(8U,line->getLength());
+  docids=line->getDocIds(2);
+  EXPECT_EQ(0U,docids->size());
   line->deleteDocument(3,97);
+  EXPECT_EQ(5U,line->getLength());
   line->commit(second);
   line->deleteDocument(4,64);
+  docids=line->getDocIds(4);
+  EXPECT_EQ(1U,docids->size());
   line->commit(second);
   line->deleteDocument(4,65);
   line->commit(first);
@@ -244,25 +276,38 @@ TEST(PostLineTest,BigPostLineTest){
 }
 
 TEST(PostLineTest,RandomLineSlowTest){
+  unordered_map<uint32_t,set<uint32_t> > control;
   const size_t SIZE=4096;
   unsigned char* data = new unsigned char[SIZE+8];
   memset(data,0,SIZE+8);
   PostLine* line = new PostLine(SIZE);
   line->load(data);
-  for (size_t i=0;i<(1UL<<16);i++){
+  for (size_t i=0;i<(1UL<<18);i++){
     bool operation=rand()%3!=1;
-    uint32_t doctype=rand()%3+1;
-    uint32_t docid=rand()%(2048)+1;
+    uint32_t doctype=rand()%10+1;
+    uint32_t docid=rand()%(4096)+1;
     if (operation){
         if (line->getLength()<(SIZE-15)){
-          line->addDocument(doctype,docid); 
+          line->addDocument(doctype,docid);
+          control[doctype].insert(docid);
         }
       }else{
         line->deleteDocument(doctype,docid);
+        control[doctype].erase(docid);
+        if (control[doctype].size()==0){
+          control.erase(doctype);
+        }
       }
     EXPECT_EQ(0U,*(uint64_t*)&data[SIZE]);
     line->commit(data);
     EXPECT_EQ(0U,*(uint64_t*)&data[SIZE]);
+    line->load(data);
+  }
+  vector<PostLineHeader>* headers=line->load(data);
+  for (vector<PostLineHeader>::const_iterator it=headers->begin(),ite=headers->end();it!=ite;++it){
+    EXPECT_EQ(it->length,control[it->doc_type].size());
+    vector<uint32_t>* docids=line->getDocIds(it->doc_type);
+    EXPECT_THAT(control[it->doc_type],ContainerEq(set<uint32_t>(docids->begin(),docids->end())));
   }
   delete[] data;
   delete line;

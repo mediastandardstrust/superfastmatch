@@ -245,7 +245,7 @@ namespace superfastmatch
           if ((next->left-first->left)==counter){
              positions_set::iterator next_right=next->right.find(first_right+counter);
              if (next_right!=next->right.end()){
-                next->right.erase(*next_right);
+                next->right.erase(next_right);
                 counter++;
              }
              else{
