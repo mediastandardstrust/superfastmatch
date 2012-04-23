@@ -74,8 +74,7 @@ TEST_F(DocumentQueryTest,EndToEndTest){
   testQuery(&registry_,"1-2","1-2","order_by=-title",6,6,true,"","title",true,limit);
   testQuery(&registry_,"1-2","1-2","limit=2",2,2,true,"","doctype",false,2);
   testQuery(&registry_,"1-2","1-2","cursor=Final+test&order_by=title&limit=50",2,2,true,"Final test","title",false,50);
-  testQuery(&registry_,"1-2","1-2","cursor=Final+test&order_by=-title&limit=50",6,6,true,"Final test","title",true,50);
-  testQuery(&registry_,"1-2","1-2","cursor=Final+test&order_by=-title&limit=50",6,6,true,"Final test","title",true,50);
+  testQuery(&registry_,"1-2","1-2","cursor=Final+test&order_by=-title&limit=50",4,4,true,"Final test","title",true,50);
   testQuery(&registry_,"","","limit=10000&order_by=-title",6,6,true,"","title",true,10000);
   testQuery(&registry_,"1","","",3,6,true,"","doctype",false,limit);
 }

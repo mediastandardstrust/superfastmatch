@@ -182,7 +182,7 @@ namespace superfastmatch
   const string& DocumentQuery::getPrevious(){
     if (previous_.empty() && getSourceDocPairs().size()>0){
       string cursor=getCursor(getSourceDocPairs().front());
-      vector<DocPair> pairs=getDocPairs(source_,order_by_,cursor,limit_+2,!desc_);
+      vector<DocPair> pairs=getDocPairs(source_,order_by_,cursor,limit_+1,!desc_);
       if (pairs.size()>0){
         previous_=getCommand(pairs.back());
       }else{
@@ -242,11 +242,13 @@ namespace superfastmatch
     uint64_t count=0;
     string start=(cursor.size()==0)?order_by:(order_by+parseCursor(cursor));
     if (desc){
-      for (size_t i=start.size();i>0;i--){
-        if (start[i-1]!=255){
-          start.replace(i-1,1,1,start[i-1]+1);
-          break;
-        }
+      if(cursor.size()==0){
+        for (size_t i=start.size();i>0;i--){
+          if (start[i-1]!=255){
+            start.replace(i-1,1,1,start[i-1]+1);
+            break;
+          }
+        }        
       }
       if (not cur->jump_back(start)){
         cur->jump_back();
