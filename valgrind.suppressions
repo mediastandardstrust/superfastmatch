@@ -1,0 +1,21 @@
+{
+   OS X pthreads
+   Memcheck:Cond
+   fun:pthread_rwlock_init
+}
+{
+   ctemplate
+   Memcheck:Leak
+   fun:malloc
+   fun:_Znwm
+   fun:_ZNSs4_Rep9_S_createEmmRKSaIcE
+   fun:_ZNSs12_S_constructIPKcEEPcT_S3_RKSaIcESt20forward_iterator_tag
+   fun:_ZNSsC2EPKcRKSaIcE
+   fun:_ZN9ctemplate16TemplateNamelist16RegisterTemplateEPKc
+}
+{
+   globals
+   Memcheck:Leak
+   fun:malloc
+   fun:_GLOBAL__I_a
+}
