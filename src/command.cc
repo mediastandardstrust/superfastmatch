@@ -103,6 +103,10 @@ namespace superfastmatch{
   }
   
   bool Command::addDocument(){
+    if (getPayload().size()==0){
+      assert(changeStatus(Failed));
+      return false;
+    }
     DocumentPtr doc = registry_->getDocumentManager()->createPermanentDocument(getDocType(),getDocId(),getPayload(),DocumentManager::TEXT|DocumentManager::POSTING_HASHES);
     if (doc){
       registry_->getPostings()->addDocument(doc);

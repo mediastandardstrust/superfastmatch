@@ -44,7 +44,7 @@ namespace superfastmatch{
       if((previousAction!=NullAction)&&(previousAction!=command->getAction())){
         registry_->getPostings()->finishTasks();
       }
-      if (not command->execute()){
+      if (not command->execute() && command->getStatus()!=Failed){
         assert(command->changeStatus(Queued));
       }else{
         count++;
