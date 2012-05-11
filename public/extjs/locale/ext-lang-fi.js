@@ -92,7 +92,7 @@ Ext.onReady(function() {
         Ext.util.Format.date = function(v, format) {
             if (!v) return "";
             if (!(v instanceof Date)) v = new Date(Date.parse(v));
-            return v.dateFormat(format || "j.n.Y");
+            return Ext.Date.format(v, format || "j.n.Y");
         };
     }
 

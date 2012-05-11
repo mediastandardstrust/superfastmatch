@@ -15,10 +15,17 @@
 .#{$prefix}clear {
     overflow: hidden;
     clear: both;
-    height: 0;
-    width: 0;
     font-size: 0;
     line-height: 0;
+    display: table;
+}
+
+.#{$prefix}strict .#{$prefix}ie7 .#{$prefix}clear {
+    // In IE7 strict the clear element has to have both a height and width of 0, otherwise the height of its parent element gets
+    // increased by 1px.  We cannot simply add the zero height/width for all browsers, because in IE quirks the height
+    // of the clear element's parent element gets increased by 1px if the clear element has either height:0 or width:0.
+    height: 0;
+    width: 0;
 }
 
 .#{$prefix}layer {
@@ -43,7 +50,9 @@
     visibility:hidden !important;
 }
 
-.#{$prefix}item-disabled {
+.#{$prefix}item-disabled .#{$prefix}form-item-label,
+.#{$prefix}item-disabled .#{$prefix}form-field,
+.#{$prefix}item-disabled .#{$prefix}form-cb-label {
     @include opacity(0.3);
 }
 
@@ -53,7 +62,10 @@
 
 .#{$prefix}hidden,
 .#{$prefix}hide-offsets {
+    // to deal with inline elements that can't be position:absolute
     display: block !important;
+    // ensure the browser disallows tabbing into this element
+    visibility: hidden !important;
     position: absolute!important;
     left: -10000px!important;
     top: -10000px!important;
@@ -221,4 +233,23 @@
 
 .#{$prefix}box-blue .#{$prefix}box-mr {
     background-image: theme-background-image($theme-name, 'box/r-blue.gif');
+}
+
+.#{$prefix}container {
+    // zoom:1 prevents margins of child elements from collapsing in old IE, this is needed to prevent
+    // the top margin of the first child element from collapsing.
+    zoom: 1;
+    // In modern browsers, we can use a pseudo :before element to prevent the top margin of the first child element from collapsing
+    &:before {
+        content: "";
+        clear: both;
+        display: table;
+    }
+}
+// when the container class is used on a table, tbody, or tr (form layout),
+// inserting content using the :before selector can cause problems
+table.#{$prefix}container:before,
+tbody.#{$prefix}container:before,
+tr.#{$prefix}container:before {
+    display: none;
 }

@@ -151,6 +151,12 @@
         cursor: pointer;
         cursor: hand;
     }
+    
+    .#{$prefix}item-disabled {
+        .#{$prefix}trigger-noedit, .#{$prefix}form-trigger {
+          cursor: auto;
+        }
+    }
 
 
     .#{$prefix}form-clear-trigger {

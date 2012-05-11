@@ -102,8 +102,9 @@ Ext.onReady(function() {
         format: "Y/m/d",
         startDay: 0,
         ariaTitle: '{0}',
-        ariaTitleDateFormat: 'y\u5e74m\u6708d\u65e5',
-        longDayFormat: 'y\u5e74m\u6708d\u65e5'
+        ariaTitleDateFormat: 'Y\u5e74m\u6708d\u65e5',
+        longDayFormat: 'Y\u5e74m\u6708d\u65e5',
+        monthYearFormat: 'Y\u5e74m\u6708'
     });
 
     Ext.define("Ext.locale.ja.picker.Month", {

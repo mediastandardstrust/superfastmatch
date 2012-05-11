@@ -56,7 +56,7 @@ Ext.onReady(function() {
             return Ext.Date.monthNumbers[name.substring(0, 1).toUpperCase() + name.substring(1, 3).toLowerCase()];
         };
 
-        Ext.Date.dayNames = ["Domingo", "Lunes", "Martes", "Mi&#233;rcoles", "Jueves", "Viernes", "S&#225;bado"];
+        Ext.Date.dayNames = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 
         Ext.Date.getShortDayName = function(day) {
             if (day == 3) return "Mié";
@@ -71,7 +71,7 @@ Ext.onReady(function() {
         Ext.MessageBox.buttonText = {
             ok: "Aceptar",
             cancel: "Cancelar",
-            yes: "S&#237;",
+            yes: "Sí",
             no: "No"
         };
     }
@@ -89,15 +89,15 @@ Ext.onReady(function() {
     Ext.define("Ext.locale.es.picker.Date", {
         override: "Ext.picker.Date",
         todayText: "Hoy",
-        minText: "Esta fecha es anterior a la fecha m&#237;nima",
-        maxText: "Esta fecha es posterior a la fecha m&#225;xima",
+        minText: "Esta fecha es anterior a la fecha mínima",
+        maxText: "Esta fecha es posterior a la fecha máxima",
         disabledDaysText: "",
         disabledDatesText: "",
         monthNames: Ext.Date.monthNames,
         dayNames: Ext.Date.dayNames,
         nextText: 'Mes Siguiente (Control+Right)',
         prevText: 'Mes Anterior (Control+Left)',
-        monthYearText: 'Seleccione un mes (Control+Up/Down para desplazar el a&#241;o)',
+        monthYearText: 'Seleccione un mes (Control+Up/Down para desplazar el año)',
         todayTip: "{0} (Barra espaciadora)",
         format: "d/m/Y",
         startDay: 1
@@ -111,12 +111,12 @@ Ext.onReady(function() {
 
     Ext.define("Ext.locale.es.toolbar.Paging", {
         override: "Ext.PagingToolbar",
-        beforePageText: "P&#225;gina",
+        beforePageText: "Página",
         afterPageText: "de {0}",
-        firstText: "Primera p&#225;gina",
-        prevText: "P&#225;gina anterior",
-        nextText: "P&#225;gina siguiente",
-        lastText: "Última p&#225;gina",
+        firstText: "Primera página",
+        prevText: "Página anterior",
+        nextText: "Página siguiente",
+        lastText: "Última página",
         refreshText: "Actualizar",
         displayMsg: "Mostrando {0} - {1} de {2}",
         emptyMsg: 'Sin datos para mostrar'
@@ -124,13 +124,13 @@ Ext.onReady(function() {
 
     Ext.define("Ext.locale.es.form.field.Base", {
         override: "Ext.form.field.Base",
-        invalidText: "El valor en este campo es inv&#225;lido"
+        invalidText: "El valor en este campo es inválido"
     });
 
     Ext.define("Ext.locale.es.form.field.Text", {
         override: "Ext.form.field.Text",
-        minLengthText: "El tama&#241;o m&#237;nimo para este campo es de {0}",
-        maxLengthText: "El tama&#241;o m&#225;ximo para este campo es de {0}",
+        minLengthText: "El tamaño mínimo para este campo es de {0}",
+        maxLengthText: "El tamaño máximo para este campo es de {0}",
         blankText: "Este campo es obligatorio",
         regexText: "",
         emptyText: null
@@ -140,9 +140,9 @@ Ext.onReady(function() {
         override: "Ext.form.field.Number",
         decimalSeparator: ",",
         decimalPrecision: 2,
-        minText: "El valor m&#237;nimo para este campo es de {0}",
-        maxText: "El valor m&#225;ximo para este campo es de {0}",
-        nanText: "{0} no es un n&#250;mero v&#225;lido"
+        minText: "El valor mínimo para este campo es de {0}",
+        maxText: "El valor máximo para este campo es de {0}",
+        nanText: "{0} no es un número válido"
     });
 
     Ext.define("Ext.locale.es.form.field.Date", {
@@ -151,7 +151,7 @@ Ext.onReady(function() {
         disabledDatesText: "Deshabilitado",
         minText: "La fecha para este campo debe ser posterior a {0}",
         maxText: "La fecha para este campo debe ser anterior a {0}",
-        invalidText: "{0} no es una fecha v&#225;lida - debe tener el formato {1}",
+        invalidText: "{0} no es una fecha válida - debe tener el formato {1}",
         format: "d/m/Y",
         altFormats: "d/m/Y|d-m-y|d-m-Y|d/m|d-m|dm|dmy|dmY|d|Y-m-d"
     });
@@ -167,10 +167,10 @@ Ext.onReady(function() {
 
     if (exists('Ext.form.field.VTypes')) {
         Ext.apply(Ext.form.field.VTypes, {
-            emailText: 'Este campo debe ser una direcci&#243;n de correo electr&#243;nico con el formato "usuario@dominio.com"',
+            emailText: 'Este campo debe ser una dirección de correo electrónico con el formato "usuario@dominio.com"',
             urlText: 'Este campo debe ser una URL con el formato "http:/' + '/www.dominio.com"',
-            alphaText: 'Este campo s&#243;lo debe contener letras y _',
-            alphanumText: 'Este campo s&#243;lo debe contener letras, n&#250;meros y _'
+            alphaText: 'Este campo sólo debe contener letras y _',
+            alphanumText: 'Este campo sólo debe contener letras, números y _'
         });
     }
 
@@ -186,8 +186,8 @@ Ext.onReady(function() {
                     cls: Ext.baseCSSPrefix + 'html-editor-tip'
                 },
                 italic: {
-                    title: 'It&#225;lica (Ctrl+I)',
-                    text: 'Transforma el texto seleccionado en It&#225;licas.',
+                    title: 'Itálica (Ctrl+I)',
+                    text: 'Transforma el texto seleccionado en Itálicas.',
                     cls: Ext.baseCSSPrefix + 'html-editor-tip'
                 },
                 underline: {
@@ -197,12 +197,12 @@ Ext.onReady(function() {
                 },
                 increasefontsize: {
                     title: 'Aumentar la fuente',
-                    text: 'Aumenta el tama&#241;o de la fuente',
+                    text: 'Aumenta el tamaño de la fuente',
                     cls: Ext.baseCSSPrefix + 'html-editor-tip'
                 },
                 decreasefontsize: {
                     title: 'Reducir la fuente',
-                    text: 'Reduce el tama&#241;o de la fuente.',
+                    text: 'Reduce el tamaño de la fuente.',
                     cls: Ext.baseCSSPrefix + 'html-editor-tip'
                 },
                 backcolor: {
@@ -231,8 +231,8 @@ Ext.onReady(function() {
                     cls: Ext.baseCSSPrefix + 'html-editor-tip'
                 },
                 insertunorderedlist: {
-                    title: 'Lista de vi&#241;etas',
-                    text: 'Inicia una lista con vi&#241;etas.',
+                    title: 'Lista de viñetas',
+                    text: 'Inicia una lista con viñetas.',
                     cls: Ext.baseCSSPrefix + 'html-editor-tip'
                 },
                 insertorderedlist: {
@@ -246,8 +246,8 @@ Ext.onReady(function() {
                     cls: Ext.baseCSSPrefix + 'html-editor-tip'
                 },
                 sourceedit: {
-                    title: 'C&#243;digo Fuente',
-                    text: 'Pasar al modo de edici&#243;n de c&#243;digo fuente.',
+                    title: 'Código Fuente',
+                    text: 'Pasar al modo de edición de código fuente.',
                     cls: Ext.baseCSSPrefix + 'html-editor-tip'
                 }
             }
@@ -279,18 +279,18 @@ Ext.onReady(function() {
         override: "Ext.form.field.Time",
         minText: "La hora en este campo debe ser igual o posterior a {0}",
         maxText: "La hora en este campo debe ser igual o anterior a {0}",
-        invalidText: "{0} no es una hora v&#225;lida",
+        invalidText: "{0} no es una hora válida",
         format: "g:i A",
         altFormats: "g:ia|g:iA|g:i a|g:i A|h:i|g:i|H:i|ga|ha|gA|h a|g a|g A|gi|hi|gia|hia|g|H"
     });
 
     Ext.define("Ext.locale.es.form.CheckboxGroup", {
         override: "Ext.form.CheckboxGroup",
-        blankText: "Debe seleccionar al menos un &#233;tem de este grupo"
+        blankText: "Debe seleccionar al menos un étem de este grupo"
     });
 
     Ext.define("Ext.locale.es.form.RadioGroup", {
         override: "Ext.form.RadioGroup",
-        blankText: "Debe seleccionar un &#233;tem de este grupo"
+        blankText: "Debe seleccionar un étem de este grupo"
     });
 });

@@ -207,7 +207,7 @@
         }
     }
 
-    .#{$prefix}tree-panel .#{$prefix}grid-editor-on-text-node {
+    .#{$prefix}grid-editor-on-text-node {
         .#{$prefix}form-text {
             // specify padding left and padding right individually since we don't want to override padding-bottom (which can vary)
             padding-left: $grid-cell-treecolumn-editor-field-padding-horizontal;
@@ -215,13 +215,13 @@
         }
     }
     @if $include-ie {
-        .#{$prefix}ie .#{$prefix}tree-panel .#{$prefix}grid-editor-on-text-node .#{$prefix}form-text {
+        .#{$prefix}ie .#{$prefix}grid-editor-on-text-node .#{$prefix}form-text {
             padding-left: $grid-cell-treecolumn-editor-field-padding-horizontal + 1px;
             padding-right: $grid-cell-treecolumn-editor-field-padding-horizontal + 1px;
         }
     }
     @if $include-opera {
-        .#{$prefix}opera .#{$prefix}tree-panel .#{$prefix}grid-editor-on-text-node .#{$prefix}form-text {
+        .#{$prefix}opera .#{$prefix}grid-editor-on-text-node .#{$prefix}form-text {
             padding-left: $grid-cell-treecolumn-editor-field-padding-horizontal + 1px;
             padding-right: $grid-cell-treecolumn-editor-field-padding-horizontal + 1px;
         }

@@ -49,17 +49,25 @@ Ext.onReady(function() {
 
         Ext.Date.monthNumbers = {
             "Janvier": 0,
+            "Janv": 0,
             "Février": 1,
+            "Févr": 1,
+            "Mars": 2,
             "Mars": 2,
             "Avril": 3,
+            "Avr": 3,
             "Mai": 4,
             "Juin": 5,
             "Juillet": 6,
             "Août": 7,
             "Septembre": 8,
+            "Sept": 8,
             "Octobre": 9,
+            "Oct": 9,
             "Novembre": 10,
-            "Décembre": 11
+            "Nov": 10,
+            "Décembre": 11,
+            "Déc": 11
         };
 
         Ext.Date.getMonthNumber = function(name) {

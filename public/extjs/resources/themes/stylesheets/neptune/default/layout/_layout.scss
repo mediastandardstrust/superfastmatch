@@ -4,7 +4,7 @@ $toolbar-scroll-border-color: #8db2e3 !default;
 
 @mixin extjs-layout {
     .#{$prefix}docked {
-        position: absolute;
+        position: absolute !important;
         z-index: 1;
     }
 
@@ -107,7 +107,7 @@ $toolbar-scroll-border-color: #8db2e3 !default;
     }
 
     .#{$prefix}abs-layout-item {
-        position: absolute;
+        position: absolute !important;
     }
 
     .#{$prefix}fit-item {

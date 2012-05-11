@@ -237,13 +237,12 @@ Ext.onReady(function() {
         showGroupsText: '그룹으로 보여주기'
 
     });
-}
 
-Ext.define("Ext.locale.ko.grid.PropertyColumnModel", {
-    override: "Ext.grid.PropertyColumnModel",
-    nameText: "항목",
-    valueText: "값",
-    dateFormat: "m/j/Y"
-});
+    Ext.define("Ext.locale.ko.grid.PropertyColumnModel", {
+        override: "Ext.grid.PropertyColumnModel",
+        nameText: "항목",
+        valueText: "값",
+        dateFormat: "m/j/Y"
+    });
 
 });

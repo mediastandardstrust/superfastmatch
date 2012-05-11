@@ -1,13 +1,13 @@
 @mixin extjs-layout {
-    .#{$prefix}docked {
-        position: absolute;
-        z-index: 1;
-    }
-    
     /**
       * Dock Layouts
       * @todo move this somewhere else?
       */
+    .#{$prefix}docked {
+        position: absolute !important;
+        z-index: 1;
+    }
+    
     .#{$prefix}docked-top {
         border-bottom-width: 0 !important;
     }
@@ -67,6 +67,11 @@
         zoom: 1;
     }
 
+    .#{$prefix}border-layout-ct {
+        background-color: $border-layout-ct-background;
+        position: relative;
+    }
+
     .#{$prefix}overflow-hidden {
         overflow:hidden !important;
     }
@@ -80,15 +85,11 @@
     }
 
     .#{$prefix}abs-layout-item {
-        position: absolute;
+        position: absolute !important;
     }
 
     .#{$prefix}fit-item {
         position: relative;
-    }
-
-    .#{$prefix}border-layout-ct {
-        background-color: $border-layout-ct-background;
     }
 
     .#{$prefix}border-region-slide-in {

@@ -8,7 +8,8 @@
  */
 Ext.onReady(function() {
     var cm = Ext.ClassManager,
-        exists = Ext.Function.bind(cm.get, cm);
+        exists = Ext.Function.bind(cm.get, cm),
+        parseCodes;
 
     if (Ext.Updater) {
         Ext.Updater.defaults.indicatorText = '<div class="loading-indicator">加载中...</div>';
@@ -43,10 +44,21 @@ Ext.onReady(function() {
     if (Ext.Date) {
         Ext.Date.monthNames = ["一月", "二月", "三月", "四月", "五月", "六月", "七月", "八月", "九月", "十月", "十一月", "十二月"];
 
-        Ext.Date.dayNames = ["日", "一", "二", "三", "四", "五", "六"];
+        Ext.Date.dayNames = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"];
 
         Ext.Date.formatCodes.a = "(this.getHours() < 12 ? '上午' : '下午')";
         Ext.Date.formatCodes.A = "(this.getHours() < 12 ? '上午' : '下午')";
+
+        parseCodes = {
+            g: 1,
+            c: "if (/(上午)/i.test(results[{0}])) {\n"
+                + "if (!h || h == 12) { h = 0; }\n"
+                + "} else { if (!h || h < 12) { h = (h || 0) + 12; }}",
+            s: "(上午|下午)",
+            calcAtEnd: true
+        };
+
+        Ext.Date.parseCodes.a = Ext.Date.parseCodes.A = parseCodes;
     }
 
     if (Ext.MessageBox) {
@@ -60,8 +72,8 @@ Ext.onReady(function() {
 
     if (exists('Ext.util.Format')) {
         Ext.apply(Ext.util.Format, {
-            thousandSeparator: '.',
-            decimalSeparator: ',',
+            thousandSeparator: ',',
+            decimalSeparator: '.',
             currencySign: '\u00a5',
             // Chinese Yuan
             dateFormat: 'y年m月d日'
@@ -86,8 +98,12 @@ Ext.onReady(function() {
         todayTip: "{0} (空格键选择)",
         format: "y年m月d日",
         ariaTitle: '{0}',
-        ariaTitleDateFormat: 'y\u5e74m\u6708d\u65e5',
-        longDayFormat: 'y\u5e74m\u6708d\u65e5'
+        ariaTitleDateFormat: 'Y\u5e74m\u6708d\u65e5',
+        longDayFormat: 'Y\u5e74m\u6708d\u65e5',
+        monthYearFormat: 'Y\u5e74m\u6708',
+        getDayInitial: function (value) {
+            return value.substr(-1, 1);
+        }
     });
 
     Ext.define("Ext.locale.zh_CN.picker.Month", {

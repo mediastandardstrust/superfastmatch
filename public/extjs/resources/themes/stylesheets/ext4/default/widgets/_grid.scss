@@ -15,6 +15,12 @@
         }
     }
 
+    .#{$prefix}grid-empty {
+        padding: 10px;
+        color: gray;
+        font: normal 11px tahoma, arial, helvetica, sans-serif;
+    }
+
     .#{$prefix}grid-header-hidden .#{$prefix}grid-body {
         border-top-color: $panel-body-border-color !important;
     }
@@ -296,8 +302,11 @@
     .#{$prefix}grid-row .#{$prefix}grid-cell-special {
         padding: 0;
         border-right: 1px solid $grid-cell-with-col-lines-border-color;
-
         @include background-gradient(#f6f6f6, 'grid-cell-special');
+    }
+    
+    .#{$prefix}grid-row .#{$prefix}grid-cell-row-checker {
+        vertical-align: middle;
     }
 
     /*
@@ -356,7 +365,7 @@
         border-right: 1px solid $grid-cell-with-col-lines-border-color;
     }
 
-    .#{$prefix}property-grid {      
+    .#{$prefix}property-grid {
         .#{$prefix}grid-row .#{$prefix}grid-property-name .#{$prefix}grid-cell-inner,
         .#{$prefix}grid-row-over .#{$prefix}grid-property-name .#{$prefix}grid-cell-inner {
             padding-left: 12px;
@@ -698,7 +707,7 @@
             padding-top: $grid-cell-editor-checkbox-padding-top;
         }
     }
-  
+
     // Row Editor
     .#{$prefix}grid-row-editor {
         position: absolute !important;
@@ -744,14 +753,13 @@
             }
         }
     }
-    .#{$prefix}grid {
-        .#{$prefix}grid-editor, .#{$prefix}grid-row-editor {
-            .#{$prefix}form-text {
-                font: $grid-editor-font;
-                height: $grid-row-height - 2;
-            }
+    .#{$prefix}grid-editor, .#{$prefix}grid-row-editor {
+        .#{$prefix}form-text {
+            font: $grid-editor-font;
+            height: $grid-row-height - 2;
         }
     }
+
     .#{$prefix}border-box .#{$prefix}grid-editor,
     .#{$prefix}border-box .#{$prefix}grid-row-editor {
         .#{$prefix}form-trigger {
@@ -778,7 +786,7 @@
                 padding-top: 1px;
             }
         }
-        .#{$prefix}ie6,
+        .#{$prefix}strict .#{$prefix}ie6,
         .#{$prefix}strict .#{$prefix}ie7 {
             .#{$prefix}grid-editor .#{$prefix}form-text,
             .#{$prefix}grid-row-editor .#{$prefix}form-text {
@@ -804,9 +812,9 @@
             }
         }
     }
- 
 
-.#{$prefix}grid-row-editor-buttons {
+
+    .#{$prefix}grid-row-editor-buttons {
         background-color: $grid-row-editor-background-color;
         position: absolute;
         bottom: -31px;
@@ -817,55 +825,55 @@
             width: 192px;
             height: 24px;
         }
+    }
 
-        &-ml,
-        &-mr,
-        &-bl,
-        &-br,
-        &-bc {
-            position: absolute;
-            overflow: hidden;
-        }
+    .#{$prefix}grid-row-editor-buttons-ml,
+    .#{$prefix}grid-row-editor-buttons-mr,
+    .#{$prefix}grid-row-editor-buttons-bl,
+    .#{$prefix}grid-row-editor-buttons-br,
+    .#{$prefix}grid-row-editor-buttons-bc {
+        position: absolute;
+        overflow: hidden;
+    }
 
-        &-bl,
-        &-br {
-            width: 4px;
-            height: 4px;
-            bottom: 0px;
-            background-image: theme-background-image($theme-name, 'panel/panel-default-framed-corners.gif');
-        }
-        &-bl {
-            left: 0px;
-            background-position: 0px -16px;
-        }
-        &-br {
-            right: 0px;
-            background-position: 0px -20px;
-        }
+    .#{$prefix}grid-row-editor-buttons-bl,
+    .#{$prefix}grid-row-editor-buttons-br {
+        width: 4px;
+        height: 4px;
+        bottom: 0px;
+        background-image: theme-background-image($theme-name, 'panel/panel-default-framed-corners.gif');
+    }
+    .#{$prefix}grid-row-editor-buttons-bl {
+        left: 0px;
+        background-position: 0px -16px;
+    }
+    .#{$prefix}grid-row-editor-buttons-br {
+        right: 0px;
+        background-position: 0px -20px;
+    }
 
-        &-bc {
-            position: absolute;
-            left: 4px;
-            bottom: 0px;
-            width: 192px;
-            height: 1px;
-            background-color: $grid-row-editor-border-color;
-        }
+    .#{$prefix}grid-row-editor-buttons-bc {
+        position: absolute;
+        left: 4px;
+        bottom: 0px;
+        width: 192px;
+        height: 1px;
+        background-color: $grid-row-editor-border-color;
+    }
 
-        &-ml,
-        &-mr {
-            height: 27px;
-            width: 1px;
-            top: 1px;
-            background-color: $grid-row-editor-border-color;
-        }
-        &-ml {
-            left: 0px
-        }
-        &-mr {
-            background-position: 0px -20px;
-            right: 0px;
-        }
+    .#{$prefix}grid-row-editor-buttons-ml,
+    .#{$prefix}grid-row-editor-buttons-mr {
+        height: 27px;
+        width: 1px;
+        top: 1px;
+        background-color: $grid-row-editor-border-color;
+    }
+    .#{$prefix}grid-row-editor-buttons-ml {
+        left: 0px
+    }
+    .#{$prefix}grid-row-editor-buttons-mr {
+        background-position: 0px -20px;
+        right: 0px;
     }
 
     .#{$prefix}grid-row-editor-errors {

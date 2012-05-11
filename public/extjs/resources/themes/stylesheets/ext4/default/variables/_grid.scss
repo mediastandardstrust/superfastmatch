@@ -9,7 +9,7 @@ $grid-base-color: $base-color !default;
 $grid-header-background-color: adjust-color($neutral-color, $hue: 0deg, $saturation: 0%, $lightness: -16.078%) !default;
 $grid-header-background-gradient: 'grid-header' !default;
 $grid-header-border-color: $neutral-color !default;
-$grid-header-over-border-color: adjust-color(#C0D4ED, $hue: -0.175deg, $saturation: 25.296%, $lightness: -2.549%) !default;
+$grid-header-over-border-color: adjust-color($base-color, $hue: -0.175deg, $saturation: 25.296%, $lightness: -2.549%) !default;
 $grid-header-over-background-color: $grid-header-over-border-color !default;
 $grid-header-over-background-gradient: 'grid-header-over' !default;
 $grid-header-background-color: $grid-base-color !default;

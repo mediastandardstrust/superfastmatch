@@ -5,15 +5,18 @@ Copyright (c) 2011-2012 Sencha Inc
 
 Contact:  http://www.sencha.com/contact
 
-Pre-release code in the Ext repository is intended for development purposes only and will
-not always be stable. 
+GNU General Public License Usage
+This file may be used under the terms of the GNU General Public License version 3.0 as
+published by the Free Software Foundation and appearing in the file LICENSE included in the
+packaging of this file.
 
-Use of pre-release code is permitted with your application at your own risk under standard
-Ext license terms. Public redistribution is prohibited.
+Please review the following information to ensure the GNU General Public License version 3.0
+requirements will be met: http://www.gnu.org/copyleft/gpl.html.
 
-For early licensing, please contact us at licensing@sencha.com
+If you are unsure which license is appropriate for your use, please contact the sales department
+at http://www.sencha.com/contact.
 
-Build date: 2012-03-13 14:31:45 (92d45716fd5f49811568ad9d756992f1cced424d)
+Build date: 2012-04-20 14:10:47 (19f55ab932145a3443b228045fa80950dfeaf9cc)
 */
 /**
  * @var {string} $prefix
@@ -8960,50 +8963,64 @@ table.x-datepicker-inner {
   .x-strict .x-ie7m .x-grid-row-editor-buttons {
     width: 192px;
     height: 24px; }
-  /* line 850, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
-  .x-grid-row-editor-buttons-ml, .x-grid-row-editor-buttons-mr, .x-grid-row-editor-buttons-bl, .x-grid-row-editor-buttons-br, .x-grid-row-editor-buttons-bc {
-    position: absolute;
-    overflow: hidden; }
-  /* line 855, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
-  .x-grid-row-editor-buttons-bl, .x-grid-row-editor-buttons-br {
-    width: 4px;
-    height: 4px;
-    bottom: 0px;
-    background-image: url('../../resources/themes/images/neptune/panel/panel-default-framed-corners.gif'); }
-  /* line 861, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
-  .x-grid-row-editor-buttons-bl {
-    left: 0px;
-    background-position: 0px -16px; }
-  /* line 865, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
-  .x-grid-row-editor-buttons-br {
-    right: 0px;
-    background-position: 0px -20px; }
-  /* line 869, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
-  .x-grid-row-editor-buttons-bc {
-    position: absolute;
-    left: 4px;
-    bottom: 0px;
-    width: 192px;
-    height: 1px;
-    background-color: #167cce; }
-  /* line 877, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
-  .x-grid-row-editor-buttons-ml, .x-grid-row-editor-buttons-mr {
-    height: 27px;
-    width: 1px;
-    top: 1px;
-    background-color: #167cce; }
-  /* line 883, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
-  .x-grid-row-editor-buttons-ml {
-    left: 0px; }
-  /* line 886, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
-  .x-grid-row-editor-buttons-mr {
-    background-position: 0px -20px;
-    right: 0px; }
 
-/* line 893, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 854, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+.x-grid-row-editor-buttons-ml,
+.x-grid-row-editor-buttons-mr,
+.x-grid-row-editor-buttons-bl,
+.x-grid-row-editor-buttons-br,
+.x-grid-row-editor-buttons-bc {
+  position: absolute;
+  overflow: hidden; }
+
+/* line 860, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+.x-grid-row-editor-buttons-bl,
+.x-grid-row-editor-buttons-br {
+  width: 4px;
+  height: 4px;
+  bottom: 0px;
+  background-image: url('../../resources/themes/images/neptune/panel/panel-default-framed-corners.gif'); }
+
+/* line 866, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+.x-grid-row-editor-buttons-bl {
+  left: 0px;
+  background-position: 0px -16px; }
+
+/* line 870, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+.x-grid-row-editor-buttons-br {
+  right: 0px;
+  background-position: 0px -20px; }
+
+/* line 874, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+.x-grid-row-editor-buttons-bc {
+  position: absolute;
+  left: 4px;
+  bottom: 0px;
+  width: 192px;
+  height: 1px;
+  background-color: #167cce; }
+
+/* line 883, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+.x-grid-row-editor-buttons-ml,
+.x-grid-row-editor-buttons-mr {
+  height: 27px;
+  width: 1px;
+  top: 1px;
+  background-color: #167cce; }
+
+/* line 889, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+.x-grid-row-editor-buttons-ml {
+  left: 0px; }
+
+/* line 892, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+.x-grid-row-editor-buttons-mr {
+  background-position: 0px -20px;
+  right: 0px; }
+
+/* line 898, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-grid-row-editor-errors ul {
   margin-left: 5px; }
-/* line 896, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
+/* line 901, ../themes/stylesheets/neptune/default/widgets/_grid.scss */
 .x-grid-row-editor-errors li {
   list-style: disc;
   margin-left: 15px; }
@@ -9375,7 +9392,7 @@ textarea.x-form-invalid-field {
   border: 1px solid #c30;
   background: transparent repeat-x bottom;
   background-image: url('../../resources/themes/images/neptune/grid/invalid_line.gif');
-  padding: 2px 3px; }
+  padding: 0 3px 2px 3px; }
 
 /* line 16, ../themes/stylesheets/neptune/default/widgets/form/_checkboxgroup.scss */
 .x-check-group-alt {
@@ -11344,7 +11361,7 @@ textarea.x-form-invalid-field {
   vertical-align: middle;
   *vertical-align: auto;
   overflow: hidden; }
-  /* line 7, ../../../../../.gem/ruby/1.8/gems/compass-0.11.5/frameworks/compass/stylesheets/compass/css3/_inline-block.scss */
+  /* line 7, ../../../../../../../../../Library/Ruby/Gems/1.8/gems/compass-0.11.7/frameworks/compass/stylesheets/compass/css3/_inline-block.scss */
   .x-surface {
     *display: inline; }
 
@@ -11731,7 +11748,7 @@ textarea.x-form-invalid-field {
 
 /* line 6, ../themes/stylesheets/neptune/default/layout/_layout.scss */
 .x-docked {
-  position: absolute;
+  position: absolute !important;
   z-index: 1; }
 
 /**
@@ -11817,7 +11834,7 @@ textarea.x-form-invalid-field {
 
 /* line 109, ../themes/stylesheets/neptune/default/layout/_layout.scss */
 .x-abs-layout-item {
-  position: absolute; }
+  position: absolute !important; }
 
 /* line 113, ../themes/stylesheets/neptune/default/layout/_layout.scss */
 .x-fit-item {

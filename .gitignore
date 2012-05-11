@@ -13,6 +13,7 @@ gmock-gtest.a
 tests/tests
 external/
 data/
+data-old/
 fixtures/federal
 fixtures/pan*
 fixtures/con*
@@ -20,5 +21,4 @@ fixtures/juxta
 superfastmatch
 cachegrind.out*
 !public/app/ux/data/
-
 .tm_properties

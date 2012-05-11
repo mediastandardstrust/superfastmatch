@@ -5,15 +5,18 @@ Copyright (c) 2011-2012 Sencha Inc
 
 Contact:  http://www.sencha.com/contact
 
-Pre-release code in the Ext repository is intended for development purposes only and will
-not always be stable. 
+GNU General Public License Usage
+This file may be used under the terms of the GNU General Public License version 3.0 as
+published by the Free Software Foundation and appearing in the file LICENSE included in the
+packaging of this file.
 
-Use of pre-release code is permitted with your application at your own risk under standard
-Ext license terms. Public redistribution is prohibited.
+Please review the following information to ensure the GNU General Public License version 3.0
+requirements will be met: http://www.gnu.org/copyleft/gpl.html.
 
-For early licensing, please contact us at licensing@sencha.com
+If you are unsure which license is appropriate for your use, please contact the sales department
+at http://www.sencha.com/contact.
 
-Build date: 2012-03-13 14:31:45 (92d45716fd5f49811568ad9d756992f1cced424d)
+Build date: 2012-04-20 14:10:47 (19f55ab932145a3443b228045fa80950dfeaf9cc)
 */
 
 
@@ -25,7 +28,13 @@ Ext._startTime = new Date().getTime();
         toString = objectPrototype.toString,
         enumerables = true,
         enumerablesTest = { toString: 1 },
-        emptyFn = function(){},
+        emptyFn = function () {},
+        
+        
+        callOverrideParent = function () {
+            var method = callOverrideParent.caller.caller; 
+            return method.$owner.prototype[method.$name].apply(this, arguments);
+        },
         i;
 
     Ext.global = global;
@@ -176,13 +185,38 @@ Ext._startTime = new Date().getTime();
         }()),
 
         
-        override: function(cls, overrides) {
-            if (cls.$isClass) {
-                return cls.override(overrides);
+        override: function (target, overrides) {
+            if (target.$isClass) {
+                target.override(overrides);
+            } else if (typeof target == 'function') {
+                Ext.apply(target.prototype, overrides);
+            } else {
+                var owner = target.self,
+                    name, value;
+
+                if (owner && owner.$isClass) { 
+                    for (name in overrides) {
+                        if (overrides.hasOwnProperty(name)) {
+                            value = overrides[name];
+
+                            if (typeof value == 'function') {
+
+                                value.$name = name;
+                                value.$owner = owner;
+                                value.$previous = target.hasOwnProperty(name)
+                                    ? target[name] 
+                                    : callOverrideParent; 
+                            }
+
+                            target[name] = value;
+                        }
+                    }
+                } else {
+                    Ext.apply(target, overrides);
+                }
             }
-            else {
-                Ext.apply(cls.prototype, overrides);
-            }
+
+            return target;
         }
     });
 
@@ -465,15 +499,6 @@ Ext._startTime = new Date().getTime();
         },
 
         
-        globalEval: ('execScript' in global) ? function(code) {
-            global.execScript(code);
-        } : function(code) {
-            (function(){
-                eval(code);
-            }());
-        },
-
-        
         Logger: {
             verbose: emptyFn,
             log: emptyFn,
@@ -492,10 +517,23 @@ Ext._startTime = new Date().getTime();
 }());
 
 
+Ext.globalEval = Ext.global.execScript
+    ? function(code) {
+        execScript(code);
+    }
+    : function($$code) {
+        
+        
+        (function(){
+            eval($$code);
+        }());
+    };
+
+
 (function() {
 
 
-var version = '4.1.0beta', Version;
+var version = '4.1.0', Version;
     Ext.Version = Version = Ext.extend(Object, {
 
         
@@ -711,46 +749,16 @@ Ext.String = (function() {
         basicTrimRe   = /^\s+|\s+$/g,
         whitespaceRe  = /\s+/,
         varReplace    = /(^[^a-z]*|[^\w])/gi,
-        charToEntity  = {
-            '&': '&amp;',
-            '>': '&gt;',
-            '<': '&lt;',
-            '"': '&quot;'
-        },
-        entityToChar  = {
-            '&amp;': '&',
-            '&gt;': '>',
-            '&lt;': '<',
-            '&quot;': '"'
-        },
-        keys = [],
-        key,
+        charToEntity,
+        entityToChar,
         charToEntityRegex,
         entityToCharRegex,
         htmlEncodeReplaceFn = function(match, capture) {
             return charToEntity[capture];
         },
-        htmlEncode = function(value) {
-            return (!value) ? value : String(value).replace(charToEntityRegex, htmlEncodeReplaceFn);
-        },
         htmlDecodeReplaceFn = function(match, capture) {
             return (capture in entityToChar) ? entityToChar[capture] : String.fromCharCode(parseInt(capture.substr(2), 10));
-        },
-        htmlDecode = function(value) {
-            return (!value) ? value : String(value).replace(entityToCharRegex, htmlDecodeReplaceFn);
         };
-
-        
-        for (key in charToEntity) {
-            keys.push(key);
-        }
-        charToEntityRegex = new RegExp('(' + keys.join('|') + ')', 'g');
-
-        keys = [];
-        for (key in entityToChar) {
-            keys.push(key);
-        }
-        entityToCharRegex = new RegExp('(' + keys.join('|') + '|&#[0-9]{1,5};' + ')', 'g');
 
     return {
 
@@ -760,10 +768,44 @@ Ext.String = (function() {
         },
 
         
-        htmlEncode: htmlEncode,
+        htmlEncode: function(value) {
+            return (!value) ? value : String(value).replace(charToEntityRegex, htmlEncodeReplaceFn);
+        },
 
         
-        htmlDecode: htmlDecode,
+        htmlDecode: function(value) {
+            return (!value) ? value : String(value).replace(entityToCharRegex, htmlDecodeReplaceFn);
+        },
+
+        
+        addCharacterEntities: function(newEntities) {
+            var charKeys = [],
+                entityKeys = [],
+                key, echar;
+            for (key in newEntities) {
+                echar = newEntities[key];
+                entityToChar[key] = echar;
+                charToEntity[echar] = key;
+                charKeys.push(echar);
+                entityKeys.push(key);
+            }
+            charToEntityRegex = new RegExp('(' + charKeys.join('|') + ')', 'g');
+            entityToCharRegex = new RegExp('(' + entityKeys.join('|') + '|&#[0-9]{1,5};' + ')', 'g');
+        },
+
+        
+        resetCharacterEntities: function() {
+            charToEntity = {};
+            entityToChar = {};
+            
+            this.addCharacterEntities({
+                '&amp;'     :   '&',
+                '&gt;'      :   '>',
+                '&lt;'      :   '<',
+                '&quot;'    :   '"',
+                '&#39;'     :   "'"
+            });
+        },
 
         
         urlAppend : function(url, string) {
@@ -856,6 +898,9 @@ Ext.String = (function() {
 }());
 
 
+Ext.String.resetCharacterEntities();
+
+
 Ext.htmlEncode = Ext.String.htmlEncode;
 
 
@@ -875,15 +920,17 @@ Ext.Number = new function() {
     Ext.apply(this, {
         
         constrain: function(number, min, max) {
-            number = parseFloat(number);
+            var x = parseFloat(number);
 
-            if (!isNaN(min)) {
-                number = math.max(number, min);
-            }
-            if (!isNaN(max)) {
-                number = math.min(number, max);
-            }
-            return number;
+            
+            
+
+            
+            
+            
+            
+            
+            return (x < min) ? min : ((x > max) ? max : x);
         },
 
         
@@ -1345,7 +1392,10 @@ Ext.Number = new function() {
                 return (newReference) ? slice.call(value) : value;
             }
 
-            if (value && value.length !== undefined && typeof value !== 'string') {
+            var type = typeof value;
+            
+            
+            if (value && value.length !== undefined && type !== 'string' && (type !== 'function' || !value.apply)) {
                 return ExtArray.toArray(value);
             }
 
@@ -2107,7 +2157,7 @@ var TemplateClass = function(){},
     },
 
     
-    merge: function(source) {
+    merge: function(destination) {
         var i = 1,
             ln = arguments.length,
             mergeFn = ExtObject.merge,
@@ -2120,25 +2170,25 @@ var TemplateClass = function(){},
             for (key in object) {
                 value = object[key];
                 if (value && value.constructor === Object) {
-                    sourceKey = source[key];
+                    sourceKey = destination[key];
                     if (sourceKey && sourceKey.constructor === Object) {
                         mergeFn(sourceKey, value);
                     }
                     else {
-                        source[key] = cloneFn(value);
+                        destination[key] = cloneFn(value);
                     }
                 }
                 else {
-                    source[key] = value;
+                    destination[key] = value;
                 }
             }
         }
 
-        return source;
+        return destination;
     },
 
     
-    mergeIf: function(source) {
+    mergeIf: function(destination) {
         var i = 1,
             ln = arguments.length,
             cloneFn = Ext.clone,
@@ -2148,20 +2198,20 @@ var TemplateClass = function(){},
             object = arguments[i];
 
             for (key in object) {
-                if (!(key in source)) {
+                if (!(key in destination)) {
                     value = object[key];
 
                     if (value && value.constructor === Object) {
-                        source[key] = cloneFn(value);
+                        destination[key] = cloneFn(value);
                     }
                     else {
-                        source[key] = value;
+                        destination[key] = value;
                     }
                 }
             }
         }
 
-        return source;
+        return destination;
     },
 
     
@@ -2284,7 +2334,6 @@ Ext.urlDecode = function() {
 };
 
 }());
-
 
 
 
@@ -2427,18 +2476,29 @@ Ext.Date = {
     
     
     monthNumbers : {
-        Jan:0,
-        Feb:1,
-        Mar:2,
-        Apr:3,
-        May:4,
-        Jun:5,
-        Jul:6,
-        Aug:7,
-        Sep:8,
-        Oct:9,
-        Nov:10,
-        Dec:11
+        January: 0,
+        Jan: 0,
+        February: 1,
+        Feb: 1,
+        March: 2,
+        Mar: 2,
+        April: 3,
+        Apr: 3,
+        May: 4,
+        June: 5,
+        Jun: 5,
+        July: 6,
+        Jul: 6,
+        August: 7,
+        Aug: 7,
+        September: 8,
+        Sep: 8,
+        October: 9,
+        Oct: 9,
+        November: 10,
+        Nov: 10,
+        December: 11,
+        Dec: 11
     },
     
     
@@ -2485,6 +2545,17 @@ Ext.Date = {
         return function(format){
             return dateInfoRe.test(format.replace(stripEscapeRe, ''));
         };
+    }()),
+    
+    
+    unescapeFormat: (function() { 
+        var slashRe = /\\/gi;
+        return function(format) {
+            
+            
+            
+            return format.replace(slashRe, '');
+        }
     }()),
 
     
@@ -2809,6 +2880,7 @@ Ext.Date = {
             s:"(\\d{1,2})"
         },
         
+        
         a: {
             g:1,
             c:"if (/(am)/i.test(results[{0}])) {\n"
@@ -2817,6 +2889,8 @@ Ext.Date = {
             s:"(am|pm|AM|PM)",
             calcAtEnd: true
         },
+        
+        
         A: {
             g:1,
             c:"if (/(am)/i.test(results[{0}])) {\n"
@@ -2825,6 +2899,7 @@ Ext.Date = {
             s:"(AM|PM|am|pm)",
             calcAtEnd: true
         },
+        
         g: {
             g:1,
             c:"h = parseInt(results[{0}], 10);\n",
@@ -2966,11 +3041,17 @@ Ext.Date = {
 
     
     format: function(date, format) {
-        if (utilDate.formatFunctions[format] == null) {
+        var formatFunctions = utilDate.formatFunctions;
+
+        if (!Ext.isDate(date)) {
+            return '';
+        }
+
+        if (formatFunctions[format] == null) {
             utilDate.createFormat(format);
         }
-        var result = utilDate.formatFunctions[format].call(date);
-        return result + '';
+
+        return formatFunctions[format].call(date) + '';
     },
 
     
@@ -3219,13 +3300,6 @@ var noArgs = [],
     Base = function(){};
 
     
-    
-    function callHookParent () {
-        var method = callHookParent.caller.caller; 
-        return method.$owner.prototype[method.$name].apply(this, arguments);
-    }
-
-    
     Ext.apply(Base, {
         $className: 'Ext.Base',
 
@@ -3280,7 +3354,7 @@ var noArgs = [],
         },
 
         
-        '$onExtended': [],
+        $onExtended: [],
 
         
         triggerExtended: function() {
@@ -3489,6 +3563,8 @@ var noArgs = [],
                 for (name in members) { 
                     if (name == 'statics') {
                         statics = members[name];
+                    } else if (name == 'config') {
+                        me.addConfig(members[name], true);
                     } else {
                         names.push(name);
                     }
@@ -3660,27 +3736,6 @@ var noArgs = [],
             return this;
         },
 
-        hookMethod: function (name, hookFn) {
-            var me = this,
-                owner = me.self;
-
-
-            hookFn.$owner = owner;
-            hookFn.$name = name;
-
-            if (me.hasOwnProperty(name)) {
-                hookFn.$previous = me[name]; 
-            } else {
-                hookFn.$previous = callHookParent; 
-            }
-
-            me[name] = hookFn;
-        },
-
-        hookMethods: function (hooks) {
-            Ext.Object.each(hooks, this.hookMethod, this);
-        },
-
         
         initConfig: function(config) {
             var instanceConfig = config,
@@ -3832,7 +3887,9 @@ var noArgs = [],
     
     function makeCtor (className) {
         function constructor () {
-            return this.constructor.apply(this, arguments);
+            
+            
+            return this.constructor.apply(this, arguments) || null;
         }
         return constructor;
     }
@@ -4087,7 +4144,7 @@ var noArgs = [],
         Class.triggerExtended.apply(Class, arguments);
 
         if (data.onClassExtended) {
-            Class.onExtended(data.onClassExtended);
+            Class.onExtended(data.onClassExtended, Class);
             delete data.onClassExtended;
         }
 
@@ -4291,8 +4348,7 @@ var noArgs = [],
             alternateToName: {},
             aliasToName: {},
             nameToAliases: {},
-            nameToAlternates: {},
-            overridesByName: {}
+            nameToAlternates: {}
         },
 
         
@@ -4348,22 +4404,30 @@ var noArgs = [],
         triggerCreated: function(className) {
             var listeners = this.createdListeners,
                 nameListeners = this.nameCreatedListeners,
-                i, ln, listener;
+                alternateNames = this.maps.nameToAlternates[className],
+                names = [className],
+                i, ln, j, subLn, listener, name;
 
             for (i = 0,ln = listeners.length; i < ln; i++) {
                 listener = listeners[i];
                 listener.fn.call(listener.scope, className);
             }
 
-            listeners = nameListeners[className];
+            if (alternateNames) {
+                names.push.apply(names, alternateNames);
+            }
 
-            if (listeners) {
-                for (i = 0,ln = listeners.length; i < ln; i++) {
-                    listener = listeners[i];
-                    listener.fn.call(listener.scope, className);
+            for (i = 0,ln = names.length; i < ln; i++) {
+                name = names[i];
+                listeners = nameListeners[name];
+
+                if (listeners) {
+                    for (j = 0,subLn = listeners.length; j < subLn; j++) {
+                        listener = listeners[j];
+                        listener.fn.call(listener.scope, name);
+                    }
+                    delete nameListeners[name];
                 }
-
-                delete nameListeners[className];
             }
         },
 
@@ -4605,22 +4669,6 @@ var noArgs = [],
         },
 
         
-        applyOverrides: function (name) {
-            var me = this,
-                overridesByName = me.maps.overridesByName,
-                overrides = overridesByName[name],
-                length = overrides && overrides.length || 0,
-                createOverride = me.createOverride,
-                i;
-
-            delete overridesByName[name];
-
-            for (i = 0; i < length; ++i) {
-                createOverride.apply(me, overrides[i]);
-            }
-        },
-
-        
         create: function(className, data, createdFn) {
 
             data.$className = className;
@@ -4629,8 +4677,7 @@ var noArgs = [],
                 var postprocessorStack = data.postprocessors || Manager.defaultPostprocessors,
                     registeredPostprocessors = Manager.postprocessors,
                     postprocessors = [],
-                    postprocessor, i, ln, j, subLn, postprocessorProperties, postprocessorProperty,
-                    alternateNames;
+                    postprocessor, i, ln, j, subLn, postprocessorProperties, postprocessorProperty;
 
                 delete data.postprocessors;
 
@@ -4663,14 +4710,6 @@ var noArgs = [],
                 data.postprocessors = postprocessors;
                 data.createdFn = createdFn;
                 Manager.processCreate(className, this, data);
-
-                
-                Manager.applyOverrides(className);
-                alternateNames = Manager.maps.nameToAlternates[className];
-
-                for (i = 0, ln = alternateNames && alternateNames.length || 0; i < ln; ++i) {
-                    Manager.applyOverrides(alternateNames[i]);
-                }
             });
         },
         
@@ -4695,57 +4734,55 @@ var noArgs = [],
             }
         },
 
-        createOverride: function (overrideName, data, createdFn) {
+        createOverride: function (className, data, createdFn) {
             var me = this,
-                className = data.override,
-                cls = me.get(className),
-                overrideBody, overridesByName, overrides;
+                overriddenClassName = data.override,
+                requires = data.requires,
+                uses = data.uses,
+                classReady = function () {
+                    var cls, temp;
 
-            if (cls) {
-                
-                
-                
+                    if (requires) {
+                        temp = requires;
+                        requires = null; 
 
-                
-                overrideBody = Ext.apply({}, data);
-                delete overrideBody.requires;
-                delete overrideBody.uses;
-                delete overrideBody.override;
+                        
+                        
+                        
+                        Ext.Loader.require(temp, classReady);
+                    } else {
+                        
+                        
+                        cls = me.get(overriddenClassName);
 
-                me.create(overrideName, {
-                        requires: data.requires,
-                        uses: data.uses,
-                        override: className
-                    }, function () {
-                        this.active = true;
-                        if (cls.override) { 
-                            cls.override(overrideBody);
-                        } else { 
-                            cls.self.override(overrideBody);
+                        
+                        delete data.override;
+                        delete data.requires;
+                        delete data.uses;
+
+                        Ext.override(cls, data);
+
+                        
+                        
+                        
+                        me.triggerCreated(className);
+
+                        if (uses) {
+                            Ext.Loader.addUsedClasses(uses); 
                         }
 
                         if (createdFn) {
-                            
-                            
-                            
-                            createdFn.call(cls);
+                            createdFn.call(cls); 
                         }
-                    });
-            } else {
-                
-                
-                
-                
-                overridesByName = me.maps.overridesByName;
-                overrides = overridesByName[className] || (overridesByName[className] = []);
-                overrides.push(Array.prototype.slice.call(arguments, 0));
+                    }
+                };
 
-                
-                
-                me.setNamespace(overrideName, {
-                    override: className
-                });
-            }
+            me.existCache[className] = true;
+
+            
+            me.onCreated(classReady, me, overriddenClassName);
+ 
+            return me;
         },
 
         
@@ -5041,7 +5078,7 @@ var noArgs = [],
             
             T = Manager.get(className);
             if (load || !T) {
-                return Manager.instantiateByAlias(alias, config || {});
+                return Manager.instantiateByAlias(alias, config);
             }
             return new T(config);
         },
@@ -5296,6 +5333,14 @@ Ext.Loader = new function() {
         },
 
         
+        isAClassNameWithAKnownPrefix: function(className) {
+            var prefix = Loader.getPrefix(className);
+
+            
+            return prefix !== '' && prefix !== className;
+        },
+
+        
         require: function(expressions, fn, scope, excludes) {
             if (fn) {
                 fn.call(scope);
@@ -5341,7 +5386,7 @@ Ext.Loader = new function() {
         scriptElements = {},
         readyListeners = [],
         usedClasses = [],
-        requiresMap = {}
+        requiresMap = {};
 
     Ext.apply(Loader, {
         
@@ -5381,6 +5426,9 @@ Ext.Loader = new function() {
         classNameToFilePathMap: classNameToFilePathMap,
 
         
+        scriptsLoading: 0,
+
+        
         syncModeEnabled: false,
 
         scriptElements: scriptElements,
@@ -5392,7 +5440,7 @@ Ext.Loader = new function() {
 
             
 
-            if (ln === 0) {
+            if (!ln && !Loader.scriptsLoading) {
                 return Loader.triggerReady();
             }
 
@@ -5433,7 +5481,7 @@ Ext.Loader = new function() {
         },
 
         
-        injectScriptElement: function(url, onLoad, onError, scope) {
+        injectScriptElement: function(url, onLoad, onError, scope, charset) {
             var script = document.createElement('script'),
                 dispatched = false,
                 config = Loader.config,
@@ -5457,10 +5505,11 @@ Ext.Loader = new function() {
                     Loader.cleanupScriptElement(script, config.preserveScripts === false, config.garbageCollect);
                 };
 
-            script.type    = 'text/javascript';
+            script.type = 'text/javascript';
             script.onerror = onErrorFn;
-            if (config.scriptCharset) {
-                script.charset = config.scriptCharset;
+            charset = charset || config.scriptCharset;
+            if (charset) {
+                script.charset = charset;
             }
 
             
@@ -5511,6 +5560,50 @@ Ext.Loader = new function() {
             }
 
             return Loader;
+        },
+
+        
+        loadScript: function (options) {
+            var config = Loader.getConfig(),
+                isString = typeof options == 'string',
+                url = isString ? options : options.url,
+                onError = !isString && options.onError,
+                onLoad = !isString && options.onLoad,
+                scope = !isString && options.scope,
+                onScriptError = function() {
+                    Loader.numPendingFiles--;
+                    Loader.scriptsLoading--;
+
+                    if (onError) {
+                        onError.call(scope, "Failed loading '" + url + "', please verify that the file exists");
+                    }
+
+                    if (Loader.numPendingFiles + Loader.scriptsLoading === 0) {
+                        Loader.refreshQueue();
+                    }
+                },
+                onScriptLoad = function () {
+                    Loader.numPendingFiles--;
+                    Loader.scriptsLoading--;
+
+                    if (onLoad) {
+                        onLoad.call(scope);
+                    }
+
+                    if (Loader.numPendingFiles + Loader.scriptsLoading === 0) {
+                        Loader.refreshQueue();
+                    }
+                },
+                src;
+
+            Loader.isLoading = true;
+            Loader.numPendingFiles++;
+            Loader.scriptsLoading++;
+
+            src = config.disableCaching ?
+                (url + '?' + config.disableCachingParam + '=' + Ext.Date.now()) : url;
+
+            scriptElements[url] = Loader.injectScriptElement(src, onScriptLoad, onScriptError);
         },
 
         
@@ -5631,7 +5724,7 @@ Ext.Loader = new function() {
                             classes.push(Manager.get(references[i]));
                         }
 
-                        return fn.apply(Loader, classes);
+                        return fn.apply(this, classes);
                     };
                 }
                 else {
@@ -5756,14 +5849,15 @@ Ext.Loader = new function() {
         },
 
         
-        addUsedClass: function(references) {
-            var i, ln;
+        addUsedClasses: function (classes) {
+            var cls, i, ln;
 
-            if (references) {
-                references = (typeof references == 'string') ? [references] : references;
-                for (i = 0, ln = references.length; i < ln; i++) {
-                    if (!Ext.Array.contains(usedClasses, references[i])) {
-                    	usedClasses.push(references[i]);
+            if (classes) {
+                classes = (typeof classes == 'string') ? [classes] : classes;
+                for (i = 0, ln = classes.length; i < ln; i++) {
+                    cls = classes[i];
+                    if (typeof cls == 'string' && !Ext.Array.contains(usedClasses, cls)) {
+                        usedClasses.push(cls);
                     }
                 }
             }
@@ -5948,26 +6042,15 @@ Ext.Loader = new function() {
 
     
     Manager.registerPostprocessor('uses', function(name, cls, data) {
-        var uses = data.uses,
-            items = [],
-            i, ln, item;
-
+        var uses = data.uses;
         if (uses) {
-            uses = (typeof uses === 'string') ? [ uses ] : uses;
-            for (i = 0,ln = uses.length; i < ln; i++) {
-                item = uses[i];
-
-                if (typeof item == 'string') {
-                    items.push(item);
-                }
-            }
+            Loader.addUsedClasses(uses);
         }
-
-        Loader.addUsedClass(items);
     });
 
     Manager.onCreated(Loader.historyPush);
 };
+
 
 Ext.Error = Ext.extend(Error, {
     statics: {
@@ -6036,8 +6119,8 @@ Ext.Error = Ext.extend(Error, {
     
     toString: function(){
         var me = this,
-            className = me.className ? me.className  : '',
-            methodName = me.methodName ? '.' + me.methodName + '(): ' : '',
+            className = me.sourceClass ? me.sourceClass : '',
+            methodName = me.sourceMethod ? '.' + me.sourceMethod + '(): ' : '',
             msg = me.msg || '(No description provided)';
 
         return className + methodName + msg;
@@ -6206,7 +6289,32 @@ Ext.apply(Ext, {
 
     
     enableListenerCollection: true,
-    
+
+    addCacheEntry: function(id, el, dom) {
+        dom = dom || el.dom;
+
+
+        var key = id || (el && el.id) || dom.id,
+            entry = Ext.cache[key] || (Ext.cache[key] = {
+                data: {},
+                events: {},
+
+                dom: dom,
+
+                
+                skipGarbageCollection: !!(dom.getElementById || dom.navigator)
+            });
+
+        if (el) {
+            el.$cache = entry;
+            
+            
+            entry.el = el;
+        }
+
+        return entry;
+    },
+
     
     id: function(el, prefix) {
         var me = this,
@@ -6226,6 +6334,27 @@ Ext.apply(Ext, {
         }
         return el.id;
     },
+
+    escapeId: (function(){
+        var validIdRe = /^[a-zA-Z_][a-zA-Z0-9_\-]*$/i,
+            escapeRx = /([\W]{1})/g,
+            leadingNumRx = /^(\d)/g,
+            escapeFn = function(match, capture){
+                return "\\" + capture;
+            },
+            numEscapeFn = function(match, capture){
+                return '\\00' + capture.charCodeAt(0).toString(16) + ' ';
+            };
+
+        return function(id) {
+            return validIdRe.test(id)
+                ? id
+                
+                
+                : id.replace(escapeRx, escapeFn)
+                    .replace(leadingNumRx, numEscapeFn);
+        };
+    }()),
 
     
     getBody: (function() {
@@ -6337,6 +6466,7 @@ window.undefined = window.undefined;
         isSafari2 = isSafari && check(/applewebkit\/4/), 
         isSafari3 = isSafari && check(/version\/3/),
         isSafari4 = isSafari && check(/version\/4/),
+        isSafari5_0 = isSafari && check(/version\/5\.0/),
         isSafari5 = isSafari && check(/version\/5/),
         isIE = !isOpera && check(/msie/),
         isIE7 = isIE && ((check(/msie 7/) && docMode != 8 && docMode != 9) || docMode == 7),
@@ -6420,27 +6550,49 @@ window.undefined = window.undefined;
         },
 
         
-        removeNode : isIE6 || isIE7 || isIE8 ? (function() {
-            var d;
-            return function(n){
-                if(n && n.tagName != 'BODY'){
-                    (Ext.enableNestedListenerRemoval) ? Ext.EventManager.purgeElement(n) : Ext.EventManager.removeAll(n);
-                    if (isIE8 && n.parentNode) {
-                        n.parentNode.removeChild(n);
+        removeNode : isIE6 || isIE7 || isIE8
+            ? (function() {
+                var d;
+                return function(n){
+                    if(n && n.tagName.toUpperCase() != 'BODY'){
+                        (Ext.enableNestedListenerRemoval) ? Ext.EventManager.purgeElement(n) : Ext.EventManager.removeAll(n);
+
+                        var cache = Ext.cache,
+                            id = n.id;
+
+                        if (cache[id]) {
+                            delete cache[id].dom;
+                            delete cache[id];
+                        }
+
+                        
+                        
+                        if (n.tagName.toUpperCase() != 'IFRAME') {
+                            if (isIE8 && n.parentNode) {
+                                n.parentNode.removeChild(n);
+                            }
+                            d = d || document.createElement('div');
+                            d.appendChild(n);
+                            d.innerHTML = '';
+                        }
                     }
-                    d = d || document.createElement('div');
-                    d.appendChild(n);
-                    d.innerHTML = '';
-                    delete Ext.cache[n.id];
+                };
+            }())
+            : function(n) {
+                if (n && n.parentNode && n.tagName.toUpperCase() != 'BODY') {
+                    (Ext.enableNestedListenerRemoval) ? Ext.EventManager.purgeElement(n) : Ext.EventManager.removeAll(n);
+
+                    var cache = Ext.cache,
+                        id = n.id;
+
+                    if (cache[id]) {
+                        delete cache[id].dom;
+                        delete cache[id];
+                    }
+
+                    n.parentNode.removeChild(n);
                 }
-            };
-        }()) : function(n) {
-            if (n && n.parentNode && n.tagName != 'BODY') {
-                (Ext.enableNestedListenerRemoval) ? Ext.EventManager.purgeElement(n) : Ext.EventManager.removeAll(n);
-                n.parentNode.removeChild(n);
-                delete Ext.cache[n.id];
-            }
-        },
+            },
 
         isStrict: isStrict,
 
@@ -6469,6 +6621,10 @@ window.undefined = window.undefined;
 
         
         isSafari5 : isSafari5,
+
+        
+        isSafari5_0 : isSafari5_0,
+
 
         
         isSafari2 : isSafari2,
@@ -6742,7 +6898,6 @@ Ext.application = function(config) {
         new Ext.app.Application(config);
     });
 };
-
 
 
 (function() {
@@ -7833,6 +7988,17 @@ Ext.is = {
 Ext.is.init();
 
 
+(function(){
+
+    
+    
+    
+    var getStyle = function(element, styleName){
+        var view = element.ownerDocument.defaultView,
+            style = (view ? view.getComputedStyle(element, null) : element.currentStyle) || element.style;
+        return style[styleName];
+    };
+
 Ext.supports = {
     
     init : function() {
@@ -7885,21 +8051,21 @@ Ext.supports = {
 
     
     OrientationChange: ((typeof window.orientation != 'undefined') && ('onorientationchange' in window)),
-    
+
     
     DeviceMotion: ('ondevicemotion' in window),
-    
+
     
     
     
     Touch: ('ontouchstart' in window) && (!Ext.is.Desktop),
-    
+
     
     TimeoutActualLateness: (function(){
         setTimeout(function(){
             Ext.supports.TimeoutActualLateness = arguments.length !== 0;
         }, 0);
-    })(), 
+    }()),
 
     tests: [
         
@@ -7924,9 +8090,9 @@ Ext.supports = {
                     ln = prefix.length,
                     i = 0,
                     out = false;
-                div = Ext.get(div);
+
                 for (; i < ln; i++) {
-                    if (div.getStyle(prefix[i] + "TransitionProperty")) {
+                    if (getStyle(div, prefix[i] + "TransitionProperty")) {
                         Ext.supports.CSS3Prefix = prefix[i];
                         Ext.supports.CSS3TransitionEnd = transitionEndName[i];
                         out = true;
@@ -7936,7 +8102,7 @@ Ext.supports = {
                 return out;
             }
         },
-        
+
         
         {
             identity: 'RightMargin',
@@ -7986,7 +8152,7 @@ Ext.supports = {
                 return view && view.getComputedStyle;
             }
         },
-        
+
         
         {
             identity: 'Svg',
@@ -7994,7 +8160,7 @@ Ext.supports = {
                 return !!doc.createElementNS && !!doc.createElementNS( "http:/" + "/www.w3.org/2000/svg", "svg").createSVGRect;
             }
         },
-    
+
         
         {
             identity: 'Canvas',
@@ -8002,17 +8168,17 @@ Ext.supports = {
                 return !!doc.createElement('canvas').getContext;
             }
         },
-        
+
         
         {
             identity: 'Vml',
             fn: function(doc) {
                 var d = doc.createElement("div");
-                d.innerHTML = "<!--[if vml]><br><br><![endif]-->";
+                d.innerHTML = "<!--[if vml]><br/><br/><![endif]-->";
                 return (d.childNodes.length == 2);
             }
         },
-        
+
         
         {
             identity: 'Float',
@@ -8020,7 +8186,7 @@ Ext.supports = {
                 return !!div.lastChild.style.cssFloat;
             }
         },
-        
+
         
         {
             identity: 'AudioTag',
@@ -8028,7 +8194,7 @@ Ext.supports = {
                 return !!doc.createElement('audio').canPlayType;
             }
         },
-        
+
         
         {
             identity: 'History',
@@ -8037,7 +8203,7 @@ Ext.supports = {
                 return !!(history && history.pushState);
             }
         },
-        
+
         
         {
             identity: 'CSS3DTransform',
@@ -8056,13 +8222,13 @@ Ext.supports = {
                     moz      = '-moz-' + w3c,
                     opera    = '-o-' + w3c,
                     options  = [property + webkit, property + w3c, property + moz, property + opera];
-                
+
                 div.style.cssText = options.join(';');
-                
+
                 return ("" + div.style.backgroundImage).indexOf('gradient') !== -1;
             }
         },
-        
+
         
         {
             identity: 'CSS3BorderRadius',
@@ -8078,7 +8244,7 @@ Ext.supports = {
                 return pass;
             }
         },
-        
+
         
         {
             identity: 'GeoLocation',
@@ -8119,7 +8285,7 @@ Ext.supports = {
                 return 'placeholder' in doc.createElement('input');
             }
         },
-        
+
         
         {
             identity: 'Direct2DBug',
@@ -8137,18 +8303,16 @@ Ext.supports = {
         {
             identity: 'IncludePaddingInWidthCalculation',
             fn: function(doc, div){
-                var el = Ext.get(div.childNodes[1].firstChild);
-                return el.getWidth() == 210;
+                return div.childNodes[1].firstChild.offsetWidth == 210;
             }
         },
         {
             identity: 'IncludePaddingInHeightCalculation',
             fn: function(doc, div){
-                var el = Ext.get(div.childNodes[1].firstChild);
-                return el.getHeight() == 210;
+                return div.childNodes[1].firstChild.offsetHeight == 210;
             }
         },
-        
+
         
         {
             identity: 'ArraySort',
@@ -8169,7 +8333,7 @@ Ext.supports = {
             identity: 'CreateContextualFragment',
             fn: function() {
                 var range = Ext.supports.Range ? document.createRange() : false;
-                
+
                 return range && !!range.createContextualFragment;
             }
         },
@@ -8182,7 +8346,7 @@ Ext.supports = {
                 return Ext.isIE || Ext.isGecko || Ext.webKitVersion >= 534.16; 
             }
         },
-        
+
         
         {
             identity: 'TextAreaMaxLength',
@@ -8196,11 +8360,12 @@ Ext.supports = {
         {
             identity: 'GetPositionPercentage',
             fn: function(doc, div){
-                return Ext.get(div.childNodes[2]).getStyle('left') == '10%';
+               return getStyle(div.childNodes[2], 'left') == '10%';
             }
         }
     ]
 };
+}());
 
 Ext.supports.init(); 
 
@@ -8236,6 +8401,14 @@ Ext.require('Ext.util.DelayedTask', function() {
 
     
     Ext.util.Event = Ext.extend(Object, (function() {
+        function createTargeted(handler, listener, o, scope){
+            return function(){
+                if (o.target === arguments[0]){
+                    handler.apply(scope, arguments);
+                }
+            };
+        }
+
         function createBuffered(handler, listener, o, scope) {
             listener.task = new Ext.util.DelayedTask();
             return function() {
@@ -8310,6 +8483,9 @@ Ext.require('Ext.util.DelayedTask', function() {
                 
                 if (o.single) {
                     handler = createSingle(handler, listener, o, scope);
+                }
+                if (o.target) {
+                    handler = createTargeted(handler, listener, o, scope);
                 }
                 if (o.delay) {
                     handler = createDelayed(handler, listener, o, scope);
@@ -8521,6 +8697,9 @@ Ext.EventManager = new function() {
                 if (Ext.isSafari5) {
                     add('safari5');
                 }
+                if (Ext.isSafari5_0) {
+                    add('safari5_0')
+                }
             }
             if (Ext.isChrome) {
                 add('chrome');
@@ -8583,17 +8762,20 @@ Ext.EventManager = new function() {
             (function () {
                 var event = new Ext.util.Event();
                 event.fire = function () {
-                    if (!/[?&]ext-pauseReadyFire\b/i.test(location.search) || Ext._continueFireReady) {
-                        Ext._beforeReadyTime = new Date().getTime();
-                        event.self.prototype.fire.apply(event, arguments);
-                        Ext._afterReadytime = new Date().getTime();
-                    }
+                    Ext._beforeReadyTime = Ext._beforeReadyTime || new Date().getTime();
+                    event.self.prototype.fire.apply(event, arguments);
+                    Ext._afterReadytime = new Date().getTime();
                 };
                 return event;
             }()),
 
         
         idleEvent: new Ext.util.Event(),
+
+        
+        isReadyPaused: function(){
+            return (/[?&]ext-pauseReadyFire\b/i.test(location.search) && !Ext._continueFireReady);
+        },
 
         
         bindReadyEvent: function() {
@@ -8639,29 +8821,48 @@ Ext.EventManager = new function() {
                 EventManager.readyEvent.onReadyChain = EventManager.onReadyChain;    
 
                 if (Ext.isNumber(EventManager.deferReadyEvent)) {
-                    Ext.Function.defer(EventManager.readyEvent.fire, EventManager.deferReadyEvent, EventManager.readyEvent);
+                    Ext.Function.defer(EventManager.fireReadyEvent, EventManager.deferReadyEvent);
+                    EventManager.hasDocReadyTimer = true;
                 } else {
-                    EventManager.readyEvent.fire();
+                    EventManager.fireReadyEvent();
                 }
-
-                EventManager.hasFiredReady = true;
             }
+        },
+
+        
+        fireReadyEvent: function(){
+            var readyEvent = EventManager.readyEvent;
+
+            
+            
+            EventManager.hasDocReadyTimer = false;
+            EventManager.isFiring = true;
+
+            
+            
+            
+            while (readyEvent.listeners.length && !EventManager.isReadyPaused()) {
+                readyEvent.fire();
+            }
+            EventManager.isFiring = false;
+            EventManager.hasFiredReady = true;
         },
 
         
         onDocumentReady: function(fn, scope, options) {
             options = options || {};
-            var readyEvent = EventManager.readyEvent;
-
             
             options.single = true;
-            readyEvent.addListener(fn, scope, options);
+            EventManager.readyEvent.addListener(fn, scope, options);
 
             
-            if (Ext.isReady) {
-                readyEvent.fire();
-            } else {
-                EventManager.bindReadyEvent();
+            
+            if (!(EventManager.isFiring || EventManager.hasDocReadyTimer)) {
+                if (Ext.isReady) {
+                    EventManager.fireReadyEvent();
+                } else {
+                    EventManager.bindReadyEvent();
+                }
             }
         },
 
@@ -8675,8 +8876,7 @@ Ext.EventManager = new function() {
 
         
         getId : function(element) {
-            var skipGarbageCollection = false,
-                id;
+            var id;
 
             element = Ext.getDom(element);
 
@@ -8686,17 +8886,11 @@ Ext.EventManager = new function() {
             else {
                 id = Ext.id(element);
             }
-            
-            if (element && (element.getElementById || element.navigator)) {
-                skipGarbageCollection = true;
-            }
 
             if (!Ext.cache[id]) {
-                Ext.Element.addToCache(new Ext.Element(element), id);
-                if (skipGarbageCollection) {
-                    Ext.cache[id].skipGarbageCollection = true;
-                }
+                Ext.addCacheEntry(id, null, element);
             }
+
             return id;
         },
 
@@ -8899,7 +9093,7 @@ Ext.EventManager = new function() {
         createListenerWrap : function(dom, ename, fn, scope, options) {
             options = options || {};
 
-            var f, gen, wrap = function(e, args) {
+            var f, gen, escapeRx = /\\/g, wrap = function(e, args) {
                 
                 if (!gen) {
                     f = ['if(!' + Ext.name + ') {return;}'];
@@ -8911,7 +9105,9 @@ Ext.EventManager = new function() {
                     }
 
                     if (options.delegate) {
-                        f.push('var t = e.getTarget("' + options.delegate + '", this);');
+                        
+                        
+                        f.push('var t = e.getTarget("' + (options.delegate + '').replace(escapeRx, '\\\\') + '", this);');
                         f.push('if(!t) {return;}');
                     } else {
                         f.push('var t = e.target;');
@@ -8979,7 +9175,7 @@ Ext.EventManager = new function() {
 
         
         getEventListenerCache : function(element, eventName) {
-            var elementCache, eventCache, id;
+            var elementCache, eventCache;
             if (!element) {
                 return [];
             }
@@ -8987,7 +9183,8 @@ Ext.EventManager = new function() {
             if (element.$cache) {
                 elementCache = element.$cache;
             } else {
-                elementCache = Ext.cache[id = EventManager.getId(element)] || (Ext.cache[id] = {});
+                
+                elementCache = Ext.cache[EventManager.getId(element)];
             }
             eventCache = elementCache.events || (elementCache.events = {});
 
@@ -9081,6 +9278,8 @@ Ext.EventManager = new function() {
 
         
         
+        
+        
         resolveTextNode: Ext.isGecko ?
             function(node) {
                 if (!node) {
@@ -9153,7 +9352,7 @@ Ext.EventManager = new function() {
             try {
                 
                 doc = win = undefined;
-                
+
                 var gridviews, i, ln,
                     el, cache;
 
@@ -10384,15 +10583,7 @@ Ext.define('Ext.dom.AbstractElement', {
 
         addToCache: function(el, id) {
             if (el) {
-                id = id || el.id;
-                el.$cache = Ext.cache[id] || (Ext.cache[id] = {
-                    data: {},
-                    events: {}
-                });
-                
-                
-                
-                el.$cache.el = el;
+                Ext.addCacheEntry(id, el);
             }
             return el;
         },
@@ -10472,7 +10663,10 @@ Ext.define('Ext.dom.AbstractElement', {
         DISPLAY: 2,
 
         
-        OFFSETS: 3
+        OFFSETS: 3,
+
+        
+        ASCLASS: 4
     },
 
     constructor: function(element, forceNew) {
@@ -10663,17 +10857,13 @@ Ext.define('Ext.dom.AbstractElement', {
         
         
         
-        me.$cache = Ext.cache[id] || (Ext.cache[id] = {
-            data: {},
-            events: {}
-        });     
+        me.$cache = Ext.cache[id] || Ext.addCacheEntry(id, null, me.dom);
             
         return me.$cache;
     }
     
 }, function() {
-    var AbstractElement = this,
-        validIdRe = /^[a-z_][a-z0-9_\-]*$/i;
+    var AbstractElement = this;
 
     Ext.getDetachedBody = function () {
         var detachedEl = AbstractElement.detachedBodyEl;
@@ -10691,8 +10881,8 @@ Ext.define('Ext.dom.AbstractElement', {
         var el = document.getElementById(id),
             detachedBodyEl;
 
-        if (!el && (detachedBodyEl = AbstractElement.detachedBodyEl) && validIdRe.test(id)) {
-            el = detachedBodyEl.dom.querySelector('#' + id);
+        if (!el && (detachedBodyEl = AbstractElement.detachedBodyEl)) {
+            el = detachedBodyEl.dom.querySelector('#' + Ext.escapeId(id));
         }
 
         return el;
@@ -10767,7 +10957,7 @@ Ext.define('Ext.dom.AbstractElement', {
                 
                 
                 var dom = document.getElementById(id) ||
-                          (validIdRe.test(id) ? this.dom.querySelector('#'+id) : null);
+                    this.dom.querySelector('#'+Ext.escapeId(id));
                 return asDom ? dom : (dom ? Ext.get(dom) : null);
             };
         } else {
@@ -11058,12 +11248,13 @@ Ext.dom.AbstractElement.addInheritableStatics({
         },
 
         getXY: function(el) {
-            var bd = (doc.body || doc.documentElement),
+            var bd = doc.body,
+                docEl = doc.documentElement,
                 leftBorder = 0,
                 topBorder = 0,
                 ret = [0,0],
                 round = Math.round,
-                b,
+                box,
                 scroll;
 
             el = Ext.getDom(el);
@@ -11073,19 +11264,19 @@ Ext.dom.AbstractElement.addInheritableStatics({
                 
                 if (Ext.isIE) {
                     try {
-                        b = el.getBoundingClientRect();
+                        box = el.getBoundingClientRect();
                         
-                        topBorder = bd.clientTop;
-                        leftBorder = bd.clientLeft;
+                        topBorder = docEl.clientTop || bd.clientTop;
+                        leftBorder = docEl.clientLeft || bd.clientLeft;
                     } catch (ex) {
-                        b = { left: 0, top: 0 }
+                        box = { left: 0, top: 0 };
                     }
                 } else {
-                    b = el.getBoundingClientRect();
+                    box = el.getBoundingClientRect();
                 }
 
                 scroll = fly(document).getScroll();
-                ret = [round(b.left + scroll.left - leftBorder), round(b.top + scroll.top - topBorder)];
+                ret = [round(box.left + scroll.left - leftBorder), round(box.top + scroll.top - topBorder)];
             }
             return ret;
         },
@@ -12378,7 +12569,10 @@ Ext.dom.AbstractElement.override({
         var node,
             me = this,
             id;
-        id = Ext.get(me).id;
+
+        
+        
+        id = Ext.id(me.dom);
         
         id = id.replace(/[\.:]/g, "\\$0");
         node = Ext.DomQuery.selectNode('#' + id + " > " + selector, me.dom);
@@ -12634,6 +12828,7 @@ Ext.define('Ext.dom.Helper', {
     overwrite: function(el, html, returnElement) {
         var newNode;
 
+        el = Ext.getDom(el);
         html = this.markup(html);
 
         
@@ -13160,6 +13355,14 @@ Ext.dom.Query = Ext.core.DomQuery = Ext.DomQuery = (function(){
                 lmode = path.match(modeRe),
                 tokenMatch, matched, j, t, m;
 
+            hasEscapes = (path.indexOf('\\') > -1);
+            if (hasEscapes) {
+                path = path
+                    .replace(shortHex, shortToLongHex)
+                    .replace(nonHex, charToLongHex)
+                    .replace(escapes, '\\\\');  
+            }
+
             if(lmode && lmode[1]){
                 fn[fn.length] = 'mode="'+lmode[1].replace(trimRe, "")+'";';
                 path = path.replace(lmode[1], "");
@@ -13237,13 +13440,6 @@ Ext.dom.Query = Ext.core.DomQuery = Ext.DomQuery = (function(){
             
             root = root || document;
 
-            if (hasEscapes = (path.indexOf('\\') > -1)) {
-                path = path
-                    .replace(shortHex, shortToLongHex)
-                    .replace(nonHex, charToLongHex)
-                    .replace(escapes, '\\\\');  
-            }
-
             if(typeof root == "string"){
                 root = document.getElementById(root);
             }
@@ -13291,7 +13487,7 @@ Ext.dom.Query = Ext.core.DomQuery = Ext.DomQuery = (function(){
                 try {
                     
                     if (root.parentNode && (root.nodeType !== 9) && path.indexOf(',') === -1 && !startIdRe.test(path)) {
-                        path = '#' + Ext.id(root) + ' ' + path;
+                        path = '#' + Ext.escapeId(Ext.id(root)) + ' ' + path;
                         root = root.parentNode;
                     }
                     return Ext.Array.toArray(root.querySelectorAll(path));
@@ -13618,6 +13814,7 @@ var HIDDEN = 'hidden',
     XMASKEDRELATIVE = Ext.baseCSSPrefix + "masked-relative",
     EXTELMASKMSG    = Ext.baseCSSPrefix + "mask-msg",
     bodyRe          = /^body/i,
+    visFly,
 
     
     noBoxAdjust = Ext.isStrict ? {
@@ -13761,17 +13958,25 @@ var HIDDEN = 'hidden',
 
     
     isVisible : function(deep) {
-        var vis = !this.isStyle(VISIBILITY, HIDDEN) && !this.isStyle(DISPLAY, NONE),
-            p   = this.dom.parentNode;
+        var me = this,
+            dom = me.dom,
+            stopNode = dom.ownerDocument.documentElement;
 
-        if (deep !== true || !vis) {
-            return vis;
+        if (!visFly) {
+            visFly = new Element.Fly();
         }
-        while (p && !(bodyRe.test(p.tagName))) {
-            if (!Ext.fly(p, '_isVisible').isVisible()) {
+
+        while (dom !== stopNode) {
+            
+            
+            if (!dom || dom.nodeType === 11 || (visFly.attach(dom)).isStyle(VISIBILITY, HIDDEN) || visFly.isStyle(DISPLAY, NONE)) {
                 return false;
             }
-            p = p.parentNode;
+            
+            if (!deep) {
+                break;
+            }
+            dom = dom.parentNode;
         }
         return true;
     },
@@ -14047,7 +14252,6 @@ var HIDDEN = 'hidden',
             clearInterval(El.collectorThreadId);
         } else {
             var eid,
-                el,
                 d,
                 o,
                 t;
@@ -14056,15 +14260,17 @@ var HIDDEN = 'hidden',
                 if (!EC.hasOwnProperty(eid)) {
                     continue;
                 }
+
                 o = EC[eid];
+
+                
                 if (o.skipGarbageCollection) {
                     continue;
                 }
-                el = o.el;
-                if (!el) {
-                    continue;
-                }
-                d = el.dom;
+
+                d = o.dom;
+
+
                 
                 
                 
@@ -14079,10 +14285,7 @@ var HIDDEN = 'hidden',
                 
                 
                 
-                
-                
-                
-                if (!d || !d.parentNode || (!d.offsetParent && !Ext.getElementById(eid))) {
+                if (!d.parentNode || (!d.offsetParent && !Ext.getElementById(eid))) {
                     if (d && Ext.enableListenerCollection) {
                         Ext.EventManager.removeAll(d);
                     }
@@ -14752,8 +14955,10 @@ Ext.dom.Element.override({
     slideIn: function(anchor, obj, slideOut) {
         var me = this,
             elStyle = me.dom.style,
-            beforeAnim, wrapAnim,
-            restoreScroll;
+            beforeAnim,
+            wrapAnim,
+            restoreScroll,
+            wrapDomParentNode;
 
         anchor = anchor || "t";
         obj = obj || {};
@@ -14789,6 +14994,7 @@ Ext.dom.Element.override({
                     visibility: slideOut ? 'visible' : 'hidden'
                 }
             });
+            wrapDomParentNode = wrap.dom.parentNode;
             wrap.setPositioning(me.getPositioning());
             if (wrap.isStyle('position', 'static')) {
                 wrap.position('relative');
@@ -14953,7 +15159,11 @@ Ext.dom.Element.override({
                     }
                 }
                 if (wrap.dom) {
-                    wrap.dom.parentNode.insertBefore(me.dom, wrap.dom);
+                    if (wrap.dom.parentNode) {
+                        wrap.dom.parentNode.insertBefore(me.dom, wrap.dom);
+                    } else {
+                        wrapDomParentNode.appendChild(me.dom);
+                    }
                     wrap.remove();
                 }
                 
@@ -14973,13 +15183,7 @@ Ext.dom.Element.override({
             
             duration: obj.duration ? Math.max(obj.duration, 500) * 2 : 1000,
             listeners: {
-                beforeanimate: beforeAnim, 
-                afteranimate: function() {
-                    if (wrapAnim && wrapAnim.running) {
-                        
-                        wrapAnim.end();
-                    }
-                }
+                beforeanimate: beforeAnim 
             }
         });
         return me;
@@ -14994,8 +15198,11 @@ Ext.dom.Element.override({
     
     puff: function(obj) {
         var me = this,
-            beforeAnim;
-        obj = Ext.applyIf(obj || {}, {
+            beforeAnim,
+            box = me.getBox(),
+            originalStyles = me.getStyles('width', 'height', 'left', 'right', 'top', 'bottom', 'position', 'z-index', 'font-size', 'opacity', true);
+
+       obj = Ext.applyIf(obj || {}, {
             easing: 'ease-out',
             duration: 500,
             useDisplay: false
@@ -15004,10 +15211,6 @@ Ext.dom.Element.override({
         beforeAnim = function() {
             me.clearOpacity();
             me.show();
-
-            var box = me.getBox(),
-                fontSize = me.getStyle('fontSize'),
-                position = me.getPositioning();
             this.to = {
                 width: box.width * 2,
                 height: box.height * 2,
@@ -15023,9 +15226,8 @@ Ext.dom.Element.override({
                     } else {
                         me.hide();
                     }
-                    me.clearOpacity();
-                    me.setPositioning(position);
-                    me.setStyle({fontSize: fontSize});
+                    me.setStyle(originalStyles);
+                    obj.callback.call(obj.scope);
                 }
             });
         };
@@ -15302,8 +15504,20 @@ Ext.dom.Element.override({
 
     
     fadeIn: function(o) {
-        this.animate(Ext.apply({}, o, {
-            opacity: 1
+        var me = this;
+        me.animate(Ext.apply({}, o, {
+            opacity: 1,
+            internalListeners: {
+                beforeanimate: function(anim){
+                    
+                    
+                    if (me.isStyle('display', 'none')) {
+                        me.setDisplayed('');
+                    } else {
+                        me.show();
+                    } 
+                }
+            }
         }));
         return this;
     },
@@ -15311,7 +15525,7 @@ Ext.dom.Element.override({
     
     fadeOut: function(o) {
         var me = this;
-        me.animate(Ext.applyIf(o || {}, {
+        o = Ext.apply({
             opacity: 0,
             internalListeners: {
                 afteranimate: function(anim){
@@ -15325,7 +15539,8 @@ Ext.dom.Element.override({
                     }         
                 }
             }
-        }));
+        }, o);
+        me.animate(o);
         return me;
     },
 
@@ -15369,18 +15584,20 @@ Ext.dom.Element.override({
 
 (function() {
 
-var Element = Ext.dom.Element,
+var Element         = Ext.dom.Element,
     VISIBILITY      = "visibility",
     DISPLAY         = "display",
     NONE            = "none",
     HIDDEN          = 'hidden',
-    OFFSETS = "offsets",
-    ASCLASS = "asclass",
-    NOSIZE = 'nosize',
+    VISIBLE         = 'visible',
+    OFFSETS         = "offsets",
+    ASCLASS         = "asclass",
+    NOSIZE          = 'nosize',
     ORIGINALDISPLAY = 'originalDisplay',
-    VISMODE = 'visibilityMode',
-    ISVISIBLE = 'isVisible',
-    getDisplay = function(el){
+    VISMODE         = 'visibilityMode',
+    ISVISIBLE       = 'isVisible',
+    OFFSETCLASS     = Ext.baseCSSPrefix + 'hide-offsets',
+    getDisplay = function(el) {
         var data = (el.$cache || el.getCache()).data,
             display = data[ORIGINALDISPLAY];
             
@@ -15394,7 +15611,7 @@ var Element = Ext.dom.Element,
             visMode = data[VISMODE];
             
         if (visMode === undefined) {
-            data[VISMODE] = visMode = Ext.dom.Element.VISIBILITY;
+            data[VISMODE] = visMode = Element.VISIBILITY;
         }
         return visMode;
     };
@@ -15405,27 +15622,26 @@ Element.override({
     visibilityMode : 1,
 
     
-    setVisible : function(visible, animate){
-        var me = this, isDisplay, isVisibility, isOffsets, isNosize,
+    setVisible : function(visible, animate) {
+        var me = this,
             dom = me.dom,
             visMode = getVisMode(me);
 
-
         
-        if (typeof animate == 'string'){
+        if (typeof animate == 'string') {
             switch (animate) {
                 case DISPLAY:
-                    visMode = Ext.dom.Element.DISPLAY;
+                    visMode = Element.DISPLAY;
                     break;
                 case VISIBILITY:
-                    visMode = Ext.dom.Element.VISIBILITY;
+                    visMode = Element.VISIBILITY;
                     break;
                 case OFFSETS:
-                    visMode = Ext.dom.Element.OFFSETS;
+                    visMode = Element.OFFSETS;
                     break;
                 case NOSIZE:
                 case ASCLASS:
-                    visMode = Ext.dom.Element.ASCLASS;
+                    visMode = Element.ASCLASS;
                     break;
             }
             me.setVisibilityMode(visMode);
@@ -15433,43 +15649,20 @@ Element.override({
         }
 
         if (!animate || !me.anim) {
-            if(visMode == Ext.dom.Element.ASCLASS ){
-
-                me[visible?'removeCls':'addCls'](me.visibilityCls || Ext.dom.Element.visibilityCls);
-
-            } else if (visMode == Ext.dom.Element.DISPLAY){
-
+            if (visMode == Element.DISPLAY) {
                 return me.setDisplayed(visible);
-
-            } else if (visMode == Ext.dom.Element.OFFSETS){
-
-                if (!visible){
-                    
-                    if (!me.hideModeStyles) {
-                        me.hideModeStyles = {
-                            position: me.getStyle('position'),
-                            top: me.getStyle('top'),
-                            left: me.getStyle('left')
-                        };
-                    }
-                    me.applyStyles({position: 'absolute', top: '-10000px', left: '-10000px'});
-                }
-
-                
-                
-                else if (me.hideModeStyles) {
-                    me.applyStyles(me.hideModeStyles || {position: '', top: '', left: ''});
-                    delete me.hideModeStyles;
-                }
-
-            }else{
+            } else if (visMode == Element.OFFSETS) {
+                me[visible?'removeCls':'addCls'](OFFSETCLASS);
+            } else if (visMode == Element.VISIBILITY) {
                 me.fixDisplay();
                 
                 dom.style.visibility = visible ? '' : HIDDEN;
+            } else if (visMode == Element.ASCLASS) {
+                me[visible?'removeCls':'addCls'](me.visibilityCls || Element.visibilityCls);
             }
-        }else{
+        } else {
             
-            if(visible){
+            if (visible) {
                 me.setOpacity(0.01);
                 me.setVisible(true);
             }
@@ -15494,11 +15687,10 @@ Element.override({
         return me;
     },
 
-
     
     hasMetrics  : function(){
         var visMode = getVisMode(this);
-        return this.isVisible() || (visMode == Ext.dom.Element.OFFSETS) || (visMode == Ext.dom.Element.VISIBILITY);
+        return this.isVisible() || (visMode == Element.OFFSETS) || (visMode == Element.VISIBILITY);
     },
 
     
@@ -15553,7 +15745,6 @@ Element.override({
 });
 
 }());
-
 
 
 (function() {
@@ -16193,7 +16384,9 @@ if (!view || !view.getComputedStyle) {
                         out = '';
                     }
                 } else {
-                    out = style[camel];
+                    
+                    
+                    out = style ? style[camel] : '';
                 }
             }
 
@@ -16951,27 +17144,33 @@ Ext.define('Ext.dom.CompositeElementLite', {
     
     filter: function(selector) {
         var me  = this,
-            els = [],
+            els = me.elements,
             len = els.length,
-            i, e;
+            out = [],
+            i = 0,
+            isFunc = typeof selector == 'function',
+            add,
+            el;
 
-        for (i = 0; i < len; i++) {
-            e = els[i];
+        for (; i < len; i++) {
+            el = els[i];
+            add = false;
+            if (el) {
+                el = me.getElement(el);
 
-            if (e) {
-                e = me.getElement(e);
-
-                if (typeof selector == 'function') {
-                    if (selector.call(e, e, me, i) === false) {
-                        break;
-                    }
-                } else if (e.is(selector) === false) {
-                    break;
+                if (isFunc) {
+                    add = selector.call(el, el, me, i) !== false;
+                } else {
+                    add = el.is(selector);
+                }
+                
+                if (add) {
+                    out.push(me.transformElement(el));
                 }
             }
         }
 
-        me.elements = els;
+        me.elements = out;
         return me;
     },
 
@@ -17041,7 +17240,7 @@ Ext.define('Ext.dom.CompositeElementLite', {
         keys = [].concat(keys);
 
         var me       = this,
-            elements = this.elements,
+            elements = me.elements,
             kLen     = keys.length,
             val, el, k;
 
@@ -17060,7 +17259,7 @@ Ext.define('Ext.dom.CompositeElementLite', {
             }
         }
 
-        return this;
+        return me;
     }
 
 }, function() {
@@ -17450,10 +17649,7 @@ Ext.define('Ext.ComponentQuery', {
 
             for (; i < length; i++) {
                 selector = Ext.String.trim(selectors[i]);
-                query = this.cache[selector];
-                if (!query) {
-                    this.cache[selector] = query = this.parse(selector);
-                }
+                query = this.cache[selector] || (this.cache[selector] = this.parse(selector));
                 results = results.concat(query.execute(root));
             }
 
@@ -17478,11 +17674,18 @@ Ext.define('Ext.ComponentQuery', {
             if (!selector) {
                 return true;
             }
-            var query = this.cache[selector];
-            if (!query) {
-                this.cache[selector] = query = this.parse(selector);
+            var selectors = selector.split(','),
+                length = selectors.length,
+                i = 0,
+                query;
+
+            for (; i < length; i++) {
+                selector = Ext.String.trim(selectors[i]);
+                query = this.cache[selector] || (this.cache[selector] = this.parse(selector));
+                if (query.is(component)) {
+                    return true;
+                }
             }
-            return query.is(component);
         },
 
         parse: function(selector) {
@@ -17562,6 +17765,10 @@ Ext.define('Ext.ComponentQuery', {
                             selector = selector.replace(selectorMatch[0], '');
                             break; 
                         }
+                        
+                        if (i === (length - 1)) {
+                            Ext.Error.raise('Invalid ComponentQuery selector: "' + arguments[0] + '"');
+                        }
                     }
                 }
 
@@ -17612,6 +17819,14 @@ Ext.define('Ext.Template', {
             value;
 
         me.initialConfig = {};
+        
+        
+        
+        
+        if (length === 1 && Ext.isArray(html)) {
+            args = html;
+            length = args.length;
+        }
 
         if (length > 1) {
             for (; i < length; i++) {
@@ -17623,13 +17838,8 @@ Ext.define('Ext.Template', {
                     buffer.push(value);
                 }
             }
-            html = buffer.join('');
         } else {
-            if (Ext.isArray(html)) {
-                buffer.push(html.join(''));
-            } else {
-                buffer.push(html);
-            }
+            buffer.push(html);
         }
 
         
@@ -18044,6 +18254,10 @@ Ext.define('Ext.XTemplateParser', {
                     // todo - error
                 }
                 */
+            } else if (m[0].length === 5) {
+                // if the length of m[0] is 5, assume that we're dealing with an opening tpl tag with no attributes (e.g. <tpl>...</tpl>)
+                // in this case no action is needed other than pushing it on to the stack
+                stack.push({ type: 'tpl' });
             } else {
                 frame = stack.pop();
                 me.doEnd(frame.type, frame.actions);
@@ -18640,7 +18854,7 @@ Ext.define('Ext.data.Operation', {
             clientRecords = me.records;
 
             if (clientRecords && clientRecords.length) {
-                if(clientRecords.length > 1) {
+                if (clientRecords.length > 1) {
                     
                     
                     mc = new Ext.util.MixedCollection();
@@ -18648,19 +18862,10 @@ Ext.define('Ext.data.Operation', {
 
                     for (index = clientRecords.length; index--; ) {
                         clientRec = clientRecords[index];
-                        serverRec = mc.findBy(function(record) {
-                            var clientRecordId = clientRec.getId();
-                            if(clientRecordId && record.getId() === clientRecordId) {
-                                return true;
-                            }
-                            
-                            
-                            
-                            return record.internalId === clientRec.internalId;
-                        });
+                        serverRec = mc.findBy(me.matchClientRec, clientRec);
 
                         
-                        me.updateClientRecord(clientRec, serverRec);
+                        clientRec.copyFrom(serverRec);
                     }
                 } else {
                     
@@ -18668,7 +18873,7 @@ Ext.define('Ext.data.Operation', {
                     serverRec = serverRecords[0];
                     
                     if(serverRec && (clientRec.phantom || clientRec.getId() === serverRec.getId())) {
-                        me.updateClientRecord(clientRec, serverRec);
+                        clientRec.copyFrom(serverRec);
                     }
                 }
 
@@ -18682,26 +18887,19 @@ Ext.define('Ext.data.Operation', {
     },
 
     
-    updateClientRecord: function(clientRecord, serverRecord) {
-        if (clientRecord && serverRecord) {
-            clientRecord.beginEdit();
+    
+    
+    matchClientRec: function(record) {
+        var clientRec = this,
+            clientRecordId = clientRec.getId();
 
-            var fields = clientRecord.fields.items,
-                fLen   = fields.length,
-                field, f;
-
-            for (f = 0; f < fLen; f++) {
-                field = fields[f];
-
-                if (field.persist) {
-                    clientRecord.set(field.name, serverRecord.get(field.name));
-                }
-            }
-            if(clientRecord.phantom) {
-                clientRecord.setId(serverRecord.getId());
-            }
-            clientRecord.endEdit(true);
+        if(clientRecordId && record.getId() === clientRecordId) {
+            return true;
         }
+        
+        
+        
+        return record.internalId === clientRec.internalId;
     },
 
     
@@ -19163,7 +19361,8 @@ Ext.define('Ext.data.validations', {
     
     
     presence: function(config, value) {
-        if (value === undefined) {
+        
+        if (arguments.length === 1) {
             value = config;
         }
         
@@ -19581,6 +19780,9 @@ Ext.define('Ext.data.writer.Writer', {
     nameProperty: 'name',
 
     
+    isWriter: true,
+
+    
     constructor: function(config) {
         Ext.apply(this, config);
     },
@@ -19607,6 +19809,7 @@ Ext.define('Ext.data.writer.Writer', {
             fields = record.fields,
             fieldItems = fields.items,
             data = {},
+            clientIdProperty = record.clientIdProperty,
             changes,
             name,
             field,
@@ -19636,10 +19839,10 @@ Ext.define('Ext.data.writer.Writer', {
             }
         }
         if(isPhantom) {
-            if(operation && operation.records.length > 1) {
+            if(clientIdProperty && operation && operation.records.length > 1) {
                 
                 
-                data[record.clientIdProperty] = record.internalId;
+                data[clientIdProperty] = record.internalId;
             }
         } else {
             
@@ -20453,18 +20656,20 @@ Ext.define('Ext.draw.Draw', {
                     a1.y = path1[i][2];
                     ii = Math.max(p.length, p2.length || 0);
                 }
-            };
-        for (var i = 0, ii = Math.max(p.length, p2.length || 0); i < ii; i++) {
+            },
+            i, ii,
+            seg, seg2, seglen, seg2len;
+        for (i = 0, ii = Math.max(p.length, p2.length || 0); i < ii; i++) {
             p[i] = me.command2curve(p[i], attrs);
             fixArc(p, i);
             (p2[i] = me.command2curve(p2[i], attrs2));
             fixArc(p2, i);
             fixM(p, p2, attrs, attrs2, i);
             fixM(p2, p, attrs2, attrs, i);
-            var seg = p[i],
-                seg2 = p2[i],
-                seglen = seg.length,
-                seg2len = seg2.length;
+            seg = p[i];
+            seg2 = p2[i];
+            seglen = seg.length;
+            seg2len = seg2.length;
             attrs.x = seg[seglen - 2];
             attrs.y = seg[seglen - 1];
             attrs.bx = parseFloat(seg[seglen - 4]) || attrs.x;
@@ -21561,6 +21766,7 @@ Ext.define('Ext.draw.engine.SvgExporter', {
                     'fill-opacity': attr.opacity,
                     'stroke-width': attr['stroke-width'],
                     'stroke-opacity': attr['stroke-opacity'],
+                    "z-index": attr.zIndex,
                     transform: sprite.matrix.toSvg()    
                 });
 
@@ -21666,7 +21872,7 @@ Ext.define('Ext.draw.engine.SvgExporter', {
             var svg = '<svg width="'+width+'px" height="'+height+'px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1">',
                 defs = '', item, itemsLen, items, gradient,
                 getSvgString, colorstops, stop,
-                coll, keys, colls, k, kLen, key, collI, i, o, stopsLen;
+                coll, keys, colls, k, kLen, key, collI, i, j, stopsLen, sortedItems, za, zb;
 
             items = surface.items.items;
             itemsLen = items.length;
@@ -21678,7 +21884,7 @@ Ext.define('Ext.draw.engine.SvgExporter', {
                     childLength = childs.length,
                     i = 0,
                     attrLength,
-                    o,
+                    j,
                     svgString = '', child, attr, tagName, attrItem;
 
                     for(; i < childLength; i++){
@@ -21688,8 +21894,8 @@ Ext.define('Ext.draw.engine.SvgExporter', {
                         
                         svgString += '<' +tagName;
                         
-                        for(o = 0, attrLength = attr.length; o < attrLength; o++){
-                            attrItem = attr.item(o);
+                        for(j = 0, attrLength = attr.length; j < attrLength; j++){
+                            attrItem = attr.item(j);
                             svgString += ' '+attrItem.name+'="'+attrItem.value+'"';
                         }
                         
@@ -21725,10 +21931,13 @@ Ext.define('Ext.draw.engine.SvgExporter', {
                     gradient = surface.gradientsColl.getByKey(key);
                     defs += '<linearGradient id="' + key + '" x1="0" y1="0" x2="1" y2="1">';
 
-                    colorstops = gradient.colors.split(',');
+                    var color = gradient.colors.replace(/rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/g, 'rgb($1|$2|$3)');
+                    color = color.replace(/rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,([\d\.]+)\)/g, 'rgba($1|$2|$3|$4)')
+                    colorstops = color.split(',');
                     for(i=0, stopsLen = colorstops.length; i < stopsLen; i++){
                         stop = colorstops[i].split(' ');
-                        defs += '<stop offset="'+stop[0]+'" stop-color="'+stop[1]+'" stop-opacity="1"></stop>';
+                        color = Ext.draw.Color.fromString(stop[1].replace(/\|/g,','));
+                        defs += '<stop offset="'+stop[0]+'" stop-color="' + color.toString() + '" stop-opacity="1"></stop>';
                     }
                     defs += '</linearGradient>';
                 }
@@ -21747,9 +21956,22 @@ Ext.define('Ext.draw.engine.SvgExporter', {
                 }
             });
                 
-            for(o = 0; o < itemsLen; o++){
-                item = items[o];
-                
+            
+            sortedItems = new Array(itemsLen);
+            for(i = 0; i < itemsLen; i++){
+                sortedItems[i] = i;
+            }
+            sortedItems.sort(function (a, b) {
+                za = items[a].attr.zIndex || 0;
+                zb = items[b].attr.zIndex || 0;
+                if (za == zb) {
+                    return a - b;
+                }
+                return za - zb;
+            });
+
+            for(i = 0; i < itemsLen; i++){
+                item = items[sortedItems[i]];
                 if(!item.attr.hidden){
                     svg += spriteProcessor[item.type](item);
                 }
@@ -21934,12 +22156,41 @@ Ext.define('Ext.fx.PropertyHandler', {
                         j = 0;
                         len = val.length;
                         for (; j < len; j++) {
-                            res.push(val[j].from + (val[j].delta * easing) + (val[j].units || 0));
+                            res.push(val[j].from + val[j].delta * easing + (val[j].units || 0));
                         }
                         out.push([values[i][0], res]);
                     } else {
-                        out.push([values[i][0], val.from + (val.delta * easing) + (val.units || 0)]);
+                        out.push([values[i][0], val.from + val.delta * easing + (val.units || 0)]);
                     }
+                }
+                return out;
+            }
+        },
+        stringHandler: {
+            computeDelta: function(from, end, damper, initial, attr) {
+                return {
+                    from: from,
+                    delta: end
+                };
+            },
+
+            get: function(from, end, damper, initialFrom, attr) {
+                var ln = from.length,
+                    out = [],
+                    i, initial, res, j, len;
+                for (i = 0; i < ln; i++) {
+                    out.push([from[i][0], this.computeDelta(from[i][1], end, damper, initial, attr)]);
+                }
+                return out;
+            },
+
+            set: function(values, easing) {
+                var ln = values.length,
+                    out = [],
+                    i, val, res, len, j;
+                for (i = 0; i < ln; i++) {
+                    val  = values[i][1];
+                    out.push([values[i][0], val.delta]);
                 }
                 return out;
             }
@@ -21986,7 +22237,7 @@ Ext.define('Ext.fx.PropertyHandler', {
                     tfrom = typeof start,
                     tend = typeof end;
                 
-                if (tfrom == 'string' ||  tfrom == 'undefined' 
+                if (tfrom == 'string' ||  tfrom == 'undefined'
                   || tend == 'string' || tend == 'undefined') {
                     return end || start;
                 }
@@ -22050,7 +22301,7 @@ Ext.define('Ext.fx.PropertyHandler', {
                 var out = {},
                     p;
                 for(p in prop) {
-                    out[p] = parseInt(prop[p], 10) * damper;
+                    out[p] = parseFloat(prop[p]) * damper;
                 }
                 return out;
             },
@@ -22094,7 +22345,7 @@ Ext.define('Ext.fx.PropertyHandler', {
                     from = val.from;
                     delta = val.delta;
                     for (p in from) {
-                        outObject[p] = Math.round(from[p] + delta[p] * easing);
+                        outObject[p] = from[p] + delta[p] * easing;
                     }
                     out.push([
                         values[i][0],
@@ -22177,6 +22428,7 @@ Ext.define('Ext.fx.PropertyHandler', {
         
     }
 }, function() {
+    
     var props  = [
             'outlineColor',
             'backgroundColor',
@@ -22196,7 +22448,18 @@ Ext.define('Ext.fx.PropertyHandler', {
         prop = props[i];
         this[prop] = this.color;
     }
+    
+    
+    props  = ['cursor'];
+    length = props.length;
+    i      = 0;
+
+    for (; i<length; i++) {
+        prop = props[i];
+        this[prop] = this.stringHandler;
+    }
 });
+
 
 Ext.define('Ext.fx.target.Target', {
 
@@ -22378,22 +22641,9 @@ Ext.define('Ext.layout.ContextItem', {
 
         if (target.isComponent) {
             me.wrapsComponent = true;
-
             me.sizeModel = sizeModel = target.getSizeModel(me.ownerCtContext && me.ownerCtContext.sizeModel);
             me.widthModel = sizeModel.width;
             me.heightModel = sizeModel.height;
-
-            
-
-            
-            
-            
-            if (target.isContainer) {
-                if (target.items.items.length || !target.getTargetEl().dom.firstChild) {
-                    me.hasRawContent = false;
-                }
-            }
-
             me.frameBodyContext = me.getEl('frameBody');
         }
     },
@@ -22499,12 +22749,19 @@ Ext.define('Ext.layout.ContextItem', {
     addTrigger: function (propName, inDom) {
         var me = this,
             collection = inDom ? me.domTriggers : me.triggers,
-            layout = me.context.currentLayout,
+            context = me.context,
+            layout = context.currentLayout,
             triggers = collection[propName] || (collection[propName] = {});
 
         if (!triggers[layout.id]) {
             triggers[layout.id] = layout;
             ++layout.triggerCount;
+
+            triggers = context.triggers[inDom ? 'dom' : 'data'];
+            (triggers[layout.id] || (triggers[layout.id] = [])).push({
+                item: this,
+                prop: propName
+            });
 
             if (me.props[propName] !== undefined) {
                 if (!inDom || !(me.dirty && (propName in me.dirty))) {
@@ -22512,7 +22769,6 @@ Ext.define('Ext.layout.ContextItem', {
                 }
             }
         }
-        return true;
     },
 
     boxChildMeasured: function () {
@@ -22897,26 +23153,23 @@ Ext.define('Ext.layout.ContextItem', {
                 }
 
                 if (!info) { 
-                    info = me.parseMargins(comp.margin);
+                    
+                    info = me.parseMargins(comp.margin) || me.checkCache('marginInfo');
 
-                    if (!info) { 
-                        info = me.checkCache('marginInfo');
-
-                        if (manageMargins) {
-                            margins = me.parseMargins(comp.margins, ownerLayout.defaultMargins);
-
-                            if (margins) { 
-                                info = {
-                                    top:    info.top    + margins.top,
-                                    right:  info.right  + margins.right,
-                                    bottom: info.bottom + margins.bottom,
-                                    left:   info.left   + margins.left
-                                };
-                            }
-                        }
-                    }
-
+                    
                     if (manageMargins) {
+                        margins = me.parseMargins(comp.margins, ownerLayout.defaultMargins);
+
+                        if (margins) { 
+                            
+                            info = {
+                                top:    info.top    + margins.top,
+                                right:  info.right  + margins.right,
+                                bottom: info.bottom + margins.bottom,
+                                left:   info.left   + margins.left
+                            };
+                        }
+
                         me.setProp('margin-top', 0);
                         me.setProp('margin-right', 0);
                         me.setProp('margin-bottom', 0);
@@ -23100,7 +23353,10 @@ Ext.define('Ext.layout.ContextItem', {
         } else if (margins || defaultMargins) {
             ret = { top: 0, right: 0, bottom: 0, left: 0 }; 
 
-            Ext.apply(ret, defaultMargins); 
+            if (defaultMargins) {
+                Ext.apply(ret, this.parseMargins(defaultMargins)); 
+            }
+
             Ext.apply(ret, margins); 
         }
 
@@ -24201,7 +24457,33 @@ Ext.define('Ext.util.Observable', {
                 if (Ext.isObject(listeners)) {
                     cls.on(listeners);
                 }
-                return cls;
+            }
+            return cls;
+        },
+
+        
+        prepareClass: function (T, mixin) {
+            
+            
+
+            
+            
+
+            if (!T.HasListeners) {
+                
+                
+                
+                var Observable = Ext.util.Observable,
+                    HasListeners = function () {},
+                    SuperHL = T.superclass.HasListeners || (mixin && mixin.HasListeners) ||
+                              Observable.HasListeners;
+
+                
+                T.prototype.HasListeners = T.HasListeners = HasListeners;
+
+                
+                
+                HasListeners.prototype = T.hasListeners = new SuperHL();
             }
         }
     },
@@ -24213,17 +24495,17 @@ Ext.define('Ext.util.Observable', {
     
     isObservable: true,
 
+    
+
     constructor: function(config) {
         var me = this;
 
         Ext.apply(me, config);
 
         
-        
-        
-        
-        
-        me.hasListeners = me.hasListeners || new me.HasListeners();
+        if (!me.hasListeners) {
+            me.hasListeners = new me.HasListeners();
+        }
 
         me.events = me.events || {};
         if (me.listeners) {
@@ -24233,6 +24515,14 @@ Ext.define('Ext.util.Observable', {
 
         if (me.bubbleEvents) {
             me.enableBubble(me.bubbleEvents);
+        }
+    },
+
+    onClassExtended: function (T) {
+        if (!T.HasListeners) {
+            
+            
+            Ext.util.Observable.prepareClass(T);
         }
     },
 
@@ -24320,7 +24610,7 @@ Ext.define('Ext.util.Observable', {
             ret = true;
 
         do {
-            if (target.eventsSuspended === true) {
+            if (target.eventsSuspended) {
                 if ((queue = target.eventQueue)) {
                     queue.push([eventName, args, bubbles]);
                 }
@@ -24351,8 +24641,7 @@ Ext.define('Ext.util.Observable', {
     
     addListener: function(ename, fn, scope, options) {
         var me = this,
-            config,
-            event;
+            config, event, hasListeners;
 
         if (typeof ename !== 'string') {
             options = ename;
@@ -24364,8 +24653,7 @@ Ext.define('Ext.util.Observable', {
                     }
                 }
             }
-        }
-        else {
+        } else {
             ename = ename.toLowerCase();
             me.events[ename] = me.events[ename] || true;
             event = me.events[ename] || true;
@@ -24375,14 +24663,19 @@ Ext.define('Ext.util.Observable', {
 
             
             if (typeof fn === 'string') {
-                fn = scope[fn] || me.fn;
+                fn = scope[fn] || me[fn];
             }
             event.addListener(fn, scope, Ext.isObject(options) ? options : {});
 
-            
-            
-            
-            me.hasListeners[ename] = (me.hasListeners[ename]||0) + 1;
+            hasListeners = me.hasListeners;
+            if (hasListeners.hasOwnProperty(ename)) {
+                
+                ++hasListeners[ename];
+            } else {
+                
+                
+                hasListeners[ename] = 1;
+            }
         }
     },
 
@@ -24409,10 +24702,12 @@ Ext.define('Ext.util.Observable', {
             if (event && event.isEvent) {
                 event.removeListener(fn, scope);
 
-                
-                
-                
-                me.hasListeners[ename]--;
+                if (! --me.hasListeners[ename]) {
+                    
+                    
+                    
+                    delete me.hasListeners[ename];
+                }
             }
         }
     },
@@ -24558,10 +24853,40 @@ Ext.define('Ext.util.Observable', {
         }
     }
 }, function() {
-
     var Observable = this,
         proto = Observable.prototype,
-        HasListeners = function () {};
+        HasListeners = function () {},
+        prepareMixin = function (T) {
+            if (!T.HasListeners) {
+                var proto = T.prototype;
+
+                
+                Observable.prepareClass(T, this);
+
+                
+                
+                T.onExtended(function (U) {
+                    Observable.prepareClass(U);
+                });
+
+                
+                
+                if (proto.onClassMixedIn) {
+                    
+                    Ext.override(T, {
+                        onClassMixedIn: function (U) {
+                            prepareMixin.call(this, U);
+                            this.callParent(arguments);
+                        }
+                    });
+                } else {
+                    
+                    proto.onClassMixedIn = function (U) {
+                        prepareMixin.call(this, U);
+                    };
+                }
+            }
+        };
 
     HasListeners.prototype = {
         
@@ -24583,121 +24908,121 @@ Ext.define('Ext.util.Observable', {
     
     Observable.observeClass = Observable.observe;
 
-    Ext.apply(proto, (function(){
-        
-        
-        
-        function getMethodEvent(method){
-            var e = (this.methodEvents = this.methodEvents || {})[method],
-                returnValue,
-                v,
-                cancel,
-                obj = this,
-                makeCall;
+    
+    
+    
+    function getMethodEvent(method){
+        var e = (this.methodEvents = this.methodEvents || {})[method],
+            returnValue,
+            v,
+            cancel,
+            obj = this,
+            makeCall;
 
-            if (!e) {
-                this.methodEvents[method] = e = {};
-                e.originalFn = this[method];
-                e.methodName = method;
-                e.before = [];
-                e.after = [];
+        if (!e) {
+            this.methodEvents[method] = e = {};
+            e.originalFn = this[method];
+            e.methodName = method;
+            e.before = [];
+            e.after = [];
 
-                makeCall = function(fn, scope, args){
-                    if((v = fn.apply(scope || obj, args)) !== undefined){
-                        if (typeof v == 'object') {
-                            if(v.returnValue !== undefined){
-                                returnValue = v.returnValue;
-                            }else{
-                                returnValue = v;
-                            }
-                            cancel = !!v.cancel;
+            makeCall = function(fn, scope, args){
+                if((v = fn.apply(scope || obj, args)) !== undefined){
+                    if (typeof v == 'object') {
+                        if(v.returnValue !== undefined){
+                            returnValue = v.returnValue;
+                        }else{
+                            returnValue = v;
                         }
-                        else
-                            if (v === false) {
-                                cancel = true;
-                            }
-                            else {
-                                returnValue = v;
-                            }
+                        cancel = !!v.cancel;
                     }
-                };
-
-                this[method] = function(){
-                    var args = Array.prototype.slice.call(arguments, 0),
-                        b, i, len;
-                    returnValue = v = undefined;
-                    cancel = false;
-
-                    for(i = 0, len = e.before.length; i < len; i++){
-                        b = e.before[i];
-                        makeCall(b.fn, b.scope, args);
-                        if (cancel) {
-                            return returnValue;
+                    else
+                        if (v === false) {
+                            cancel = true;
                         }
-                    }
-
-                    if((v = e.originalFn.apply(obj, args)) !== undefined){
-                        returnValue = v;
-                    }
-
-                    for(i = 0, len = e.after.length; i < len; i++){
-                        b = e.after[i];
-                        makeCall(b.fn, b.scope, args);
-                        if (cancel) {
-                            return returnValue;
+                        else {
+                            returnValue = v;
                         }
-                    }
-                    return returnValue;
-                };
-            }
-            return e;
-        }
+                }
+            };
 
-        return {
-            
-            
-            
-            beforeMethod : function(method, fn, scope){
-                getMethodEvent.call(this, method).before.push({
-                    fn: fn,
-                    scope: scope
-                });
-            },
+            this[method] = function(){
+                var args = Array.prototype.slice.call(arguments, 0),
+                    b, i, len;
+                returnValue = v = undefined;
+                cancel = false;
 
-            
-            afterMethod : function(method, fn, scope){
-                getMethodEvent.call(this, method).after.push({
-                    fn: fn,
-                    scope: scope
-                });
-            },
-
-            removeMethodListener: function(method, fn, scope){
-                var e = this.getMethodEvent(method),
-                    i, len;
                 for(i = 0, len = e.before.length; i < len; i++){
-                    if(e.before[i].fn == fn && e.before[i].scope == scope){
-                        Ext.Array.erase(e.before, i, 1);
-                        return;
+                    b = e.before[i];
+                    makeCall(b.fn, b.scope, args);
+                    if (cancel) {
+                        return returnValue;
                     }
                 }
-                for(i = 0, len = e.after.length; i < len; i++){
-                    if(e.after[i].fn == fn && e.after[i].scope == scope){
-                        Ext.Array.erase(e.after, i, 1);
-                        return;
-                    }
-                }
-            },
 
-            toggleEventLogging: function(toggle) {
-                Ext.util.Observable[toggle ? 'capture' : 'releaseCapture'](this, function(en) {
-                    if (Ext.isDefined(Ext.global.console)) {
-                        Ext.global.console.log(en, arguments);
+                if((v = e.originalFn.apply(obj, args)) !== undefined){
+                    returnValue = v;
+                }
+
+                for(i = 0, len = e.after.length; i < len; i++){
+                    b = e.after[i];
+                    makeCall(b.fn, b.scope, args);
+                    if (cancel) {
+                        return returnValue;
                     }
-                });
+                }
+                return returnValue;
+            };
+        }
+        return e;
+    }
+
+    Ext.apply(proto, {
+        onClassMixedIn: prepareMixin,
+
+        
+        
+        
+        beforeMethod : function(method, fn, scope){
+            getMethodEvent.call(this, method).before.push({
+                fn: fn,
+                scope: scope
+            });
+        },
+
+        
+        afterMethod : function(method, fn, scope){
+            getMethodEvent.call(this, method).after.push({
+                fn: fn,
+                scope: scope
+            });
+        },
+
+        removeMethodListener: function(method, fn, scope){
+            var e = this.getMethodEvent(method),
+                i, len;
+            for(i = 0, len = e.before.length; i < len; i++){
+                if(e.before[i].fn == fn && e.before[i].scope == scope){
+                    Ext.Array.erase(e.before, i, 1);
+                    return;
+                }
             }
-        };
-    }()));
+            for(i = 0, len = e.after.length; i < len; i++){
+                if(e.after[i].fn == fn && e.after[i].scope == scope){
+                    Ext.Array.erase(e.after, i, 1);
+                    return;
+                }
+            }
+        },
+
+        toggleEventLogging: function(toggle) {
+            Ext.util.Observable[toggle ? 'capture' : 'releaseCapture'](this, function(en) {
+                if (Ext.isDefined(Ext.global.console)) {
+                    Ext.global.console.log(en, arguments);
+                }
+            });
+        }
+    });
 });
 
 
@@ -25427,10 +25752,21 @@ Ext.define('Ext.util.Renderable', {
 
     beforeRender: function () {
         var me = this,
+            target = me.getTargetEl(),
             layout = me.getComponentLayout();
+
+        
+        me.frame = me.frame || me.alwaysFramed;
 
         if (!layout.initialized) {
             layout.initLayout();
+        }
+
+        
+        
+        if (target) {
+            target.setStyle(me.getOverflowStyle());
+            me.overflowStyleSet = true;
         }
 
         me.setUI(me.ui);
@@ -25515,7 +25851,7 @@ Ext.define('Ext.util.Renderable', {
     
     finishRender: function(containerIdx) {
         var me = this,
-            tpl, data, contentEl, el, pre, hide, target;
+            tpl, data, contentEl, el, pre, hide;
 
         
         
@@ -25573,8 +25909,9 @@ Ext.define('Ext.util.Renderable', {
         me.onRender(me.container, containerIdx);
 
         
-        target = me.getTargetEl();
-        target.setStyle(me.getOverflowStyle());
+        if (!me.overflowStyleSet) {
+            me.getTargetEl().setStyle(me.getOverflowStyle());
+        }
 
         
         
@@ -25593,7 +25930,7 @@ Ext.define('Ext.util.Renderable', {
             hide = pre + 'hide-';
             contentEl = Ext.get(me.contentEl);
             contentEl.removeCls([pre+'hidden', hide+'display', hide+'offsets', hide+'nosize']);
-            target.appendChild(contentEl.dom);
+            me.getTargetEl().appendChild(contentEl.dom);
         }
 
         me.afterRender(); 
@@ -25715,9 +26052,9 @@ Ext.define('Ext.util.Renderable', {
     getRenderTree: function() {
         var me = this;
 
-        me.beforeRender();
-
         if (!me.hasListeners.beforerender || me.fireEvent('beforerender', me) !== false) {
+            me.beforeRender();
+
             
             
             me.rendering = true;
@@ -25854,12 +26191,17 @@ Ext.define('Ext.util.Renderable', {
 
         if (!el) {
             tree = me.getRenderTree();
-            if (nextSibling) {
-                el = Ext.DomHelper.insertBefore(nextSibling, tree);
-            } else {
-                el = Ext.DomHelper.append(container, tree);
+
+            
+            if (tree) {
+                if (nextSibling) {
+                    el = Ext.DomHelper.insertBefore(nextSibling, tree);
+                } else {
+                    el = Ext.DomHelper.append(container, tree);
+                }
+
+                me.wrapPrimaryEl(el);
             }
-            me.wrapPrimaryEl(el);
         } else {
             
             me.initStyles(el);
@@ -25873,7 +26215,9 @@ Ext.define('Ext.util.Renderable', {
             }
         }
 
-        me.finishRender(position);
+        if (el) {
+            me.finishRender(position);
+        }
 
         Ext.resumeLayouts(!container.isDetachedBody);
     },
@@ -26017,7 +26361,6 @@ Ext.define('Ext.util.Renderable', {
 
     
     getFrameInfo: function() {
-        
         
         if (Ext.supports.CSS3BorderRadius || !this.frame) {
             return false;
@@ -27137,12 +27480,20 @@ Ext.define('Ext.ZIndexManager', {
    
     bringToFront : function(comp) {
         var me = this,
-            result = false;
+            result = false,
+            zIndexStack = me.zIndexStack;
         
         comp = me.get(comp);
         if (comp !== me.front) {
-            Ext.Array.remove(me.zIndexStack, comp);
-            me.zIndexStack.push(comp);
+            Ext.Array.remove(zIndexStack, comp);
+            if (comp.preventBringToFront) {
+                
+                zIndexStack.unshift(comp);
+            } else {
+                
+                zIndexStack.push(comp);
+            }
+
             me.assignZIndices();
             result = true;
             this.front = comp;
@@ -29464,7 +29815,6 @@ Ext.define('Ext.form.field.Field', {
 });
 
 
-
 Ext.define('Ext.form.field.VTypes', (function(){
     
     var alpha = /^[a-zA-Z_]+$/,
@@ -29696,7 +30046,7 @@ Ext.define('Ext.grid.PagingScroller', {
 
     
     trailingBufferZone: 5,
-    
+
     
     leadingBufferZone: 15,
 
@@ -29746,6 +30096,8 @@ Ext.define('Ext.grid.PagingScroller', {
                 scope: me
             };
 
+        
+        
         if (me.variableRowHeight) {
             viewListeners.beforerefresh = me.beforeViewRefresh;
         }
@@ -29758,6 +30110,7 @@ Ext.define('Ext.grid.PagingScroller', {
             if (me.grid) {
                 me.grid.un(gridListeners);
             }
+            delete me.view.refreshSize; 
         }
 
         me.view = view;
@@ -29766,6 +30119,11 @@ Ext.define('Ext.grid.PagingScroller', {
         if (view.rendered) {
             me.viewSize = me.store.viewSize = Math.ceil(view.getHeight() / me.rowHeight) + me.trailingBufferZone + (me.numFromEdge * 2) + me.leadingBufferZone;
         }
+
+        
+        
+        
+        me.view.refreshSize = Ext.Function.createInterceptor(me.view.refreshSize, me.beforeViewrefreshSize, me);
 
         
         me.position = 0;
@@ -29780,7 +30138,7 @@ Ext.define('Ext.grid.PagingScroller', {
                     me.grid.on(gridListeners);
                 },
                 single: true
-            })
+            });
         }
 
         me.view.on(me.viewListeners = viewListeners);
@@ -29824,11 +30182,14 @@ Ext.define('Ext.grid.PagingScroller', {
         var me = this,
             view = me.view,
             rows,
-            store = me.store,
             direction = me.lastScrollDirection;
 
         me.commonRecordIndex = undefined;
-        if (me.variableRowHeight && (me.previousStart !== undefined) && (me.scrollProportion === undefined)) {
+
+        
+        
+        
+        if (direction && (me.previousStart !== undefined) && (me.scrollProportion === undefined)) {
             rows = view.getNodes();
 
             
@@ -29852,7 +30213,7 @@ Ext.define('Ext.grid.PagingScroller', {
             me.scrollOffset = -view.el.getOffsetsTo(rows[me.commonRecordIndex])[1];
 
             
-            me.commonRecordIndex -= (me.tableStart - me.previousStart)
+            me.commonRecordIndex -= (me.tableStart - me.previousStart);
         } else {
             me.scrollOffset = undefined;
         }
@@ -29865,46 +30226,59 @@ Ext.define('Ext.grid.PagingScroller', {
             store = me.store,
             newScrollHeight,
             view = me.view,
-            viewEl = view.el.dom,
+            viewEl = view.el,
+            viewDom = viewEl.dom,
             rows,
             newScrollOffset,
             scrollDelta,
-            table,
-            tableTop;
-
-        if (!store.getCount()) {
-            return;
-        }
+            table = viewEl.child('table', true),
+            tableTop,
+            scrollTop;
 
         
-        if (store.getCount() === store.getTotalCount()) {
-            return (me.disabled = true);
-        } else {
-            me.disabled = false;
+        me.disabled = true;
+
+        
+        
+        
+        
+        
+        if (store.getCount() === store.getTotalCount() || (store.isFiltered() && !store.remoteFilter)) {
+            me.stretcher.setHeight(0);
+            me.position = viewDom.scrollTop = 0;
+
+            
+            
+            table.style.position = 'absolute';
+
+            
+            return;
         }
 
         me.stretcher.setHeight(newScrollHeight = me.getScrollHeight());
 
+        scrollTop = viewDom.scrollTop;
+
+        
+        me.isScrollRefresh = (scrollTop > 0);
+
         
         
         if (me.scrollProportion !== undefined) {
-            table = me.view.el.child('table', true);
-            me.scrollProportion = view.el.dom.scrollTop / (newScrollHeight - table.offsetHeight);
-            table = me.view.el.child('table', true);
+            me.scrollProportion = scrollTop / (newScrollHeight - table.offsetHeight);
             table.style.position = 'absolute';
             table.style.top = (me.scrollProportion ? (newScrollHeight * me.scrollProportion) - (table.offsetHeight * me.scrollProportion) : 0) + 'px';
         }
         else {
-            table = me.view.el.child('table', true);
             table.style.position = 'absolute';
             table.style.top = (tableTop = (me.tableStart||0) * me.rowHeight) + 'px';
 
             
             if (me.scrollOffset) {
                 rows = view.getNodes();
-                newScrollOffset = -view.el.getOffsetsTo(rows[me.commonRecordIndex])[1];
+                newScrollOffset = -viewEl.getOffsetsTo(rows[me.commonRecordIndex])[1];
                 scrollDelta = newScrollOffset - me.scrollOffset;
-                me.position = (view.el.dom.scrollTop += scrollDelta);
+                me.position = (scrollTop += scrollDelta);
             }
 
             
@@ -29913,9 +30287,20 @@ Ext.define('Ext.grid.PagingScroller', {
             
             
             
-            else if ((tableTop > viewEl.scrollTop) || ((tableTop + table.offsetHeight) < viewEl.scrollTop + viewEl.clientHeight)) {
-                me.position = viewEl.scrollTop = tableTop;
+            else if ((tableTop > scrollTop) || ((tableTop + table.offsetHeight) < scrollTop + viewDom.clientHeight)) {
+                me.lastScrollDirection = -1;
+                me.position = viewDom.scrollTop = tableTop;
             }
+        }
+
+        
+        me.disabled = false;
+    },
+
+    beforeViewrefreshSize: function() {
+        
+        if (this.isScrollRefresh) {
+            return (this.isScrollRefresh = false);
         }
     },
 
@@ -30053,7 +30438,7 @@ Ext.define('Ext.grid.PagingScroller', {
             count = store.getCount();
             for (i = 0; i < count; i++) {
                 rowBottom = Ext.fly(rows[i]).getOffsetsTo(view.el)[1] + rows[i].offsetHeight;
-                
+
                 
                 if (rowBottom > view.el.dom.clientHeight) {
                     return;
@@ -30103,7 +30488,6 @@ Ext.define('Ext.grid.PagingScroller', {
             table,
             firstRow,
             store  = me.store,
-            rowCount,
             deltaHeight = 0,
             doCalcHeight = !me.hasOwnProperty('rowHeight');
 
@@ -30122,17 +30506,19 @@ Ext.define('Ext.grid.PagingScroller', {
             }
         }
 
-        
-        rowCount = store[(!store.remoteFilter && store.isFiltered()) ? 'getCount' : 'getTotalCount']() || 0;
-        return Math.floor(rowCount * me.rowHeight) + deltaHeight;
+        return Math.floor(store.getTotalCount() * me.rowHeight) + deltaHeight;
     },
 
     attemptLoad: function(start, end) {
         var me = this;
-        if (!me.loadTask) {
-            me.loadTask = new Ext.util.DelayedTask(me.doAttemptLoad, me, []);
+        if (me.scrollToLoadBuffer) {
+            if (!me.loadTask) {
+                me.loadTask = new Ext.util.DelayedTask(me.doAttemptLoad, me, []);
+            }
+            me.loadTask.delay(me.scrollToLoadBuffer, me.doAttemptLoad, me, [start, end]);
+        } else {
+            me.store.guaranteeRange(start, end);
         }
-        me.loadTask.delay(me.scrollToLoadBuffer, me.doAttemptLoad, me, [start, end]);
     },
 
     cancelLoad: function() {
@@ -30142,14 +30528,13 @@ Ext.define('Ext.grid.PagingScroller', {
     },
 
     doAttemptLoad:  function(start, end) {
-        this.store.mask();
         this.store.guaranteeRange(start, end);
     },
 
     destroy: function() {
         var me = this,
             scrollListener = me.viewListeners.scroll;
-            
+
         me.store.un({
             guaranteedrange: me.onGuaranteedRange,
             scope: me
@@ -30167,56 +30552,52 @@ Ext.define('Ext.grid.PagingScroller', {
 Ext.define('Ext.grid.feature.Feature', {
     extend: 'Ext.util.Observable',
     alias: 'feature.feature',
-    
+
     
     isFeature: true,
-    
+
     
     disabled: false,
-    
+
     
     hasFeatureEvent: true,
-    
+
     
     eventPrefix: null,
-    
+
     
     eventSelector: null,
-    
+
     
     view: null,
-    
+
     
     grid: null,
-    
+
     
     collectData: false,
-    
+
     init: Ext.emptyFn,
-        
+
     getFeatureTpl: function() {
         return '';
     },
-    
+
     
     getFireEventArgs: function(eventName, view, featureTarget, e) {
         return [eventName, view, featureTarget, e];
     },
-    
+
     
     attachEvents: function() {
-        
+
     },
+
+    getFragmentTpl: Ext.emptyFn,
+
     
-    getFragmentTpl: function() {
-        return;
-    },
-    
-    
-    mutateMetaRowTpl: function(metaRowTplArray) {
-        
-    },
-    
+    mutateMetaRowTpl: Ext.emptyFn,
+
     
     getMetaRowTplFragments: function() {
         return {};
@@ -30225,22 +30606,22 @@ Ext.define('Ext.grid.feature.Feature', {
     getTableFragments: function() {
         return {};
     },
-    
+
     
     getAdditionalData: function(data, idx, record, orig) {
         return {};
     },
-    
+
     
     enable: function() {
         this.disabled = false;
     },
-    
+
     
     disable: function() {
         this.disabled = true;
     }
-    
+
 });
 
 Ext.define('Ext.grid.feature.Grouping', {
@@ -30249,10 +30630,11 @@ Ext.define('Ext.grid.feature.Grouping', {
 
     eventPrefix: 'group',
     eventSelector: '.' + Ext.baseCSSPrefix + 'grid-group-hd',
+    bodySelector: '.' + Ext.baseCSSPrefix + 'grid-group-body',
 
     constructor: function() {
         var me = this;
-        
+
         me.collapsedState = {};
         me.callParent(arguments);
     },
@@ -30269,7 +30651,7 @@ Ext.define('Ext.grid.feature.Grouping', {
 
     
     groupHeaderTpl: '{columnName}: {name}',
-
+    
     
     depthToIndent: 17,
 
@@ -30296,13 +30678,13 @@ Ext.define('Ext.grid.feature.Grouping', {
 
     
     enableNoGroups : true,
-    
+
     enable: function() {
         var me    = this,
             view  = me.view,
             store = view.store,
             groupToggleMenuItem;
-            
+
         me.lastGroupField = me.getGroupField();
 
         if (me.lastGroupIndex) {
@@ -30321,7 +30703,7 @@ Ext.define('Ext.grid.feature.Grouping', {
             remote = store.remoteGroup,
             groupToggleMenuItem,
             lastGroup;
-            
+
         lastGroup = store.groupers.first();
         if (lastGroup) {
             me.lastGroupIndex = lastGroup.property;
@@ -30329,7 +30711,7 @@ Ext.define('Ext.grid.feature.Grouping', {
             store.clearGrouping();
             me.unblock();
         }
-        
+
         me.callParent();
         groupToggleMenuItem = me.view.headerCt.getMenu().down('#groupToggleMenuItem');
         groupToggleMenuItem.setChecked(true, true);
@@ -30338,33 +30720,29 @@ Ext.define('Ext.grid.feature.Grouping', {
             view.refresh();
         }
     },
-    
+
     refreshIf: function() {
         if (this.blockRefresh !== true) {
-            this.view.refresh();
-        }    
+
+            
+            if (this.grid.ownerCt && this.grid.ownerCt.lockable) {
+                this.grid.ownerCt.view.refresh();
+            }
+            
+            else {
+                this.view.refresh();
+            }
+        }
     },
 
     getFeatureTpl: function(values, parent, x, xcount) {
-        var me = this,
-            tpl = me.groupHeaderTpl;
-
-        
-        if(Ext.isString(tpl)) {
-            tpl = new Ext.XTemplate(tpl);
-        } else if(Ext.isArray(tpl)) {
-            tpl = Ext.Array.clone(tpl);
-            Ext.Array.splice(tpl, 0, 0, 'Ext.XTemplate');
-            tpl = Ext.create.apply(Ext, tpl);
-        }
-        me.groupHeaderTpl = tpl;
-   
+        var me = this;
         return [
             '<tpl if="typeof rows !== \'undefined\'">',
                 
-                '<tr class="' + Ext.baseCSSPrefix + 'grid-group-hd ' + (me.startCollapsed ? me.hdCollapsedCls : '') + ' {hdCollapsedCls}"><td class="' + Ext.baseCSSPrefix + 'grid-cell" colspan="' + parent.columns.length + '" {[this.indentByDepth(values)]}><div class="' + Ext.baseCSSPrefix + 'grid-cell-inner"><div class="' + Ext.baseCSSPrefix + 'grid-group-title">{collapsed}{[this.renderGroupHeaderTpl(values)]}</div></div></td></tr>',
+                '<tr id="{groupHeaderId}" class="' + Ext.baseCSSPrefix + 'grid-group-hd ' + (me.startCollapsed ? me.hdCollapsedCls : '') + ' {hdCollapsedCls}"><td class="' + Ext.baseCSSPrefix + 'grid-cell" colspan="' + parent.columns.length + '" {[this.indentByDepth(values)]}><div class="' + Ext.baseCSSPrefix + 'grid-cell-inner"><div class="' + Ext.baseCSSPrefix + 'grid-group-title">{collapsed}{[this.renderGroupHeaderTpl(values)]}</div></div></td></tr>',
                 
-                '<tr id="{viewId}-gp-{name}" class="' + Ext.baseCSSPrefix + 'grid-group-body ' + (me.startCollapsed ? me.collapsedCls : '') + ' {collapsedCls}"><td colspan="' + parent.columns.length + '">{[this.recurse(values)]}</td></tr>',
+                '<tr id="{groupBodyId}" class="' + Ext.baseCSSPrefix + 'grid-group-body ' + (me.startCollapsed ? me.collapsedCls : '') + ' {collapsedCls}"><td colspan="' + parent.columns.length + '">{[this.recurse(values)]}</td></tr>',
             '</tpl>'
         ].join('');
     },
@@ -30375,23 +30753,20 @@ Ext.define('Ext.grid.feature.Grouping', {
             indentByDepth: me.indentByDepth,
             depthToIndent: me.depthToIndent,
             renderGroupHeaderTpl: function(values) {
-                return me.groupHeaderTpl.apply(values);
+                return Ext.XTemplate.getTpl(me, 'groupHeaderTpl').apply(values);
             }
         };
     },
 
     indentByDepth: function(values) {
-        var depth = values.depth || 0;
-        return 'style="padding-left:'+ depth * this.depthToIndent + 'px;"';
+        return 'style="padding-left:'+ ((values.depth || 0) * this.depthToIndent) + 'px;"';
     },
 
     
     
     destroy: function() {
-        var me = this;
-        
-        delete me.view;
-        delete me.prunedHeader;
+        delete this.view;
+        delete this.prunedHeader;
     },
 
     
@@ -30404,7 +30779,14 @@ Ext.define('Ext.grid.feature.Grouping', {
             groupclick: me.onGroupClick,
             rowfocus: me.onRowFocus
         });
-        view.mon(view.store, 'groupchange', me.onGroupChange, me);
+
+        view.mon(view.store, {
+            scope: me,
+            groupchange: me.onGroupChange,
+            remove: me.onRemove,
+            add: me.onAdd,
+            update: me.onUpdate
+        });
 
         if (me.enableGroupingMenu) {
             me.injectGroupingMenu();
@@ -30417,7 +30799,71 @@ Ext.define('Ext.grid.feature.Grouping', {
         me.onGroupChange();
         me.unblock();
     },
+
     
+    onAdd: function(store, records){
+        var me = this,
+            view = me.view,
+            groupField = me.getGroupField(),
+            i = 0,
+            len = records.length,
+            activeGroups,
+            addedGroups,
+            groups,
+            needsRefresh,
+            group;
+
+        if (view.rendered) {
+            addedGroups = {};
+            activeGroups = {};
+
+            for (; i < len; ++i) {
+                group = records[i].get(groupField);
+                if (addedGroups[group] === undefined) {
+                    addedGroups[group] = 0;
+                }
+                addedGroups[group] += 1;
+            }
+            groups = store.getGroups();
+            for (i = 0, len = groups.length; i < len; ++i) {
+                group = groups[i];
+                activeGroups[group.name] = group.children.length;
+            }
+
+            for (group in addedGroups) {
+                if (addedGroups[group] === activeGroups[group]) {
+                    needsRefresh = true;
+                    break;
+                }
+            }
+            
+            if (needsRefresh) {
+                view.refresh();
+            }
+        }
+    },
+
+    onUpdate: function(store, record, type, changedFields){
+        var view = this.view;
+        if (view.rendered && !changedFields || Ext.Array.contains(changedFields, this.getGroupField())) {
+            view.refresh();
+        }
+    },
+
+    onRemove: function(store, record) {
+        var me = this,
+            groupField = me.getGroupField(),
+            removedGroup = record.get(groupField),
+            view = me.view;
+
+        if (view.rendered) {
+            
+            if (store.findExact(groupField, removedGroup) === -1) {
+                me.view.refresh(); 
+            }
+        }
+    },
+
     injectGroupingMenu: function() {
         var me       = this,
             view     = me.view,
@@ -30425,7 +30871,7 @@ Ext.define('Ext.grid.feature.Grouping', {
         headerCt.showMenuBy = me.showMenuBy;
         headerCt.getMenuItems = me.getMenuItems();
     },
-    
+
     showMenuBy: function(t, header) {
         var menu = this.getMenu(),
             groupMenuItem  = menu.down('#groupMenuItem'),
@@ -30434,7 +30880,7 @@ Ext.define('Ext.grid.feature.Grouping', {
         groupMenuItem[groupableMth]();
         Ext.grid.header.Container.prototype.showMenuBy.apply(this, arguments);
     },
-    
+
     getMenuItems: function() {
         var me                 = this,
             groupByText        = me.groupByText,
@@ -30443,7 +30889,7 @@ Ext.define('Ext.grid.feature.Grouping', {
             enableNoGroups     = me.enableNoGroups,
             groupMenuItemClick = Ext.Function.bind(me.onGroupMenuItemClick, me),
             groupToggleMenuItemClick = Ext.Function.bind(me.onGroupToggleMenuItemClick, me);
-        
+
         
         return function() {
             var o = Ext.grid.header.Container.prototype.getMenuItems.call(this);
@@ -30465,7 +30911,6 @@ Ext.define('Ext.grid.feature.Grouping', {
         };
     },
 
-
     
     onGroupMenuItemClick: function(menuItem, e) {
         var me = this,
@@ -30485,11 +30930,11 @@ Ext.define('Ext.grid.feature.Grouping', {
             view.refresh();
         }  
     },
-    
+
     block: function(){
         this.blockRefresh = this.view.blockRefresh = true;
     },
-    
+
     unblock: function(){
         this.blockRefresh = this.view.blockRefresh = false;
     },
@@ -30512,18 +30957,18 @@ Ext.define('Ext.grid.feature.Grouping', {
             header.hide();
         }
     },
-    
+
     getGroupedHeader: function(){
         var groupField = this.getGroupField(),
             headerCt = this.view.headerCt;
-            
+
         return groupField ? headerCt.down('[dataIndex=' + groupField + ']') : null;
     },
 
     getGroupField: function(){
         var group = this.view.store.groupers.first();
         if (group) {
-            return group.property;    
+            return group.property;
         }
         return ''; 
     },
@@ -30541,93 +30986,112 @@ Ext.define('Ext.grid.feature.Grouping', {
     },
 
     
-    expand: function(group,  preventSizeCalculation) {
+    expand: function(groupName,  preventSizeCalculation) {
         var me = this,
             view = me.view,
-            grid = view.up('gridpanel'),
-            groupBdDom;
-            
+            groupBody,
+            lockingPartner = me.lockingPartner;
+
         
-        if (Ext.isString(group)) {
-            group = Ext.get(view.id + '-gp-' + group);
-        }    
-        groupBdDom = Ext.getDom(group);
-            
-        me.collapsedState[groupBdDom.id] = false;
-
-        group.removeCls(me.collapsedCls);
-        group.prev().removeCls(me.hdCollapsedCls);
-
-        if (preventSizeCalculation !== true) {
-            view.refreshHeight();
+        if (Ext.isString(groupName)) {
+            groupBody = Ext.fly(me.getGroupBodyId(groupName), '_grouping');
         }
-        view.fireEvent('groupexpand');
+        
+        else {
+            groupBody = Ext.fly(groupName, '_grouping')
+            groupName = me.getGroupName(groupBody);
+        }
+
+        
+        if (me.collapsedState[groupName]) {
+            groupBody.removeCls(me.collapsedCls);
+            groupBody.prev().removeCls(me.hdCollapsedCls);
+
+            if (preventSizeCalculation !== true) {
+                view.refreshSize();
+            }
+            view.fireEvent('groupexpand');
+            me.collapsedState[groupName] = false;
+
+            
+            if (lockingPartner) {
+                lockingPartner.expand(groupName, preventSizeCalculation);
+            }
+        }
     },
-    
+
     
     expandAll: function(){
         var me   = this,
             view = me.view,
-            groups = view.el.select(me.eventSelector),
-            els    = groups.elements,
+            els  = view.el.select(me.eventSelector).elements,
             e,
-            eLen   = els.length,
-            group;
+            eLen = els.length;
 
         for (e = 0; e < eLen; e++) {
             me.expand(Ext.fly(els[e]).next(), true);
         }
 
-        view.refreshHeight();
+        view.refreshSize();
     },
 
     
-    collapse: function(group,  preventSizeCalculation) {
+    collapse: function(groupName,  preventSizeCalculation) {
         var me = this,
             view = me.view,
-            grid = view.up('gridpanel'),
-            groupBdDom;
-            
-        if (Ext.isString(group)) {
-            group = Ext.get(view.id + '-gp-' + group);    
-        }
-        groupBdDom = Ext.getDom(group);
-            
-        me.collapsedState[groupBdDom.id] = true;
+            groupBody,
+            lockingPartner = me.lockingPartner;
 
-        group.addCls(me.collapsedCls);
-        group.prev().addCls(me.hdCollapsedCls);
         
-        if (preventSizeCalculation !== true) {
-            view.refreshHeight();
+        if (Ext.isString(groupName)) {
+            groupBody = Ext.fly(me.getGroupBodyId(groupName), '_grouping');
         }
-        view.fireEvent('groupcollapse');
+        
+        else {
+            groupBody = Ext.fly(groupName, '_grouping')
+            groupName = me.getGroupName(groupBody);
+        }
+ 
+        
+        if (!me.collapsedState[groupName]) {
+            groupBody.addCls(me.collapsedCls);
+            groupBody.prev().addCls(me.hdCollapsedCls);
+
+            if (preventSizeCalculation !== true) {
+                view.refreshSize();
+            }
+            view.fireEvent('groupcollapse');
+            me.collapsedState[groupName] = true;
+
+            
+            if (lockingPartner) {
+                lockingPartner.collapse(groupName, preventSizeCalculation);
+            }
+        }
     },
-    
+
     
     collapseAll: function() {
         var me     = this,
             view   = me.view,
-            groups = view.el.select(me.eventSelector),
-            els    = groups.elements,
+            els    = view.el.select(me.eventSelector).elements,
             e,
-            eLen   = els.length,
-            group;
+            eLen   = els.length;
 
         for (e = 0; e < eLen; e++) {
             me.collapse(Ext.fly(els[e]).next(), true);
         }
 
-        view.refreshHeight();
+        view.refreshSize();
     },
-    
+
     onGroupChange: function(){
         var me = this,
             field = me.getGroupField(),
             menuItem,
             visibleGridColumns,
             groupingByLastVisibleColumn;
-            
+
         if (me.hideGroupedHeader) {
             if (me.lastGroupField) {
                 menuItem = me.getMenuItem(me.lastGroupField);
@@ -30652,26 +31116,24 @@ Ext.define('Ext.grid.feature.Grouping', {
         }
         me.lastGroupField = field;
     },
-    
+
     
     getMenuItem: function(dataIndex){
         var view = this.view,
             header = view.headerCt.down('gridcolumn[dataIndex=' + dataIndex + ']'),
             menu = view.headerCt.getMenu();
-            
+
         return header ? menu.down('menuitem[headerId='+ header.id +']') : null;
     },
 
     
-    onGroupClick: function(view, group, idx, foo, e) {
-        var me = this,
-            toggleCls = me.toggleCls,
-            groupBd = Ext.fly(group.nextSibling, '_grouping');
+    onGroupClick: function(view, rowElement, groupName, e) {
+        var me = this;
 
-        if (groupBd.hasCls(me.collapsedCls)) {
-            me.expand(groupBd);
+        if (me.collapsedState[groupName]) {
+            me.expand(groupName);
         } else {
-            me.collapse(groupBd);
+            me.collapse(groupName);
         }
     },
 
@@ -30708,12 +31170,17 @@ Ext.define('Ext.grid.feature.Grouping', {
             hCt  = view.headerCt,
             col  = hCt.items.getAt(0),
             o = {},
-            tdAttrKey = col.id + '-tdAttr';
+            tdAttrKey;
 
         
-        o[tdAttrKey] = this.indentByDepth(data) + " " + (orig[tdAttrKey] ? orig[tdAttrKey] : '');
-        o.collapsed = 'true';
-        o.data = record.getData();
+        
+        
+        if (col) {
+            tdAttrKey = col.id + '-tdAttr';
+            o[tdAttrKey] = this.indentByDepth(data) + " " + (orig[tdAttrKey] ? orig[tdAttrKey] : '');
+            o.collapsed = 'true';
+            o.data = record.getData();
+        }
         return o;
     },
 
@@ -30745,15 +31212,18 @@ Ext.define('Ext.grid.feature.Grouping', {
             }
         }
 
-        delete group.children;
+        group.groupHeaderId = me.getGroupHeaderId(group.name);
+        group.groupBodyId = me.getGroupBodyId(group.name);
         group.fullWidth = fullWidth;
         group.columnName = header ? header.text : groupField;
-        group.rawName = group.name;
+        group.groupValue = group.name;
+
+        
         
         if (header && index > -1) {
-            group.name = preppedRecords[index][header.id];
+            group.name = group.renderedValue = preppedRecords[index][header.id];
         }
-        if (me.collapsedState[view.id + '-gp-' + group.name]) {
+        if (me.collapsedState[group.name]) {
             group.collapsedCls = me.collapsedCls;
             group.hdCollapsedCls = me.hdCollapsedCls;
         }
@@ -30762,12 +31232,40 @@ Ext.define('Ext.grid.feature.Grouping', {
     },
 
     
+    getGroupHeaderId: function(groupName) {
+        return this.view.id + '-hd-' + groupName;
+    },
+
+    
+    getGroupBodyId: function(groupName) {
+        return this.view.id + '-bd-' + groupName;
+    },
+
+    
+    getGroupName: function(element) {
+        var me = this,
+            targetEl;
+                
+        
+        targetEl = Ext.fly(element).findParent(me.eventSelector);
+        if (targetEl) {
+            return targetEl.id.split(this.view.id + '-hd-')[1];
+        }
+
+        
+        targetEl = Ext.fly(element).findParent(me.bodySelector);
+        if (targetEl) {
+            return targetEl.id.split(this.view.id + '-bd-')[1];
+        }
+    },
+
+    
     collectData: function(records, preppedRecords, startIndex, fullWidth, o) {
         var me    = this,
             store = me.view.store,
             g,
             groups, gLen, group;
-            
+
         if (!me.disabled && store.isGrouped()) {
             groups = store.getGroups();
             gLen   = groups.length;
@@ -30785,21 +31283,13 @@ Ext.define('Ext.grid.feature.Grouping', {
         }
         return o;
     },
+
     
     
     
     
-    
-    getFireEventArgs: function(type, view, featureTarget, e) {
-        var returnArray = [type, view, featureTarget],
-            groupBd     = Ext.fly(featureTarget.nextSibling, '_grouping'),
-            groupBdId   = Ext.getDom(groupBd).id,
-            prefix      = view.id + '-gp-',
-            groupName   = groupBdId.substr(prefix.length);
-        
-        returnArray.push(groupName, e);
-        
-        return returnArray;
+    getFireEventArgs: function(type, view, targetEl, e) {
+        return [type, view, targetEl, this.getGroupName(targetEl), e];
     }
 });
 
@@ -30859,7 +31349,7 @@ Ext.define('Ext.grid.feature.RowWrap', {
     
     hasFeatureEvent: false,
 
-    init: function(){
+    init: function() {
         if (!this.disabled) {
             this.enable();
         }
@@ -31109,7 +31599,7 @@ Ext.define('Ext.grid.plugin.HeaderResizer', {
     onHeaderCtMouseMove: function(e, t) {
         var me = this,
             prevSiblings,
-            headerEl, overHeader, resizeHeader, resizeHeaderOwnerGrid, ownerGrid; 
+            headerEl, overHeader, resizeHeader, resizeHeaderOwnerGrid, ownerGrid;
 
         if (me.headerCt.dragging) {
             if (me.activeHd) {
@@ -31124,7 +31614,7 @@ Ext.define('Ext.grid.plugin.HeaderResizer', {
 
                 
                 if (overHeader.isOnLeftEdge(e)) {
-                    resizeHeader = overHeader.previousNode('gridcolumn:not([hidden])');
+                    resizeHeader = overHeader.previousNode('gridcolumn:not([hidden]):not([isGroupHeader])')
                     
                     if (resizeHeader) {
 
@@ -31276,8 +31766,6 @@ Ext.define('Ext.grid.plugin.HeaderResizer', {
                     gridSection = this.headerCt.up('[scrollerOwner]'),
                     lhsMarker   = gridSection.getLhsMarker(),
                     rhsMarker   = gridSection.getRhsMarker(),
-                    currWidth   = dragHd.getWidth(),
-                    offset      = this.tracker.getOffset('point'),
                     offscreen   = -9999;
 
                 
@@ -31348,6 +31836,7 @@ Ext.define('Ext.layout.container.boxOverflow.None', {
 
     beginLayout: Ext.emptyFn,
     beginLayoutCycle: Ext.emptyFn,
+    finishedLayout: Ext.emptyFn,
 
     completeLayout: function (ownerContext) {
         var me = this,
@@ -31569,6 +32058,7 @@ Ext.define('Ext.resizer.Resizer', {
     constructor: function(config) {
         var me = this,
             target,
+            targetEl,
             tag,
             handles = me.handles,
             handleCls,
@@ -31632,20 +32122,25 @@ Ext.define('Ext.resizer.Resizer', {
         
         
         
-        tag = me.el.dom.tagName;
+        tag = me.el.dom.tagName.toUpperCase();
         if (tag == 'TEXTAREA' || tag == 'IMG' || tag == 'TABLE') {
             
-            me.originalTarget = me.target.isComponent ? me.target.getEl() : me.target;
+            me.originalTarget = me.target;
+            targetEl = me.el;
+            box = targetEl.getBox();
             me.target = me.el = me.el.wrap({
                 cls: me.wrapCls,
-                id: me.el.id + '-rzwrap'
+                id: me.el.id + '-rzwrap',
+                style: targetEl.getStyles('margin-top', 'margin-bottom')
             });
 
             
-            me.el.setPositioning(me.originalTarget.getPositioning());
-            me.originalTarget.clearPositioning();
-            box = me.originalTarget.getBox();
+            me.el.setPositioning(targetEl.getPositioning());
+            targetEl.clearPositioning();
             me.el.setBox(box);
+
+            
+            targetEl.setStyle('position', 'absolute');
         }
 
         
@@ -31692,9 +32187,8 @@ Ext.define('Ext.resizer.Resizer', {
         handleCls = me.handleCls + ' ' + (me.target.isComponent ? (me.target.baseCls + '-handle ') : '') + me.handleCls + '-';
 
         
-        if (Ext.isIE6) {
-            eastWestStyle = ' style="height:' + me.el.getHeight() + 'px"';
-        }
+        eastWestStyle = Ext.isIE6 ? ' style="height:' + me.el.getHeight() + 'px"' : '';
+
         for (; i < len; i++){
             
             if (handles[i] && possibles[handles[i]]) {
@@ -31753,14 +32247,14 @@ Ext.define('Ext.resizer.Resizer', {
 
     
     onBeforeResize: function(tracker, e) {
-        var box = this.target.getBox();
+        var box = this.el.getBox();
         return this.fireEvent('beforeresize', this, box.width, box.height, e);
     },
 
     
     onResize: function(tracker, e) {
         var me = this,
-            box = me.target.getBox();
+            box = me.el.getBox();
             
         me.forceHandlesHeight();
         return me.fireEvent('resizedrag', me, box.width, box.height, e);
@@ -31769,16 +32263,17 @@ Ext.define('Ext.resizer.Resizer', {
     
     onResizeEnd: function(tracker, e) {
         var me = this,
-            box = me.target.getBox();
+            box = me.el.getBox();
             
         me.forceHandlesHeight();
         return me.fireEvent('resize', me, box.width, box.height, e);
     },
 
     
-    resizeTo : function(width, height){
-        this.target.setSize(width, height);
-        this.fireEvent('resize', this, width, height, null);
+    resizeTo : function(width, height) {
+        var me = this;
+        me.target.setSize(width, height);
+        me.fireEvent('resize', me, width, height, null);
     },
 
     
@@ -32132,9 +32627,18 @@ Ext.define('Ext.resizer.ResizeTracker', {
             }
         } else {
             target.setBox(box);
-            
-            if (this.originalTarget) {
-                this.originalTarget.setBox(box);
+        }
+
+        
+        target = this.originalTarget;
+        if (target && (this.dynamic || atEnd)) {
+            if (target.isComponent) {
+                target.setSize(box.width, box.height);
+                if (target.floating) {
+                    target.setPagePosition(box.x, box.y);
+                }
+            } else {
+                target.setBox(box);
             }
         }
     },
@@ -33496,6 +34000,11 @@ Ext.define('Ext.util.History', {
     
     useTopWindow: true,
 
+    
+    fieldId: Ext.baseCSSPrefix + 'history-field',
+    
+    iframeId: Ext.baseCSSPrefix + 'history-frame',
+
     constructor: function() {
         var me = this;
         me.oldIEMode = Ext.isIE6 || Ext.isIE7 || !Ext.isStrict && Ext.isIE8;
@@ -33619,11 +34128,6 @@ Ext.define('Ext.util.History', {
     },
 
     
-    fieldId: Ext.baseCSSPrefix + 'history-field',
-    
-    iframeId: Ext.baseCSSPrefix + 'history-frame',
-
-    
     init: function (onReady, scope) {
         var me = this,
             DomHelper = Ext.DomHelper;
@@ -33643,7 +34147,7 @@ Ext.define('Ext.util.History', {
         
         me.hiddenField = Ext.getDom(me.fieldId);
         if (!me.hiddenField) {
-            me.hiddenField = DomHelper.append(Ext.getBody(), {
+            me.hiddenField = Ext.getBody().createChild({
                 id: Ext.id(),
                 tag: 'form',
                 cls: Ext.baseCSSPrefix + 'hide-display',
@@ -33652,7 +34156,7 @@ Ext.define('Ext.util.History', {
                     type: 'hidden',
                     id: me.fieldId
                 }]
-            }).firstChild;
+            }, false, true).firstChild;
         }
 
         if (me.oldIEMode) {
@@ -34381,7 +34885,7 @@ Ext.define('Ext.ElementLoader', {
 
 
         if (success) {
-            success = renderer.call(me, me, response, active);
+            success = renderer.call(me, me, response, active) !== false;
         }
 
         if (success) {
@@ -34470,10 +34974,12 @@ Ext.define('Ext.ComponentLoader', {
                 }
 
                 if (success) {
+                    target.suspendLayouts();
                     if (active.removeAll) {
                         target.removeAll();
                     }
                     target.add(items);
+                    target.resumeLayouts(true);
                 }
                 return success;
             }
@@ -34517,7 +35023,6 @@ Ext.define('Ext.ComponentLoader', {
         this.target.setLoading(mask);
     },
 
-    
 
     setOptions: function(active, options){
         active.removeAll = Ext.isDefined(options.removeAll) ? options.removeAll : this.removeAll;
@@ -34758,7 +35263,9 @@ Ext.define('Ext.XTemplateCompiler', {
         var me = this,
             s,
             L = me.level,
-            up = L-1;
+            up = L-1,
+            pL = 'p' + L,
+            parentAssignment;
 
         
         if (action === '.') {
@@ -34778,8 +35285,15 @@ Ext.define('Ext.XTemplateCompiler', {
             me.maxLevel = L;
             me.body.push('var ');
         }
+        
+        if (action == '.') {
+            parentAssignment = 'c' + L;
+        } else {
+            parentAssignment = 'a' + up + '?c' + up + '[i' + up + ']:p' + L;
+        }
+        
         me.body.push('i',L,'=0,n', L, '=0,c',L,'=',s,',a',L,'=', me.createArrayTest(L), ',p',L,'=c',up,',r',L,'=values;\n',
-            'parent=a',up,'?c',up,'[i',up,']:p',L,'\n',
+            'parent=',parentAssignment,'\n',
             'if (c',L,'){if(a',L,'){n', L,'=c', L, '.length;}else if (c', L, '.isMixedCollection){c',L,'=c',L,'.items;n',L,'=c',L,'.length;}else if(c',L,'.isStore){c',L,'=c',L,'.data.items;n',L,'=c',L,'.length;}else{c',L,'=[c',L,'];n',L,'=1;}}\n',
             'for (xcount=n',L,';i',L,'<n'+L+';++i',L,'){\n',
             'values=c',L,'[i',L,']');
@@ -34803,7 +35317,8 @@ Ext.define('Ext.XTemplateCompiler', {
         me.definitions.push('function ' + name + '(' + me.fnArgs + ') {',
                             ' try { with(values) {',
                             '  ' + action,
-                            ' }} catch(e) {}',
+                            ' }} catch(e) {',
+                            '}',
                       '}');
 
         me.body.push(name + me.callFn + '\n');
@@ -34828,7 +35343,8 @@ Ext.define('Ext.XTemplateCompiler', {
             me.definitions.push('function ' + name + '(' + me.fnArgs + ') {',
                             ' try { with(values) {',
                             '  return(' + body + ')',
-                            ' }} catch(e) {}',
+                            ' }} catch(e) {',
+                            '}',
                        '}');
         }
 
@@ -35430,8 +35946,8 @@ Ext.define('Ext.app.Controller', {
             onBeforeClassCreated,
             requires,
             modules,
-            prefix;
-
+            namespaceAndModule;
+        
         if (match !== null) {
             namespace = Ext.Loader.getPrefix(className) || match[1];
             onBeforeClassCreated = hooks.onBeforeCreated;
@@ -35444,24 +35960,23 @@ Ext.define('Ext.app.Controller', {
 
                 for (i = 0,ln = modules.length; i < ln; i++) {
                     module = modules[i];
+                    namespaceAndModule = namespace + '.' + module + '.';
 
                     items = Ext.Array.from(data[module + 's']);
 
                     for (j = 0,subLn = items.length; j < subLn; j++) {
                         item = items[j];
-
                         
-                        if (Ext.ClassManager.isCreated(item)) {
-                            continue;
-                        }
-
-                        prefix = Ext.Loader.getPrefix(item);
-
-                        if (prefix === '' || prefix === item) {
-                            requires.push(namespace + '.' + module + '.' + item);
-                        }
-                        else {
+                        
+                        
+                        
+                        
+                        
+                        
+                        if (item.indexOf('.') !== -1 && (Ext.ClassManager.isCreated(item) || Ext.Loader.isAClassNameWithAKnownPrefix(item))) {
                             requires.push(item);
+                        } else {
+                            requires.push(namespaceAndModule + item);
                         }
                     }
                 }
@@ -35669,7 +36184,7 @@ Ext.define('Ext.chart.Label', {
             while(groupLength--) {
                 hides.push(groupLength);
             }
-        }else{
+        } else {
             for (i = 0, count = 0, groupIndex = 0; i < len; i++) {
                 index = 0;
                 for (j = 0; j < ratio; j++) {
@@ -35677,12 +36192,8 @@ Ext.define('Ext.chart.Label', {
                     label = group.getAt(groupIndex);
                     storeItem = store.getAt(i);
                     
-                    while(this.__excludes && this.__excludes[index] && ratio > 1) {
-                        if(field[j]){
-                            hides.push(groupIndex);
-                        }
+                    while(this.__excludes && this.__excludes[index]) {
                         index++;
-
                     }
 
                     if (!item && label) {
@@ -36909,8 +37420,7 @@ Ext.define('Ext.data.Field', {
         Ext.apply(this, config);
         
         var types = Ext.data.Types,
-            st = this.sortType,
-            t;
+            st = this.sortType;
 
         if (this.type) {
             if (Ext.isString(this.type)) {
@@ -36927,8 +37437,16 @@ Ext.define('Ext.data.Field', {
             this.sortType = this.type.sortType;
         }
 
-        if (!this.convert) {
+        
+        if (!config.hasOwnProperty('convert')) {
             this.convert = this.type.convert;
+        }
+        
+        
+        
+        
+        else if (!this.convert && !config.hasOwnProperty('defaultValue')) {
+            this.defaultValue = this.type.convert(this.defaultValue);
         }
     },
     
@@ -37030,12 +37548,19 @@ Ext.define('Ext.data.NodeInterface', {
         
         decorate: function(modelClass) {
             var idName, idType;
+
+            
             if (typeof modelClass == 'string') {
                 modelClass = Ext.ModelManager.getModel(modelClass);
+            } else if (modelClass.isModel) {
+                modelClass = Ext.ModelManager.getModel(modelClass.modelName);
             }
+            
+            
             if (modelClass.prototype.isNode) {
                 return;
             }
+
             idName = modelClass.prototype.idProperty;
             idType = modelClass.prototype.fields.get(idName).type.type;
             modelClass.override(this.getPrototypeBody());
@@ -37287,10 +37812,10 @@ Ext.define('Ext.data.NodeInterface', {
                         
                         if (!me.isLoaded()) {
                             me.set('loaded', true);
-                        }
-                        
-                        else if (me.childNodes.length === 1) {
-                            me.set('loaded', me.isLoaded());
+                        } else if (me.childNodes.length === 1) {
+                            
+                            
+                            me.afterEdit([]);
                         }
 
                         if(!node.isLeaf() && node.phantom) {
@@ -38294,7 +38819,7 @@ Ext.define('Ext.data.proxy.Proxy', {
             };
         }
 
-        if (!(writer instanceof Ext.data.writer.Writer)) {
+        if (!writer.isWriter) {
             Ext.applyIf(writer, {
                 model: this.model,
                 type : this.defaultWriterType
@@ -38611,6 +39136,12 @@ Ext.define('Ext.data.proxy.Server', {
 
         if (success === true) {
             reader = me.getReader();
+
+            
+            
+            
+            reader.applyDefaults = operation.action === 'read';
+
             result = reader.read(me.extractResponseData(response));
 
             if (result.success !== false) {
@@ -39396,10 +39927,6 @@ Ext.define('Ext.data.reader.Reader', {
     requires: ['Ext.data.ResultSet'],
     alternateClassName: ['Ext.data.Reader', 'Ext.data.DataReader'],
 
-    requires: [
-        'Ext.data.ResultSet'
-    ],    
-
     mixins: {
         observable: 'Ext.util.Observable'
     },
@@ -39421,9 +39948,17 @@ Ext.define('Ext.data.reader.Reader', {
     implicitIncludes: true,
     
     
+    readRecordsOnFailure: true,
+    
+    
     
     
     isReader: true,
+
+    
+    
+    
+    applyDefaults: true,
     
     
     constructor: function(config) {
@@ -39509,7 +40044,7 @@ Ext.define('Ext.data.reader.Reader', {
 
         
         
-        if (success) {
+        if (me.readRecordsOnFailure || success) {
             
             
             root = Ext.isArray(data) ? data : me.getRoot(data);
@@ -39630,9 +40165,10 @@ Ext.define('Ext.data.reader.Reader', {
 
     
     onMetaChange : function(meta) {
-        var fields = meta.fields,
-            me = this,
-            newModel;
+        var me = this,
+            fields = meta.fields || me.getFields(),
+            newModel,
+            clientIdProperty;
         
         
         me.metaData = meta;
@@ -39643,29 +40179,26 @@ Ext.define('Ext.data.reader.Reader', {
         me.totalProperty = meta.totalProperty || me.totalProperty;
         me.successProperty = meta.successProperty || me.successProperty;
         me.messageProperty = meta.messageProperty || me.messageProperty;
-        
-        if (fields) {
-            if (me.model) {
-                me.model.setFields(fields);
-                me.setModel(me.model, true);
-            }
-            else {
-                newModel = Ext.define("Ext.data.reader.Json-Model" + Ext.id(), {
-                    extend: 'Ext.data.Model',
-                    fields: fields
-                });
-                if (me.idProperty) {
-                    
-                    
-                    
-                    
-                    newModel.idProperty = me.idProperty;
-                }
-                me.setModel(newModel, true);
-            }
+        clientIdProperty = meta.clientIdProperty;
+
+        if (me.model) {
+            me.model.setFields(fields, me.idProperty, clientIdProperty);
+            me.setModel(me.model, true);
         }
         else {
-            me.buildExtractors(true);
+            newModel = Ext.define("Ext.data.reader.Json-Model" + Ext.id(), {
+                extend: 'Ext.data.Model',
+                fields: fields,
+                clientIdProperty: clientIdProperty
+            });
+            if (me.idProperty) {
+                
+                
+                
+                
+                newModel.idProperty = me.idProperty;
+            }
+            me.setModel(newModel, true);
         }
     },
     
@@ -39734,7 +40267,6 @@ Ext.define('Ext.data.reader.Reader', {
             fields = modelProto.fields.items,
             numFields = fields.length,
             fieldVarName = [],
-            prefix = '__field',
             varName,
             i = 0,
             field,
@@ -39745,7 +40277,7 @@ Ext.define('Ext.data.reader.Reader', {
                 '    internalId'
             ];
 
-        for (; i < numFields; i++) {
+        for (i = 0; i < numFields; i++) {
             field = fields[i];
             fieldVarName[i] = '__field' + i;
             code.push(',\n    ', fieldVarName[i], ' = fields.get("', field.name, '")');
@@ -39756,7 +40288,25 @@ Ext.define('Ext.data.reader.Reader', {
             field = fields[i];
             varName = fieldVarName[i];
             
-            code.push('        dest["' + field.name + '"]', ' = ', me.createFieldAccessExpression(field, varName, 'source'), ';\n');
+            code.push('        value = ', me.createFieldAccessExpression(field, varName, 'source'), ';\n');
+
+            
+            if (field.defaultValue !== undefined) {
+                code.push('        if (value === undefined) {\n');
+                code.push('            if (me.applyDefaults) {\n');
+                code.push('                dest["' + field.name + '"] = ', (field.convert ? fieldVarName[i] + '.convert(' + fieldVarName[i] + '.defaultValue, record)' : (fieldVarName[i] + '.defaultValue')), ';\n');
+                code.push('            }\n');
+                code.push('        } else {\n');
+                code.push('            dest["' + field.name + '"] = ', (field.convert ? fieldVarName[i] + '.convert(value, record)' : 'value'), ';\n');
+                code.push('        }\n');
+            }
+            
+            
+            else {
+                code.push('        if (value !== undefined) {\n');
+                code.push('            dest["' + field.name + '"] = ', (field.convert ? fieldVarName[i] + '.convert(value, record)' : 'value'), ';\n');
+                code.push('        }\n');
+            }
         }
 
         
@@ -39930,12 +40480,6 @@ Ext.define('Ext.data.reader.Json', {
             } else {
                 result = dataName + (operatorSearch > 0 ? '.' : '') + map;
             }
-            if (field.defaultValue !== undefined) {
-                result = '(' + result + ' === undefined) ? ' + fieldVarName + '.defaultValue : ' + result;
-            }
-            if (field.convert) {
-                result = fieldVarName + '.convert(' + result + ', record)';
-            }
             return result;
         };
     }())
@@ -39953,8 +40497,9 @@ Ext.define('Ext.data.reader.Array', {
 
     
     createFieldAccessExpression: function(field, fieldVarName, dataName) {
-        var me     = this,
-            index  = (field.mapping == null) ? me.model.prototype.fields.indexOf(field) : field.mapping,
+            
+            
+        var index  = (field.mapping == null) ? field.originalIndex : field.mapping,
             result;
 
         if (typeof index === 'function') {
@@ -39964,12 +40509,6 @@ Ext.define('Ext.data.reader.Array', {
                 index = '"' + index + '"';
             }
             result = dataName + "[" + index + "]";
-        }
-            if (field.defaultValue !== undefined) {
-                result = '(' + result + ' === undefined) ? ' + fieldVarName + '.defaultValue : ' + result;
-            }
-        if (field.convert) {
-            result = fieldVarName + '.convert(' + result + ', record)';
         }
         return result;
     }
@@ -40094,12 +40633,6 @@ Ext.define('Ext.data.reader.Xml', {
             result = fieldVarName + '.mapping(' + dataName + ', this)';
         } else {
             result = 'me.getNodeValue(Ext.DomQuery.selectNode("' + selector + '", ' + dataName + '))';
-        }
-        if (field.defaultValue !== undefined) {
-            result = '(' + result + ' === undefined) ? ' + fieldVarName + '.defaultValue : ' + result;
-        }
-        if (field.convert) {
-            result = fieldVarName + '.convert(' + result + ', record)';
         }
         return result;
     }
@@ -40785,73 +41318,101 @@ Ext.define('Ext.fx.target.Sprite', {
 
     type: 'draw',
 
-    getFromPrim: function(sprite, attr) {
-        var o;
-        if (attr == 'translate') {
-            o = {
-                x: sprite.attr.translation.x || 0,
-                y: sprite.attr.translation.y || 0
-            };
+    getFromPrim: function (sprite, attr) {
+        var obj;
+        switch (attr) {
+            case 'rotate':
+            case 'rotation':
+                obj = sprite.attr.rotation;
+                return {
+                    x: obj.x || 0,
+                    y: obj.y || 0,
+                    degrees: obj.degrees || 0
+                };
+            case 'scale':
+            case 'scaling':
+                obj = sprite.attr.scaling;
+                return {
+                    x: obj.x || 1,
+                    y: obj.y || 1,
+                    cx: obj.cx || 0,
+                    cy: obj.cy || 0
+                };
+            case 'translate':
+            case 'translation':
+                obj = sprite.attr.translation;
+                return {
+                    x: obj.x || 0,
+                    y: obj.y || 0
+                };
+            default:
+                return sprite.attr[attr];
         }
-        else if (attr == 'rotate') {
-            o = {
-                degrees: sprite.attr.rotation.degrees || 0,
-                x: sprite.attr.rotation.x,
-                y: sprite.attr.rotation.y
-            };
-        }
-        else {
-            o = sprite.attr[attr];
-        }
-        return o;
     },
 
-    getAttr: function(attr, val) {
-        return [[this.target, val != undefined ? val : this.getFromPrim(this.target, attr)]];
+    getAttr: function (attr, val) {
+        return [
+            [this.target, val != undefined ? val : this.getFromPrim(this.target, attr)]
+        ];
     },
 
-    setAttr: function(targetData) {
+    setAttr: function (targetData) {
         var ln = targetData.length,
             spriteArr = [],
-            attrs, attr, attrArr, attPtr, spritePtr, idx, value, i, j, x, y, ln2;
+            attrsConf, attr, attrArr, attrs, sprite, idx, value, i, j, x, y, ln2;
         for (i = 0; i < ln; i++) {
-            attrs = targetData[i].attrs;
-            for (attr in attrs) {
-                attrArr = attrs[attr];
+            attrsConf = targetData[i].attrs;
+            for (attr in attrsConf) {
+                attrArr = attrsConf[attr];
                 ln2 = attrArr.length;
                 for (j = 0; j < ln2; j++) {
-                    spritePtr = attrArr[j][0];
-                    attPtr = attrArr[j][1];
-                    if (attr === 'translate') {
+                    sprite = attrArr[j][0];
+                    attrs = attrArr[j][1];
+                    if (attr === 'translate' || attr === 'translation') {
                         value = {
-                            x: attPtr.x,
-                            y: attPtr.y
+                            x: attrs.x,
+                            y: attrs.y
                         };
                     }
-                    else if (attr === 'rotate') {
-                        x = attPtr.x;
+                    else if (attr === 'rotate' || attr === 'rotation') {
+                        x = attrs.x;
                         if (isNaN(x)) {
                             x = null;
                         }
-                        y = attPtr.y;
+                        y = attrs.y;
                         if (isNaN(y)) {
                             y = null;
                         }
                         value = {
-                            degrees: attPtr.degrees,
+                            degrees: attrs.degrees,
                             x: x,
                             y: y
                         };
+                    } else if (attr === 'scale' || attr === 'scaling') {
+                        x = attrs.x;
+                        if (isNaN(x)) {
+                            x = null;
+                        }
+                        y = attrs.y;
+                        if (isNaN(y)) {
+                            y = null;
+                        }
+                        value = {
+                            x: x,
+                            y: y,
+                            cx: attrs.cx,
+                            cy: attrs.cy
+                        };
                     }
                     else if (attr === 'width' || attr === 'height' || attr === 'x' || attr === 'y') {
-                        value = parseFloat(attPtr);
+                        value = parseFloat(attrs);
                     }
                     else {
-                        value = attPtr;
+                        value = attrs;
                     }
-                    idx = Ext.Array.indexOf(spriteArr, spritePtr);
+                    idx = Ext.Array.indexOf(spriteArr, sprite);
                     if (idx == -1) {
-                        spriteArr.push([spritePtr, {}]);
+                        spriteArr.push([sprite, {}]);
                         idx = spriteArr.length - 1;
                     }
                     spriteArr[idx][1][attr] = value;
@@ -40860,8 +41421,7 @@ Ext.define('Ext.fx.target.Sprite', {
         }
         ln = spriteArr.length;
         for (i = 0; i < ln; i++) {
-            spritePtr = spriteArr[i];
-            spritePtr[0].setAttributes(spritePtr[1]);
+            spriteArr[i][0].setAttributes(spriteArr[i][1]);
         }
         this.target.redraw();
     }
@@ -40910,63 +41470,6 @@ Ext.define('Ext.layout.Layout', {
     autoSizePolicy: {
         setsWidth: 0,
         setsHeight: 0
-    },
-
-    sizeModels: {
-        calculated: {
-            name: 'calculated',
-            auto: false,
-            calculated: true,
-            configured: false,
-            fixed: true,
-            natural: false,
-            shrinkWrap: false
-        },
-        calculatedFromNatural: {
-            name: 'calculatedFromNatural',
-            auto: true,
-            calculated: true,
-            configured: false,
-            fixed: true,
-            natural: true,
-            shrinkWrap: false
-        },
-        calculatedFromShrinkWrap: {
-            name: 'calculatedFromShrinkWrap',
-            auto: true,
-            calculated: true,
-            configured: false,
-            fixed: true,
-            natural: false,
-            shrinkWrap: true
-        },
-        configured: {
-            name: 'configured',
-            auto: false,
-            calculated: false,
-            configured: true,
-            fixed: true,
-            natural: false,
-            shrinkWrap: false
-        },
-        natural: {
-            name: 'natural',
-            auto: true,
-            calculated: false,
-            configured: false,
-            fixed: false,
-            natural: true,
-            shrinkWrap: false
-        },
-        shrinkWrap: {
-            name: 'shrinkWrap',
-            auto: true,
-            calculated: false,
-            configured: false,
-            fixed: false,
-            natural: false,
-            shrinkWrap: true
-        }
     },
 
     statics: {
@@ -41021,7 +41524,31 @@ Ext.define('Ext.layout.Layout', {
     beginLayout: Ext.emptyFn,
 
     
-    beginLayoutCycle: Ext.emptyFn,
+    beginLayoutCycle: function (ownerContext) {
+        var me = this,
+            context = me.context,
+            changed;
+
+        if (me.lastWidthModel != ownerContext.widthModel) {
+            if (me.lastWidthModel) {
+                changed = true;
+            }
+            me.lastWidthModel = ownerContext.widthModel;
+        }
+
+        if (me.lastHeightModel != ownerContext.heightModel) {
+            if (me.lastWidthModel) {
+                changed = true;
+            }
+            me.lastHeightModel = ownerContext.heightModel;
+        }
+
+        if (changed) {
+            (context = ownerContext.context).clearTriggers(me, false);
+            context.clearTriggers(me, true);
+            me.triggerCount = 0;
+        }
+    },
 
     
 
@@ -41177,6 +41704,11 @@ Ext.define('Ext.layout.Layout', {
             targetDom = (target && target.dom) || target;
 
         
+        if (itemDom.parentNode && itemDom.parentNode.className.indexOf(Ext.baseCSSPrefix + 'resizable-wrap') !== -1) {
+            itemDom = itemDom.parentNode;
+        }
+
+        
         if (itemDom && targetDom) {
             if (typeof position == 'number') {
                 return itemDom === targetDom.childNodes[position];
@@ -41296,6 +41828,118 @@ Ext.define('Ext.layout.Layout', {
             delete items[i].$i;
         }
     }
+}, function () {
+    var Layout = this,
+        sizeModels = {};
+
+    Layout.prototype.sizeModels = Layout.sizeModels = sizeModels;
+
+    
+    var SizeModel = function (config) {
+        var me = this,
+            name = config.name;
+
+        Ext.apply(Ext.apply(me, defaults), config);
+
+        me[name] = true; 
+        SizeModel[name] = sizeModels[name] = me;
+
+        me.fixed = !(me.auto = me.natural || me.shrinkWrap);
+    };
+
+    Ext.layout.SizeModel = SizeModel;
+
+    var defaults = {
+        
+
+        
+
+        
+        calculated: false,
+
+        
+        configured: false,
+
+        
+        constrainedMax: false,
+
+        
+        constrainedMin: false,
+
+        
+
+        
+        natural: false,
+
+        
+        shrinkWrap: false,
+
+        
+        calculatedFromConfigured: false,
+
+        
+        calculatedFromNatural: false,
+
+        
+        calculatedFromShrinkWrap: false,
+
+        
+        names: null
+    };
+
+    
+    
+
+    new SizeModel({
+        name: 'calculated'
+    });
+
+    new SizeModel({
+        name: 'configured',
+        names: { width: 'width', height: 'height' }
+    });
+
+    new SizeModel({
+        name: 'natural'
+    });
+
+    new SizeModel({
+        name: 'shrinkWrap'
+    });
+
+    
+    
+    
+
+    new SizeModel({
+        name: 'calculatedFromConfigured',
+        configured: true,
+        names: { width: 'width', height: 'height' }
+    });
+
+    new SizeModel({
+        name: 'calculatedFromNatural',
+        natural: true
+    });
+
+    new SizeModel({
+        name: 'calculatedFromShrinkWrap',
+        shrinkWrap: true
+    });
+
+    new SizeModel({
+        name: 'constrainedMax',
+        configured: true,
+        constrained: true,
+        names: { width: 'maxWidth', height: 'maxHeight' }
+    });
+
+    new SizeModel({
+        name: 'constrainedMin',
+        configured: true,
+        constrained: true,
+        names: { width: 'minWidth', height: 'minHeight' }
+    });
 });
 
 
@@ -41327,7 +41971,8 @@ Ext.define('Ext.layout.component.Component', {
             body = owner.el.dom === document.body,
             lastBox = owner.lastBox || me.nullBox,
             lastSize = owner.el.lastBox || me.nullBox,
-            dirty, ownerLayout, v;
+            dirty = !body,
+            ownerLayout, v, widthName, heightName;
 
         me.callParent(arguments);
 
@@ -41365,10 +42010,14 @@ Ext.define('Ext.layout.component.Component', {
             
             
             
+            widthName = widthModel.names.width;
 
-            dirty = !body && firstCycle && owner.width !== lastSize.width;
+            if (!body) {
+                dirty = firstCycle ? owner[widthName] !== lastSize.width
+                                   : widthModel.constrained;
+            }
             
-            ownerContext.setWidth(owner.width, dirty);
+            ownerContext.setWidth(owner[widthName], dirty);
         } else if (ownerContext.isTopLevel) {
             if (widthModel.calculated) {
                 v = lastBox.width;
@@ -41380,8 +42029,14 @@ Ext.define('Ext.layout.component.Component', {
         }
 
         if (heightModel.configured) {
-            dirty = !body && firstCycle && owner.height !== lastSize.height;
-            ownerContext.setHeight(owner.height, dirty);
+            heightName = heightModel.names.height;
+
+            if (!body) {
+                dirty = firstCycle ? owner[heightName] !== lastSize.height
+                                   : heightModel.constrained;
+            }
+
+            ownerContext.setHeight(owner[heightName], dirty);
         } else if (ownerContext.isTopLevel) {
             if (heightModel.calculated) {
                 v = lastBox.height;
@@ -41724,6 +42379,23 @@ Ext.define('Ext.layout.component.Auto', {
 
     waitForOuterHeightInDom: false,
     waitForOuterWidthInDom: false,
+    
+    beginLayoutCycle: function(ownerContext, firstCycle){
+        var me = this,
+            lastWidthModel = me.lastWidthModel,
+            lastHeightModel = me.lastHeightModel,
+            owner = me.owner;
+            
+        me.callParent(arguments);
+            
+        if (lastWidthModel && lastWidthModel.fixed && ownerContext.widthModel.shrinkWrap) {
+            owner.el.setWidth(null);
+        }
+            
+        if (lastHeightModel && lastHeightModel.fixed && ownerContext.heightModel.shrinkWrap) {
+            owner.el.setHeight(null);
+        }    
+    },
 
     calculate: function(ownerContext) {
         var me = this,
@@ -41778,12 +42450,24 @@ Ext.define('Ext.layout.component.Auto', {
     calculateOwnerWidthFromContentWidth: function (ownerContext, contentWidth) {
         return contentWidth + ownerContext.getFrameInfo().width;
     },
+    
+    onConstrainSize: function (ownerContext, options) {
+        var heightModel = options.heightModel,
+            widthModel = options.widthModel;
+
+        if (heightModel) {
+            ownerContext.heightModel = heightModel;
+        }
+        if (widthModel) {
+            ownerContext.widthModel = widthModel;
+        }
+    },
 
     publishOwnerHeight: function (ownerContext, contentHeight) {
         var me = this,
             owner = me.owner,
             height = me.calculateOwnerHeightFromContentHeight(ownerContext, contentHeight),
-            constrainedHeight, dirty;
+            heightModel, constrainedHeight, dirty;
 
         if (isNaN(height)) {
             me.done = false;
@@ -41793,10 +42477,19 @@ Ext.define('Ext.layout.component.Auto', {
             if (constrainedHeight == height) {
                 dirty = me.setHeightInDom;
             } else {
-                ownerContext.heightModel = me.sizeModels.configured;
+                heightModel = me.sizeModels[
+                    (constrainedHeight < height) ? 'constrainedMax' : 'constrainedMin'];
                 height = constrainedHeight;
-                if (me.publishInnerHeight) {
-                    me.publishInnerHeight(ownerContext, height);
+
+                if (ownerContext.heightModel.calculatedFromShrinkWrap) {
+                    
+                    
+                    ownerContext.heightModel = heightModel;
+                } else {
+                    ownerContext.invalidate({
+                        before: me.onConstrainSize,
+                        heightModel: heightModel
+                    });
                 }
             }
             
@@ -41808,7 +42501,7 @@ Ext.define('Ext.layout.component.Auto', {
         var me = this,
             owner = me.owner,
             width = me.calculateOwnerWidthFromContentWidth(ownerContext, contentWidth),
-            constrainedWidth, dirty;
+            widthModel, constrainedWidth, dirty;
 
         if (isNaN(width)) {
             me.done = false;
@@ -41818,10 +42511,19 @@ Ext.define('Ext.layout.component.Auto', {
             if (constrainedWidth == width) {
                 dirty = me.setWidthInDom;
             } else {
-                ownerContext.widthModel = me.sizeModels.configured;
+                widthModel = me.sizeModels[
+                    (constrainedWidth < width) ? 'constrainedMax' : 'constrainedMin'];
                 width = constrainedWidth;
-                if (me.publishInnerWidth) {
-                    me.publishInnerWidth(ownerContext, width);
+
+                if (ownerContext.widthModel.calculatedFromShrinkWrap) {
+                    
+                    
+                    ownerContext.widthModel = widthModel;
+                } else {
+                    ownerContext.invalidate({
+                        before: me.onConstrainSize,
+                        widthModel: widthModel
+                    });
                 }
             }
 
@@ -43367,7 +44069,7 @@ Ext.define('Ext.AbstractComponent', {
                 me.pendingLayouts = null;
                 me.runningLayoutContext = context;
 
-                context.hookMethods({
+                Ext.override(context, {
                     runComplete: function () {
                         
                         
@@ -43450,6 +44152,7 @@ Ext.define('Ext.AbstractComponent', {
     
 
     
+    frameSize: { left: 0, top: 0, right: 0, bottom: 0, width: 0, height: 0 },
 
     
 
@@ -43564,8 +44267,8 @@ Ext.define('Ext.AbstractComponent', {
 
             xhooks = me.xhooks;
             if (xhooks) {
-                me.hookMethods(xhooks);
                 delete me.xhooks;
+                Ext.override(me, xhooks);
             }
         } else {
             config = {};
@@ -43647,10 +44350,9 @@ Ext.define('Ext.AbstractComponent', {
         }
 
         
-        
-        
-        
-        me.hasListeners = me.hasListeners || new me.HasListeners();
+        if (!me.hasListeners) {
+            me.hasListeners = new me.HasListeners();
+        }
 
         me.initComponent();
 
@@ -43959,6 +44661,13 @@ Ext.define('Ext.AbstractComponent', {
         if (classes.length) {
             me.addCls(classes);
         }
+
+        
+        
+        
+        if (me.rendered) {
+            me.updateLayout();
+        }
     },
 
     
@@ -44211,11 +44920,11 @@ Ext.define('Ext.AbstractComponent', {
 
             
             
-            if (typeof width == 'number') {
-                targetEl.setStyle('width', width + 'px');
+            if (width !== undefined) {
+                targetEl.setStyle('width', (typeof width === 'number') ? width + 'px' : width);
             }
-            if (typeof height == 'number') {
-                targetEl.setStyle('height', height + 'px');
+            if (height !== undefined) {
+                targetEl.setStyle('height', (typeof height === 'number') ? height + 'px' : height);
             }
         }
     },
@@ -44425,25 +45134,24 @@ Ext.define('Ext.AbstractComponent', {
     previousNode: function(selector, includeSelf) {
         var node = this,
             result,
-            it, len, i;
+            it, i, sib;
 
         
         if (includeSelf && node.is(selector)) {
             return node;
         }
 
-        result = this.prev(selector);
-        if (result) {
-            return result;
-        }
-
         if (node.ownerCt) {
             for (it = node.ownerCt.items.items, i = Ext.Array.indexOf(it, node) - 1; i > -1; i--) {
-                if (it[i].query) {
-                    result = it[i].query(selector);
+                sib = it[i];
+                if (sib.query) {
+                    result = sib.query(selector);
                     result = result[result.length - 1];
                     if (result) {
                         return result;
+                    }
+                    if (sib.is(selector)) {
+                        return sib;
                     }
                 }
             }
@@ -44455,22 +45163,21 @@ Ext.define('Ext.AbstractComponent', {
     nextNode: function(selector, includeSelf) {
         var node = this,
             result,
-            it, len, i;
+            it, len, i, sib;
 
         
         if (includeSelf && node.is(selector)) {
             return node;
         }
 
-        result = this.next(selector);
-        if (result) {
-            return result;
-        }
-
         if (node.ownerCt) {
             for (it = node.ownerCt.items, i = it.indexOf(node) + 1, it = it.items, len = it.length; i < len; i++) {
-                if (it[i].down) {
-                    result = it[i].down(selector);
+                sib = it[i];
+                if (sib.is(selector)) {
+                    return sib;
+                }
+                if (sib.down) {
+                    result = sib.down(selector);
                     if (result) {
                         return result;
                     }
@@ -44626,6 +45333,15 @@ Ext.define('Ext.AbstractComponent', {
             me.onDisable();
         } else if (me.enableOnBoxReady) {
             me.onEnable();
+        }
+        if (me.resizable) {
+            me.initResizable(me.resizable);
+        }
+
+        
+        
+        if (me.draggable) {
+            me.initDraggable();
         }
     },
 
@@ -44864,6 +45580,7 @@ Ext.define('Ext.AbstractComponent', {
             me.fireEvent('removed', me, me.ownerCt);
         }
         delete me.ownerCt;
+        delete me.ownerLayout;
     },
 
     
@@ -44980,54 +45697,61 @@ Ext.define('Ext.AbstractComponent', {
     
     getSizeModel: function (ownerCtSizeModel) {
         var me = this,
-            Layout = Ext.layout.Layout.prototype,
-            models = Layout.sizeModels,
-            heightModel, ownerLayout, policy, shrinkWrap, widthModel,
-            ownerCtx = me.componentLayout.ownerContext;
+            models = Ext.layout.SizeModel,
+            ownerCtx = me.componentLayout.ownerContext,
+            hasWidth, hasHeight, heightModel, ownerLayout, policy, shrinkWrap, widthModel;
 
         if (ownerCtx) {
             widthModel = ownerCtx.widthModel;
             heightModel = ownerCtx.heightModel;
-        } else {
-            if (typeof me.width == 'number') {
-                widthModel = models.configured;
-            }
-            if (typeof me.height == 'number') {
-                heightModel = models.configured;
-            }
         }
 
         if (!widthModel || !heightModel) {
-            if (me.floating) {
-                policy = Layout.autoSizePolicy;
-                shrinkWrap = 3;
-            } else {
-                if (!(ownerLayout = me.ownerLayout)) {
-                    policy = Layout.autoSizePolicy;
-                    shrinkWrap = me.shrinkWrap;
-                } else {
-                    policy = ownerLayout.getItemSizePolicy(me);
-                    shrinkWrap = ownerLayout.isItemShrinkWrap(me);
+            hasWidth = (typeof me.width == 'number');
+            hasHeight = (typeof me.height == 'number');
+
+            
+            if (me.floating || !(ownerLayout = me.ownerLayout)) {
+                if (hasWidth) {
+                    widthModel = models.configured;
+                }
+                if (hasHeight) {
+                    heightModel = models.configured;
                 }
 
-                shrinkWrap = (shrinkWrap === true) ? 3 : (shrinkWrap || 0); 
+                policy = Ext.layout.Layout.prototype.autoSizePolicy;
+                shrinkWrap = me.floating ? 3 : me.shrinkWrap;
+            } else {
+                policy = ownerLayout.getItemSizePolicy(me, ownerCtSizeModel);
+                shrinkWrap = ownerLayout.isItemShrinkWrap(me);
+            }
 
-                if (shrinkWrap !== 3) {
-                    if (!ownerCtSizeModel) {
-                        ownerCtSizeModel = me.ownerCt && me.ownerCt.getSizeModel();
-                    }
-                    if (ownerCtSizeModel) {
-                        shrinkWrap |= (ownerCtSizeModel.width.shrinkWrap ? 1 : 0) | (ownerCtSizeModel.height.shrinkWrap ? 2 : 0);
-                    }
+            shrinkWrap = (shrinkWrap === true) ? 3 : (shrinkWrap || 0); 
+
+            if (shrinkWrap !== 3) {
+                if (!ownerCtSizeModel) {
+                    ownerCtSizeModel = me.ownerCt && me.ownerCt.getSizeModel();
+                }
+
+                if (ownerCtSizeModel) {
+                    shrinkWrap |= (ownerCtSizeModel.width.shrinkWrap ? 1 : 0) | (ownerCtSizeModel.height.shrinkWrap ? 2 : 0);
                 }
             }
 
             if (!widthModel) {
                 if (!policy.setsWidth) {
-                    widthModel = (shrinkWrap & 1) ? models.shrinkWrap : models.natural;
+                    if (hasWidth) {
+                        widthModel = models.configured;
+                    } else {
+                        widthModel = (shrinkWrap & 1) ? models.shrinkWrap : models.natural;
+                    }
                 } else if (policy.readsWidth) {
-                    widthModel = (shrinkWrap & 1) ? models.calculatedFromShrinkWrap :
+                    if (hasWidth) {
+                        widthModel = models.calculatedFromConfigured;
+                    } else {
+                        widthModel = (shrinkWrap & 1) ? models.calculatedFromShrinkWrap :
                                     models.calculatedFromNatural;
+                    }
                 } else {
                     widthModel = models.calculated;
                 }
@@ -45035,10 +45759,18 @@ Ext.define('Ext.AbstractComponent', {
 
             if (!heightModel) {
                 if (!policy.setsHeight) {
-                    heightModel = (shrinkWrap & 2) ? models.shrinkWrap : models.natural;
+                    if (hasHeight) {
+                        heightModel = models.configured;
+                    } else {
+                        heightModel = (shrinkWrap & 2) ? models.shrinkWrap : models.natural;
+                    }
                 } else if (policy.readsHeight) {
-                    heightModel = (shrinkWrap & 2) ? models.calculatedFromShrinkWrap :
+                    if (hasHeight) {
+                        heightModel = models.calculatedFromConfigured;
+                    } else {
+                        heightModel = (shrinkWrap & 2) ? models.calculatedFromShrinkWrap :
                                     models.calculatedFromNatural;
+                    }
                 } else {
                     heightModel = models.calculated;
                 }
@@ -45488,24 +46220,6 @@ Ext.define('Ext.PluginManager', {
     typeName: 'ptype',
 
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-
     create : function(config, defaultType){
         if (config.init) {
             return config;
@@ -45521,6 +46235,24 @@ Ext.define('Ext.PluginManager', {
         
         
     },
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
 
     
     findByType: function(type, defaultsOnly) {
@@ -45734,7 +46466,7 @@ Ext.define('Ext.util.LruCache', {
                     next: sibling,
                     key: key,
                     value: newValue
-                }
+                };
             }
 
             if (sibling.prev) {
@@ -46022,21 +46754,26 @@ Ext.define("Ext.util.Sortable", {
 
     
     generateComparator: function() {
-        return (this.sorters.items.length) ? (function(sorters) {
-            return function(r1, r2) {
-                var result = sorters[0].sort(r1, r2),
-                    length = sorters.length,
-                    i;
+        var sorters = this.sorters.getRange();
+        return sorters.length ? this.createComparator(sorters) : this.emptyComparator;
+    },
+    
+    createComparator: function(sorters) {
+        return function(r1, r2) {
+            var result = sorters[0].sort(r1, r2),
+                length = sorters.length,
+                i = 1;
 
-                
-                for (i = 1; i < length; i++) {
-                    result = result || sorters[i].sort.call(this, r1, r2);
-                }
-                return result;
-            };
-        }(this.sorters.items)) : function() {
-            return 0;
+            
+            for (; i < length; i++) {
+                result = result || sorters[i].sort.call(this, r1, r2);
+            }
+            return result;
         };
+    },
+    
+    emptyComparator: function(){
+        return 0;
     },
 
     onBeforeSort: Ext.emptyFn,
@@ -47089,9 +47826,9 @@ Ext.define('Ext.data.Model', {
         'Ext.util.MixedCollection'
     ],
 
-    sortConvertFields: function(f1, f2) {
-        var f1SpecialConvert = f1.type && f1.convert !== f1.type.convert,
-            f2SpecialConvert = f2.type && f2.convert !== f2.type.convert;
+    compareConvertFields: function(f1, f2) {
+        var f1SpecialConvert = f1.convert && f1.type && f1.convert !== f1.type.convert,
+            f2SpecialConvert = f2.convert && f2.type && f2.convert !== f2.type.convert;
 
         if (f1SpecialConvert && !f2SpecialConvert) {
             return 1;
@@ -47119,9 +47856,6 @@ Ext.define('Ext.data.Model', {
                 validations = data.validations || [],
                 fields = data.fields || [],
                 associations = data.associations || [],
-                belongsTo = data.belongsTo,
-                hasMany = data.hasMany,
-                hasOne = data.hasOne,
                 addAssociations = function(items, type) {
                     var i = 0,
                         len,
@@ -47155,13 +47889,41 @@ Ext.define('Ext.data.Model', {
                 association, i, ln,
                 dependencies = [],
                 idProperty = data.idProperty || cls.prototype.idProperty,
-                fieldConvertSortFn = Ext.Function.bind(
-                    fieldsMixedCollection.sortBy, 
-                    fieldsMixedCollection,
-                    [prototype.sortConvertFields], false),
 
                 
-                clsProxy = data.proxy || cls.prototype.proxy || cls.prototype.defaultProxyType;
+                onFieldAddReplace = function(arg0, arg1, arg2) {
+                    var newField,
+                        pos;
+
+                    if (fieldsMixedCollection.events.add.firing) {
+                        
+                        pos = arg0;
+                        newField  = arg1;
+                    } else {
+                        
+                        newField = arg2;
+                        pos = arg1.originalIndex;
+                    }
+
+                    
+                    
+                    newField.originalIndex = pos;
+
+                    
+                    
+                    
+                    if (newField.mapping === idProperty || (newField.mapping == null && newField.name === idProperty)) {
+                        newField.defaultValue = undefined;
+                    }
+                },
+
+                
+                clsProxy = data.proxy || cls.prototype.proxy || cls.prototype.defaultProxyType,
+
+                
+                fieldConvertSortFn = function() {
+                    fieldsMixedCollection.sortBy(prototype.compareConvertFields);
+                };
 
             
             cls.modelName = name;
@@ -47180,8 +47942,8 @@ Ext.define('Ext.data.Model', {
             }
 
             fieldsMixedCollection.on({
-                add: fieldConvertSortFn,
-                replace: fieldConvertSortFn
+                add:     onFieldAddReplace,
+                replace: onFieldAddReplace
             });  
 
             for (i = 0, ln = fields.length; i < ln; ++i) {
@@ -47190,6 +47952,14 @@ Ext.define('Ext.data.Model', {
             if (!fieldsMixedCollection.get(idProperty)) {
                 fieldsMixedCollection.add(new Ext.data.Field(idProperty));
             }
+
+            
+            fieldConvertSortFn();
+            fieldsMixedCollection.on({
+                add:     fieldConvertSortFn,
+                replace: fieldConvertSortFn
+            });
+
             data.fields = fieldsMixedCollection;
 
             if (idgen) {
@@ -47277,11 +48047,20 @@ Ext.define('Ext.data.Model', {
         },
 
         
-        setFields: function(fields) {
+        setFields: function(fields, idProperty, clientIdProperty) {
             var me = this,
-                prototypeFields = me.prototype.fields,
-                len = fields.length,
+                proto = me.prototype,
+                prototypeFields = proto.fields,
+                len = fields ? fields.length : 0,
                 i = 0;
+
+
+            if (idProperty) {
+                proto.idProperty = idProperty;
+            }
+            if (clientIdProperty) {
+                proto.clientIdProperty = clientIdProperty;
+            }
 
             if (prototypeFields) {
                 prototypeFields.clear();
@@ -47295,14 +48074,18 @@ Ext.define('Ext.data.Model', {
             for (; i < len; i++) {
                 prototypeFields.add(new Ext.data.Field(fields[i]));
             }
+            if (!prototypeFields.get(proto.idProperty)) {
+                prototypeFields.add(new Ext.data.Field(proto.idProperty));
+            }
 
             me.fields = prototypeFields;
 
             return prototypeFields;
         },
 
+        
         getFields: function() {
-            return this.fields;
+            return this.prototype.fields.items;
         },
 
         
@@ -47382,7 +48165,7 @@ Ext.define('Ext.data.Model', {
     idProperty: 'id',
 
     
-    clientIdProperty: 'clientId',
+    clientIdProperty: null,
 
     
     defaultProxyType: 'ajax',
@@ -47459,7 +48242,10 @@ Ext.define('Ext.data.Model', {
                     if (field.convert) {
                         value = field.convert(value, me);
                     }
-                    persistenceProperty[name] = value ;
+                    
+                    if (value !== undefined) {
+                        persistenceProperty[name] = value;
+                    }
                 }
 
             } else {
@@ -47473,7 +48259,10 @@ Ext.define('Ext.data.Model', {
                     if (field.convert) {
                         value = field.convert(value, me);
                     }
-                    persistenceProperty[name] = value ;
+                    
+                    if (value !== undefined) {
+                        persistenceProperty[name] = value;
+                    }
                }
             }
         }
@@ -47532,7 +48321,7 @@ Ext.define('Ext.data.Model', {
             if (values.hasOwnProperty(name)) {
                 value = values[name];
 
-                if ((field = fields && fields.get(name)) && field.convert) {
+                if (fields && (field = fields.get(name)) && field.convert) {
                     value = field.convert(value, me);
                 }
 
@@ -47591,6 +48380,39 @@ Ext.define('Ext.data.Model', {
         }
 
         return modifiedFieldNames || null;
+    },
+
+    
+    copyFrom: function(sourceRecord) {
+        if (sourceRecord) {
+
+            var me = this,
+                fields = me.fields.items,
+                fieldCount = fields.length,
+                field, i = 0,
+                myData = me[me.persistenceProperty],
+                sourceData = sourceRecord[sourceRecord.persistenceProperty],
+                value;
+
+            for (; i < fieldCount; i++) {
+                field = fields[i];
+
+                
+                
+                
+                
+                
+                value = sourceData[field.name];
+                if (value !== undefined) {
+                    myData[field.name] = value;
+                }
+            }
+
+            
+            if (me.phantom && !sourceRecord.phantom) {
+                me.setId(sourceRecord.getId());
+            }
+        }
     },
 
     
@@ -47905,11 +48727,15 @@ Ext.define('Ext.data.Model', {
     
     join : function(store) {
         Ext.Array.include(this.stores, store);
+
+        
+        this.store = this.stores[0]; 
     },
 
     
     unjoin: function(store) {
         Ext.Array.remove(this.stores, store);
+        this.store = this.stores[0] || null; 
     },
 
     
@@ -47970,32 +48796,40 @@ Ext.define('Ext.data.Model', {
 
     
     getAssociatedData: function(){
-        return this.prepareAssociatedData(this, {});
+        return this.prepareAssociatedData({}, 1);
     },
 
     
-    prepareAssociatedData: function(record, keys) {
-        var associations     = record.associations.items,
+    prepareAssociatedData: function(seenKeys, depth) {
+        
+        var me               = this,
+            associations     = me.associations.items,
             associationCount = associations.length,
             associationData  = {},
-            associatedStore, associatedRecords, associatedRecord,
+            
+            
+            
+            toRead           = [],
+            toReadKey        = [],
+            toReadIndex      = [],
+            associatedStore, associatedRecords, associatedRecord, o, index, result, seenDepth,
             associationId, associatedRecordCount, association, i, j, type, name;
 
         for (i = 0; i < associationCount; i++) {
             association = associations[i];
             associationId = association.associationId;
             
-            
-            if (keys[associationId]) {
+            seenDepth = seenKeys[associationId];
+            if (seenDepth && seenDepth !== depth) {
                 continue;
-            } else {
-                keys[associationId] = true;
             }
+            seenKeys[associationId] = depth;
+
             type = association.type;
             name = association.name;
             if (type == 'hasMany') {
                 
-                associatedStore = record[association.storeName];
+                associatedStore = me[association.storeName];
 
                 
                 associationData[name] = [];
@@ -48006,18 +48840,36 @@ Ext.define('Ext.data.Model', {
                     associatedRecordCount = associatedRecords.length;
 
                     
+                    
                     for (j = 0; j < associatedRecordCount; j++) {
                         associatedRecord = associatedRecords[j];
                         associationData[name][j] = associatedRecord.getData();
-                        Ext.apply(associationData[name][j], this.prepareAssociatedData(associatedRecord, keys));
+                        toRead.push(associatedRecord);
+                        toReadKey.push(name);
+                        toReadIndex.push(j);
                     }
                 }
             } else if (type == 'belongsTo' || type == 'hasOne') {
-                associatedRecord = record[association.instanceName];
+                associatedRecord = me[association.instanceName];
+                
                 if (associatedRecord !== undefined) {
                     associationData[name] = associatedRecord.getData();
-                    Ext.apply(associationData[name], this.prepareAssociatedData(associatedRecord, keys));
+                    toRead.push(associatedRecord);
+                    toReadKey.push(name);
+                    toReadIndex.push(-1);
                 }
+            }
+        }
+        
+        for (i = 0, associatedRecordCount = toRead.length; i < associatedRecordCount; ++i) {
+            associatedRecord = toRead[i];
+            o = associationData[toReadKey[i]];
+            index = toReadIndex[i];
+            result = associatedRecord.prepareAssociatedData(seenKeys, depth + 1);
+            if (index === -1) {
+                Ext.apply(o, result);
+            } else {
+                Ext.apply(o[index], result);
             }
         }
 
@@ -48696,7 +49548,7 @@ Ext.define('Ext.data.Store', {
     ],
 
     uses: [
-        'Ext.ModelManager', 
+        'Ext.ModelManager',
         'Ext.util.Grouper'
     ],
 
@@ -48721,7 +49573,7 @@ Ext.define('Ext.data.Store', {
 
     
     trailingBufferZone: 25,
-    
+
     
     leadingBufferZone: 200,
 
@@ -48745,10 +49597,10 @@ Ext.define('Ext.data.Store', {
 
     
     purgePageCount: 5,
-    
+
     
     clearRemovedOnLoad: true,
-    
+
     defaultPageSize: 25,
 
     statics: {
@@ -48818,11 +49670,19 @@ Ext.define('Ext.data.Store', {
         
 
         if (me.buffered) {
+
+            
+            
+            
             me.pageMap = new me.PageMap({
                 pageSize: me.pageSize,
-                maxSize: me.purgePageCount
+                maxSize: me.purgePageCount,
+                listeners: {
+                    clear: me.cancelAllPrefetches,
+                    scope: me
+                }
             });
-            me.pagesRequested = {};
+            me.pageRequests = {};
 
             me.sortOnLoad = false;
             me.filterOnLoad = false;
@@ -48856,6 +49716,16 @@ Ext.define('Ext.data.Store', {
             
             
         }
+    },
+    
+    destroy: function() {
+        
+        
+        
+        if (this.pageMap) {
+            this.pageMap.clear();
+        }
+        this.callParent(arguments);
     },
 
     onBeforeSort: function() {
@@ -49124,7 +49994,7 @@ Ext.define('Ext.data.Store', {
         if (me.snapshot) {
             me.snapshot.addAll(records);
         }
-        
+
         if (me.requireSort) {
             
             me.suspendEvents();
@@ -49144,6 +50014,9 @@ Ext.define('Ext.data.Store', {
         
         if (!Ext.isArray(records)) {
             records = Array.prototype.slice.apply(arguments);
+        } else {
+            
+            records = records.slice(0);
         }
 
         var me = this,
@@ -49178,8 +50051,10 @@ Ext.define('Ext.data.Store', {
 
     
     addSorted: function(record) {
-        var index = this.data.findInsertionIndex(record, this.generateComparator());
-        this.insert(index, record);
+        var me = this,
+            index = me.data.findInsertionIndex(record, me.generateComparator());
+
+        me.insert(index, record);
         return record;
     },
 
@@ -49232,7 +50107,7 @@ Ext.define('Ext.data.Store', {
 
             if (index > -1) {
                 isPhantom = record.phantom === true;
-                
+
                 if (!isMove && !isPhantom) {
                     
                     me.removed.push(record);
@@ -49272,7 +50147,7 @@ Ext.define('Ext.data.Store', {
                 callback: options
             };
         }
-        
+
         options.groupers = options.groupers ||  me.groupers.items;
         options.page = options.page || me.currentPage;
         options.start = (options.start !== undefined) ? options.start : (me.currentPage - 1) * me.pageSize;
@@ -49332,7 +50207,7 @@ Ext.define('Ext.data.Store', {
 
         var me = this,
             decoded = me.decodeFilters(filters),
-            i = 0, count,
+            i = 0,
             doLocalSort = me.sorters.length && me.sortOnFilter && !me.remoteSort,
             length = decoded.length;
 
@@ -49345,18 +50220,8 @@ Ext.define('Ext.data.Store', {
             
             
             if (me.buffered) {
-                count = me.getCount();
                 me.pageMap.clear();
-                me.prefetchPage(1, {
-                    callback: function(records, operation, success) {
-                        if (success) {
-                            me.onGuaranteedRange({
-                                prefetchStart: 0,
-                                prefetchEnd: count
-                            });
-                        }
-                    }
-                });
+                me.loadPage(1);
             } else {
                 
                 me.currentPage = 1;
@@ -49387,9 +50252,23 @@ Ext.define('Ext.data.Store', {
         me.filters.clear();
 
         if (me.remoteFilter) {
+
             
-            me.currentPage = 1;
-            me.load();
+            if (suppressEvent) {
+                return;
+            }
+
+            
+            
+            
+            if (me.buffered) {
+                me.pageMap.clear();
+                me.loadPage(1);
+            } else {
+                
+                me.currentPage = 1;
+                me.load();
+            }
         } else if (me.isFiltered()) {
             me.data = me.snapshot.clone();
             delete me.snapshot;
@@ -49500,7 +50379,7 @@ Ext.define('Ext.data.Store', {
         }
 
         me.resumeEvents();
-        me.fireEvent('datachanged', me, records);
+        me.fireEvent('datachanged', me);
         me.fireEvent('refresh', me);
     },
 
@@ -49540,7 +50419,7 @@ Ext.define('Ext.data.Store', {
         var me = this,
             records = me.data.items,
             i = records.length;
-            
+
         while (i--) {
             records[i].unjoin(me);
         }
@@ -49551,20 +50430,17 @@ Ext.define('Ext.data.Store', {
     },
 
     loadToPrefetch: function(options) {
-        var me = this;
+        var me = this,
+            waitForInitialRange = function() {
+                if (me.rangeCached(options.start, options.limit - 1)) {
+                    me.pageMap.un('pageAdded', waitForInitialRange);
+                    me.guaranteeRange(options.start, (me.viewSize || me.pageSize) - 1);
+                }
+            };
 
         
-        
-        me.on({
-            prefetch: me.onItitialPrefetch,
-            scope: me,
-            single: true
-        })
+        me.pageMap.on('pageAdded', waitForInitialRange);
         return me.prefetch(options || {});
-    },
-
-    onItitialPrefetch: function(me, records, successful, operation) {
-        me.guaranteeRange(operation.start, (me.viewSize || me.pageSize) - 1);
     },
 
     
@@ -49600,21 +50476,24 @@ Ext.define('Ext.data.Store', {
         }
 
         
-        if (!me.pagesRequested[options.page]) {
-            me.pagesRequested[options.page] = true;
+        if (!me.pageRequests[options.page]) {
 
             
             options = Ext.apply({
                 action : 'read',
                 filters: me.filters.items,
-                sorters: me.sorters.items
+                sorters: me.sorters.items,
+
+                
+                
+                generation: me.pageMap.generation
             }, options);
 
             operation = new Ext.data.Operation(options);
 
             if (me.fireEvent('beforeprefetch', me, operation) !== false) {
                 me.loading = true;
-                me.proxy.read(operation, me.onProxyPrefetch, me);
+                me.pageRequests[options.page] = me.proxy.read(operation, me.onProxyPrefetch, me);
             }
         }
 
@@ -49622,19 +50501,36 @@ Ext.define('Ext.data.Store', {
     },
 
     
+    cancelAllPrefetches: function() {
+        var me = this,
+            reqs = me.pageRequests,
+            req,
+            page;
+
+        
+        if (me.pageMap.events.pageadded) {
+            me.pageMap.events.pageadded.clearListeners();
+        }
+
+        
+        for (page in reqs) {
+            if (reqs.hasOwnProperty(page)) {
+                req = reqs[page];
+                delete reqs[page];
+                delete req.callback;
+            }
+        }
+    },
+
+    
     prefetchPage: function(page, options) {
         var me = this,
             pageSize = me.pageSize || me.defaultPageSize,
             start = (page - 1) * me.pageSize,
-            end = start + pageSize,
-            total = me.getTotalCount();
-            
-        if (total) {
-            end = Math.min(end, total);
-        }
+            total = me.totalCount;
 
         
-        if (me.getCount() === total) {
+        if (total !== undefined && me.getCount() === total) {
             return;
         }
 
@@ -49654,32 +50550,32 @@ Ext.define('Ext.data.Store', {
             successful = operation.wasSuccessful(),
             page = operation.page;
 
-        if (resultSet) {
-            me.totalCount = resultSet.total;
-            me.fireEvent('totalcountchange', me.totalCount);
+        
+        
+        if (operation.generation === me.pageMap.generation) {
+
+            if (resultSet) {
+                me.totalCount = resultSet.total;
+                me.fireEvent('totalcountchange', me.totalCount);
+            }
+
+            
+            if (page !== undefined) {
+                delete me.pageRequests[page];
+            }
+
+            
+            
+            if (successful) {
+                me.cachePage(records, operation.page);
+            }
+
+            me.loading = false;
+            me.fireEvent('prefetch', me, records, successful, operation);
+
+            
+            Ext.callback(operation.callback, operation.scope || me, [records, operation, successful]);
         }
-
-        
-        if (page !== undefined) {
-            delete me.pagesRequested[page];
-        }
-
-        
-        
-        if (successful) {
-            me.cachePage(records, operation.page);
-        }
-
-        me.loading = false;
-        me.fireEvent('prefetch', me, records, successful, operation);
-
-        
-        if (operation.blocking) {
-            me.fireEvent('load', me, records, successful);
-        }
-
-        
-        Ext.callback(operation.callback, operation.scope || me, [records, operation, successful]);
     },
 
     
@@ -49731,26 +50627,12 @@ Ext.define('Ext.data.Store', {
         if (options.cb) {
             options.cb.call(options.scope || me, range, start, end);
         }
-
-        me.unmask();
-    },
-
-    
-    mask: function() {
-        this.masked = true;
-        this.fireEvent('beforeload');
-    },
-
-    
-    unmask: function() {
-        if (this.masked) {
-            this.fireEvent('load');
-        }
     },
 
     
     prefetchRange: function(start, end) {
-        var me = this;
+        var me = this,
+            startPage, endPage, page;
         if (!me.rangeCached(start, end)) {
             startPage = me.getPageFromRecordIndex(start);
             endPage = me.getPageFromRecordIndex(end);
@@ -49775,7 +50657,6 @@ Ext.define('Ext.data.Store', {
         end = (end > this.totalCount) ? this.totalCount - 1 : end;
 
         var me = this,
-            page,
             lastRequestStart = me.lastRequestStart,
             options = {
                 prefetchStart: start,
@@ -49809,6 +50690,8 @@ Ext.define('Ext.data.Store', {
         }
         
         else {
+            
+            me.fireEvent('cachemiss', me, start, end);
 
             
             start = Math.min(Math.max(Math.floor(start - ((me.leadingBufferZone + me.trailingBufferZone) / 2)), 0), me.totalCount - me.pageSize);
@@ -49817,10 +50700,12 @@ Ext.define('Ext.data.Store', {
             
             pageAddHandler = function(page, records) {
                 if (me.rangeCached(options.prefetchStart, options.prefetchEnd)) {
+                    
+                    me.fireEvent('cachefilled', me, start, end);
                     me.pageMap.un('pageAdded', pageAddHandler);
                     me.onGuaranteedRange(options);
                 }
-            },
+            };
             me.pageMap.on('pageAdded', pageAddHandler);
 
             
@@ -49856,7 +50741,6 @@ Ext.define('Ext.data.Store', {
     
     doSort: function(sorterFn) {
         var me = this,
-            count,
             range,
             ln,
             i;
@@ -49866,18 +50750,8 @@ Ext.define('Ext.data.Store', {
             
             
             if (me.buffered) {
-                count = me.getCount();
                 me.pageMap.clear();
-                me.prefetchPage(1, {
-                    callback: function(records, operation, success) {
-                        if (success) {
-                            me.onGuaranteedRange({
-                                prefetchStart: 0,
-                                prefetchEnd: count
-                            });
-                        }
-                    }
-                });
+                me.loadPage(1);
             } else {
                 
                 me.load();
@@ -49924,7 +50798,7 @@ Ext.define('Ext.data.Store', {
     
     findExact: function(property, value, start) {
         return this.data.findIndexBy(function(rec) {
-            return rec.get(property) === value;
+            return rec.isEqual(rec.get(property), value);
         },
         this, start);
     },
@@ -49949,7 +50823,7 @@ Ext.define('Ext.data.Store', {
 
     
     getTotalCount: function() {
-        return this.totalCount;
+        return this.totalCount || 0;
     },
 
     
@@ -49996,6 +50870,12 @@ Ext.define('Ext.data.Store', {
         me.clearData();
         if (me.snapshot) {
             me.snapshot.clear();
+        }
+
+        
+        
+        if (me.pageMap) {
+            me.pageMap.clear();
         }
         if (silent !== true) {
             me.fireEvent('clear', me);
@@ -50180,7 +51060,7 @@ Ext.define('Ext.data.Store', {
             recs = me.getModifiedRecords(),
             len = recs.length,
             i = 0;
-            
+
         for (; i < len; i++){
             recs[i].commit();
         }
@@ -50189,19 +51069,19 @@ Ext.define('Ext.data.Store', {
         
         me.removed.length = 0;
     },
-    
+
     filterNewOnly: function(item){
         return item.phantom === true;
     },
-    
+
     
     
     
     getRejectRecords: function(){
         var newRecs = this.data.filterBy(this.filterNewOnly).items;
-        return newRecs.concat(this.getUpdatedRecords());    
+        return newRecs.concat(this.getUpdatedRecords());
     },
-    
+
     
     rejectChanges : function() {
         var me = this,
@@ -50241,10 +51121,16 @@ Ext.define('Ext.data.Store', {
     this.prototype.PageMap = new Ext.Class({
         extend: 'Ext.util.LruCache',
 
+        
+        clear: function(initial) {
+            this.generation = (this.generation ||0) + 1;
+            this.callParent(arguments);
+        },
+
         getPageFromRecordIndex: this.prototype.getPageFromRecordIndex,
 
         addPage: function(page, records) {
-            this.add(page, records)
+            this.add(page, records);
             this.fireEvent('pageAdded', page, records);
         },
 
@@ -50641,7 +51527,7 @@ Ext.define('Ext.data.XmlStore', {
     ],
     
     constructor: function(config){
-        conifig = Ext.apply({
+        config = Ext.apply({
             proxy: {
                 type: 'ajax',
                 reader: 'xml',
@@ -51411,7 +52297,8 @@ Ext.define('Ext.draw.CompositeSprite', {
     mixins: {
         animate: 'Ext.util.Animate'
     },
-
+    autoDestroy: false,
+    
     
     isCompositeSprite: true,
     constructor: function(config) {
@@ -51633,13 +52520,14 @@ Ext.define('Ext.draw.CompositeSprite', {
     destroy: function(){
         var me = this,
             surface = me.getSurface(),
+            destroySprites = me.autoDestroy,
             item;
             
         if (surface) {
             while (me.getCount() > 0) {
                 item = me.first();
                 me.remove(item);
-                surface.remove(item, true);
+                surface.remove(item, destroySprites);
             }
         }
         me.clearListeners();
@@ -51865,6 +52753,9 @@ Ext.define('Ext.chart.Legend', {
 
     
     visible: true,
+    
+    
+    update: true,
 
     
     position: 'bottom',
@@ -52199,7 +53090,7 @@ Ext.define('Ext.draw.Surface', {
                 surfaceClass;
 
             for (; i < len; i++) {
-                if (Ext.supports[enginePriority[i]]) {
+                if (Ext.supports[enginePriority[i]] !== false) {
                     return Ext.create('Ext.draw.engine.' + enginePriority[i], config);
                 }
             }
@@ -52248,7 +53139,7 @@ Ext.define('Ext.draw.Surface', {
         ry: 0,
         scale: "1 1",
         src: "",
-        stroke: "#000",
+        stroke: "none",
         "stroke-dasharray": "",
         "stroke-linecap": "butt",
         "stroke-linejoin": "butt",
@@ -52296,7 +53187,8 @@ Ext.define('Ext.draw.Surface', {
             'mousemove',
             'mouseenter',
             'mouseleave',
-            'click'
+            'click',
+            'dblclick'
         );
 
         me.mixins.observable.constructor.call(me);
@@ -52361,6 +53253,7 @@ Ext.define('Ext.draw.Surface', {
     initItems: function() {
         var items = this.items;
         this.items = new Ext.draw.CompositeSprite();
+        this.items.autoDestroy = true;
         this.groups = new Ext.draw.CompositeSprite();
         if (items) {
             this.add(items);
@@ -52447,6 +53340,11 @@ Ext.define('Ext.draw.Surface', {
     
     onClick: function(e) {
         this.processEvent('click', e);
+    },
+    
+    
+    onDblClick: function(e) {
+        this.processEvent('dblclick', e);
     },
 
     
@@ -52573,7 +53471,7 @@ Ext.define('Ext.draw.Surface', {
         if (sprite) {
             this.items.remove(sprite);
 
-            var groups = [].concat(this.groups),
+            var groups = [].concat(this.groups.items),
                 gLen   = groups.length,
                 g;
 
@@ -52863,8 +53761,13 @@ Ext.define('Ext.draw.Surface', {
 
     
     destroy: function() {
-        delete this.domRef;
-        this.removeAll();
+        var me = this;
+        delete me.domRef;
+        if (me.background) {
+            me.background.destroy();
+        }
+        me.removeAll(true);
+        Ext.destroy(me.groups.items);
     }
 });
 
@@ -53645,8 +54548,13 @@ Ext.define('Ext.fx.Anim', {
         }
     },
 
+    endWasCalled: 0,
+
     
     end: function() {
+        if (this.endWasCalled++) {
+            return;
+        }
         var me = this;
         me.startTime = 0;
         me.paused = false;
@@ -53771,7 +54679,6 @@ Ext.define('Ext.chart.Highlight', {
             animate = me.chart.animate,
             i = 0,
             obj, p, sprite;
-
         for (; i < len; i++) {
             if (!items[i]) {
                 continue;
@@ -53871,12 +54778,21 @@ Ext.define('Ext.layout.Context', {
         me.finishQueue = me.newQueue();
         me.flushQueue = me.newQueue();
 
+        me.invalidateData = {};
+
         
         me.layoutQueue = me.newQueue();
 
         
         
         me.invalidQueue = [];
+
+        me.triggers = {
+            data: {
+                
+            },
+            dom: {}
+        };
     },
 
     callLayout: function (layout, methodName) {
@@ -53950,6 +54866,36 @@ Ext.define('Ext.layout.Context', {
         layout.ownerContext = null;
     },
 
+    clearTriggers: function (layout, inDom) {
+        var id = layout.id,
+            triggers = this.triggers[inDom ? 'dom' : 'data'][id],
+            length = (triggers && triggers.length) || 0,
+            collection, i, item, trigger;
+
+        for (i = 0; i < length; ++i) {
+            trigger = triggers[i];
+            item = trigger.item;
+
+            collection = inDom ? item.domTriggers : item.triggers;
+            delete collection[trigger.prop][id];
+        }
+    },
+
+    finishInvalidate: function (options, item, name) {
+        
+        
+        if (options[name]) {
+            var me = this,
+                currentLayout = me.currentLayout;
+
+            me.currentLayout = options.layout || null;
+
+            options[name](item, options);
+
+            me.currentLayout = currentLayout;
+        }
+    },
+
     
     flush: function () {
         var me = this,
@@ -53991,7 +54937,7 @@ Ext.define('Ext.layout.Context', {
         var me = this,
             queue = me.invalidQueue,
             length = queue && queue.length,
-            comp, components, currentLayout, entry, i, state, options, optionQueue;
+            comp, components, entry, i;
 
         me.invalidQueue = [];
 
@@ -54007,34 +54953,12 @@ Ext.define('Ext.layout.Context', {
                     components.push(comp);
 
                     if (entry.options) {
-                        
-                        (optionQueue || (optionQueue = [])).push(entry);
+                        me.invalidateData[comp.id] = entry.options;
                     }
                 }
             }
 
             me.invalidate(components, null);
-
-            if (optionQueue) {
-                length = optionQueue.length;
-                for (i = 0; i < length; ++i) {
-                    options = (entry = optionQueue[i]).options;
-                    state = options.state;
-                    if (state) {
-                        Ext.apply(entry.item.state, state);
-                    }
-
-                    
-                    
-                    if (options.callback) {
-                        currentLayout = me.currentLayout;
-                        me.currentLayout = options.layout || null;
-                        
-                        options.callback(options, entry.item);
-                        me.currentLayout = currentLayout;
-                    }
-                }
-            }
         }
     },
 
@@ -54121,7 +55045,8 @@ Ext.define('Ext.layout.Context', {
             running = me.state > 0,
             previousOwnerCtContext = me.currentOwnerCtContext,
             componentChildrenDone, containerChildrenDone, containerLayoutDone, ownerCt,
-            firstTime, i, k, comp, item, items, length, componentLayout, layout, props;
+            firstTime, i, k, comp, item, items, length, componentLayout, layout, props,
+            invalidateData;
 
         me.currentOwnerCtContext = ownerCtContext;
 
@@ -54185,7 +55110,19 @@ Ext.define('Ext.layout.Context', {
                     layout = null;
                 }
 
-                if (!firstTime) {
+                if (firstTime){
+                    item.hasRawContent = true;
+
+                    
+                    
+                    
+                    if (item.target.isContainer) {
+                        if (item.target.items.items.length || !item.target.getTargetEl().dom.firstChild) {
+                            item.hasRawContent = false;
+                        }
+                    }
+
+                } else {
                     item.doInvalidate(full);
 
                     
@@ -54210,9 +55147,22 @@ Ext.define('Ext.layout.Context', {
                     props.containerLayoutDone = true;
                 }
 
+                invalidateData = me.invalidateData[item.id];
+                if (invalidateData) {
+                    delete me.invalidateData[item.id];
+                    if (invalidateData.state) {
+                        Ext.apply(item.state, invalidateData.state);
+                    }
+                    me.finishInvalidate(invalidateData, item, 'before');
+                }
+
                 me.resetLayout(componentLayout, item, firstTime);
                 if (layout) {
                     me.resetLayout(layout, item, firstTime);
+                }
+
+                if (invalidateData) {
+                    me.finishInvalidate(invalidateData, item, 'after');
                 }
 
                 if (item.boxChildren && item.widthModel.shrinkWrap) {
@@ -54296,29 +55246,32 @@ Ext.define('Ext.layout.Context', {
         this.flushQueue.add(item);
     },
 
+    chainFns: function (oldOptions, newOptions, funcName) {
+        var oldFn = oldOptions[funcName],
+            newFn = newOptions[funcName];
+
+        
+        
+        return function (contextItem) {
+            if (oldFn) {
+                oldFn.call(oldOptions.scope || oldOptions, contextItem, oldOptions);
+            }
+            newFn.call(newOptions.scope || newOptions, contextItem, newOptions);
+        };
+    },
+
     
     queueInvalidate: function (item, options) {
         var me = this,
             newQueue = [],
             oldQueue = me.invalidQueue,
             index = oldQueue.length,
-            callback,
-            scope,
-            Func = Ext.Function,
-            comp, old, oldCallback, oldComp, oldOptions, oldState,
-            newState;
+            comp, old, oldComp, oldOptions, oldState;
 
         if (item.isComponent) {
             item = me.getCmp(comp = item);
         } else {
             comp = item.target;
-        }
-
-        if (options) {
-            newState = options.state;
-            if ((callback = options.callback) && (scope = options.scope)) {
-                callback = Func.bind(callback, scope);
-            }
         }
 
         
@@ -54334,28 +55287,21 @@ Ext.define('Ext.layout.Context', {
 
             if (oldComp == comp) {
                 
-                
-                if ((oldOptions = old.options) && options) {
-                    if (newState) {
-                        oldState = oldOptions.state;
-                        if (oldState) {
-                            Ext.apply(oldState, newState);
-                        } else {
-                            oldOptions.state = newState;
-                        }
+                if (!(oldOptions = old.options)) {
+                    old.options = options;
+                } else if (options) {
+                    if (!(oldState = oldOptions.state)) {
+                        oldOptions.state = options.state;
+                    } else if (options.state) {
+                        Ext.apply(oldState, options.state);
                     }
 
-                    
-                    
-                    if (callback) {
-                        if (!(oldCallback = oldOptions.callback)) {
-                            oldOptions.callback = callback;
-                        } else {
-                            oldOptions.callback = Func.createSequence(oldCallback, callback);
-                        }
+                    if (options.before) {
+                        oldOptions.before = me.chainFns(oldOptions, options, 'before');
                     }
-                } else {
-                    old.options = old.options || options;
+                    if (options.after) {
+                        oldOptions.after = me.chainFns(oldOptions, options, 'after');
+                    }
                 }
 
                 
@@ -54371,9 +55317,6 @@ Ext.define('Ext.layout.Context', {
 
         
         
-        if (callback) {
-            (options = options || {}).callback = callback;
-        }
         newQueue.push({ item: item, options: options });
 
         me.invalidQueue = newQueue;
@@ -55151,7 +56094,7 @@ Ext.define('Ext.selection.Model', {
     
     
     
-    onStoreRemove: function(store, record) {
+    onStoreRemove: function(store, record, index) {
         var me = this,
             selected = me.selected;
 
@@ -55319,10 +56262,12 @@ Ext.define('Ext.selection.DataViewModel', {
         if ((suppressEvent || me.fireEvent('before' + eventName, me, record)) !== false &&
                 commitFn() !== false) {
 
-            if (isSelected) {
-                view.onItemSelect(record);
-            } else {
-                view.onItemDeselect(record);
+            if (view) {
+                if (isSelected) {
+                    view.onItemSelect(record);
+                } else {
+                    view.onItemDeselect(record);
+                }
             }
 
             if (!suppressEvent) {
@@ -55472,39 +56417,27 @@ Ext.define('Ext.Component', {
         if (!(me.x && me.y) && (me.pageX || me.pageY)) {
             me.setPagePosition(me.pageX, me.pageY);
         }
-
-        if (me.resizable) {
-            me.initResizable(me.resizable);
-        }
-
-        if (me.draggable) {
-            me.initDraggable();
-        }
     },
 
     
     setAutoScroll : function(scroll) {
-        var me = this,
-            layout,
-            targetEl;
+        var me = this;
 
         me.autoScroll = !!scroll;
 
         
         
+        
         if (me.rendered) {
-            targetEl = (layout = me.getLayout && me.getLayout()) ? layout.getRenderTarget() : me.getTargetEl();
-            targetEl.setStyle(me.getOverflowStyle());
+            me.getTargetEl().setStyle(me.getOverflowStyle());
         }
-
+        me.updateLayout();
         return me;
     },
 
     
     setOverflowXY: function(overflowX, overflowY) {
         var me = this,
-            layout,
-            targetEl,
             argCount = arguments.length;
 
         if (argCount) {
@@ -55516,11 +56449,11 @@ Ext.define('Ext.Component', {
 
         
         
+        
         if (me.rendered) {
-            targetEl = (layout = me.getLayout && me.getLayout()) ? layout.getRenderTarget() : me.getTargetEl();
-            targetEl.setStyle(me.getOverflowStyle());
+            me.getTargetEl().setStyle(me.getOverflowStyle());
         }
-
+        me.updateLayout();
         return me;
     },
 
@@ -55580,8 +56513,17 @@ Ext.define('Ext.Component', {
 
     initDraggable: function() {
         var me = this,
+
+            
+            
+            
+            dragTarget = (me.resizer && me.resizer.el !== me.el) ? me.resizerComponent = new Ext.Component({
+                el: me.resizer.el,
+                rendered: true,
+                container: me.container
+            }) : me,
             ddConfig = Ext.applyIf({
-                el: me.getDragEl(),
+                el: dragTarget.getDragEl(),
                 constrainTo: me.constrain ? (me.constrainTo || (me.floatParent ? me.floatParent.getTargetEl() : me.el.getScopeParent())) : undefined
             }, me.draggable);
 
@@ -55591,7 +56533,7 @@ Ext.define('Ext.Component', {
             ddConfig.constrainDelegate = me.constrainDelegate;
         }
 
-        me.dd = new Ext.util.ComponentDragger(me, ddConfig);
+        me.dd = new Ext.util.ComponentDragger(dragTarget, ddConfig);
     },
 
     
@@ -55689,12 +56631,17 @@ Ext.define('Ext.Component', {
                 if (Ext.isNumber(y) && Ext.isNumber(floatParentBox.top)) {
                     y -= floatParentBox.top;
                 }
+            } else {
+                p = me.el.translatePoints(x, y);
+                x = p.left;
+                y = p.top;
             }
+
             me.setPosition(x, y, animate);
         } else {
             p = me.el.translatePoints(x, y);
             me.setPosition(p.left, p.top, animate);
-         }
+        }
 
         return me;
     },
@@ -55796,20 +56743,22 @@ Ext.define('Ext.Component', {
 
     
     show: function(animateTarget, cb, scope) {
-        var me = this;
+        var me = this,
+            rendered = me.rendered;
 
-        if (me.rendered && me.isVisible()) {
+        if (rendered && me.isVisible()) {
             if (me.toFrontOnShow && me.floating) {
                 me.toFront();
             }
         } else if (me.fireEvent('beforeshow', me) !== false) {
-            me.hidden = false;
-
             
-            if (!me.rendered && (me.autoRender || me.floating)) {
+            me.hidden = false;
+            if (!rendered && (me.autoRender || me.floating)) {
                 me.doAutoRender();
+                rendered = me.rendered;
             }
-            if (me.rendered) {
+            
+            if (rendered) {
                 me.beforeShow();
                 me.onShow.apply(me, arguments);
                 me.afterShow.apply(me, arguments);
@@ -55965,7 +56914,8 @@ Ext.define('Ext.Component', {
             Ext.destroy(
                 me.proxy,
                 me.proxyWrap,
-                me.resizer
+                me.resizer,
+                me.resizerComponent
             );
             
             if (me.actionMode == 'container' || me.removeMode == 'container') {
@@ -55990,7 +56940,6 @@ Ext.define('Ext.Component', {
         var me = this,
             focusEl,
             focusElDom;
-
 
         if (me.rendered && !me.isDestroyed && me.isVisible(true) && (focusEl = me.getFocusEl())) {
 
@@ -56549,7 +57498,8 @@ Ext.define('Ext.draw.Component', {
             'mousemove',
             'mouseenter',
             'mouseleave',
-            'click'
+            'click',
+            'dblclick'
         );
     },
 
@@ -56626,7 +57576,8 @@ Ext.define('Ext.draw.Component', {
             mousemove: refire('mousemove'),
             mouseenter: refire('mouseenter'),
             mouseleave: refire('mouseleave'),
-            click: refire('click')
+            click: refire('click'),
+            dblclick: refire('dblclick')
         });
     },
 
@@ -56655,10 +57606,16 @@ Ext.define('Ext.chart.Chart', {
         bindable: 'Ext.util.Bindable'
     },
 
+    uses: [
+        'Ext.chart.series.Series'
+    ],
+    
     requires: [
         'Ext.util.MixedCollection',
         'Ext.data.StoreManager',
         'Ext.chart.Legend',
+        'Ext.chart.theme.Base',
+        'Ext.chart.theme.Theme',
         'Ext.util.DelayedTask'
     ],
 
@@ -56726,7 +57683,7 @@ Ext.define('Ext.chart.Chart', {
     },
     
     getChartStore: function(){
-        return this.substore || this.store;    
+        return this.substore || this.store;
     },
 
     initComponent: function() {
@@ -56740,7 +57697,7 @@ Ext.define('Ext.chart.Chart', {
             'itemmouseover',
             'itemmouseout',
             'itemclick',
-            'itemdoubleclick',
+            'itemdblclick',
             'itemdragstart',
             'itemdrag',
             'itemdragend',
@@ -56778,6 +57735,8 @@ Ext.define('Ext.chart.Chart', {
             mouseleave: me.onMouseLeave,
             mousedown: me.onMouseDown,
             mouseup: me.onMouseUp,
+            click: me.onClick,
+            dblclick: me.onDblClick,
             scope: me
         });
     },
@@ -56827,7 +57786,9 @@ Ext.define('Ext.chart.Chart', {
 
         
         if (legend !== false && legend.visible) {
-            legend.create();
+            if (legend.update || !legend.created) {
+              legend.create();
+            }
         }
 
         
@@ -56880,9 +57841,17 @@ Ext.define('Ext.chart.Chart', {
             y = pageXY[1] - box.top;
         return [x, y];
     },
-
     
     onClick: function(e) {
+        this.handleClick('itemclick', e);
+    },
+    
+    onDblClick: function(e) {
+        this.handleClick('itemdblclick', e);
+    },
+
+    
+    handleClick: function(name, e) {
         var me = this,
             position = me.getEventXY(e),
             seriesItems = me.series.items,
@@ -56897,7 +57866,7 @@ Ext.define('Ext.chart.Chart', {
                 if (series.getItemForPoint) {
                     item = series.getItemForPoint(position[0], position[1]);
                     if (item) {
-                        series.fireEvent('itemclick', item);
+                        series.fireEvent(name, item);
                     }
                 }
             }
@@ -57352,7 +58321,7 @@ Ext.define('Ext.chart.axis.Abstract', {
         config.label = Ext.apply(config['axisLabel' + pos + 'Style'] || {}, config.label || {});
         config.axisTitleStyle = Ext.apply(config['axisTitle' + pos + 'Style'] || {}, config.labelTitle || {});
         Ext.apply(me, config);
-        me.fields = [].concat(me.fields);
+        me.fields = Ext.Array.from(me.fields);
         this.callParent();
         me.labels = [];
         me.getId();
@@ -57427,60 +58396,136 @@ Ext.define('Ext.chart.axis.Axis', {
 
     getRange: function () {
         var me = this,
-            store = me.chart.getChartStore(),
+            chart = me.chart,
+            store = chart.getChartStore(),
             data = store.data.items,
-            d, dLen, record,
-            fields = me.fields,
-            ln = fields.length,
-            math = Math,
-            mmax = math.max,
-            mmin = math.min,
-            aggregate = false,
-            min = isNaN(me.minimum) ? Infinity : me.minimum,
-            max = isNaN(me.maximum) ? -Infinity : me.maximum,
-            i, l, value, values,
-            excludes = [],
-            series = me.chart.series.items;
+            series = chart.series.items,
+            position = me.position,
+            boundedAxes,
+            seriesClasses = Ext.chart.series,
+            aggregations = [],
+            min = Infinity, max = -Infinity,
+            vertical = me.position === 'left' || me.position === 'right',
+            i, ln, ln2, j, k, dataLength = data.length, aggregates,
+            countedFields = {},
+            allFields = {},
+            excludable = true,
+            fields, fieldMap, record, field, value;
 
-        
-        
-
-        for (i = 0, l = series.length; !aggregate && i < l; i++) {
-            aggregate = aggregate || ln > 1 && series[i].stacked;
-            excludes = series[i].__excludes || excludes;
+        fields = me.fields;
+        for (j = 0, ln = fields.length; j < ln; j++) {
+            allFields[fields[j]] = true;
         }
 
-        for (d = 0, dLen = data.length; d < dLen; d++) {
-            record = data[d];
-            if (aggregate) {
-                if (!isFinite(min)) {
-                    min = 0;
-                }
-                for (values = [0, 0], i = 0; i < ln; i++) {
-                    if (excludes[i]) {
-                        continue;
-                    }
-                    value = record.get(fields[i]);
-                    if (value !== undefined) {
-                        
-                        
-                        values[+(value > 0)] += math.abs(value);
-                    }
-                }
-                max = mmax(max, -values[0], +values[1]);
-                min = mmin(min, -values[0], +values[1]);
+        for (i = 0, ln = series.length; i < ln; i++) {
+            if (series[i].seriesIsHidden) {
+                continue;
             }
-            else {
-                for (i = 0; i < ln; i++) {
-                    if (excludes[i]) {
+            if (!series[i].getAxesForXAndYFields) {
+                continue;
+            }
+
+            boundedAxes = series[i].getAxesForXAndYFields();
+            if (boundedAxes.xAxis && boundedAxes.xAxis !== position && boundedAxes.yAxis && boundedAxes.yAxis !== position) {
+                
+                continue;
+            }
+            
+            if (seriesClasses.Bar && series[i] instanceof seriesClasses.Bar && !series[i].column) {
+                
+                fields = vertical ? Ext.Array.from(series[i].xField) : Ext.Array.from(series[i].yField);
+            } else {
+                fields = vertical ? Ext.Array.from(series[i].yField) : Ext.Array.from(series[i].xField);
+            }
+            
+            if (me.fields.length) {
+                for (j = 0, ln2 = fields.length; j < ln2; j++) {
+                    if(allFields[fields[j]]) {
+                        break;
+                    }
+                }
+                if (j == ln2) {
+                    
+                    continue;
+                }
+            }
+            
+            if (aggregates = series[i].stacked) {
+                
+                if (seriesClasses.Bar && series[i] instanceof seriesClasses.Bar) {
+                    if (series[i].column != vertical) {
+                        aggregates = false;
+                        excludable = false;
+                    }
+                }
+                
+                else if (!vertical) {
+                    aggregates = false;
+                    excludable = false;
+                }
+            }
+
+
+            if (aggregates) {
+                fieldMap = {};
+                for (j = 0; j < fields.length; j++) {
+                    if (excludable && series[i].__excludes && series[i].__excludes[j]) {
                         continue;
                     }
-                    value = record.get(fields[i]);
-                    if (value !== undefined) {
+                    if (!allFields[fields[j]]) {
+                        Ext.Logger.warn('Field `' + fields[j] + '` is not included in the ' + position + ' axis config.');
+                    }
+                    allFields[fields[j]] = fieldMap[fields[j]] = true;
+                }
+                aggregations.push({
+                    fields: fieldMap,
+                    value: 0
+                });
+            } else {
+
+                if (!fields || fields.length == 0) {
+                    fields = me.fields;
+                }
+                for (j = 0; j < fields.length; j++) {
+                    if (excludable && series[i].__excludes && series[i].__excludes[j]) {
+                        continue;
+                    }
+                    allFields[fields[j]] = countedFields[fields[j]] = true;
+                }
+            }
+        }
+
+        for (i = 0; i < dataLength; i++) {
+            record = data[i];
+            for (k = 0; k < aggregations.length; k++) {
+                aggregations[k].value = 0;
+            }
+            for (field in allFields) {
+                value = record.get(field);
+                if (isNaN(value)) {
+                    continue;
+                }
+                if (value === undefined) {
+                    value = 0;
+                }
+                if (countedFields[field]) {
+                    if (min > value) {
+                        min = value;
+                    }
+                    if (max < value) {
+                        max = value;
+                    }
+                }
+                for (k = 0; k < aggregations.length; k++) {
+                    if (aggregations[k].fields[field]) {
+                        aggregations[k].value += value;
                         
-                        
-                        max = mmax(max, +value);
-                        min = mmin(min, +value);
+                        if (min > 0) {
+                            min = 0;
+                        }
+                        if (max < aggregations[k].value) {
+                            max = aggregations[k].value;
+                        }
                     }
                 }
             }
@@ -57543,10 +58588,13 @@ Ext.define('Ext.chart.axis.Axis', {
         out.step = (out.to - out.from) / (outto - outfrom) * out.step;
 
         if (me.adjustMaximumByMajorUnit) {
-            out.to += out.step;
+            out.to = Math.ceil(out.to / out.step) * out.step;
+            out.steps = (out.to - out.from) / out.step;
         }
+        
         if (me.adjustMinimumByMajorUnit) {
-            out.from -= out.step;
+            out.from = Math.floor(out.from / out.step) * out.step;
+            out.steps = (out.to - out.from) / out.step;
         }
 
         me.prevMin = min == max ? 0 : min;
@@ -57586,7 +58634,7 @@ Ext.define('Ext.chart.axis.Axis', {
         
         
         
-        if (me.hidden || isNaN(step) || (from == to)) {
+        if (me.hidden || isNaN(step) || (from > to)) {
             return;
         }
 
@@ -57604,7 +58652,8 @@ Ext.define('Ext.chart.axis.Axis', {
             trueLength = length - (gutterX * 2);
         }
 
-        delta = trueLength / (steps || 1);
+        
+        delta = steps && trueLength / steps;
         dashesX = Math.max(subDashesX + 1, 0);
         dashesY = Math.max(subDashesY + 1, 0);
         if (me.type == 'Numeric' || me.type == 'Time') {
@@ -57892,6 +58941,7 @@ Ext.define('Ext.chart.axis.Axis', {
             floor = Math.floor,
             max = Math.max,
             axes = me.chart.axes,
+            insetPadding = me.chart.insetPadding,
             position = me.position,
             inflections = me.inflections,
             ln = inflections.length,
@@ -57900,7 +58950,7 @@ Ext.define('Ext.chart.axis.Axis', {
             maxHeight = 0,
             ratio,
             gutterY = me.chart.maxGutter[1],
-            ubbox, bbox, point, prevX, prevLabel,
+            ubbox, bbox, point, prevX, prevLabel, prevLabelId,
             projectedWidth = 0,
             adjustEnd = me.adjustEnd,
             hasLeft = axes.findIndex('position', 'left') != -1,
@@ -57921,12 +58971,12 @@ Ext.define('Ext.chart.axis.Axis', {
             bbox = textLabel._bbox;
             maxHeight = max(maxHeight, bbox.height + me.dashSize + me.label.padding);
             x = floor(point[0] - (ratio ? bbox.height : bbox.width) / 2);
-            if (me.chart.maxGutter[0] == 0) {
+            if (adjustEnd && me.chart.maxGutter[0] == 0) {
                 if (i == 0 && !hasLeft) {
                     x = point[0];
                 }
-                else if (adjustEnd && i == last && !hasRight) {
-                    x = point[0] - bbox.width;
+                else if (i == last && !hasRight) {
+                    x = Math.min(x, point[0] - bbox.width + insetPadding);
                 }
             }
             if (position == 'top') {
@@ -57945,11 +58995,16 @@ Ext.define('Ext.chart.axis.Axis', {
             
             if (i != 0 && (me.intersect(textLabel, prevLabel)
                 || me.intersect(textLabel, firstLabel))) {
-                textLabel.hide(true);
-                continue;
+                if (i === last && prevLabelId !== 0) {
+                    prevLabel.hide(true);
+                } else {
+                    textLabel.hide(true);
+                    continue;
+                }
             }
 
             prevLabel = textLabel;
+            prevLabelId = i;
         }
 
         return maxHeight;
@@ -57960,6 +59015,8 @@ Ext.define('Ext.chart.axis.Axis', {
             inflections = me.inflections,
             position = me.position,
             ln = inflections.length,
+            chart = me.chart,
+            insetPadding = chart.insetPadding,
             labels = me.labels,
             maxWidth = 0,
             max = Math.max,
@@ -57967,7 +59024,7 @@ Ext.define('Ext.chart.axis.Axis', {
             ceil = Math.ceil,
             axes = me.chart.axes,
             gutterY = me.chart.maxGutter[1],
-            ubbox, bbox, point, prevLabel,
+            ubbox, bbox, point, prevLabel, prevLabelId,
             projectedWidth = 0,
             hasTop = axes.findIndex('position', 'top') != -1,
             hasBottom = axes.findIndex('position', 'bottom') != -1,
@@ -57984,12 +59041,12 @@ Ext.define('Ext.chart.axis.Axis', {
 
             maxWidth = max(maxWidth, bbox.width + me.dashSize + me.label.padding);
             y = point[1];
-            if (gutterY < bbox.height / 2) {
-                if (adjustEnd && i == last - 1 && !hasTop) {
-                    y = me.y - me.length + ceil(bbox.height / 2);
+            if (adjustEnd && gutterY < bbox.height / 2) {
+                if (i == last - 1 && !hasTop) {
+                    y = Math.max(y, me.y - me.length + ceil(bbox.height / 2) - insetPadding);
                 }
                 else if (i == 0 && !hasBottom) {
-                    y = me.y - floor(bbox.height / 2);
+                    y = me.y + gutterY - floor(bbox.height / 2);
                 }
             }
             if (position == 'left') {
@@ -58005,10 +59062,15 @@ Ext.define('Ext.chart.axis.Axis', {
             }, me.label), true);
             
             if (i != 0 && me.intersect(textLabel, prevLabel)) {
-                textLabel.hide(true);
-                continue;
+                if (i === last - 1 && prevLabelId !== 0) {
+                    prevLabel.hide(true);
+                } else {
+                    textLabel.hide(true);
+                    continue;
+                }
             }
             prevLabel = textLabel;
+            prevLabelId = i;
         }
 
         return maxWidth;
@@ -58179,7 +59241,7 @@ Ext.define('Ext.chart.axis.Category', {
         var count = this.chart.getChartStore().getCount();
         return {
             from: 0,
-            to: count,
+            to: count - 1,
             power: 1,
             step: 1,
             steps: count - 1
@@ -58369,6 +59431,8 @@ Ext.define('Ext.chart.axis.Numeric', {
 
     alias: 'axis.numeric',
 
+    uses: ['Ext.data.Store'],
+
     constructor: function(config) {
         var me = this,
             hasLabel = !!(config.label && config.label.renderer),
@@ -58376,9 +59440,6 @@ Ext.define('Ext.chart.axis.Numeric', {
 
         me.callParent([config]);
         label = me.label;
-        if (me.roundToDecimal === false) {
-            return;
-        }
 
         if(config.constrain == null){
             me.constrain = (config.minimum != null && config.maximum != null);
@@ -58428,9 +59489,7 @@ Ext.define('Ext.chart.axis.Numeric', {
 
         for (i = 0, l = series.length; i < l; i++) {
             excludes[i] = series[i].__excludes;
-            
-            
-            useAcum = useAcum || series[i].type === 'area';
+            useAcum = useAcum || series[i].stacked;
         }
         for (d = 0, dLen = items.length; d < dLen; d++) {
             addRecord = true;
@@ -58455,7 +59514,7 @@ Ext.define('Ext.chart.axis.Numeric', {
                 data.push(record);
             }
         }
-        me.chart.substore = Ext.create('Ext.data.JsonStore', { model: store.model, data: data });
+        me.chart.substore = Ext.create('Ext.data.Store', { model: store.model, data: data });
     },
     
     position: 'left',
@@ -58695,7 +59754,7 @@ Ext.define('Ext.chart.axis.Time', {
 
     alias: 'axis.time',
 
-    requires: ['Ext.data.Store', 'Ext.data.JsonStore'],
+    uses: ['Ext.data.Store'],
 
     
 
@@ -58714,9 +59773,6 @@ Ext.define('Ext.chart.axis.Time', {
     
     constrain: false,
 
-    
-    roundToDecimal: false,
-    
     constructor: function (config) {
         var me = this, label, f, df;
         me.callParent([config]);
@@ -58737,40 +59793,6 @@ Ext.define('Ext.chart.axis.Time', {
         }
     },
 
-    doConstrain: function () {
-        var me = this,
-            store = me.chart.store,
-            items = store.data.items,
-            d, dLen, record,
-            data = [],
-            series = me.chart.series.items,
-            math = Math,
-            mmax = math.max,
-            mmin = math.min,
-            fields = me.fields,
-            ln = fields.length,
-            range = me.getRange(),
-            min = range.min, max = range.max, i, l, excludes = [],
-            value, values, rec;
-        for (i = 0, l = series.length; i < l; i++) {
-            excludes[i] = series[i].__excludes;
-        }
-        for (d = 0, dLen = items.length; d < dLen; d++) {
-            record = items[d];
-            for (i = 0; i < ln; i++) {
-                if (excludes[i]) {
-                    continue;
-                }
-                value = record.get(fields[i]);
-                value = +value;
-                if (value >= +min && value <= +max) {
-                    data.push(record);
-                }
-            }
-        }
-        me.chart.substore = Ext.create('Ext.data.JsonStore', { model: store.model, data: data });
-    },
-
     
     processView: function () {
         var me = this;
@@ -58780,7 +59802,7 @@ Ext.define('Ext.chart.axis.Time', {
         if (me.toDate) {
             me.maximum = +me.toDate;
         }
-        if (me.constrain) {
+        if(me.constrain){
             me.doConstrain();
         }
      },
@@ -59239,7 +60261,6 @@ Ext.define('Ext.FocusManager', {
                 style: 'top: -100px; left: -100px;'
             });
             me.focusFrame.setVisibilityMode(Ext.Element.DISPLAY);
-            me.focusFrameWidth = me.focusFrame.child('.' + cls + '-top').getHeight();
             me.focusFrame.hide().setLeftTop(0, 0);
         }
     },
@@ -59255,7 +60276,7 @@ Ext.define('Ext.FocusManager', {
             focusedCmp = me.focusedCmp,
             defaultRoot,
             firstChild;
-            
+
         if (me.isWhitelisted(focusedCmp)) {
             return true;
         }
@@ -59334,7 +60355,7 @@ Ext.define('Ext.FocusManager', {
             
             parent = parent || focusedCmp.up();
             if (parent) {
-                siblings =  parent.getRefItems();
+                siblings = parent.getRefItems();
             }
         }
 
@@ -59426,7 +60447,6 @@ Ext.define('Ext.FocusManager', {
         if (me.shouldShowFocusFrame(cmp)) {
             cls = '.' + me.focusFrameCls + '-';
             ff = me.focusFrame;
-            fw = me.focusFrameWidth;
             box = focusEl.getPageBox();
 
             
@@ -59441,10 +60461,10 @@ Ext.define('Ext.FocusManager', {
             fl = ff.child(cls + 'left');
             fr = ff.child(cls + 'right');
 
-            ft.setWidth(bw - 2).setLeftTop(bl + 1, bt);
-            fb.setWidth(bw - 2).setLeftTop(bl + 1, bt + bh - fw);
-            fl.setHeight(bh - 2).setLeftTop(bl, bt + 1);
-            fr.setHeight(bh - 2).setLeftTop(bl + bw - fw, bt + 1);
+            ft.setWidth(bw).setLeftTop(bl, bt);
+            fb.setWidth(bw).setLeftTop(bl, bt + bh - 2);
+            fl.setHeight(bh - 2).setLeftTop(bl, bt + 2);
+            fr.setHeight(bh - 2).setLeftTop(bl + bw - 2, bt + 2);
 
             ff.show();
         }
@@ -59475,7 +60495,7 @@ Ext.define('Ext.FocusManager', {
     },
 
     onComponentDestroy: function() {
-        
+
     },
 
     removeDOM: function() {
@@ -59492,7 +60512,6 @@ Ext.define('Ext.FocusManager', {
         );
         delete me.focusEl;
         delete me.focusFrame;
-        delete me.focusFrameWidth;
     },
 
     
@@ -59665,16 +60684,16 @@ Ext.define('Ext.LoadMask', {
     
     msg : 'Loading...',
     
-    
+
     
     msgCls : Ext.baseCSSPrefix + 'mask-loading',
-    
+
     
     maskCls: Ext.baseCSSPrefix + 'mask',
-    
+
     
     useMsg: true,
-    
+
     
     useTargetEl: false,
 
@@ -59693,11 +60712,11 @@ Ext.define('Ext.LoadMask', {
 
     
     focusOnToFront: false,
-    
+
     
     
     bringParentToFront: false,
-    
+
     
     constructor : function(comp, config) {
         var me = this;
@@ -59723,27 +60742,40 @@ Ext.define('Ext.LoadMask', {
         var me = this,
             listeners = {
                 scope: this,
-                hide: me.onComponentHide,
-                show: me.onComponentShow,
                 resize: me.sizeMask,
                 added: me.onComponentAdded,
                 removed: me.onComponentRemoved
-            };
+            },
+            hierarchyEventSource = Ext.container.Container.hierarchyEventSource;
             
         if (comp.floating) {
             listeners.move = me.sizeMask;
+            
+            if (comp.zIndexManager.front !== comp) {
+                me.restack = true;
+                me.activeOwner = comp;
+            }
         } else if (comp.ownerCt) {
             me.onComponentAdded(comp.ownerCt);
-        }
+        } else {
             
+            me.preventBringToFront = true;
+        }
+
         me.mon(comp, listeners);
         
-        Ext.container.Container.onContainerHide(me.onContainerHide, me);
-        Ext.container.Container.onContainerShow(me.onContainerShow, me);
+        
+        me.mon(hierarchyEventSource, {
+            show: me.onContainerShow,
+            hide: me.onContainerHide,
+            expand: me.onContainerExpand,
+            collapse: me.onContainerCollapse,
+            scope: me
+        });
     },
 
     onComponentAdded: function(owner){
-        var me = this;      
+        var me = this;
         delete me.activeOwner;
         me.floatParent = owner;
         if (!owner.floating) {
@@ -59764,7 +60796,7 @@ Ext.define('Ext.LoadMask', {
         var me = this,
             activeOwner = me.activeOwner,
             floatOwner = me.floatOwner;
-            
+
         if (activeOwner) {
             me.mun(activeOwner, 'move', me.sizeMask, me);
         }
@@ -59792,14 +60824,25 @@ Ext.define('Ext.LoadMask', {
         }
     },
 
+    onContainerExpand: function(container){
+        if (this.isActiveContainer(container)) {
+            this.onComponentShow();
+        }
+    },
+
+    onContainerCollapse: function(container){
+        if (this.isActiveContainer(container)) {
+            this.onComponentHide();
+        }
+    },
+
     isActiveContainer: function(container){
-        var owner = this.getOwner();
-        return owner.isDescendantOf(container);
+        return this.isDescendantOf(container);
     },
 
     onComponentHide: function(){
         var me = this;
-        
+
         if (me.rendered && me.isVisible()) {
             me.hide();
             me.showNext = true;
@@ -59817,13 +60860,13 @@ Ext.define('Ext.LoadMask', {
     sizeMask: function() {
         var me = this,
             target;
-            
+
         if (me.rendered && me.isVisible()) {
             me.center();
-            
+
             target = me.getMaskTarget();
             me.getMaskEl().show().setSize(target.getSize()).alignTo(target, 'tl-tl');
-            
+
         }
     },
 
@@ -59841,7 +60884,13 @@ Ext.define('Ext.LoadMask', {
         return {
             beforeload: this.onBeforeLoad,
             load: this.onLoad,
-            exception: this.onLoad     
+            exception: this.onLoad,
+
+            
+            cachemiss: this.onBeforeLoad,
+
+            
+            cachefilled: this.onLoad
         };
     },
 
@@ -59853,7 +60902,7 @@ Ext.define('Ext.LoadMask', {
     },
 
     getOwner: function(){
-        return this.ownerCt || this.floatParent;    
+        return this.ownerCt || this.floatParent;
     },
 
     getMaskTarget: function(){
@@ -59895,7 +60944,7 @@ Ext.define('Ext.LoadMask', {
         else if (me.loading && owner.rendered) {
             me.show();
         }
-    }, 
+    },
 
     getMaskEl: function(){
         var me = this;
@@ -59910,10 +60959,10 @@ Ext.define('Ext.LoadMask', {
     onShow: function() {
         var me = this,
             msgEl = me.msgEl;
-            
+
         me.callParent(arguments);
         me.loading = true;
-        
+
         if (me.useMsg) {
             msgEl.show().update(me.msg);
         } else {
@@ -59928,13 +60977,13 @@ Ext.define('Ext.LoadMask', {
             this.fireEvent('hide', this);
             return;
         }
-        delete this.showNext;  
+        delete this.showNext;
         return this.callParent(arguments);
     },
 
     onHide: function(){
         this.callParent();
-        this.getMaskEl().hide();   
+        this.getMaskEl().hide();
     },
 
     show: function(){
@@ -59943,8 +60992,8 @@ Ext.define('Ext.LoadMask', {
             this.ownerCt.mask(this.useMsg ? this.msg : '', this.msgCls);
             this.fireEvent('show', this);
             return;
-        } 
-        return this.callParent(arguments);  
+        }
+        return this.callParent(arguments);
     },
 
     afterShow: function() {
@@ -59955,10 +61004,13 @@ Ext.define('Ext.LoadMask', {
     setZIndex: function(index) {
         var me = this;
             
-        
-        if (!me.activeOwner) {
-            index = 1;
+        if (me.restack) {
+            
+            
+            
+            index = parseInt(me.activeOwner.el.getStyle('zIndex'), 10) + 1;
         }
+
         me.getMaskEl().setStyle('zIndex', index - 1);
         return me.mixins.floating.setZIndex.apply(me, arguments);
     },
@@ -59971,12 +61023,16 @@ Ext.define('Ext.LoadMask', {
 
     onDestroy: function(){
         var me = this;
+
+        if (me.isElement) {
+            me.ownerCt.unmask();
+        }
+
         Ext.destroy(me.maskEl);
-        Ext.container.Container.removeHideListener(me.onContainerHide, me);
-        Ext.container.Container.removeShowListener(me.onContainerShow, me);
         me.callParent();
     }
 });
+
 
 Ext.define('Ext.view.AbstractView', {
     extend: 'Ext.Component',
@@ -60115,6 +61171,7 @@ Ext.define('Ext.view.AbstractView', {
 
         
         me.store = Ext.data.StoreManager.lookup(me.store || 'ext-empty-store');
+        me.bindStore(me.store, true);
         me.all = new Ext.CompositeElementLite();
 
         
@@ -60158,6 +61215,14 @@ Ext.define('Ext.view.AbstractView', {
         }
     },
     
+    onBoxReady: function(){
+        var me = this,
+            store = me.store;
+
+        me.callParent(arguments);
+        me.doFirstRefresh(me.store);
+    },
+    
     onMaskBeforeShow: function(){
         var me = this,
             loadingHeight = me.loadingHeight;
@@ -60165,23 +61230,20 @@ Ext.define('Ext.view.AbstractView', {
         me.getSelectionModel().deselectAll();
         me.all.clear();
         if (loadingHeight && loadingHeight > me.getHeight()) {
-            me.isLoadingHeight = true;
-            me.bufferHeight = me.height;
-            me.setHeight(loadingHeight);
+            me.hasLoadingHeight = true;
+            me.oldMinHeight = me.minHeight;
+            me.minHeight = loadingHeight;
+            me.updateLayout();
         }
     },
     
     onMaskHide: function(){
         var me = this;
         
-        if (!me.destroying && me.loadingHeight && me.isLoadingHeight) {
-            if (me.bufferHeight) {
-                me.setHeight(me.bufferHeight);
-            } else {
-                delete me.height;
-                me.updateLayout();
-            }
-            delete me.isLoadingHeight;
+        if (!me.destroying && me.hasLoadingHeight) {
+            me.minHeight = me.oldMinHeight;
+            me.updateLayout();
+            delete me.hasLoadingHeight;
         }
     },
 
@@ -60239,6 +61301,7 @@ Ext.define('Ext.view.AbstractView', {
         var me = this,
             targetEl,
             targetParent,
+            oldDisplay,
             nextSibling,
             dom,
             records;
@@ -60247,65 +61310,78 @@ Ext.define('Ext.view.AbstractView', {
             return;
         }
 
-        me.fireEvent('beforerefresh', me);
-        targetEl = me.getTargetEl();
-        records = me.store.getRange();
-        dom = targetEl.dom;
+        if (!me.hasListeners.beforerefresh || me.fireEvent('beforerefresh', me) !== false) {
+            targetEl = me.getTargetEl();
+            records = me.store.getRange();
+            dom = targetEl.dom;
 
-        
-        
-        if (!me.preserveScrollOnRefresh) {
-            targetParent = dom.parentNode;
-            dom.style.display = 'none';
-            nextSibling = dom.nextSibling;
-            targetParent.removeChild(dom);
-        }
-
-        if (me.refreshCounter) {
-            me.clearViewEl();
-        } else {
-            me.fixedNodes = targetEl.dom.childNodes.length;
-            me.refreshCounter = 1;
-        }
-
-        
-        
-        
-        
-        me.tpl.append(targetEl, me.collectData(records, 0));
-
-        
-        
-        if (records.length < 1) {
-            if (!me.deferEmptyText || me.hasSkippedEmptyText) {
-                Ext.core.DomHelper.insertHtml('beforeEnd', targetEl.dom, me.emptyText);
+            
+            
+            if (!me.preserveScrollOnRefresh) {
+                targetParent = dom.parentNode;
+                oldDisplay = dom.style.display;
+                dom.style.display = 'none';
+                nextSibling = dom.nextSibling;
+                targetParent.removeChild(dom);
             }
-            me.all.clear();
-        } else {
-            me.all.fill(Ext.query(me.getItemSelector(), targetEl.dom));
-            me.updateIndexes(0);
-        }
 
-        me.selModel.refresh();
-        me.hasSkippedEmptyText = true;
+            if (me.refreshCounter) {
+                me.clearViewEl();
+            } else {
+                me.fixedNodes = targetEl.dom.childNodes.length;
+                me.refreshCounter = 1;
+            }
 
-        if (!me.preserveScrollOnRefresh) {
-            targetParent.insertBefore(dom, nextSibling);
-            dom.style.display = '';
-        }
-
-        me.fireEvent('refresh', me);
-
-        
-        
-        if (!me.viewReady) {
             
             
-            me.viewReady = true;
-            me.fireEvent('viewready', me);
+            
+            
+            me.tpl.append(targetEl, me.collectData(records, 0));
+
+            
+            
+            if (records.length < 1) {
+                if (!me.deferEmptyText || me.hasSkippedEmptyText) {
+                    Ext.core.DomHelper.insertHtml('beforeEnd', targetEl.dom, me.emptyText);
+                }
+                me.all.clear();
+            } else {
+                me.all.fill(Ext.query(me.getItemSelector(), targetEl.dom));
+                me.updateIndexes(0);
+            }
+
+            me.selModel.refresh();
+            me.hasSkippedEmptyText = true;
+
+            if (!me.preserveScrollOnRefresh) {
+                targetParent.insertBefore(dom, nextSibling);
+                dom.style.display = oldDisplay;
+            }
+
+            
+            this.refreshSize();
+
+            me.fireEvent('refresh', me);
+
+            
+            
+            if (!me.viewReady) {
+                
+                
+                me.viewReady = true;
+                me.fireEvent('viewready', me);
+            }
         }
     },
+
     
+    refreshSize: function() {
+        var sizeModel = this.getSizeModel();
+        if (sizeModel.height.shrinkWrap || sizeModel.width.shrinkWrap) {
+            this.updateLayout();
+        }
+    },
+
     clearViewEl: function(){
         
         
@@ -60393,22 +61469,25 @@ Ext.define('Ext.view.AbstractView', {
     
     onUpdate : function(ds, record){
         var me = this,
-            index = me.store.indexOf(record),
+            index,
             node;
 
-        if (index > -1){
-            node = me.bufferRender([record], index)[0];
-            
-            if (me.getNode(record)) {
-                me.all.replaceElement(index, node, true);
-                me.updateIndexes(index, index);
+        if (me.rendered) {
+            index = me.store.indexOf(record);
+            if (index > -1) {
+                node = me.bufferRender([record], index)[0];
                 
-                
-                me.selModel.refresh();
-                if (me.hasListeners.itemupdate) {
-                    me.fireEvent('itemupdate', record, index, node);
+                if (me.getNode(record)) {
+                    me.all.replaceElement(index, node, true);
+                    me.updateIndexes(index, index);
+                    
+                    
+                    me.selModel.refresh();
+                    if (me.hasListeners.itemupdate) {
+                        me.fireEvent('itemupdate', record, index, node);
+                    }
+                    return node;
                 }
-                return node;
             }
         }
 
@@ -60419,33 +61498,43 @@ Ext.define('Ext.view.AbstractView', {
         var me = this,
             nodes;
 
-        
-        
-        if (me.all.getCount() === 0) {
-            me.refresh();
-            return;
-        }
+        if (me.rendered) {
+            
+            
+            if (me.all.getCount() === 0) {
+                me.refresh();
+                return;
+            }
 
-        nodes = me.bufferRender(records, index);
-        me.doAdd(nodes, records, index);
+            nodes = me.bufferRender(records, index);
+            me.doAdd(nodes, records, index);
 
-        me.selModel.refresh();
-        me.updateIndexes(index);
-        if (me.hasListeners.itemadd) {
-            me.fireEvent('itemadd', records, index, nodes);
+            me.selModel.refresh();
+            me.updateIndexes(index);
+
+            
+            this.refreshSize();
+
+            if (me.hasListeners.itemadd) {
+                me.fireEvent('itemadd', records, index, nodes);
+            }
         }
+        
     },
 
     doAdd: function(nodes, records, index) {
         var all = this.all,
-            count = all.getCount(),
-            el;
+            count = all.getCount();
 
         if (count === 0) {
             this.clearViewEl();
             this.getTargetEl().appendChild(nodes);
         } else if (index < count) {
-            all.item(index).insertSibling(nodes, 'before', true);
+            if (index === 0) {
+                all.item(index).insertSibling(nodes, 'before', true);
+            } else {
+                all.item(index - 1).insertSibling(nodes, 'after', true);
+            }
         } else {
             all.last().insertSibling(nodes, 'after', true);
         }
@@ -60457,13 +61546,23 @@ Ext.define('Ext.view.AbstractView', {
     onRemove : function(ds, record, index) {
         var me = this;
 
-        me.doRemove(record, index);
-        me.updateIndexes(index);
-        if (me.store.getCount() === 0){
-            me.refresh();
-        }
-        if (me.hasListeners.itemremove) {
-            me.fireEvent('itemremove', record, index);
+        if (me.rendered) {
+            if (me.store.getCount() === 0) {
+                
+                me.refresh();
+            } else {
+                
+                
+                me.doRemove(record, index);
+                me.updateIndexes(index);
+            }
+
+            
+            this.refreshSize();
+
+            if (me.hasListeners.itemremove) {
+                me.fireEvent('itemremove', record, index);
+            }
         }
     },
 
@@ -60508,17 +61607,29 @@ Ext.define('Ext.view.AbstractView', {
         
         
         
+        if (me.componentLayoutCounter) {
+            me.doFirstRefresh(store);
+        }
+    },
+
+    
+    doFirstRefresh: function(store) {
+        var me = this;
+
+        
+        
+        
         
         
         if (store && !store.loading) {
-            if (initial && me.deferInitialRefresh) {
+            if (me.deferInitialRefresh) {
                 Ext.Function.defer(function () {
                     if (!me.isDestroyed) {
-                        me.refresh(true);
+                        me.refresh();
                     }
                 }, 1);
             } else {
-                me.refresh(true);
+                me.refresh();
             }
         }
     },
@@ -60620,16 +61731,17 @@ Ext.define('Ext.view.AbstractView', {
 
     
     getNode : function(nodeInfo) {
-        if (!this.rendered) {
+        if ((!nodeInfo && nodeInfo !== 0) || !this.rendered) {
             return null;
         }
+        
         if (Ext.isString(nodeInfo)) {
             return document.getElementById(nodeInfo);
         }
         if (Ext.isNumber(nodeInfo)) {
             return this.all.elements[nodeInfo];
         }
-        if (nodeInfo instanceof Ext.data.Model) {
+        if (nodeInfo.isModel) {
             return this.getNodeByRecord(nodeInfo);
         }
         return nodeInfo; 
@@ -60842,7 +61954,7 @@ Ext.define('Ext.Shadow', {
     defaultMode: "drop",
 
     
-    boxShadowProperty: function() {
+    boxShadowProperty: (function() {
         var property = 'boxShadow',
             style = document.documentElement.style;
 
@@ -60858,7 +61970,7 @@ Ext.define('Ext.Shadow', {
         }
 
         return property;
-    }(),
+    }()),
 
     
     show: function(target) {
@@ -62813,7 +63925,7 @@ Ext.define('Ext.draw.Sprite', {
             custom = hasSurface && me.surface.customAttributes || {},
             spriteAttrs = me.attr,
             dirtyBBox = false,
-            attr, i, translate, translation, rotate, rotation, scale, scaling;
+            attr, i, newTranslation, translation, newRotate, rotation, newScaling, scaling;
 
         attrs = Ext.apply({}, attrs);
         for (attr in custom) {
@@ -62857,51 +63969,57 @@ Ext.define('Ext.draw.Sprite', {
             }
         }
 
-        translate = attrs.translate || attrs.translation;
+        newTranslation = attrs.translation || attrs.translate;
+        delete attrs.translate;
+        delete attrs.translation;
         translation = spriteAttrs.translation;
-        if (translate) {
-            if ((translate.x && translate.x !== translation.x) ||
-                (translate.y && translate.y !== translation.y)) {
+        if (newTranslation) {
+            if (('x' in newTranslation && newTranslation.x !== translation.x) ||
+                ('y' in newTranslation && newTranslation.y !== translation.y)) {
                 me.dirtyTransform = true;
-                Ext.apply(translation, translate);
+                translation.x = newTranslation.x;
+                translation.y = newTranslation.y;
             }
-            delete attrs.translate;
-            delete attrs.translation;
         }
 
-        rotate = attrs.rotate || attrs.rotation;
+        newRotate = attrs.rotation || attrs.rotate;
         rotation = spriteAttrs.rotation;
-        if (rotate) {
-            if ((rotate.x && rotate.x !== rotation.x) ||
-                (rotate.y && rotate.y !== rotation.y) ||
-                (rotate.degrees && rotate.degrees !== rotation.degrees)) {
+        delete attrs.rotate;
+        delete attrs.rotation;
+        if (newRotate) {
+            if (('x' in newRotate && newRotate.x !== rotation.x) ||
+                ('y' in newRotate && newRotate.y !== rotation.y) ||
+                ('degrees' in newRotate && newRotate.degrees !== rotation.degrees)) {
                 me.dirtyTransform = true;
-                Ext.apply(rotation, rotate);
+                rotation.x = newRotate.x;
+                rotation.y = newRotate.y;
+                rotation.degrees = newRotate.degrees;
             }
-            delete attrs.rotate;
-            delete attrs.rotation;
         }
 
-        scale = attrs.scale || attrs.scaling;
+        newScaling = attrs.scaling || attrs.scale;
         scaling = spriteAttrs.scaling;
-        if (scale) {
-            if ((scale.x && scale.x !== scaling.x) ||
-                (scale.y && scale.y !== scaling.y) ||
-                (scale.cx && scale.cx !== scaling.cx) ||
-                (scale.cy && scale.cy !== scaling.cy)) {
+        delete attrs.scale;
+        delete attrs.scaling;
+        if (newScaling) {
+            if (('x' in newScaling && newScaling.x !== scaling.x) ||
+                ('y' in newScaling && newScaling.y !== scaling.y) ||
+                ('cx' in newScaling && newScaling.cx !== scaling.cx) ||
+                ('cy' in newScaling && newScaling.cy !== scaling.cy)) {
                 me.dirtyTransform = true;
-                Ext.apply(scaling, scale);
+                scaling.x = newScaling.x;
+                scaling.y = newScaling.y;
+                scaling.cx = newScaling.cx;
+                scaling.cy = newScaling.cy;
             }
-            delete attrs.scale;
-            delete attrs.scaling;
         }
 
+        
         if (!me.dirtyTransform && dirtyBBox) {
             if (spriteAttrs.scaling.x === null ||
                 spriteAttrs.scaling.y === null ||
                 spriteAttrs.rotation.y === null ||
                 spriteAttrs.rotation.y === null) {
-                
                 me.dirtyTransform = true;
             }
         }
@@ -63231,7 +64349,7 @@ Ext.define('Ext.draw.engine.Svg', {
 
     onRemove: function(sprite) {
         if (sprite.el) {
-            sprite.el.remove();
+            sprite.el.destroy();
             delete sprite.el;
         }
         this.callParent(arguments);
@@ -63307,7 +64425,8 @@ Ext.define('Ext.draw.engine.Svg', {
                 mousemove: me.onMouseMove,
                 mouseenter: me.onMouseEnter,
                 mouseleave: me.onMouseLeave,
-                click: me.onClick
+                click: me.onClick,
+                dblclick: me.onDblClick
             });
         }
         me.renderAll();
@@ -63499,6 +64618,10 @@ Ext.define('Ext.draw.engine.Svg', {
                 if (safariFix && ('color|stroke|fill'.indexOf(key) > -1) && (attrs[key] in gradientsMap)) {
                     attrs[key] = gradientsMap[attrs[key]];
                 }
+                
+                if (key == 'hidden' && sprite.type == 'text') {
+                    continue;
+                }
                 if (key in parsers) {
                     el.dom.setAttribute(key, parsers[key](attrs[key], sprite, me));
                 } else {
@@ -63548,7 +64671,7 @@ Ext.define('Ext.draw.engine.Svg', {
             me.getDefs().appendChild(clipEl);
             sprite.el.dom.setAttribute("clip-path", "url(#" + clipEl.id + ")");
             sprite.clip = clipPath;
-        }
+        } 
         
         
         
@@ -63690,6 +64813,15 @@ Ext.define('Ext.draw.engine.Svg', {
         me.callParent();
         if (me.el) {
             me.el.remove();
+        }
+        if (me._defs) {
+            Ext.get(me._defs).destroy();
+        }
+        if (me.bgRect) {
+            Ext.get(me.bgRect).destroy();
+        }
+        if (me.webkitRect) {
+            Ext.get(me.webkitRect).destroy();
         }
         delete me.el;
     }
@@ -64262,7 +65394,7 @@ Ext.define('Ext.draw.engine.Vml', {
             me.setText(sprite, params.text);
 
             if (vml.textpath.string) {
-                me.span.innerHTML = String(vml.textpath.string).replace(/</g, "&#60;").replace(/&/g, "&#38;").replace(/\n/g, "<br>");
+                me.span.innerHTML = String(vml.textpath.string).replace(/</g, "&#60;").replace(/&/g, "&#38;").replace(/\n/g, "<br/>");
             }
             vml.W = me.span.offsetWidth;
             vml.H = me.span.offsetHeight + 2; 
@@ -64334,13 +65466,16 @@ Ext.define('Ext.draw.engine.Vml', {
         var me = this,
             viewBox = me.viewBox,
             width = me.width,
-            height = me.height;
+            height = me.height,
+            items,
+            iLen,
+            i;
+        
         me.callParent();
 
         if (viewBox && (width || height)) {
-            var items = me.items.items,
-                iLen = items.length,
-                i;
+            items = me.items.items;
+            iLen = items.length;
 
             for (i = 0; i < iLen; i++) {
                 me.applyTransformations(items[i]);
@@ -64403,7 +65538,8 @@ Ext.define('Ext.draw.engine.Vml', {
                 mousemove: me.onMouseMove,
                 mouseenter: me.onMouseEnter,
                 mouseleave: me.onMouseLeave,
-                click: me.onClick
+                click: me.onClick,
+                dblclick: me.onDblClick
             });
         }
         me.renderAll();
@@ -64555,7 +65691,13 @@ Ext.define('Ext.draw.engine.Vml', {
     addGradient: function (gradient) {
         var gradients = this.gradientsColl || (this.gradientsColl = Ext.create('Ext.util.MixedCollection')),
             colors = [],
-            stops = Ext.create('Ext.util.MixedCollection');
+            stops = Ext.create('Ext.util.MixedCollection'),
+            keys,
+            items,
+            iLen,
+            key,
+            item,
+            i;
 
         
         stops.addAll(gradient.stops);
@@ -64565,11 +65707,9 @@ Ext.define('Ext.draw.engine.Vml', {
             return a > b ? 1 : (a < b ? -1 : 0);
         });
 
-        var keys = stops.keys,
-            items = stops.items,
-            iLen = keys.length,
-            key, item,
-            i;
+        keys = stops.keys;
+        items = stops.items;
+        iLen = keys.length;
 
         for (i = 0; i < iLen; i++) {
             key = keys[i];
@@ -64849,7 +65989,6 @@ Ext.define("Ext.form.Labelable", {
 
     autoEl: {
         tag: 'table',
-        cellspacing: 0,
         cellpadding: 0
     },
 
@@ -64889,7 +66028,7 @@ Ext.define("Ext.form.Labelable", {
         '</tpl>',
 
         
-        '<tr id="{id}-inputRow" <tpl if="inFormLayout">id="{id}" class="{componentClass}"</tpl>>',
+        '<tr id="{id}-inputRow" <tpl if="inFormLayout">id="{id}"</tpl>>',
 
             
             '<tpl if="labelOnLeft">',
@@ -64936,7 +66075,7 @@ Ext.define("Ext.form.Labelable", {
     
     activeErrorsTpl: [
         '<tpl if="errors && errors.length">',
-            '<ul><tpl for="errors"><li<tpl if="xindex == xcount"> class="last"</tpl>>{.}</li></tpl></ul>',
+            '<ul><tpl for="errors"><li>{.}</li></tpl></ul>',
         '</tpl>'
     ],
 
@@ -65028,7 +66167,7 @@ Ext.define("Ext.form.Labelable", {
         'labelAttrTpl'
     ],
 
-    labelableRenderProps: 'labelAlign,fieldBodyCls,baseBodyCls,clearCls,labelSeparator,msgTarget',
+    labelableRenderProps: 'allowBlank,labelAlign,fieldBodyCls,baseBodyCls,clearCls,labelSeparator,msgTarget',
 
     
     initLabelable: function() {
@@ -65081,7 +66220,7 @@ Ext.define("Ext.form.Labelable", {
                     }
                 }
                 labelEl.update(label);
-                labelEl.parent().setDisplayed('block');
+                labelEl.parent().setDisplayed('');
             }
             me.updateLayout();
         }
@@ -65113,7 +66252,6 @@ Ext.define("Ext.form.Labelable", {
     
     getLabelableRenderData: function() {
         var me = this,
-            cls = '',
             data,
             tempEl;
 
@@ -65123,7 +66261,6 @@ Ext.define("Ext.form.Labelable", {
         }
 
         data = Ext.copyTo({
-            componentClass : me.protoEl ? me.protoEl.classList.join(' ') : '',
             inFormLayout   : me.ownerLayout && me.ownerLayout.type === 'form',
             inputId        : me.getInputId(),
             labelOnLeft    : me.labelAlign != 'top',
@@ -65141,6 +66278,13 @@ Ext.define("Ext.form.Labelable", {
         me.getInsertionRenderData(data, me.labelableInsertions);
 
         return data;
+    },
+    
+    beforeLabelableRender: function() {
+        var me = this;
+        if (me.ownerLayout) {
+            me.addCls(Ext.baseCSSPrefix + me.ownerLayout.type + '-form-item');
+        }
     },
 
     onLabelableRender: function() {
@@ -65208,7 +66352,7 @@ Ext.define("Ext.form.Labelable", {
         if (labelAlign !== 'top') {
             result = 'valign="top" halign="' + labelAlign + '" width="' + (me.labelWidth + me.labelPad) + '"';
         }
-        return result;
+        return result + ' class="' + Ext.baseCSSPrefix + 'field-label-cell"';
     },
     
     
@@ -65515,764 +66659,32 @@ Ext.define('Ext.grid.ColumnComponentLayout', {
     }
 });
 
-Ext.define('Ext.grid.Lockable', {
-
-    requires: ['Ext.grid.LockingView'],
-
-    
-    syncRowHeight: true,
-
-    
-
-    
-
-    
-
-    headerCounter: 0,
-
-    
-    scrollDelta: 40,
-    
-    
-    
-    
-
-    
-    
-    unlockText: 'Unlock',
-    
-    
-    lockText: 'Lock',
-    
-
-    determineXTypeToCreate: function() {
-        var me = this,
-            typeToCreate,
-            xtypes, xtypesLn, xtype, superxtype;
-
-        if (me.subGridXType) {
-            typeToCreate = me.subGridXType;
-        } else {
-            xtypes     = this.getXTypes().split('/');
-            xtypesLn   = xtypes.length;
-            xtype      = xtypes[xtypesLn - 1];
-            superxtype = xtypes[xtypesLn - 2];
-
-            if (superxtype !== 'tablepanel') {
-                typeToCreate = superxtype;
-            } else {
-                typeToCreate = xtype;
-            }
-        }
-
-        return typeToCreate;
-    },
-
-    
-    
-    injectLockable: function() {
-        
-        this.lockable = true;
-        
-        
-        this.hasView = true;
-
-        var me = this,
-            
-            scrollLocked = Ext.getScrollbarSize().width == 0,
-            store = me.store = Ext.StoreManager.lookup(me.store),
-            
-            
-            
-            xtype = me.determineXTypeToCreate(),
-            
-            selModel = me.getSelectionModel(),
-            lockedGrid = Ext.apply({
-                xtype: xtype,
-                store: store,
-                scrollerOwner: false,
-                
-                enableAnimations: false,
-                scroll: scrollLocked ? 'vertical' : false,
-                selModel: selModel,
-                border: false,
-                cls: Ext.baseCSSPrefix + 'grid-inner-locked',
-                isLayoutRoot: function() {
-                    return false;
-                }
-            }, me.lockedGridConfig),
-            normalGrid = Ext.apply({
-                xtype: xtype,
-                store: store,
-                scrollerOwner: false,
-                enableAnimations: false,
-                selModel: selModel,
-                border: false,
-                isLayoutRoot: function() {
-                    return false;
-                }
-            }, me.normalGridConfig),
-            i = 0,
-            columns,
-            lockedHeaderCt,
-            normalHeaderCt,
-            lockedView,
-            normalView;
-
-        me.addCls(Ext.baseCSSPrefix + 'grid-locked');
-
-        
-        
-        
-        Ext.copyTo(normalGrid, me, me.bothCfgCopy);
-        Ext.copyTo(lockedGrid, me, me.bothCfgCopy);
-        Ext.copyTo(normalGrid, me, me.normalCfgCopy);
-        Ext.copyTo(lockedGrid, me, me.lockedCfgCopy);
-        for (; i < me.normalCfgCopy.length; i++) {
-            delete me[me.normalCfgCopy[i]];
-        }
-        for (i = 0; i < me.lockedCfgCopy.length; i++) {
-            delete me[me.lockedCfgCopy[i]];
-        }
-
-        me.addEvents(
-            
-            'lockcolumn',
-
-            
-            'unlockcolumn'
-        );
-
-        me.addStateEvents(['lockcolumn', 'unlockcolumn']);
-
-        me.lockedHeights = [];
-        me.normalHeights = [];
-
-        columns = me.processColumns(me.columns);
-
-        lockedGrid.width = columns.lockedWidth + Ext.num(selModel.headerWidth, 0);
-        lockedGrid.columns = columns.locked;
-        normalGrid.columns = columns.normal;
-
-        
-        normalGrid.flex = 1;
-        lockedGrid.viewConfig = me.lockedViewConfig || {};
-        lockedGrid.viewConfig.loadingUseMsg = false;
-        normalGrid.viewConfig = me.normalViewConfig || {};
-
-        Ext.applyIf(lockedGrid.viewConfig, me.viewConfig);
-        Ext.applyIf(normalGrid.viewConfig, me.viewConfig);
-
-        me.normalGrid = Ext.ComponentManager.create(normalGrid);
-        me.lockedGrid = Ext.ComponentManager.create(lockedGrid);
-
-        me.view = new Ext.grid.LockingView({
-            locked: me.lockedGrid,
-            normal: me.normalGrid,
-            panel: me
-        });
-
-        lockedView = me.lockedGrid.getView();
-        normalView = me.normalGrid.getView();
-
-        
-        
-        
-        if (scrollLocked) {
-            listeners = {
-                scroll: {
-                    fn: me.onLockedViewScroll,
-                    element: 'el',
-                    scope: me
-                }
-            };
-        }
-        
-        else {
-            listeners = {
-                mousewheel: {
-                    fn: me.onLockedViewMouseWheel,
-                    element: 'el',
-                    scope: me
-                }
-            };
-        }
-        if (me.syncRowHeight) {
-            listeners.refresh = me.onLockedViewRefresh;
-            listeners.itemupdate = me.onLockedViewItemUpdate;
-            listeners.scope = me;
-        }
-        lockedView.on(listeners);
-
-        
-        listeners = {
-            scroll: {
-                fn: me.onNormalViewScroll,
-                element: 'el',
-                scope: me
-            },
-            refresh: me.createSpacer,
-            beforerefresh: me.destroySpacer,
-            scope: me
-        };
-        if (me.syncRowHeight) {
-            listeners.refresh = me.onNormalViewRefresh;
-            listeners.itemupdate = me.onNormalViewItemUpdate;
-        }
-        normalView.on(listeners);
-
-        lockedHeaderCt = me.lockedGrid.headerCt;
-        normalHeaderCt = me.normalGrid.headerCt;
-
-        lockedHeaderCt.lockedCt = true;
-        lockedHeaderCt.lockableInjected = true;
-        normalHeaderCt.lockableInjected = true;
-
-        lockedHeaderCt.on({
-            columnshow: me.onLockedHeaderShow,
-            columnhide: me.onLockedHeaderHide,
-            columnmove: me.onLockedHeaderMove,
-            sortchange: me.onLockedHeaderSortChange,
-            columnresize: me.onLockedHeaderResize,
-            scope: me
-        });
-
-        normalHeaderCt.on({
-            columnmove: me.onNormalHeaderMove,
-            sortchange: me.onNormalHeaderSortChange,
-            scope: me
-        });
-
-        me.modifyHeaderCt();
-        me.items = [me.lockedGrid, me.normalGrid];
-
-        me.relayHeaderCtEvents(lockedHeaderCt);
-        me.relayHeaderCtEvents(normalHeaderCt);
-
-        me.layout = {
-            type: 'hbox',
-            align: 'stretch'
-        };
-    },
-
-    processColumns: function(columns){
-        
-        var i = 0,
-            len = columns.length,
-            lockedWidth = 0,
-            lockedHeaders = [],
-            normalHeaders = [],
-            column;
-
-        for (; i < len; ++i) {
-            column = columns[i];
-            
-            
-            column.processed = true;
-            if (column.locked) {
-                if (!column.hidden) {
-                    lockedWidth += column.width || Ext.grid.header.Container.prototype.defaultWidth;
-                }
-                lockedHeaders.push(column);
-            } else {
-                normalHeaders.push(column);
-            }
-            if (!column.headerId) {
-                column.headerId = (column.initialConfig || column).id || ('L' + (++this.headerCounter));
-            }
-        }
-        return {
-            lockedWidth: lockedWidth,
-            locked: {
-                items: lockedHeaders,
-                itemId: 'lockedHeaderCt',
-                stretchMaxPartner: '^^>>#normalHeaderCt'
-            },
-            normal: {
-                items: normalHeaders,
-                itemId: 'normalHeaderCt',
-                stretchMaxPartner: '^^>>#lockedHeaderCt'
-            }
-        };
-    },
-
-    
-    onLockedViewMouseWheel: function(e) {
-        var me = this,
-            scrollDelta = -me.scrollDelta,
-            deltaY = scrollDelta * e.getWheelDeltas().y,
-            vertScrollerEl = me.lockedGrid.getView().el.dom,
-            verticalCanScrollDown, verticalCanScrollUp;
-
-        if (vertScrollerEl) {
-            verticalCanScrollDown = vertScrollerEl.scrollTop !== vertScrollerEl.scrollHeight - vertScrollerEl.clientHeight;
-            verticalCanScrollUp   = vertScrollerEl.scrollTop !== 0;
-        }
-
-        if ((deltaY < 0 && verticalCanScrollUp) || (deltaY > 0 && verticalCanScrollDown)) {
-            e.stopEvent();
-
-            
-            
-            
-            me.scrolling = true;
-            vertScrollerEl.scrollTop += deltaY;
-            me.normalGrid.getView().el.dom.scrollTop = vertScrollerEl.scrollTop;
-            me.scrolling = false;
-
-            
-            me.onNormalViewScroll();
-        }
-    },
-
-    onLockedViewScroll: function() {
-        var me = this,
-            lockedView = me.lockedGrid.getView(),
-            normalView = me.normalGrid.getView(),
-            normalTable,
-            lockedTable;
-
-        
-        if (!me.scrolling) {
-            me.scrolling = true;
-            normalView.el.dom.scrollTop = lockedView.el.dom.scrollTop;
-    
-            
-            if (me.store.buffered) {
-                lockedTable = lockedView.el.child('table', true);
-                normalTable = normalView.el.child('table', true);
-                lockedTable.style.position = 'absolute';
-            }
-            me.scrolling = false;
-        }
-    },
-    
-    onNormalViewScroll: function() {
-        var me = this,
-            lockedView = me.lockedGrid.getView(),
-            normalView = me.normalGrid.getView(),
-            normalTable,
-            lockedTable;
-
-        
-        if (!me.scrolling) {
-            me.scrolling = true;
-            lockedView.el.dom.scrollTop = normalView.el.dom.scrollTop;
-    
-            
-            if (me.store.buffered) {
-                lockedTable = lockedView.el.child('table', true);
-                normalTable = normalView.el.child('table', true);
-                lockedTable.style.position = 'absolute';
-                lockedTable.style.top = normalTable.style.top;
-            }
-            me.scrolling = false;
-        }
-    },
-
-    
-    onLockedHeaderMove: function() {
-        if (this.syncRowHeight) {
-            this.onNormalViewRefresh();
-        }
-    },
-
-    
-    onNormalHeaderMove: function() {
-        if (this.syncRowHeight) {
-            this.onLockedViewRefresh();
-        }
-    },
-    
-    
-    
-    
-    
-    createSpacer: function() {
-        var me   = this,
-            
-            
-            lockedViewEl   = me.lockedGrid.getView().el,
-            normalViewEl = me.normalGrid.getView().el.dom;
-
-        me.spacerEl = Ext.core.DomHelper.append(lockedViewEl, {
-            style: 'height: ' + (normalViewEl.offsetHeight - normalViewEl.clientHeight) + 'px;'
-        }, true);
-    },
-
-    destroySpacer: function() {
-        var me = this;
-        if (me.spacerEl) {
-            me.spacerEl.destroy();
-            delete me.spacerEl;
-        }
-    },
-
-    
-    onLockedViewRefresh: function() {
-        var me     = this,
-            view   = me.lockedGrid.getView(),
-            el     = view.el,
-            rowEls = el.query(view.getItemSelector()),
-            ln     = rowEls.length,
-            i = 0;
-
-        
-        me.lockedHeights = [];
-
-        for (; i < ln; i++) {
-            me.lockedHeights[i] = rowEls[i].clientHeight;
-        }
-        me.syncRowHeights();
-    },
-
-    
-    onNormalViewRefresh: function() {
-        var me     = this,
-            view   = me.normalGrid.getView(),
-            el     = view.el,
-            rowEls = el.query(view.getItemSelector()),
-            ln     = rowEls.length,
-            i = 0;
-
-        
-        me.normalHeights = [];
-
-        for (; i < ln; i++) {
-            me.normalHeights[i] = rowEls[i].clientHeight;
-        }
-        me.syncRowHeights();
-    },
-
-    
-    onLockedViewItemUpdate: function(record, index, node) {
-        this.lockedHeights[index] = node.clientHeight;
-        this.syncRowHeights();
-    },
-
-    
-    onNormalViewItemUpdate: function(record, index, node) {
-        this.normalHeights[index] = node.clientHeight;
-        this.syncRowHeights();
-    },
-
-    
-    syncRowHeights: function() {
-        var me = this,
-            lockedHeights = me.lockedHeights,
-            normalHeights = me.normalHeights,
-            calcHeights   = [],
-            ln = lockedHeights.length,
-            i  = 0,
-            lockedView, normalView,
-            lockedRowEls, normalRowEls,
-            scrollTop;
-
-        
-        
-        if (lockedHeights.length && normalHeights.length) {
-            lockedView = me.lockedGrid.getView();
-            normalView = me.normalGrid.getView();
-            lockedRowEls = lockedView.el.query(lockedView.getItemSelector());
-            normalRowEls = normalView.el.query(normalView.getItemSelector());
-
-            
-            for (; i < ln; i++) {
-                
-                if (!isNaN(lockedHeights[i]) && !isNaN(normalHeights[i])) {
-                    if (lockedHeights[i] > normalHeights[i]) {
-                        Ext.fly(normalRowEls[i]).setHeight(lockedHeights[i]);
-                    } else if (lockedHeights[i] < normalHeights[i]) {
-                        Ext.fly(lockedRowEls[i]).setHeight(normalHeights[i]);
-                    }
-                }
-            }
-
-            
-            
-            
-            
-            scrollTop = normalView.el.dom.scrollTop;
-            normalView.el.dom.scrollTop = scrollTop;
-            lockedView.el.dom.scrollTop = scrollTop;
-            
-            
-            me.lockedHeights = [];
-            me.normalHeights = [];
-        }
-    },
-
-    
-    modifyHeaderCt: function() {
-        var me = this;
-        me.lockedGrid.headerCt.getMenuItems = me.getMenuItems(true);
-        me.normalGrid.headerCt.getMenuItems = me.getMenuItems(false);
-    },
-
-    onUnlockMenuClick: function() {
-        this.unlock();
-    },
-
-    onLockMenuClick: function() {
-        this.lock();
-    },
-
-    getMenuItems: function(locked) {
-        var me            = this,
-            unlockText    = me.unlockText,
-            lockText      = me.lockText,
-            unlockCls     = Ext.baseCSSPrefix + 'hmenu-unlock',
-            lockCls       = Ext.baseCSSPrefix + 'hmenu-lock',
-            unlockHandler = Ext.Function.bind(me.onUnlockMenuClick, me),
-            lockHandler   = Ext.Function.bind(me.onLockMenuClick, me);
-
-        
-        return function() {
-            var o = Ext.grid.header.Container.prototype.getMenuItems.call(this);
-            o.push('-',{
-                cls: unlockCls,
-                text: unlockText,
-                handler: unlockHandler,
-                disabled: !locked
-            });
-            o.push({
-                cls: lockCls,
-                text: lockText,
-                handler: lockHandler,
-                disabled: locked
-            });
-            return o;
-        };
-    },
-
-    
-    
-    lock: function(activeHd, toIdx) {
-        var me         = this,
-            normalGrid = me.normalGrid,
-            lockedGrid = me.lockedGrid,
-            normalHCt  = normalGrid.headerCt,
-            lockedHCt  = lockedGrid.headerCt;
-
-        activeHd = activeHd || normalHCt.getMenu().activeHeader;
-
-        
-        
-        if (activeHd.flex) {
-            activeHd.width = activeHd.getWidth();
-            delete activeHd.flex;
-        }
-
-        Ext.suspendLayouts();
-        normalHCt.remove(activeHd, false);
-        activeHd.locked = true;
-        if (Ext.isDefined(toIdx)) {
-            lockedHCt.insert(toIdx, activeHd);
-        } else {
-            lockedHCt.add(activeHd);
-        }
-        me.syncLockedSection();
-        Ext.resumeLayouts(true);
-
-        me.fireEvent('lockcolumn', me, activeHd);
-    },
-
-    syncLockedSection: function() {
-        var me = this;
-        me.syncLockedWidth();
-        me.lockedGrid.getView().refresh();
-        me.normalGrid.getView().refresh();
-    },
-
-    
-    
-    syncLockedWidth: function() {
-        var me = this,
-            locked = me.lockedGrid,
-            width = locked.headerCt.getFullWidth(true);
-            
-        me.suspendLayouts();
-        if (width > 0) {
-            locked.setWidth(width);
-            locked.show();
-        } else {
-            locked.hide();
-        }
-        me.resumeLayouts(true);
-        
-        return width > 0;
-    },
-
-    onLockedHeaderResize: function() {
-        this.syncLockedWidth();
-    },
-
-    onLockedHeaderHide: function() {
-        this.syncLockedWidth();
-    },
-
-    onLockedHeaderShow: function() {
-        this.syncLockedWidth();
-    },
-
-    onLockedHeaderSortChange: function(headerCt, header, sortState) {
-        if (sortState) {
-            
-            
-            this.normalGrid.headerCt.clearOtherSortStates(null, true);
-        }
-    },
-
-    onNormalHeaderSortChange: function(headerCt, header, sortState) {
-        if (sortState) {
-            
-            
-            this.lockedGrid.headerCt.clearOtherSortStates(null, true);
-        }
-    },
-
-    
-    
-    unlock: function(activeHd, toIdx) {
-        var me         = this,
-            normalGrid = me.normalGrid,
-            lockedGrid = me.lockedGrid,
-            normalHCt  = normalGrid.headerCt,
-            lockedHCt  = lockedGrid.headerCt,
-            refreshLocked = false;
-
-        if (!Ext.isDefined(toIdx)) {
-            toIdx = 0;
-        }
-        activeHd = activeHd || lockedHCt.getMenu().activeHeader;
-
-        Ext.suspendLayouts();
-        lockedHCt.remove(activeHd, false);
-        if (me.syncLockedWidth()) {
-            refreshLocked = true;
-        }
-        activeHd.locked = false;
-        normalHCt.insert(toIdx, activeHd);
-        if (refreshLocked) {
-            me.lockedGrid.getView().refresh();
-        }
-        me.normalGrid.getView().refresh();
-        Ext.resumeLayouts(true);
-
-        me.fireEvent('unlockcolumn', me, activeHd);
-    },
-
-    applyColumnsState: function (columns) {
-        var me             = this,
-            lockedGrid     = me.lockedGrid,
-            lockedHeaderCt = lockedGrid.headerCt,
-            normalHeaderCt = me.normalGrid.headerCt,
-            lockedCols     = Ext.Array.toMap(lockedHeaderCt.items, 'headerId'),
-            normalCols     = Ext.Array.toMap(normalHeaderCt.items, 'headerId'),
-            locked         = [],
-            normal         = [],
-            lockedWidth    = 1,
-            length         = columns.length,
-            i, existing,
-            lockedDefault,
-            col;
-
-        for (i = 0; i < length; i++) {
-            col = columns[i];
-
-            lockedDefault = lockedCols[col.id];
-            existing = lockedDefault || normalCols[col.id];
-
-            if (existing) {
-                if (existing.applyColumnState) {
-                    existing.applyColumnState(col);
-                }
-                if (existing.locked === undefined) {
-                    existing.locked = !!lockedDefault;
-                }
-                if (existing.locked) {
-                    locked.push(existing);
-                    if (!existing.hidden && typeof existing.width == 'number') {
-                        lockedWidth += existing.width;
-                    }
-                } else {
-                    normal.push(existing);
-                }
-            }
-        }
-
-        
-        if (locked.length + normal.length == lockedHeaderCt.items.getCount() + normalHeaderCt.items.getCount()) {
-            lockedHeaderCt.removeAll(false);
-            normalHeaderCt.removeAll(false);
-
-            lockedHeaderCt.add(locked);
-            normalHeaderCt.add(normal);
-
-            lockedGrid.setWidth(lockedWidth);
-        }
-    },
-
-    getColumnsState: function () {
-        var me = this,
-            locked = me.lockedGrid.headerCt.getColumnsState(),
-            normal = me.normalGrid.headerCt.getColumnsState();
-
-        return locked.concat(normal);
-    },
-
-    
-    reconfigureLockable: function(store, columns) {
-        var me = this,
-            lockedGrid = me.lockedGrid,
-            normalGrid = me.normalGrid;
-
-        if (columns) {
-            Ext.suspendLayouts();
-            lockedGrid.headerCt.removeAll();
-            normalGrid.headerCt.removeAll();
-
-            columns = me.processColumns(columns);
-            lockedGrid.setWidth(columns.lockedWidth);
-            lockedGrid.headerCt.add(columns.locked.items);
-            normalGrid.headerCt.add(columns.normal.items);
-            Ext.resumeLayouts(true);
-        }
-
-        if (store) {
-            store = Ext.data.StoreManager.lookup(store);
-            me.store = store;
-            lockedGrid.bindStore(store);
-            normalGrid.bindStore(store);
-        } else {
-            lockedGrid.getView().refresh();
-            normalGrid.getView().refresh();
-        }
-    }
-});
-
-
 Ext.define('Ext.grid.feature.AbstractSummary', {
     
     
-   
+
     extend: 'Ext.grid.feature.Feature',
     
     alias: 'feature.abstractsummary',
-   
+
     
-   
+
    
     showSummaryRow: true,
-    
+
     
     nestedIdRe: /\{\{id\}([\w\-]*)\}/g,
 
     
     init: function() {
-        this.view.mon(this.view.store, {
-            update: this.onStoreUpdate,
-            scope: this
+        var me = this;
+
+        
+        me.grid.optimizedColumnMove = false;
+
+        me.view.mon(me.view.store, {
+            update: me.onStoreUpdate,
+            scope: me
         });
     },
 
@@ -66285,12 +66697,12 @@ Ext.define('Ext.grid.feature.AbstractSummary', {
             v.restoreScrollState();
         }
     },
-    
+
     
     toggleSummaryRow: function(visible){
         this.showSummaryRow = !!visible;
     },
-    
+
     
     getSummaryFragments: function(){
         var fragments = {};
@@ -66301,12 +66713,12 @@ Ext.define('Ext.grid.feature.AbstractSummary', {
         }
         return fragments;
     },
-    
+
     
     printSummaryRow: function(index){
         var inner = this.view.getTableChunker().metaRowTpl.join(''),
             prefix = Ext.baseCSSPrefix;
-        
+
         inner = inner.replace(prefix + 'grid-row', prefix + 'grid-row-summary');
         inner = inner.replace('{{id}}', '{gridSummaryValue}');
         inner = inner.replace(this.nestedIdRe, '{id$1}');  
@@ -66315,17 +66727,21 @@ Ext.define('Ext.grid.feature.AbstractSummary', {
         inner = new Ext.XTemplate(inner, {
             firstOrLastCls: Ext.view.TableChunker.firstOrLastCls
         });
-        
+
         return inner.applyTemplate({
             columns: this.getPrintData(index)
         });
     },
-    
+
     
     getColumnValue: function(column, summaryData){
         var comp     = Ext.getCmp(column.id),
             value    = summaryData[column.id],
             renderer = comp.summaryRenderer;
+            
+        if (!value && value !== 0) {
+            value = '\u00a0';
+        }
 
         if (renderer) {
             value = renderer.call(
@@ -66337,14 +66753,14 @@ Ext.define('Ext.grid.feature.AbstractSummary', {
         }
         return value;
     },
-    
+
     
     getSummary: function(store, type, field, group){
         if (type) {
             if (Ext.isFunction(type)) {
                 return store.aggregate(type, null, group);
             }
-            
+
             switch (type) {
                 case 'count':
                     return store.count(group);
@@ -66362,31 +66778,28 @@ Ext.define('Ext.grid.feature.AbstractSummary', {
             }
         }
     }
-    
+
 });
 
 
 Ext.define('Ext.grid.feature.Chunking', {
     extend: 'Ext.grid.feature.Feature',
     alias: 'feature.chunking',
-    
+
     chunkSize: 20,
     rowHeight: Ext.isIE ? 27 : 26,
     visibleChunk: 0,
     hasFeatureEvent: false,
     attachEvents: function() {
-        var grid = this.view.up('gridpanel'),
-            scroller = grid.down('gridscroller[dock=right]');
-        scroller.el.on('scroll', this.onBodyScroll, this, {buffer: 300});
-        
+        this.view.el.on('scroll', this.onBodyScroll, this, {buffer: 300});
     },
-    
+
     onBodyScroll: function(e, t) {
         var view = this.view,
             top  = t.scrollTop,
             nextChunk = Math.floor(top / this.rowHeight / this.chunkSize);
         if (nextChunk !== this.visibleChunk) {
-        
+
             this.visibleChunk = nextChunk;
             view.refresh();
             view.el.dom.scrollTop = top;
@@ -66394,7 +66807,7 @@ Ext.define('Ext.grid.feature.Chunking', {
             view.el.dom.scrollTop = top;
         }
     },
-    
+
     collectData: function(records, preppedRecords, startIndex, fullWidth, orig) {
         var o = {
             fullWidth: orig.fullWidth,
@@ -66428,11 +66841,10 @@ Ext.define('Ext.grid.feature.Chunking', {
                 chunkHeight: chunkLength * this.rowHeight
             });
         }
-        
-        
+
         return o;
     },
-    
+
     getTableFragments: function() {
         return {
             openTableWrap: function() {
@@ -66463,7 +66875,6 @@ Ext.define('Ext.grid.feature.GroupingSummary', {
     init: function() {
         this.mixins.summary.init.call(this);
     },
-
 
    
    getFeatureTpl: function() {
@@ -66945,9 +67356,6 @@ Ext.define('Ext.grid.header.DropZone', {
                             groupCt = fromCt.ownerCt;
                             groupCt.remove(fromCt, false);
                             fromCt.el.dom.parentNode.removeChild(fromCt.el.dom);
-                        } else {
-                            fromCt.minWidth = fromCt.getWidth() - dragHeader.getWidth();
-                            fromCt.setWidth(fromCt.minWidth);
                         }
                     }
                 }
@@ -66968,10 +67376,6 @@ Ext.define('Ext.grid.header.DropZone', {
                         dragHeader.savedFlex = dragHeader.flex;
                         delete dragHeader.flex;
                         dragHeader.width = dragHeader.getWidth();
-                        
-                        
-                        toCt.minWidth = toCt.getWidth() + dragHeader.getWidth() - (dragHeader.savedFlex ? 1 : 0);
-                        toCt.setWidth(toCt.minWidth);
                     }
                 } else {
                     if (dragHeader.savedFlex) {
@@ -67233,31 +67637,11 @@ Ext.define('Ext.layout.component.Body', {
     },
 
     measureContentWidth: function (ownerContext) {
-        var contentWidth = ownerContext.bodyContext.el.dom.offsetWidth,
-            targetContext = ownerContext.targetContext,
-            padding = targetContext && targetContext.getPaddingInfo();
-
-        ownerContext.bodyContext.setWidth(contentWidth, false);
-
-        if (padding) {
-            contentWidth += padding.width;
-        }
-
-        return contentWidth;
+        return ownerContext.bodyContext.setWidth(ownerContext.bodyContext.el.dom.offsetWidth, false);
     },
 
     measureContentHeight: function (ownerContext) {
-        var contentHeight = ownerContext.bodyContext.el.dom.offsetHeight,
-            targetContext = ownerContext.targetContext,
-            padding = targetContext && targetContext.getPaddingInfo();
-
-        ownerContext.bodyContext.setHeight(contentHeight, false);
-
-        if (padding) {
-            contentHeight += padding.height;
-        }
-
-        return contentHeight;
+        return ownerContext.bodyContext.setHeight(ownerContext.bodyContext.el.dom.offsetHeight, false);
     },
 
     publishInnerHeight: function (ownerContext, height) {
@@ -67394,7 +67778,8 @@ Ext.define('Ext.layout.component.Button', {
     constructor: function () {
         this.callParent(arguments);
 
-        this.hackWidth = (Ext.isIE6 || Ext.isIE7) && Ext.isStrict;
+        this.hackWidth = Ext.isIE && (!Ext.isStrict || Ext.isIE6 || Ext.isIE7);
+        this.heightIncludesPadding = Ext.isIE6 && Ext.isStrict;
     },
 
     
@@ -67411,7 +67796,8 @@ Ext.define('Ext.layout.component.Button', {
             owner = me.owner,
             btnEl = owner.btnEl,
             btnInnerEl = owner.btnInnerEl,
-            text = owner.text;
+            text = owner.text,
+            htmlAutoHeight;
 
         me.callParent(arguments);
 
@@ -67421,15 +67807,18 @@ Ext.define('Ext.layout.component.Button', {
         if (!ownerContext.widthModel.natural) {
             owner.el.setStyle('width', empty);
         }
-        btnEl.setStyle('width', empty);
-        btnInnerEl.setStyle('width', empty);
-        owner.btnIconEl.setStyle('width', empty);
+
         
-        if (ownerContext.heightModel.shrinkWrap && text && me.htmlRE.test(text)) {
-            btnInnerEl.setStyle('line-height', 'normal');
-            btnInnerEl.setStyle('height', 'auto');
-            btnEl.setStyle('height', 'auto');
-        }
+        
+        htmlAutoHeight = ownerContext.heightModel.shrinkWrap && text && me.htmlRE.test(text);
+
+        btnEl.setStyle('width', empty);
+        btnEl.setStyle('height', htmlAutoHeight ? 'auto' : empty);
+        btnInnerEl.setStyle('width', empty);
+        btnInnerEl.setStyle('height', htmlAutoHeight ? 'auto' : empty);
+        btnInnerEl.setStyle('line-height', htmlAutoHeight ? 'normal' : empty);
+        btnInnerEl.setStyle('padding-top', empty);
+        owner.btnIconEl.setStyle('width', empty);
     },
 
     calculateOwnerHeightFromContentHeight: function (ownerContext, contentHeight) {
@@ -67445,14 +67834,25 @@ Ext.define('Ext.layout.component.Button', {
             owner = me.owner,
             btnEl = owner.btnEl,
             btnInnerEl = owner.btnInnerEl,
+            text = owner.text,
             btnFrameWidth, metrics, sizeIconEl, width, btnElContext, btnInnerElContext;
 
         
         
         
-        if (owner.text && me.hackWidth && btnEl && btnEl.getWidth() > 20) {
+        
+        if (owner.text && me.hackWidth && btnEl) {
             btnFrameWidth = me.btnFrameWidth;
-            metrics = Ext.util.TextMetrics.measure(btnInnerEl, owner.text);
+
+            
+            
+            
+            if (text.indexOf('>') === -1) {
+                text = text.replace(/</g, '&lt;');
+            }
+
+            metrics = Ext.util.TextMetrics.measure(btnInnerEl, text);
+
             width = metrics.width + btnFrameWidth + me.adjWidth;
 
             btnElContext = ownerContext.getEl('btnEl');
@@ -67482,17 +67882,49 @@ Ext.define('Ext.layout.component.Button', {
         var me = this,
             owner = me.owner,
             btnInnerEl = owner.btnInnerEl,
-            height;
+            btnItem = ownerContext.getEl('btnEl'),
+            btnInnerItem = ownerContext.getEl('btnInnerEl'),
+            minTextHeight = me.minTextHeight,
+            adjHeight = me.adjHeight,
+            text = owner.getText(),
+            height,
+            textHeight,
+            topPadding;
 
         if (owner.vertical) {
             height = Ext.util.TextMetrics.measure(btnInnerEl, owner.text).width;
-            height += me.btnFrameHeight + me.adjHeight;
+            height += me.btnFrameHeight + adjHeight;
 
             
             ownerContext.setHeight(height, true, true);
-        } else {
-            height = ownerContext.el.getHeight();
         }
+        else {
+            
+            if (text && me.htmlRE.test(text)) {
+                textHeight = btnInnerEl.getHeight();
+
+                
+                if (textHeight < minTextHeight) {
+                    topPadding = Math.floor((minTextHeight - textHeight) / 2);
+
+                    
+                    
+                    btnInnerItem.setHeight(minTextHeight - (me.heightIncludesPadding ? topPadding : 0));
+                    btnInnerItem.setProp('padding-top', topPadding);
+
+                    textHeight = minTextHeight;
+                }
+
+                
+                height = textHeight + adjHeight;
+            }
+            else {
+                height = ownerContext.el.getHeight();
+            }
+        }
+
+        
+        btnItem.setHeight(height - adjHeight);
 
         return height;
     },
@@ -67507,7 +67939,8 @@ Ext.define('Ext.layout.component.Button', {
             btnHeight = isNum(height) ? height - me.adjHeight : height,
             btnFrameHeight = me.btnFrameHeight,
             text = owner.getText(),
-            textHeight;
+            textHeight,
+            paddingTop;
 
         btnItem.setHeight(btnHeight);
         btnInnerItem.setHeight(btnHeight);
@@ -67526,9 +67959,9 @@ Ext.define('Ext.layout.component.Button', {
             btnInnerItem.setProp('line-height', 'normal');
             btnInnerEl.setStyle('line-height', 'normal');
             textHeight = Ext.util.TextMetrics.measure(btnInnerEl, text).height;
-            btnInnerItem.setProp('padding-top',
-                me.btnFrameTop + Math.max(btnHeight - btnFrameHeight - textHeight, 0) / 2);
-            btnInnerItem.setHeight(btnHeight);
+            paddingTop = Math.floor(Math.max(btnHeight - btnFrameHeight - textHeight, 0) / 2);
+            btnInnerItem.setProp('padding-top', me.btnFrameTop + paddingTop);
+            btnInnerItem.setHeight(btnHeight - (me.heightIncludesPadding ? paddingTop : 0));
         }
     },
 
@@ -67542,16 +67975,31 @@ Ext.define('Ext.layout.component.Button', {
         btnItem.setWidth(btnWidth);
         btnInnerItem.setWidth(btnWidth);
     },
+    
+    clearTargetCache: function(){
+        delete this.adjWidth;    
+    },
 
     cacheTargetInfo: function(ownerContext) {
         var me = this,
-            padding, frameSize, btnWrapPadding, innerFrameSize;
+            owner = me.owner,
+            scale = owner.scale,
+            padding, frameSize, btnWrapPadding, btnInnerEl, innerFrameSize;
 
-        if (!('adjWidth' in me)) {
+        
+        if (!('adjWidth' in me) || me.lastScale !== scale) {
+            
+            if (me.lastScale) {
+                owner.btnInnerEl.setStyle('line-height', '');
+            }
+
+            me.lastScale = scale;
+
             padding = ownerContext.getPaddingInfo();
             frameSize = ownerContext.getFrameInfo();
             btnWrapPadding = ownerContext.getEl('btnWrap').getPaddingInfo();
-            innerFrameSize = ownerContext.getEl('btnInnerEl').getPaddingInfo();
+            btnInnerEl = ownerContext.getEl('btnInnerEl');
+            innerFrameSize = btnInnerEl.getPaddingInfo();
 
             Ext.apply(me, {
                 
@@ -67559,7 +68007,10 @@ Ext.define('Ext.layout.component.Button', {
                 adjHeight      : btnWrapPadding.height + frameSize.height + padding.height,
                 btnFrameWidth  : innerFrameSize.width,
                 btnFrameHeight : innerFrameSize.height,
-                btnFrameTop    : innerFrameSize.top
+                btnFrameTop    : innerFrameSize.top,
+
+                
+                minTextHeight  : parseInt(btnInnerEl.getStyle('line-height'), 10)
             });
         }
 
@@ -67772,6 +68223,7 @@ Ext.define('Ext.layout.component.Dock', {
             len = docked.length,
             owner = me.owner,
             frameBody = owner.frameBody,
+            lastHeightModel = me.lastHeightModel,
             i, item, dock;
 
         me.callParent(arguments);
@@ -67784,6 +68236,12 @@ Ext.define('Ext.layout.component.Dock', {
             ownerContext.heightModel = me.sizeModels.shrinkWrap;
         } else if (ownerContext.collapsedHorz) {
             ownerContext.widthModel = me.sizeModels.shrinkWrap;
+        }
+
+        if (lastHeightModel && lastHeightModel.shrinkWrap &&
+            !ownerContext.heightModel.shrinkWrap &&
+            !me.owner.manageHeight) {
+            owner.body.dom.style.marginBottom = '';
         }
 
         if (ownerContext.widthModel.auto) {
@@ -67943,12 +68401,14 @@ Ext.define('Ext.layout.component.Dock', {
             isConstrainedSize: isConstrainedSize,
             minSize: minSize,
             maxSize: hasMaxSize ? maxSize : 1e9,
+            bodyPosProp: this.owner.manageHeight ? posProp : ('margin-' + dockBegin), 
             dockBegin: dockBegin,    
             dockEnd: dockEnd,        
             posProp: posProp,        
             sizeProp: sizeProp,      
             sizePropCap: sizePropCap, 
-            setSize: setSize
+            setSize: setSize,
+            dockedPixelsEnd: 0
         };
     },
 
@@ -67989,6 +68449,7 @@ Ext.define('Ext.layout.component.Dock', {
     dockInwardBegin: function (ownerContext, itemContext, item, axis) {
         var pos = axis.begin,
             sizeProp = axis.sizeProp,
+            size, 
             dock;
 
         if (item.ignoreParentFrame) {
@@ -67998,7 +68459,8 @@ Ext.define('Ext.layout.component.Dock', {
         }
 
         if (!item.overlay) {
-            axis.begin += itemContext.getProp(sizeProp) + itemContext.getMarginInfo()[sizeProp];
+            size = itemContext.getProp(sizeProp) + itemContext.getMarginInfo()[sizeProp];
+            axis.begin += size;
         }
 
         return pos;
@@ -68067,6 +68529,7 @@ Ext.define('Ext.layout.component.Dock', {
 
         if (!item.overlay) {
             axis.end = pos + size;
+            axis.dockedPixelsEnd += size;
         }
 
         return pos;
@@ -68113,7 +68576,8 @@ Ext.define('Ext.layout.component.Dock', {
             padding = ownerContext.paddingInfo,
             framing = ownerContext.framingInfo,
             frameSize = padding[beginName] + border[beginName] + framing[beginName],
-            bodyContext = ownerContext.bodyContext;
+            bodyContext = ownerContext.bodyContext,
+            bodyPos, bodySize, dirty;
 
         if (axis.shrinkWrap) {
             
@@ -68121,15 +68585,15 @@ Ext.define('Ext.layout.component.Dock', {
             
             axis.delta = -axis.begin;  
 
-            bodyContext[setSizeMethod](axis.initialSize);
+            bodySize = axis.initialSize;
 
             if (axis.ignoreFrameBegin) {
                 axis.delta -= border[beginName];
-                bodyContext.setProp(axis.posProp, -axis.begin - frameSize);
+                bodyPos = -axis.begin - frameSize;
             } else {
                 size += frameSize;
                 axis.delta += padding[beginName] + framing[beginName];
-                bodyContext.setProp(axis.posProp, -axis.begin);
+                bodyPos = -axis.begin;
             }
 
             if (!axis.ignoreFrameEnd) {
@@ -68137,15 +68601,24 @@ Ext.define('Ext.layout.component.Dock', {
             }
 
             axis.size = size; 
+
+            if (!axis.horizontal && !this.owner.manageHeight) {
+                
+                
+                dirty = false;
+            }
         } else {
             
             
             axis.delta = -border[axis.dockBegin]; 
 
             
-            bodyContext[setSizeMethod](size);
-            bodyContext.setProp(axis.posProp, axis.begin - frameSize);
+            bodySize = size;
+            bodyPos = axis.begin - frameSize;
         }
+
+        bodyContext[setSizeMethod](bodySize, dirty);
+        bodyContext.setProp(axis.bodyPosProp, bodyPos);
 
         return !isNaN(size);
     },
@@ -68158,7 +68631,8 @@ Ext.define('Ext.layout.component.Dock', {
             vertTooBig   = vert.size > vert.maxSize,
             state = ownerContext.state,
             ret = true,
-            configured = this.sizeModels.configured;
+            configured = this.sizeModels.configured,
+            dirty;
 
         
         
@@ -68225,7 +68699,16 @@ Ext.define('Ext.layout.component.Dock', {
                 ownerContext.setWidth(horz.size);
             }
             if (vert.shrinkWrap) {
-                ownerContext.setHeight(vert.size);
+                if (!ownerContext.collapsedVert && !this.owner.manageHeight) {
+                    
+                    
+                    dirty = false;
+
+                    
+                    ownerContext.bodyContext.setProp('margin-bottom', vert.dockedPixelsEnd);
+                }
+
+                ownerContext.setHeight(vert.size, dirty);
             }
         } else {
             ownerContext.invalidate({
@@ -68587,12 +69070,25 @@ Ext.define('Ext.layout.component.FieldSet', {
     
 
     beginLayoutCycle: function (ownerContext) {
+        var target = ownerContext.target,
+            lastSize;
+
         this.callParent(arguments);
 
         
         
-        if (ownerContext.target.collapsed) {
+        
+        if (target.collapsed) {
+            ownerContext.heightModel = this.sizeModels.shrinkWrap;
             ownerContext.setContentHeight(0);
+
+            
+            
+            
+            if (ownerContext.widthModel.shrinkWrap) {
+                lastSize = target.lastComponentSize;
+                ownerContext.setContentWidth((lastSize && lastSize.contentWidth) || 100);
+            }
         }
     },
 
@@ -68886,10 +69382,9 @@ Ext.define('Ext.layout.component.Tab', {
 
         
         
-        
         if (me.lastClosable !== closable) {
             me.lastClosable = closable;
-            delete me.adjWidth;
+            me.clearTargetCache();
         }
 
         me.callParent(arguments);
@@ -69341,13 +69836,13 @@ Ext.define('Ext.form.field.Base', {
     },
     
     beforeRender: function(){
-        var me = this,
-            readOnly = this.readOnly;
+        var me = this;
             
         me.callParent(arguments);
-        if (readOnly) {
+        me.beforeLabelableRender(arguments);
+        if (me.readOnly) {
             me.addCls(me.readOnlyCls);
-        }    
+        }
     },
 
     
@@ -69796,7 +70291,7 @@ Ext.define('Ext.form.field.Checkbox', {
     isCheckbox: true,
 
     
-    focusCls: Ext.baseCSSPrefix + 'form-cb-focus',
+    focusCls: 'form-cb-focus',
 
     
 
@@ -69926,18 +70421,18 @@ Ext.define('Ext.form.field.Checkbox', {
     
     setValue: function(checked) {
         var me = this,
-            boxes, b, bLen, box;
+            boxes, i, len, box;
 
         
         
         
         
         if (Ext.isArray(checked)) {
-            boxes = me.getManager().getByName(me.name).items;
-            bLen  = boxes.length;
+            boxes = me.getManager().getByName(me.name, me.getFormId()).items;
+            len = boxes.length;
 
-            for (b = 0; b < bLen; b++) {
-                box = boxes[b];
+            for (i = 0; i < len; ++i) {
+                box = boxes[i];
                 box.setValue(Ext.Array.contains(checked, box.inputValue));
             }
         } else {
@@ -69961,6 +70456,28 @@ Ext.define('Ext.form.field.Checkbox', {
             handler.call(me.scope || me, me, newVal);
         }
         me.callParent(arguments);
+    },
+    
+    resetOriginalValue: function( fromBoxInGroup){
+        var me = this,
+            boxes,
+            box,
+            len,
+            i;
+            
+        
+        if (!fromBoxInGroup) {
+            boxes = me.getManager().getByName(me.name, me.getFormId()).items;
+            len  = boxes.length;
+            
+            for (i = 0; i < len; ++i) {
+                box = boxes[i];
+                if (box !== me) {
+                    boxes[i].resetOriginalValue(true);
+                }
+            }
+        }
+        me.callParent();
     },
 
     
@@ -69992,6 +70509,19 @@ Ext.define('Ext.form.field.Checkbox', {
             inputEl.dom.disabled = !!readOnly || me.disabled;
         }
         me.callParent(arguments);
+    },
+
+    getFormId: function(){
+        var me = this,
+            form;
+
+        if (!me.formId) {
+            form = me.up('form');
+            if (form) {
+                me.formId = form.id;
+            }
+        }
+        return me.formId;
     }
 });
 
@@ -70002,7 +70532,9 @@ Ext.define('Ext.form.field.Display', {
     requires: ['Ext.util.Format', 'Ext.XTemplate'],
     alternateClassName: ['Ext.form.DisplayField', 'Ext.form.Display'],
     fieldSubTpl: [
-        '<div id="{id}" class="{fieldCls}">{value}</div>',
+        '<div id="{id}"',
+        '<tpl if="fieldStyle"> style="{fieldStyle}"</tpl>', 
+        ' class="{fieldCls}">{value}</div>',
         {
             compiled: true,
             disableFormats: true
@@ -70145,19 +70677,6 @@ Ext.define('Ext.form.field.Radio', {
         }
     },
     
-    getFormId: function(){
-        var me = this,
-            form;
-            
-        if (!me.formId) {
-            form = me.up('form');
-            if (form) {
-                me.formId = form.id;
-            }
-        }
-        return me.formId;
-    },
-    
     onRemoved: function(){
         this.callParent(arguments);
         this.formId = null;
@@ -70289,7 +70808,9 @@ Ext.define('Ext.layout.component.field.HtmlEditor', {
     },
 
     getLayoutItems: function () {
-        return [ this.owner.getToolbar() ];
+        var toolbar = this.owner.getToolbar();
+        
+        return toolbar ? [toolbar] : [];
     },
 
     getRenderTarget: function() {
@@ -70378,6 +70899,17 @@ Ext.define('Ext.layout.component.field.Text', {
     
     canGrowWidth: true,
 
+    beginLayoutCycle: function(ownerContext) {
+        var me = this;
+        
+        me.callParent(arguments);
+        
+        
+        if (ownerContext.shrinkWrap) {
+            ownerContext.inputContext.el.setStyle('height', '');
+        }
+    },
+
     measureContentWidth: function (ownerContext) {
         var me = this,
             owner = me.owner,
@@ -70409,7 +70941,7 @@ Ext.define('Ext.layout.component.field.Text', {
         return width;
     },
     
-    publishInnerHeight: function (ownerContext, height) {
+    publishInnerHeight: function(ownerContext, height) {
         ownerContext.inputContext.setHeight(height - this.measureLabelErrorHeight(ownerContext));
     },
 
@@ -70869,7 +71401,7 @@ Ext.define('Ext.form.field.Text', {
         var me = this,
             width;
 
-        me.callParent();
+        me.callParent(arguments);
         if (me.autoSizing) {
             width = me.inputEl.getWidth();
             if (width !== me.lastInputWidth) {
@@ -70911,7 +71443,7 @@ Ext.define('Ext.layout.component.field.TextArea', {
             value += owner.growAppend;
             
             
-            value = value.replace(/\n/g, '<br>');
+            value = value.replace(/\n/g, '<br/>');
 
             
             calcHeight = Ext.util.TextMetrics.measure(inputEl, value, curWidth).height +
@@ -71276,16 +71808,8 @@ Ext.define('Ext.form.field.Trigger', {
     componentLayout: 'triggerfield',
 
     initComponent: function() {
-        var me = this,
-            tempEl;
-
-        
-        if (!me.triggerWidth) {
-            Ext.form.field.Trigger.prototype.triggerWidth = (tempEl = Ext.getBody().createChild({style: 'position:absolute', cls: Ext.baseCSSPrefix + 'form-trigger'})).getWidth();
-            tempEl.remove();
-        }
-        me.wrapFocusCls = me.triggerWrapCls + '-focus';
-        me.callParent(arguments);
+        this.wrapFocusCls = this.triggerWrapCls + '-focus';
+        this.callParent(arguments);
     },
 
     getSubTplMarkup: function() {
@@ -71362,7 +71886,18 @@ Ext.define('Ext.form.field.Trigger', {
     
     beforeRender: function() {
         var me = this,
-            triggerBaseCls = me.triggerBaseCls;
+            triggerBaseCls = me.triggerBaseCls,
+            tempEl;
+            
+        
+        if (!me.triggerWidth) {
+            tempEl = Ext.getBody().createChild({
+                style: 'position: absolute;', 
+                cls: Ext.baseCSSPrefix + 'form-trigger'
+            });
+            Ext.form.field.Trigger.prototype.triggerWidth = tempEl.getWidth();
+            tempEl.remove();
+        }
 
         me.callParent();
 
@@ -71517,19 +72052,19 @@ Ext.define('Ext.form.field.Trigger', {
     
     mimicBlur: function(e) {
         if (!this.isDestroyed && !this.bodyEl.contains(e.target) && this.validateBlur(e)) {
-            this.triggerBlur();
+            this.triggerBlur(e);
         }
     },
 
     
-    triggerBlur: function() {
+    triggerBlur: function(e) {
         var me = this;
         me.mimicing = false;
         me.mun(me.doc, 'mousedown', me.mimicBlur, me);
         if (me.monitorTab && me.inputEl) {
             me.un('specialkey', me.checkTab, me);
         }
-        Ext.form.field.Trigger.superclass.onBlur.call(me);
+        Ext.form.field.Trigger.superclass.onBlur.call(me, e);
         if (me.bodyEl) {
             me.bodyEl.removeCls(me.wrapFocusCls);
         }
@@ -71930,7 +72465,8 @@ Ext.define('Ext.form.field.Picker', {
     
     collapseIf: function(e) {
         var me = this;
-        if (!me.isDestroyed && !e.within(me.bodyEl, false, true) && !e.within(me.picker.el, false, true)) {
+
+        if (!me.isDestroyed && !e.within(me.bodyEl, false, true) && !e.within(me.picker.el, false, true) && !me.isEventWithinPickerLoadMask(e)) {
             me.collapse();
         }
     },
@@ -71961,7 +72497,7 @@ Ext.define('Ext.form.field.Picker', {
         var me = this,
             picker = me.picker;
         
-        if (!picker || !e.within(picker.el, false, true)) {
+        if (!picker || !e.within(picker.el, false, true) && !me.isEventWithinPickerLoadMask(e)) {
             me.callParent(arguments);
         }
     },
@@ -71977,6 +72513,13 @@ Ext.define('Ext.form.field.Picker', {
             picker.destroy();
         }
         me.callParent();
+    },
+
+    
+    isEventWithinPickerLoadMask: function(e) {
+        var loadMask = this.picker.loadMask;
+
+        return loadMask ? e.within(loadMask.maskEl, false, true) || e.within(loadMask.el, false, true) : false;
     }
 
 });
@@ -72014,7 +72557,7 @@ Ext.define('Ext.form.field.Spinner', {
     onSpinDown: Ext.emptyFn,
 
     triggerTpl: '<td style="{triggerStyle}">' +
-                    '<div class="' + Ext.baseCSSPrefix + 'trigger-index-0 ' + Ext.baseCSSPrefix + 'form-trigger ' + Ext.baseCSSPrefix + 'form-spinner-up role="button"></div>' +
+                    '<div class="' + Ext.baseCSSPrefix + 'trigger-index-0 ' + Ext.baseCSSPrefix + 'form-trigger ' + Ext.baseCSSPrefix + 'form-spinner-up" role="button"></div>' +
                     '<div class="' + Ext.baseCSSPrefix + 'trigger-index-1 ' + Ext.baseCSSPrefix + 'form-trigger ' + Ext.baseCSSPrefix + 'form-spinner-down" role="button"></div>' +
                 '</td>' +
             '</tr>',
@@ -73000,6 +73543,11 @@ Ext.define('Ext.layout.container.Container', {
         return this.owner.getTargetEl();
     },
 
+    
+    getElementTarget: function() {
+        return this.getRenderTarget();
+    },
+
     getRenderTpl: function () {
         var me = this,
             renderTpl = Ext.XTemplate.getTpl(this, 'renderTpl');
@@ -73161,10 +73709,7 @@ Ext.define('Ext.layout.container.Auto', {
     renderTpl: [
         '{%this.renderBody(out,values)%}',
         
-        
-        
-        
-        '<div id="{ownerId}-clearEl" class="',Ext.baseCSSPrefix,'clear" role="presentation"></div>'
+        '<div id="{ownerId}-clearEl" class="', Ext.baseCSSPrefix, 'clear" role="presentation"></div>'
     ],
 
     
@@ -73348,7 +73893,6 @@ Ext.define('Ext.container.AbstractContainer', {
 
     
     prepareItems : function(items, applyDefaults) {
-
         
         
         if (Ext.isArray(items)) {
@@ -73364,11 +73908,18 @@ Ext.define('Ext.container.AbstractContainer', {
 
         for (; i < len; i++) {
             item = items[i];
-            if (applyDefaults) {
-                item = this.applyDefaults(item);
+            if (item == null) {
+                Ext.Array.erase(items, i, 1);
+                --i;
+                --len;
+            } else {
+                if (applyDefaults) {
+                    item = this.applyDefaults(item);
+                }
+                items[i] = this.lookupComponent(item);
             }
-            items[i] = this.lookupComponent(item);
         }
+
         return items;
     },
 
@@ -73757,7 +74308,7 @@ Ext.define('Ext.container.AbstractContainer', {
     
     
     getChildItemsToDisable: function(){
-        return this.query('[isFormField]');
+        return this.query('[isFormField],button');
     },
 
     
@@ -73791,54 +74342,19 @@ Ext.define('Ext.container.Container', {
     alternateClassName: 'Ext.Container',
     
     
-    statics: {
-        onContainerHide: function(fn, scope, options) {
-            var cls = this.prototype,
-                hide = cls.globalHideEvent;
-                
-            if (!hide) {
-                cls.globalHideEvent = hide = new Ext.util.Event();
-            }
-            hide.addListener(fn, scope, options);
-        },
-        
-        removeHideListener: function(fn, scope) {
-            var hide = this.prototype.globalHideEvent;
-            if (hide) {
-                hide.removeListener(fn, scope);
-            }
-        },
-        
-        fireHideEvent: function(container){
-            var hide = this.prototype.globalHideEvent;
-            if (hide) {
-                hide.fire(container);
-            }
-        },
-        
-        onContainerShow: function(fn, scope, options){
-             var cls = this.prototype,
-                show = cls.globalShowEvent;
-                
-            if (!show) {
-                cls.globalShowEvent = show = new Ext.util.Event();
-            }
-            show.addListener(fn, scope, options);
-        },
-        
-        removeShowListener: function(fn, scope){
-            var show = this.prototype.globalShowEvent;
-            if (show) {
-                show.removeListener(fn, scope);
-            }
-        },
-        
-        fireShowEvent: function(container){
-            var show = this.prototype.globalShowEvent;
-            if (show) {
-                show.fire(container);
-            }
-        }
+    fireHierarchyEvent: function (ename) {
+        this.hierarchyEventSource.fireEvent(ename, this);
+    },
+
+    
+    afterHide: function() {
+        this.callParent(arguments);
+        this.fireHierarchyEvent('hide');
+    },
+    
+    afterShow: function(){
+        this.callParent(arguments);
+        this.fireHierarchyEvent('show');
     },
 
     
@@ -73853,22 +74369,20 @@ Ext.define('Ext.container.Container', {
         for (; i < ln; i++) {
             item = it[i];
             itemEl = item.getEl();
-            if ((itemEl.dom === el) || itemEl.contains(el)) {
+            if (itemEl && ((itemEl.dom === el) || itemEl.contains(el))) {
                 return (deep && item.getChildByElement) ? item.getChildByElement(el, deep) : item;
             }
         }
         return null;
-    },
-    
-    afterHide: function() {
-        this.callParent(arguments);
-        this.statics().fireHideEvent(this);
-    },
-    
-    afterShow: function(){
-        this.callParent(arguments);
-        this.statics().fireShowEvent(this);
     }
+}, function () {
+    
+    this.hierarchyEventSource = this.prototype.hierarchyEventSource = new Ext.util.Observable({ events: {
+        hide: true,
+        show: true,
+        collapse: true,
+        expand: true
+    }});
 });
 
 
@@ -73907,17 +74421,20 @@ Ext.define('Ext.container.Viewport', {
 
     initComponent : function() {
         var me = this,
-            html = Ext.fly(document.body.parentNode),
+            html = document.body.parentNode,
             el;
 
         
         Ext.getScrollbarSize();
+        
+        
+        me.width = me.height = undefined;
 
         me.callParent(arguments);
-        html.addCls(Ext.baseCSSPrefix + 'viewport');
+        Ext.fly(html).addCls(Ext.baseCSSPrefix + 'viewport');
         if (me.autoScroll) {
             delete me.autoScroll;
-            html.setStyle('overflow', 'auto');
+            Ext.fly(html).setStyle('overflow', 'auto');
         }
         me.el = el = Ext.getBody();
         el.setHeight = Ext.emptyFn;
@@ -73993,6 +74510,11 @@ Ext.define('Ext.form.FieldContainer', {
         me.initFieldAncestor();
 
         me.callParent();
+    },
+
+    beforeRender: function(){
+        this.callParent(arguments);
+        this.beforeLabelableRender(arguments);
     },
 
     
@@ -74200,6 +74722,12 @@ Ext.define('Ext.form.FieldSet', {
         if (me.collapsed) {
             me.addCls(baseCls + '-collapsed');
             me.collapse();
+        }
+        if (me.title) {
+            me.addCls(baseCls + '-with-title');
+        }
+        if (me.title || me.checkboxToggle || me.collapsible) {
+            me.addCls(baseCls + '-with-legend');
         }
     },
 
@@ -74764,14 +75292,6 @@ Ext.define('Ext.layout.container.Absolute', {
         return true;
     },
 
-    
-    isValidParent : function(item, target, position) {
-        
-        
-        var itemEl = item.el ? item.el.dom : Ext.getDom(item);
-        return (itemEl && itemEl.parentNode === this.getRenderTarget().dom) || false;
-    },
-
     beginLayout: function (ownerContext) {
         var me = this,
             target = me.getTarget();
@@ -74795,6 +75315,693 @@ Ext.define('Ext.layout.container.Absolute', {
             return false;
         }
         return this.callParent(arguments);
+    }
+});
+
+
+Ext.define('Ext.layout.container.CheckboxGroup', {
+    extend: 'Ext.layout.container.Container',
+    alias: ['layout.checkboxgroup'],
+
+    
+    autoFlex: true,
+
+    type: 'checkboxgroup',
+
+    childEls: [
+        'innerCt'
+    ],
+
+    renderTpl: [
+        '<table id="{ownerId}-innerCt" role="presentation" style="{tableStyle}"><tbody><tr>',
+            '<tpl for="columns">',
+                '<td class="{parent.colCls}" valign="top" style="{style}">',
+                    '{% this.renderColumn(out,parent,xindex-1) %}',
+                '</td>',
+            '</tpl>',
+        '</tr></tbody></table>'
+    ],
+
+    beginLayout: function(ownerContext) {
+        var me = this,
+            columns,
+            numCols, numChildren,
+            childItems,
+            i, width, cwidth,
+            totalFlex = 0, flexedCols = 0,
+            autoFlex = me.autoFlex,
+            currGen = me.owner.items.generation,
+            innerCtStyle = me.innerCt.dom.style;
+
+        me.callParent(arguments);
+        childItems = ownerContext.childItems;
+
+        
+        
+        if (me.lastChildGeneration != currGen) {
+            me.lastChildGeneration = currGen;
+            me.fixColumns();
+        }
+
+        
+        
+        columns = me.columnEls;
+
+        ownerContext.innerCtContext = ownerContext.getEl('innerCt', me);
+
+        
+        if (!ownerContext.widthModel.shrinkWrap) {
+            numCols = columns.length;
+
+            
+            if (me.columnsArray) {
+
+                
+                for (i = 0; i < numCols; i++) {
+                    width = me.owner.columns[i];
+                    if (width < 1) {
+                        totalFlex += width;
+                        flexedCols++;
+                    }
+                }
+
+                
+                for (i = 0; i < numCols; i++) {
+                    width = me.owner.columns[i];
+                    if (width < 1) {
+                        cwidth = ((width / totalFlex) * 100) + '%';
+                    } else {
+                        cwidth = width + 'px';
+                    }
+                    columns[i].style.width = cwidth;
+                }
+            }
+
+            
+            else {
+                for (i = 0; i < numCols; i++) {
+                    
+                    
+                    
+                    cwidth = autoFlex
+                        ? (1 / numCols * 100) + '%'
+                        : '';
+                    columns[i].style.width = cwidth;
+                    flexedCols++;
+                }
+            }
+
+            
+            if (!flexedCols) {
+                innerCtStyle.tableLayout = 'fixed';
+                innerCtStyle.width = '';
+            
+            } else if (flexedCols < numCols) {
+                innerCtStyle.tableLayout = 'fixed';
+                innerCtStyle.width = '100%';
+            
+            } else {
+                innerCtStyle.tableLayout = 'auto';
+                
+                if (autoFlex) {
+                    innerCtStyle.width = '100%';
+                } else {
+                    innerCtStyle.width = '';
+                }
+            }
+
+        } else {
+            innerCtStyle.tableLayout = 'auto';
+            innerCtStyle.width = '';
+        }
+    },
+
+    cacheElements: function () {
+        var me = this;
+
+        
+        me.callParent();
+
+        
+        me.columnEls = me.innerCt.query('td.' + me.owner.groupCls);
+
+        
+        me.lastChildGeneration = me.owner.items.generation;
+    },
+
+    
+    calculate: function(ownerContext) {
+        var me = this,
+            targetContext, widthShrinkWrap, heightShrinkWrap, shrinkWrap, table, targetPadding;
+
+        
+        
+        if (!ownerContext.getDomProp('containerChildrenDone')) {
+            me.done = false;
+        } else {
+            targetContext = ownerContext.innerCtContext;
+            widthShrinkWrap = ownerContext.widthModel.shrinkWrap;
+            heightShrinkWrap = ownerContext.heightModel.shrinkWrap;
+            shrinkWrap = heightShrinkWrap || widthShrinkWrap;
+            table = targetContext.el.dom;
+            targetPadding = shrinkWrap && targetContext.getPaddingInfo();
+
+            if (widthShrinkWrap) {
+                ownerContext.setContentWidth(table.offsetWidth + targetPadding.width, true);
+            }
+
+            if (heightShrinkWrap) {
+                ownerContext.setContentHeight(table.offsetHeight + targetPadding.height, true);
+            }
+        }
+    },
+
+    doRenderColumn: function (out, renderData, columnIndex) {
+        
+        
+
+        var me = renderData.$layout,
+            owner = me.owner,
+            columnCount = renderData.columnCount,
+            items = owner.items.items,
+            itemCount = items.length,
+            item, itemIndex, rowCount, increment, tree;
+
+        
+        
+        
+
+        if (owner.vertical) {
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+
+            rowCount = Math.ceil(itemCount / columnCount); 
+            itemIndex = columnIndex * rowCount;
+            itemCount = Math.min(itemCount, itemIndex + rowCount);
+            increment = 1;
+        } else {
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+
+            itemIndex = columnIndex;
+            increment = columnCount;
+        }
+
+        for ( ; itemIndex < itemCount; itemIndex += increment) {
+            item = items[itemIndex];
+            me.configureItem(item);
+            tree = item.getRenderTree();
+            Ext.DomHelper.generateMarkup(tree, out);
+        }
+    },
+
+    
+    
+    fixColumns: function () {
+        var me = this,
+            owner = me.owner,
+            cfgCols = owner.columns,
+            columns = me.columnEls,
+            items = owner.items.items,
+            columnCount = columns.length,
+            itemCount = items.length,
+            columnIndex, i, rowCount, tr, td, newCount;
+
+        
+        
+        if ((!cfgCols || cfgCols == 'auto') && (itemCount > columnCount)) {
+
+            
+            newCount = itemCount - columnCount;
+            for (i = 0; i < newCount; i++) {
+                tr = me.innerCt.down('tr');
+                tr.createChild({
+                    cls: owner.groupCls,
+                    tag: 'td',
+                    vAlign: 'top'
+                });
+            }
+            me.cacheElements();
+            columns = me.columnEls;
+            columnCount = columns.length;
+        }
+
+        if (owner.vertical) {
+            columnIndex = -1; 
+            rowCount = Math.ceil(itemCount / columnCount);
+
+            for (i = 0; i < itemCount; ++i) {
+                if (i % rowCount === 0) {
+                    ++columnIndex;
+                }
+                columns[columnIndex].appendChild(items[i].el.dom);
+            }
+        } else {
+            for (i = 0; i < itemCount; ++i) {
+                columnIndex = i % columnCount;
+                columns[columnIndex].appendChild(items[i].el.dom);
+            }
+        }
+    },
+
+    
+    getColumnCount: function() {
+        var me = this,
+            owner = me.owner,
+            ownerColumns = owner.columns;
+
+        
+        
+        if (me.columnsArray) {
+            return ownerColumns.length;
+        }
+
+        if (Ext.isNumber(ownerColumns)) {
+            return ownerColumns;
+        }
+        return owner.items.length;
+    },
+
+    getItemSizePolicy: function (item) {
+        return this.autoSizePolicy;
+    },
+
+    getRenderData: function () {
+        var me = this,
+            data = me.callParent(),
+            owner = me.owner,
+            i, columns = me.getColumnCount(),
+            width, column, cwidth,
+            autoFlex = me.autoFlex,
+            totalFlex = 0, flexedCols = 0;
+
+        
+        if (me.columnsArray) {
+            for (i=0; i < columns; i++) {
+                width = me.owner.columns[i];
+                if (width < 1) {
+                    totalFlex += width;
+                    flexedCols++;
+                }
+            }
+        }
+
+        data.colCls = owner.groupCls;
+        data.columnCount = columns;
+
+        data.columns = [];
+        for (i = 0; i < columns; i++) {
+            column = (data.columns[i] = {});
+
+            if (me.columnsArray) {
+                width = me.owner.columns[i];
+                if (width < 1) {
+                    cwidth = ((width / totalFlex) * 100) + '%';
+                } else {
+                    cwidth = width + 'px';
+                }
+                column.style = 'width:' + cwidth;
+            } else {
+                column.style = 'width:' + (1 / columns * 100) + '%';
+                flexedCols++;
+            }
+        }
+
+        
+        data.tableStyle =
+            !flexedCols ? 'table-layout:fixed;' :
+            (flexedCols < columns) ? 'table-layout:fixed;width:100%' :
+            (autoFlex) ? 'table-layout:auto;width:100%' : 'table-layout:auto;';
+
+        return data;
+    },
+
+    
+    getRenderTarget: function() {
+        return this.innerCt;
+    },
+
+    initLayout: function () {
+        var me = this,
+            owner = me.owner;
+
+        me.columnsArray = Ext.isArray(owner.columns);
+        me.evenColumns = Ext.isNumber(owner.columns);
+
+        me.callParent();
+    },
+
+    
+    isValidParent: function() {
+        return true;
+    },
+
+    setupRenderTpl: function (renderTpl) {
+        this.callParent(arguments);
+
+        renderTpl.renderColumn = this.doRenderColumn;
+    }
+});
+
+Ext.define('Ext.form.CheckboxGroup', {
+    extend:'Ext.form.FieldContainer',
+    mixins: {
+        field: 'Ext.form.field.Field'
+    },
+    alias: 'widget.checkboxgroup',
+    requires: ['Ext.layout.container.CheckboxGroup', 'Ext.form.field.Base'],
+
+    
+
+    
+
+    
+    columns : 'auto',
+
+    
+    vertical : false,
+
+    
+    allowBlank : true,
+
+    
+    
+    blankText : "You must select at least one item in this group",
+    
+
+    
+    defaultType : 'checkboxfield',
+
+    
+    groupCls : Ext.baseCSSPrefix + 'form-check-group',
+
+    
+    fieldBodyCls: Ext.baseCSSPrefix + 'form-checkboxgroup-body',
+
+    
+    layout: 'checkboxgroup',
+
+    initComponent: function() {
+        var me = this;
+        me.callParent();
+        me.initField();
+    },
+
+    
+    initValue: function() {
+        var me = this,
+            valueCfg = me.value;
+        me.originalValue = me.lastValue = valueCfg || me.getValue();
+        if (valueCfg) {
+            me.setValue(valueCfg);
+        }
+    },
+
+    
+    onFieldAdded: function(field) {
+        var me = this;
+        if (field.isCheckbox) {
+            me.mon(field, 'change', me.checkChange, me);
+        }
+        me.callParent(arguments);
+    },
+
+    onFieldRemoved: function(field) {
+        var me = this;
+        if (field.isCheckbox) {
+            me.mun(field, 'change', me.checkChange, me);
+        }
+        me.callParent(arguments);
+    },
+
+    
+    isEqual: function(value1, value2) {
+        var toQueryString = Ext.Object.toQueryString;
+        return toQueryString(value1) === toQueryString(value2);
+    },
+
+    
+    getErrors: function() {
+        var errors = [];
+        if (!this.allowBlank && Ext.isEmpty(this.getChecked())) {
+            errors.push(this.blankText);
+        }
+        return errors;
+    },
+
+    
+    getBoxes: function(query) {
+        return this.query('[isCheckbox]' + (query||''));
+    },
+
+    
+    eachBox: function(fn, scope) {
+        Ext.Array.forEach(this.getBoxes(), fn, scope || this);
+    },
+
+    
+    getChecked: function() {
+        return this.getBoxes('[checked]');
+    },
+
+    
+    isDirty: function(){
+        var boxes = this.getBoxes(),
+            b ,
+            bLen  = boxes.length;
+
+        for (b = 0; b < bLen; b++) {
+            if (boxes[b].isDirty()) {
+                return true;
+            }
+        }
+    },
+
+    
+    setReadOnly: function(readOnly) {
+        var boxes = this.getBoxes(),
+            b,
+            bLen  = boxes.length;
+
+        for (b = 0; b < bLen; b++) {
+            boxes[b].setReadOnly(readOnly);
+        }
+
+        this.readOnly = readOnly;
+    },
+
+    
+    reset: function() {
+        var me = this,
+            hadError = me.hasActiveError(),
+            preventMark = me.preventMark;
+        me.preventMark = true;
+        me.batchChanges(function() {
+            var boxes = me.getBoxes(),
+                b,
+                bLen  = boxes.length;
+
+            for (b = 0; b < bLen; b++) {
+                boxes[b].reset();
+            }
+        });
+        me.preventMark = preventMark;
+        me.unsetActiveError();
+        if (hadError) {
+            me.updateLayout();
+        }
+    },
+
+    resetOriginalValue: function(){
+        var me    = this,
+            boxes = me.getBoxes(),
+            b,
+            bLen  = boxes.length;
+
+        for (b = 0; b < bLen; b++) {
+            boxes[b].resetOriginalValue();
+        }
+
+        me.originalValue = me.getValue();
+        me.checkDirty();
+    },
+
+
+    
+    setValue: function(value) {
+        var me    = this,
+            boxes = me.getBoxes(),
+            b,
+            bLen  = boxes.length,
+            box, name,
+            cbValue;
+
+        me.batchChanges(function() {
+            for (b = 0; b < bLen; b++) {
+                box = boxes[b];
+                name = box.getName();
+                cbValue = false;
+
+                if (value && value.hasOwnProperty(name)) {
+                    if (Ext.isArray(value[name])) {
+                        cbValue = Ext.Array.contains(value[name], box.inputValue);
+                    } else {
+                        
+                        cbValue = value[name];
+                    }
+                }
+
+                box.setValue(cbValue);
+            }
+        });
+        return me;
+    },
+
+
+    
+    getValue: function() {
+        var values = {},
+            boxes  = this.getBoxes(),
+            b,
+            bLen   = boxes.length,
+            box, name, inputValue, bucket;
+
+        for (b = 0; b < bLen; b++) {
+            box        = boxes[b];
+            name       = box.getName();
+            inputValue = box.inputValue;
+
+            if (box.getValue()) {
+                if (values.hasOwnProperty(name)) {
+                    bucket = values[name];
+                    if (!Ext.isArray(bucket)) {
+                        bucket = values[name] = [bucket];
+                    }
+                    bucket.push(inputValue);
+                } else {
+                    values[name] = inputValue;
+                }
+            }
+        }
+
+        return values;
+    },
+
+    
+    getSubmitData: function() {
+        return null;
+    },
+
+    
+    getModelData: function() {
+        return null;
+    },
+
+    validate: function() {
+        var me = this,
+            errors,
+            isValid,
+            wasValid;
+
+        if (me.disabled) {
+            isValid = true;
+        } else {
+            errors = me.getErrors();
+            isValid = Ext.isEmpty(errors);
+            wasValid = !me.hasActiveError();
+            if (isValid) {
+                me.unsetActiveError();
+            } else {
+                me.setActiveError(errors);
+            }
+        }
+        if (isValid !== wasValid) {
+            me.fireEvent('validitychange', me, isValid);
+            me.updateLayout();
+        }
+
+        return isValid;
+    }
+
+}, function() {
+
+    this.borrow(Ext.form.field.Base, ['markInvalid', 'clearInvalid']);
+
+});
+
+
+
+Ext.define('Ext.form.RadioGroup', {
+    extend: 'Ext.form.CheckboxGroup',
+    alias: 'widget.radiogroup',
+
+    
+    
+    allowBlank : true,
+    
+    
+    blankText : 'You must select one item in this group',
+    
+
+    
+    defaultType : 'radiofield',
+
+    
+    groupCls : Ext.baseCSSPrefix + 'form-radio-group',
+
+    getBoxes: function(query) {
+        return this.query('[isRadio]' + (query||''));
+    },
+    
+    checkChange: function() {
+        var value = this.getValue(),
+            key = Ext.Object.getKeys(value)[0];
+            
+        
+        
+        if (Ext.isArray(value[key])) {
+            return;
+        }
+        this.callParent(arguments);    
+    },
+
+    
+    setValue: function(value) {
+        var cbValue, first, formId, radios,
+            i, len, name;
+
+        if (Ext.isObject(value)) {
+            for (name in value) {
+                if (value.hasOwnProperty(name)) {
+                    cbValue = value[name];
+                    first = this.items.first();
+                    formId = first ? first.getFormId() : null;
+                    radios = Ext.form.RadioManager.getWithValue(name, cbValue, formId).items;
+                    len = radios.length;
+
+                    for (i = 0; i < len; ++i) {
+                        radios[i].setValue(true);
+                    }
+                }
+            }
+        }
+        return this;
     }
 });
 
@@ -74966,8 +76173,6 @@ Ext.define('Ext.layout.container.Column', {
     getRenderTarget : function() {
         return this.innerCt;
     }
-
-    
 });
 
 
@@ -75192,7 +76397,7 @@ Ext.define('Ext.Editor', {
                     me.cancelEdit();
                 }
                 if (field.triggerBlur) {
-                    field.triggerBlur();
+                    field.triggerBlur(event);
                 }
             }, 10);
         }
@@ -75207,7 +76412,7 @@ Ext.define('Ext.Editor', {
 
         me.completeEdit();
         me.boundEl = Ext.get(el);
-        value = Ext.isDefined(value) ? value : (me.boundEl.dom.innerText || me.boundEl.dom.innerHTML).trim();
+        value = Ext.isDefined(value) ? value : Ext.String.trim(me.boundEl.dom.innerText || me.boundEl.dom.innerHTML);
 
         if (!me.rendered) {
             me.render(me.parentEl || document.body);
@@ -75286,7 +76491,7 @@ Ext.define('Ext.Editor', {
         if (me.hideEl !== false) {
             me.boundEl.hide();
         }
-        me.fireEvent("startedit", me.boundEl, me.startValue);
+        me.fireEvent('startedit', me, me.boundEl, me.startValue);
     },
 
     
@@ -75316,12 +76521,18 @@ Ext.define('Ext.Editor', {
     },
 
     
-    onFieldBlur : function() {
-        var me = this;
+    onFieldBlur : function(field, e) {
+        var me = this,
+            target;
 
         
         if(me.allowBlur === true && me.editing && me.selectSameEditor !== true) {
             me.completeEdit();
+        }
+
+        
+        if (e && Ext.fly(target = e.getTarget()).focusable()) {
+            target.focus();
         }
     },
 
@@ -75545,27 +76756,55 @@ Ext.define('Ext.layout.container.Fit', {
        return this.sizePolicies[mode];
     },
 
-    beginLayout: function(ownerContext) {
+    beginLayoutCycle: function(ownerContext, firstCycle) {
         var me = this,
-            childItems,
-            length,
-            i = 0, itemContext;
+            widthModel = ownerContext.widthModel,
+            heightModel = ownerContext.heightModel,
+            childItems = ownerContext.childItems,
+            childWidthCalculated = !widthModel.shrinkWrap,
+            childHeightCalculated = !heightModel.shrinkWrap,
+            length = childItems.length,
+            clearItemSizes = (ownerContext.targetContext.el.dom.tagName.toUpperCase() === 'TD'),
+            i, invalidateOptions, itemContext, targetEl;
 
         me.callParent(arguments);
 
-        
-        
-        
-        if (ownerContext.targetContext.el.dom.tagName === 'TD') {
-            childItems = ownerContext.childItems;
-            length = childItems.length;
-            for (i = 0; i < length; ++i) {
-                itemContext = childItems[i];
+        for (i = 0; i < length; ++i) {
+            itemContext = childItems[i];
+
+            if (!firstCycle) {
+                if (itemContext.widthModel.calculated == childWidthCalculated) {
+                    invalidateOptions = null;
+                } else {
+                    invalidateOptions = {
+                        widthModel: childWidthCalculated ? me.sizeModels.calculated
+                                                         : itemContext.sizeModel.width
+                    };
+                }
+
+                if (itemContext.heightModel.calculated != childHeightCalculated) {
+                    (invalidateOptions || (invalidateOptions = {})).heightModel =
+                        childHeightCalculated ? me.sizeModels.calculated
+                                              : itemContext.sizeModel.height
+                }
+
+                if (invalidateOptions) {
+                    invalidateOptions.before = me.onBeforeInvalidateChild;
+                    itemContext.invalidate(invalidateOptions);
+                }
+            }
+
+            
+            
+            
+            
+            if (clearItemSizes) {
+                targetEl = itemContext.target.el.dom;
                 if (itemContext.heightModel.calculated) {
-                    itemContext.target.el.dom.style.height = '';
+                    targetEl.style.height = '';
                 }
                 if (itemContext.widthModel.calculated) {
-                    itemContext.target.el.dom.style.width = '';
+                    targetEl.style.width = '';
                 }
             }
         }
@@ -75605,9 +76844,9 @@ Ext.define('Ext.layout.container.Fit', {
             if (calcHeight) {
                 padHeight = padding.height;
             }
-            
         }
 
+        
         if (!ownerContext.setContentSize(info.contentWidth + padWidth, info.contentHeight + padHeight)) {
             me.done = false;
         }
@@ -75615,6 +76854,11 @@ Ext.define('Ext.layout.container.Fit', {
 
     fitItem: function (itemContext, info) {
         var me = this;
+
+        if (itemContext.invalid) {
+            me.done = false;
+            return;
+        }
 
         info.margins = itemContext.getMarginInfo();
         info.needed = info.got = 0;
@@ -75631,7 +76875,8 @@ Ext.define('Ext.layout.container.Fit', {
     fitItemWidth: function (itemContext, info) {
         
         if (info.ownerContext.widthModel.shrinkWrap) {
-            info.contentWidth = Math.max(info.contentWidth, itemContext.getProp('width'));
+            
+            info.contentWidth = Math.max(info.contentWidth, itemContext.getProp('width') + info.margins.width);
         } else if (itemContext.widthModel.calculated) {
             ++info.needed;
             if (info.targetSize.gotWidth) {
@@ -75645,7 +76890,8 @@ Ext.define('Ext.layout.container.Fit', {
 
     fitItemHeight: function (itemContext, info) {
         if (info.ownerContext.heightModel.shrinkWrap) {
-            info.contentHeight = Math.max(info.contentHeight, itemContext.getProp('height'));
+            
+            info.contentHeight = Math.max(info.contentHeight, itemContext.getProp('height') + info.margins.height);
         } else if (itemContext.heightModel.calculated) {
             ++info.needed;
             if (info.targetSize.gotHeight) {
@@ -75657,6 +76903,17 @@ Ext.define('Ext.layout.container.Fit', {
         this.positionItemY(itemContext, info);
     },
 
+    onBeforeInvalidateChild: function (itemContext, options) {
+        ++itemContext.context.progressCount;
+
+        if (options.widthModel) {
+            itemContext.widthModel = options.widthModel;
+        }
+        if (options.heightModel) {
+            itemContext.heightModel = options.heightModel;
+        }
+    },
+
     positionItemX: function (itemContext, info) {
         var margins = info.margins;
 
@@ -75665,6 +76922,11 @@ Ext.define('Ext.layout.container.Fit', {
         if (info.index || margins.left) {
             itemContext.setProp('x', margins.left);
         }
+
+        if (margins.width) {
+            
+            itemContext.setProp('margin-right', margins.width);
+        }
     },
 
     positionItemY: function (itemContext, info) {
@@ -75672,6 +76934,11 @@ Ext.define('Ext.layout.container.Fit', {
 
         if (info.index || margins.top) {
             itemContext.setProp('y', margins.top);
+        }
+
+        if (margins.height) {
+            
+            itemContext.setProp('margin-bottom', margins.height);
         }
     },
 
@@ -75706,12 +76973,37 @@ Ext.define('Ext.layout.container.Card', {
     deferredRender : false,
     
     getRenderTree: function () {
-        var me = this;
-        me.getActiveItem();
-        if (me.activeItem && me.deferredRender) {
-            return me.getItemsRenderTree([me.activeItem]);
-        } else {
-            return me.callParent(arguments);
+        var me = this,
+            activeItem = me.getActiveItem();
+
+        if (activeItem) {
+
+            
+            if (activeItem.hasListeners.beforeactivate && activeItem.fireEvent('beforeactivate', activeItem) === false) {
+ 
+                
+                
+                
+                activeItem = me.activeItem = me.owner.activeItem = null;
+            }
+            
+            
+            else if (activeItem.hasListeners.activate) {
+                activeItem.on({
+                    boxready: function() {
+                        activeItem.fireEvent('activate', activeItem);
+                    },
+                    single: true
+                });
+            }
+
+            if (me.deferredRender) {
+                if (activeItem) {
+                    return me.getItemsRenderTree([activeItem]);
+                }
+            } else {
+                return me.callParent(arguments);
+            }
         }
     },
 
@@ -75841,23 +77133,16 @@ Ext.define('Ext.layout.container.Card', {
         newIndex = owner.items.indexOf(newCard);
 
         
+        
         if (newIndex == -1) {
             newIndex = owner.items.items.length;
-            owner.add(newCard);
+            Ext.suspendLayouts();
+            newCard = owner.add(newCard);
+            Ext.resumeLayouts();
         }
 
         
         if (newCard && oldCard != newCard) {
-            
-            if (rendered && !newCard.rendered) {
-                
-                
-                
-                newCard.hidden = true;
-                me.renderItem(newCard, me.getRenderTarget(), owner.items.length);
-                me.afterRenderItem(newCard);
-            }
-
             
             if (newCard.fireEvent('beforeactivate', newCard, oldCard) === false) {
                 return false;
@@ -75866,8 +77151,14 @@ Ext.define('Ext.layout.container.Card', {
                 return false;
             }
 
-            Ext.suspendLayouts();
             if (rendered) {
+                Ext.suspendLayouts();
+
+                
+                if (!newCard.rendered) {
+                    me.renderItem(newCard, me.getRenderTarget(), owner.items.length);
+                }
+
                 if (oldCard) {
                     if (me.hideInactive) {
                         oldCard.hide();
@@ -75879,15 +77170,19 @@ Ext.define('Ext.layout.container.Card', {
                 if (newCard.hidden) {
                     newCard.show();
                 }
+
+                
+                if (!newCard.hidden) {
+                    me.activeItem = newCard;
+                }
+                Ext.resumeLayouts(true);
+            } else {
+                me.activeItem = newCard;
             }
-
-            me.activeItem = newCard;
-
-            Ext.resumeLayouts(true);
 
             newCard.fireEvent('activate', newCard, oldCard);
 
-            return newCard;
+            return me.activeItem;
         }
         return false;
     }
@@ -75911,9 +77206,11 @@ Ext.define('Ext.layout.container.Form', {
     manageOverflow: 2,
 
     childEls: ['formTable'],
+    
+    padRow: '<tr><td class="' + Ext.baseCSSPrefix + 'form-item-pad" colspan="3"></td></tr>',
 
     renderTpl: [
-        '<table id="{ownerId}-formTable" class="{tableCls}" style="width:100%" cellspacing="0" cellpadding="0">',
+        '<table id="{ownerId}-formTable" class="{tableCls}" style="width:100%" cellpadding="0">',
             '{%this.renderBody(out,values)%}',
         '</table>',
         '{%this.renderPadder(out,values)%}'
@@ -75953,8 +77250,6 @@ Ext.define('Ext.layout.container.Form', {
     getRenderTree: function() {
         var result = this.callParent(arguments),
             i = 0, len = result.length,
-            prefix = Ext.baseCSSPrefix,
-            children = '<tr><td class="' + prefix + 'form-item-pad" colspan="3"></td></tr>',
             item;
 
         for (; i < len; i++) {
@@ -75963,7 +77258,14 @@ Ext.define('Ext.layout.container.Form', {
                 item.tag = 'tbody';
                 delete item.cellspacing;
                 delete item.cellpadding;
-                item.cn = children;
+
+                
+                
+                
+                
+                if (Ext.isIE6) {
+                    item.cn = this.padRow;
+                }
             } else {
                 result[i] = {
                     tag: 'tbody',
@@ -76297,12 +77599,12 @@ Ext.define('Ext.layout.container.Table', {
 
         
         if (arguments.length === 3) {
-            table = item.el.up('table').dom;
-            return table && table.parentNode === target.dom;
+            table = item.el.up('table');
+            return table && table.dom.parentNode === target.dom;
         }
         tbody = this.owner.getTargetEl().child('table', true).tBodies[0];
         correctCell = tbody.rows[rowIdx].cells[cellIdx];
-        return target.dom === correctCell;
+        return item.el.dom.parentNode === correctCell;
     },
 
     
@@ -76350,11 +77652,10 @@ Ext.define('Ext.layout.container.boxOverflow.Scroller', {
     
 
     
-    
+
     constructor: function(layout, config) {
         var me = this;
 
-        layout.preserveParallel = true;
         me.layout = layout;
         Ext.apply(me, config || {});
 
@@ -76366,6 +77667,7 @@ Ext.define('Ext.layout.container.boxOverflow.Scroller', {
             'scroll'
         );
         me.scrollPosition = 0;
+        me.scrollSize = 0;
     },
 
     getPrefixConfig: function() {
@@ -76413,25 +77715,43 @@ Ext.define('Ext.layout.container.boxOverflow.Scroller', {
         me.afterScrollerCls  = me.afterScrollerCls  || prefix + type + '-scroll-' + rightName;
     },
 
+    beginLayout: function (ownerContext) {
+        var layout = this.layout,
+            names = layout.getNames();
+
+        ownerContext.innerCtScrollPos = layout.innerCt.dom['scroll' + names.leftCap];
+
+        this.callParent(arguments);
+    },
+
+    completeLayout: function (ownerContext) {
+        
+        this.scrollSize = ownerContext.props['content'+this.layout.getNames().widthCap];
+
+        this.callParent(arguments);
+    },
+    
+    finishedLayout: function(ownerContext) {
+        var me = this,
+            layout = me.layout,
+            names = layout.getNames(),
+            scrollPos = Math.min(me.getMaxScrollPosition(), ownerContext.innerCtScrollPos);
+
+        layout.innerCt.dom['scroll' + names.leftCap] = scrollPos;
+    },
+
     handleOverflow: function(ownerContext) {
         var me = this,
             layout = me.layout,
             names = layout.getNames(),
-            methodName = 'get' + names.widthCap,
-            result;
+            methodName = 'get' + names.widthCap;
 
         me.captureChildElements();
         me.showScrollers();
-        me.reservedSpace = me.beforeCt[methodName]() + me.afterCt[methodName]();
-        result = {
-            reservedSpace: me.reservedSpace
+
+        return {
+            reservedSpace: me.beforeCt[methodName]() + me.afterCt[methodName]()
         };
-
-
-
-        me.reservedSpace = 0;
-
-        return result;
     },
 
     
@@ -76481,7 +77801,9 @@ Ext.define('Ext.layout.container.boxOverflow.Scroller', {
     },
 
     
-    clearOverflow: function() {
+    clearOverflow: function () {
+        var layout = this.layout;
+
         this.hideScrollers();
     },
 
@@ -76554,7 +77876,7 @@ Ext.define('Ext.layout.container.boxOverflow.Scroller', {
 
     
     atExtremeBefore: function() {
-        return this.getScrollPosition() === 0;
+        return !this.getScrollPosition();
     },
 
     
@@ -76584,13 +77906,12 @@ Ext.define('Ext.layout.container.boxOverflow.Scroller', {
 
     
     getMaxScrollPosition: function() {
-        var layout = this.layout,
+        var me = this,
+            layout = me.layout,
             names = layout.getNames(),
-            widthName = names.widthCap;
+            maxScrollPos = me.scrollSize - layout.innerCt['get'+names.widthCap]();
 
-        
-        
-        return layout.innerCt.dom['scroll' + widthName] - (this.layout.innerCt['get' + widthName]() - (this.reservedSpace || 0));
+        return (maxScrollPos < 0) ? 0 : maxScrollPos;
     },
 
     
@@ -76663,6 +77984,7 @@ Ext.define('Ext.layout.container.boxOverflow.Scroller', {
         };
     }
 });
+
 
 Ext.define('Ext.menu.Item', {
     extend: 'Ext.Component',
@@ -76775,11 +78097,11 @@ Ext.define('Ext.menu.Item', {
     deferExpandMenu: function() {
         var me = this;
 
-        if (!me.menu.rendered || !me.menu.isVisible()) {
+        if (me.activated && (!me.menu.rendered || !me.menu.isVisible())) {
             me.parentMenu.activeChild = me.menu;
             me.menu.parentItem = me;
             me.menu.parentMenu = me.menu.ownerCt = me.parentMenu;
-            me.menu.showBy(me, me.menuAlign, ((!Ext.isStrict && Ext.isIE) || Ext.isIE6) ? [-2, -2] : undefined);
+            me.menu.showBy(me, me.menuAlign);
         }
     },
 
@@ -76797,10 +78119,12 @@ Ext.define('Ext.menu.Item', {
         var ancestor;
         Ext.menu.Manager.hideAll();
 
-        
-        ancestor = this.up(':not([hidden])');
-        if (ancestor) {
-            ancestor.focus();
+        if (!Ext.Element.getActiveElement()) {
+            
+            ancestor = this.up(':not([hidden])');
+            if (ancestor) {
+                ancestor.focus();
+            }
         }
     },
 
@@ -76894,6 +78218,18 @@ Ext.define('Ext.menu.Item', {
         if (!me.hideOnClick) {
             me.focus();
         }
+    },
+
+    onRemoved: function() {
+        var me = this;
+
+        
+        if (me.activated && me.parentMenu.activeItem === me) {
+            me.parentMenu.deactivateActiveItem();
+        }
+        me.callParent(arguments);
+        delete me.parentMenu;
+        delete me.ownerButton;
     },
 
     
@@ -78260,7 +79596,7 @@ Ext.define('Ext.button.Button', {
         if (size === undef) {
             side = me.arrowAlign;
             sideFirstLetter = side.charAt(0);
-            size = me.triggerSize = me.el.getFrameWidth(sideFirstLetter) + me.btnWrap.getFrameWidth(sideFirstLetter) + (me.frameSize && me.frameSize[side] || 0);
+            size = me.triggerSize = me.el.getFrameWidth(sideFirstLetter) + me.btnWrap.getFrameWidth(sideFirstLetter) + me.frameSize[side];
         }
         return size;
     },
@@ -78318,6 +79654,12 @@ Ext.define('Ext.button.Button', {
         }
         me.addClsWithUI('disabled');
         me.removeClsWithUI(me.overCls);
+
+        
+        
+        if (me.btnInnerEl && (Ext.isIE6 || Ext.isIE7)) {
+            me.btnInnerEl.repaint();
+        }
 
         return me;
     },
@@ -78806,6 +80148,25 @@ Ext.define('Ext.panel.DD', {
         x -= this.startPageX;
         y -= this.startPageY;
         this.setDelta(x, y);
+    },
+    
+    
+    
+    onInvalidDrop: function(target, e, id) {
+        var me = this;
+        
+        me.beforeInvalidDrop(target, e, id);
+        if (me.cachedTarget) {
+            if(me.cachedTarget.isNotifyTarget){
+                me.cachedTarget.notifyOut(me, e, me.dragData);
+            }
+            me.cacheTarget = null;
+        }
+
+        if (me.afterInvalidDrop) {
+            
+            me.afterInvalidDrop(e, id);
+        }
     }
 });
 
@@ -78830,7 +80191,7 @@ Ext.define('Ext.panel.Header', {
 
     renderTpl: [
         '<div id="{id}-body" class="{baseCls}-body {bodyCls}',
-        '<tpl for="uiCls"> {parent.baseCls}-body-{parent.ui}-{.}"</tpl>',
+        '<tpl for="uiCls"> {parent.baseCls}-body-{parent.ui}-{.}</tpl>"',
         '<tpl if="bodyStyle"> style="{bodyStyle}"</tpl>>',
             '{%this.renderContainer(out,values)%}',
         '</div>'
@@ -78853,6 +80214,14 @@ Ext.define('Ext.panel.Header', {
             style,
             ui,
             tempEl;
+            
+        me.addEvents(
+            
+            'click',
+            
+            
+            'dblclick'
+        );
 
         me.indicateDragCls = me.baseCls + '-draggable';
         me.title = me.title || '&#160;';
@@ -78965,6 +80334,7 @@ Ext.define('Ext.panel.Header', {
         me.callParent();
         
         me.on({
+            dblclick: me.onDblClick,
             click: me.onClick,
             element: 'el',
             scope: me
@@ -79101,9 +80471,18 @@ Ext.define('Ext.panel.Header', {
     },
 
     onClick: function(e) {
-        if (!e.getTarget(Ext.baseCSSPrefix + 'tool')) {
-            this.fireEvent('click', e);
-        }
+        this.fireClickEvent('click', e);
+    },
+    
+    onDblClick: function(e){
+        this.fireClickEvent('dblclick', e);
+    },
+    
+    fireClickEvent: function(type, e){
+        var toolCls = '.' + Ext.panel.Tool.prototype.baseCls;
+        if (!e.getTarget(toolCls)) {
+            this.fireEvent(type, this, e);
+        }    
     },
 
     getFocusEl: function() {
@@ -79395,22 +80774,27 @@ Ext.define('Ext.picker.Color', {
 
 Ext.define('Ext.picker.Month', {
     extend: 'Ext.Component',
-    requires: ['Ext.XTemplate', 'Ext.util.ClickRepeater', 'Ext.Date', 'Ext.button.Button'],
+    requires: [
+        'Ext.XTemplate', 
+        'Ext.util.ClickRepeater', 
+        'Ext.Date', 
+        'Ext.button.Button'
+    ],
     alias: 'widget.monthpicker',
     alternateClassName: 'Ext.MonthPicker',
 
     childEls: [
-        'bodyEl', 'prevEl', 'nextEl', 'buttonsEl'
+        'bodyEl', 'prevEl', 'nextEl', 'buttonsEl', 'monthEl', 'yearEl'
     ],
 
     renderTpl: [
         '<div id="{id}-bodyEl" class="{baseCls}-body">',
-          '<div class="{baseCls}-months">',
+          '<div id="{id}-monthEl" class="{baseCls}-months">',
               '<tpl for="months">',
-                  '<div class="{parent.baseCls}-item {parent.baseCls}-month"><a href="#" hidefocus="on">{.}</a></div>',
+                  '<div class="{parent.baseCls}-item {parent.baseCls}-month"><a style="{parent.monthStyle}" href="#" hidefocus="on">{.}</a></div>',
               '</tpl>',
           '</div>',
-          '<div class="{baseCls}-years">',
+          '<div id="{id}-yearEl" class="{baseCls}-years">',
               '<div class="{baseCls}-yearnav">',
                   '<button id="{id}-prevEl" class="{baseCls}-yearnav-prev"></button>',
                   '<button id="{id}-nextEl" class="{baseCls}-yearnav-next"></button>',
@@ -79445,7 +80829,11 @@ Ext.define('Ext.picker.Month', {
     
 
     
+    
+    
     width: 178,
+    measureWidth: 35,
+    measureMaxHeight: 20,
 
     
     smallCls: Ext.baseCSSPrefix + 'monthpicker-small',
@@ -79496,18 +80884,25 @@ Ext.define('Ext.picker.Month', {
             i = 0,
             months = [],
             shortName = Ext.Date.getShortMonthName,
-            monthLen = me.monthOffset;
+            monthLen = me.monthOffset,
+            margin = me.monthMargin,
+            style = '';
 
         me.callParent();
 
         for (; i < monthLen; ++i) {
             months.push(shortName(i), shortName(i + monthLen));
         }
+        
+        if (Ext.isDefined(margin)) {
+            style = 'margin: 0 ' + margin + 'px;';
+        }
 
         Ext.apply(me.renderData, {
             months: months,
             years: me.getYears(),
-            showButtons: me.showButtons
+            showButtons: me.showButtons,
+            monthStyle: style
         });
     },
 
@@ -79551,6 +80946,40 @@ Ext.define('Ext.picker.Month', {
         });
         me.nextEl.addClsOnOver(me.baseCls + '-yearnav-next-over');
         me.updateBody();
+        
+        if (!Ext.isDefined(me.monthMargin)) {
+            Ext.picker.Month.prototype.monthMargin = me.calculateMonthMargin();
+        }
+    },
+    
+    calculateMonthMargin: function(){
+        
+        
+        
+        
+        var me = this,
+            monthEl = me.monthEl,
+            months = me.months,
+            first = months.first(),
+            itemMargin = first.getMargin('l');
+            
+        while (itemMargin && me.getLargest() > me.measureMaxHeight) {
+            --itemMargin;
+            months.setStyle('margin', '0 ' + itemMargin + 'px');
+        }
+        return itemMargin;
+    },
+    
+    getLargest: function(months){
+        var largest = 0;
+        this.months.each(function(item){
+            var h = item.getHeight();
+            if (h > largest) {
+                largest = h;
+            }
+        });
+        return largest;
+        
     },
 
     
@@ -79778,7 +81207,7 @@ Ext.define('Ext.picker.Date', {
         '</div>',
         {
             firstInitial: function(value) {
-                return value.substr(0,1);
+                return Ext.picker.Date.prototype.getDayInitial(value);
             },
             isEndOfWeek: function(value) {
                 
@@ -79859,6 +81288,11 @@ Ext.define('Ext.picker.Date', {
     
     
     monthYearText : 'Choose a month (Control+Up/Down to move years)',
+    
+    
+    
+    
+    monthYearFormat: 'F Y',
     
 
     
@@ -80158,6 +81592,13 @@ Ext.define('Ext.picker.Date', {
     },
 
     
+    
+    getDayInitial: function(value){
+        return value.substr(0,1);
+    },
+    
+
+    
     focus : function(){
         this.update(this.activeDate);
     },
@@ -80344,9 +81785,9 @@ Ext.define('Ext.picker.Date', {
 
         e.stopEvent();
         if(!me.disabled && t.dateValue && !Ext.fly(t.parentNode).hasCls(me.disabledCellCls)){
-            me.cancelFocus = me.focusOnSelect === false;
+            me.doCancelFocus = me.focusOnSelect === false;
             me.setValue(new Date(t.dateValue));
-            delete me.cancelFocus;
+            delete me.doCancelFocus;
             me.fireEvent('select', me, me.value);
             if (handler) {
                 handler.call(me.scope || me, me, me.value);
@@ -80403,7 +81844,7 @@ Ext.define('Ext.picker.Date', {
                 me.fireEvent('highlightitem', me, cell);
                 cell.addCls(cls);
 
-                if(me.isVisible() && !me.cancelFocus){
+                if(me.isVisible() && !me.doCancelFocus){
                     Ext.fly(cell.dom.firstChild).focus(50);
                 }
 
@@ -80525,7 +81966,7 @@ Ext.define('Ext.picker.Date', {
             setCellClass(cells[i]);
         }
 
-        me.monthBtn.setText(me.monthNames[date.getMonth()] + ' ' + date.getFullYear());
+        me.monthBtn.setText(Ext.Date.format(date, me.monthYearFormat));
     },
 
     
@@ -80584,6 +82025,7 @@ function() {
     proto.format     = date.defaultFormat;
 });
 
+
 Ext.define('Ext.form.field.Date', {
     extend:'Ext.form.field.Picker',
     alias: 'widget.datefield',
@@ -80630,7 +82072,7 @@ Ext.define('Ext.form.field.Date', {
     
     
     
-    useStrict: false,
+    useStrict: undefined,
 
     
     
@@ -80772,7 +82214,7 @@ Ext.define('Ext.form.field.Date', {
         svalue = value;
         value = me.parseDate(value);
         if (!value) {
-            errors.push(format(me.invalidText, svalue, me.format));
+            errors.push(format(me.invalidText, svalue, Ext.Date.unescapeFormat(me.format)));
             return errors;
         }
 
@@ -81136,6 +82578,7 @@ Ext.define('Ext.resizer.BorderSplitterTracker', {
             
             
             adjustTarget: function (target, size, delta) {
+                target.flex = null;
                 target.setSize(size + delta);
             }
         },
@@ -81145,6 +82588,7 @@ Ext.define('Ext.resizer.BorderSplitterTracker', {
             
             
             adjustTarget: function (target, targetSize, delta) {
+                target.flex = null;
                 target.setSize(undefined, targetSize + delta);
             }
         }
@@ -81193,7 +82637,7 @@ Ext.define('Ext.resizer.Splitter', {
     renderTpl: [
         '<tpl if="collapsible===true">',
             '<div id="{id}-collapseEl" class="', Ext.baseCSSPrefix, 'collapse-el ',
-                Ext.baseCSSPrefix, 'layout-split-{collapseDir}">&nbsp;</div>',
+                Ext.baseCSSPrefix, 'layout-split-{collapseDir}">&#160;</div>',
         '</tpl>'
     ],
 
@@ -81469,14 +82913,10 @@ Ext.define('Ext.layout.container.Border', {
             props = me.axisProps[name],
             isVert = !props.horizontal,
             sizeProp = props.sizeProp,
-            count = 0,
             totalFlex = 0,
-            percentageCount = 0,
-            flexedCount = 0,
-            nonFlexedCount = 0,
             childItems = ownerContext.childItems,
             length = childItems.length,
-            center, i, childContext, centerFlex, comp, flex, region, match, size, type;
+            center, i, childContext, centerFlex, comp, region, match, size, type, target, placeholder;
 
         for (i = 0; i < length; ++i) {
             childContext = childItems[i];
@@ -81491,8 +82931,15 @@ Ext.define('Ext.layout.container.Border', {
                 childContext.isHorz = comp.isHorz;
                 childContext.isVert = comp.isVert;
 
+                childContext.weight = comp.weight || me.regionWeights[region] || 0;
+                regions[comp.id] = childContext;
+
                 if (comp.isCenter) {
                     center = childContext;
+                    centerFlex = comp.flex;
+                    ownerContext.centerRegion = center;
+
+                    continue;
                 }
 
                 if (isVert !== childContext.isVert) {
@@ -81501,73 +82948,47 @@ Ext.define('Ext.layout.container.Border', {
 
                 
 
-                if (childContext.isCenter) {
-                    ownerContext.centerRegion = childContext;
-                } else {
-                    childContext.reverseWeighting = (region == props.borderEnd);
-                }
+                childContext.reverseWeighting = (region == props.borderEnd);
 
-                regions[comp.id] = childContext;
-
-                childContext.weight = comp.weight || me.regionWeights[region] || 0;
-
-                ++count;
                 size = comp[sizeProp];
                 type = typeof size;
 
-                if (comp.collapsed || comp.placeholderFor) {
-                    if (!childContext.isCenter) {
-                        ++nonFlexedCount;
+                if (!comp.collapsed) {
+                    if (type == 'string' && (match = me.percentageRe.exec(size))) {
+                        childContext.percentage = parseInt(match[1], 10);
+                    } else if (comp.flex) {
+                        totalFlex += childContext.flex = comp.flex;
                     }
-                } else if (type == 'string' && (match = me.percentageRe.exec(size))) {
-                    childContext.flex = flex = parseInt(match[1], 10) / 100;
-                    childContext.percentageSize = true;
-
-                    if (childContext.isCenter) {
-                        centerFlex = flex;
-                    }
-
-                    totalFlex += flex;
-
-                    ++percentageCount;
-                } else if (type != 'number' && comp.flex && (isVert ? childContext.isVert: !childContext.isVert)) {
-                    childContext.flex = flex = comp.flex;
-
-                    if (childContext.isCenter) {
-                        centerFlex = flex;
-                    }
-
-                    totalFlex += flex;
-
-                    ++flexedCount;
-                } else if (!childContext.isCenter) {
-                    ++nonFlexedCount;
                 }
             }
         }
 
-        if (!centerFlex) {
-            if (percentageCount || totalFlex < 1) {
+        
+        if (center) {
+            target = center.target;
+
+            if (placeholder = target.placeholderFor) {
+                if (!centerFlex && isVert === placeholder.collapsedVertical()) {
+                    
+                    centerFlex = 0;
+                    center.collapseAxis = name;
+                }
+            } else if (target.collapsed && (isVert === target.collapsedVertical())) {
                 
-                centerFlex = 1 - totalFlex;
-                totalFlex = 1;
-            } else if (flexedCount) {
-                centerFlex = totalFlex / flexedCount;
-                totalFlex += centerFlex;
-            } else {
-                centerFlex = totalFlex = 1;
+                centerFlex = 0;
+                center.collapseAxis = name;
             }
         }
 
-        if (center && center.target.collapsed && isVert == center.collapsedVert) {
-            totalFlex -= centerFlex;
+        if (centerFlex == null) {
+            
+            centerFlex = 1;
         }
+
+        totalFlex += centerFlex;
 
         return Ext.apply({
             before         : isVert ? 'top' : 'left',
-            count          : count,
-            centerFlex     : centerFlex,
-            nonFlexedCount : nonFlexedCount,
             totalFlex      : totalFlex
         }, props);
     },
@@ -81648,14 +83069,14 @@ Ext.define('Ext.layout.container.Border', {
             vert = ownerContext.borderAxisVert,
             pad = ownerContext.outerPad,
             padOnContainer = ownerContext.padOnContainer,
-            i, childContext, childMargins;
+            i, childContext, childMargins, size, horzPercentTotal, vertPercentTotal;
 
         horz.begin = pad.left;
         vert.begin = pad.top;
         
         
-        horz.end = horz.flexSpace = containerSize.width + (padOnContainer ? pad.left : -pad.right);
-        vert.end = vert.flexSpace = containerSize.height + (padOnContainer ? pad.top : -pad.bottom);
+        horzPercentTotal = horz.end = horz.flexSpace = containerSize.width + (padOnContainer ? pad.left : -pad.right);
+        vertPercentTotal = vert.end = vert.flexSpace = containerSize.height + (padOnContainer ? pad.top : -pad.bottom);
 
         
         
@@ -81664,18 +83085,60 @@ Ext.define('Ext.layout.container.Border', {
             childMargins = childContext.getMarginInfo();
 
             
-            horz.addUnflexed(childMargins.width);
-            vert.addUnflexed(childMargins.height);
+            if (childContext.isHorz || childContext.isCenter) {
+                horz.addUnflexed(childMargins.width);
+                horzPercentTotal -= childMargins.width;
+            }
 
-            if (!childContext.flex) {
-                if (childContext.isHorz) {
-                    horz.addUnflexed(childContext.getProp('width'));
-                } else if (childContext.isVert) {
-                    vert.addUnflexed(childContext.getProp('height'));
+            if (childContext.isVert || childContext.isCenter) {
+                vert.addUnflexed(childMargins.height);
+                vertPercentTotal -= childMargins.height;
+            }
+
+            
+            if (!childContext.flex && !childContext.percentage) {
+                if (childContext.isHorz || (childContext.isCenter && childContext.collapseAxis === 'horz')) {
+                    size = childContext.getProp('width');
+
+                    horz.addUnflexed(size);
+
+                    
+                    if (childContext.collapseTarget) {
+                        horzPercentTotal -= size;
+                    }
+                } else if (childContext.isVert || (childContext.isCenter && childContext.collapseAxis === 'vert')) {
+                    size = childContext.getProp('height');
+
+                    vert.addUnflexed(size);
+
+                    
+                    if (childContext.collapseTarget) {
+                        vertPercentTotal -= size;
+                    }
                 }
                 
             }
         }
+
+        for (i = 0; i < length; ++i) {
+            childContext = childItems[i];
+            childMargins = childContext.getMarginInfo();
+
+            
+            if (childContext.percentage) {
+                if (childContext.isHorz) {
+                    size = Math.ceil(horzPercentTotal * childContext.percentage / 100);
+                    size = childContext.setWidth(size);
+                    horz.addUnflexed(size);
+                } else if (childContext.isVert) {
+                    size = Math.ceil(vertPercentTotal * childContext.percentage / 100);
+                    size = childContext.setHeight(size);
+                    vert.addUnflexed(size);
+                }
+                
+            }
+        }
+
 
         
         
@@ -81706,8 +83169,8 @@ Ext.define('Ext.layout.container.Border', {
     calculateChildAxis: function (childContext, axis) {
         var collapseTarget = childContext.collapseTarget,
             setSizeMethod = 'set' + axis.sizePropCap,
-            childMarginSize = childContext.getMarginInfo()[axis.sizeProp],
-            childMarginBefore = childContext.getMarginInfo()[axis.before],
+            sizeProp = axis.sizeProp,
+            childMarginSize = childContext.getMarginInfo()[sizeProp],
             region, isBegin, flex, pos, size;
 
         if (collapseTarget) { 
@@ -81727,10 +83190,14 @@ Ext.define('Ext.layout.container.Border', {
         } else {
             if (flex) {
                 size = Math.ceil(axis.flexSpace * (flex / axis.totalFlex));
-                size = childContext[setSizeMethod](size - childMarginSize);
+                size = childContext[setSizeMethod](size);
+            } else if (childContext.percentage) {
+                
+                size = childContext.peek(sizeProp);
             } else {
-                size = childContext.getProp(axis.sizeProp);
+                size = childContext.getProp(sizeProp);
             }
+
             size += childMarginSize;
 
             if (isBegin) {
@@ -81771,7 +83238,7 @@ Ext.define('Ext.layout.container.Border', {
     },
 
     getPlaceholder: function (comp) {
-        return comp.createPlaceholder();
+        return comp.getPlaceholder && comp.getPlaceholder();
     },
 
     getSplitterTarget: function (splitter) {
@@ -81782,6 +83249,14 @@ Ext.define('Ext.layout.container.Border', {
         }
 
         return collapseTarget;
+    },
+
+    isItemBoxParent: function (itemContext) {
+        return true;
+    },
+
+    isItemShrinkWrap: function (item) {
+        return true;
     },
 
     
@@ -81878,7 +83353,7 @@ Ext.define('Ext.layout.container.Border', {
             }
         }
 
-        this.callParent(arguments);
+        me.callParent(arguments);
     },
 
     
@@ -82037,13 +83512,21 @@ Ext.define('Ext.selection.CellModel', {
     alias: 'selection.cellmodel',
     requires: ['Ext.util.KeyNav'],
 
+    isCellModel: true,
+
     
     enableKeyNav: true,
 
     
     preventWrap: false,
 
-    constructor: function(){
+    
+    noSelection: {
+        row: -1,
+        column: -1
+    },
+
+    constructor: function() {
         this.addEvents(
             
             'deselect',
@@ -82101,51 +83584,92 @@ Ext.define('Ext.selection.CellModel', {
     },
 
     onKeyUp: function(e, t) {
+        this.keyNavigation = true;
         this.move('up', e);
+        this.keyNavigation = false;
     },
 
     onKeyDown: function(e, t) {
+        this.keyNavigation = true;
         this.move('down', e);
+        this.keyNavigation = false;
     },
 
     onKeyLeft: function(e, t) {
+        this.keyNavigation = true;
         this.move('left', e);
+        this.keyNavigation = false;
     },
 
     onKeyRight: function(e, t) {
+        this.keyNavigation = true;
         this.move('right', e);
+        this.keyNavigation = false;
     },
 
     move: function(dir, e) {
         var me = this,
             pos = me.primaryView.walkCells(me.getCurrentPosition(), dir, e, me.preventWrap);
         if (pos) {
-            me.setCurrentPosition(pos);
+            return me.setCurrentPosition(pos);
         }
-        return pos;
     },
 
     
     getCurrentPosition: function() {
-        return this.position;
+        return this.selection;
     },
 
     
     setCurrentPosition: function(pos) {
         var me = this;
 
-        if (me.position) {
-            me.onCellDeselect(me.position);
+        
+        me.lastSelection = me.selection;
+        if (me.selection) {
+            me.onCellDeselect(me.selection);
         }
-        me.position = pos;
+
         if (pos) {
-            me.onCellSelect(pos);
+            me.nextSelection = new me.Selection(me);
+            me.nextSelection.setPosition(pos);
+            me.onCellSelect(me.nextSelection);
+
+            
+            return me.selection = me.nextSelection;
+        }
+    },
+
+    
+    onStoreRemove: function(store, record, index) {
+        var me = this,
+            pos = me.getCurrentPosition();
+
+        me.callParent(arguments);
+        if (pos) {
+            
+            
+            if (pos.row == index) {
+                if (index < store.getCount() - 1) {
+                    pos.setPosition(index, pos.column);
+                    me.setCurrentPosition(pos);
+                } else {
+                    delete me.selection;
+                }
+            }
+            
+            
+            else if (index < pos.row) {
+                pos.setPosition(pos.row - 1, pos.column);
+                me.setCurrentPosition(pos);
+            }
         }
     },
 
     
     onMouseDown: function(view, cell, cellIndex, record, row, rowIndex, e) {
         this.setCurrentPosition({
+            view: view,
             row: rowIndex,
             column: cellIndex
         });
@@ -82153,33 +83677,42 @@ Ext.define('Ext.selection.CellModel', {
 
     
     
-    onCellSelect: function(position) {
-        this.doSelect(this.view.getStore().getAt(position.row));
+    onCellSelect: function(position, supressEvent) {
+        if (position && position.row !== undefined) {
+            this.doSelect(this.view.getStore().getAt(position.row), false, supressEvent);
+        }
     },
 
     
     
-    onCellDeselect: function(position) {
-        this.doDeselect(this.view.getStore().getAt(position.row));
+    onCellDeselect: function(position, supressEvent) {
+        if (position && position.row !== undefined) {
+            this.doDeselect(this.view.getStore().getAt(position.row), supressEvent);
+        }
     },
-    
+
     onSelectChange: function(record, isSelected, suppressEvent, commitFn) {
         var me = this,
-            store = me.store,
-            pos = me.position,
-            eventName = isSelected ? 'select' : 'deselect',
+            pos,
+            eventName,
             view = me.primaryView;
 
+        if (isSelected) {
+            pos = me.nextSelection;
+            eventName = 'select';
+        } else {
+            pos = me.lastSelection || me.noSelection;
+            eventName = 'deselect';
+        }
         if ((suppressEvent || me.fireEvent('before' + eventName, me, record, pos.row, pos.column)) !== false &&
                 commitFn() !== false) {
 
             if (isSelected) {
                 view.onCellSelect(pos);
-                
                 view.onCellFocus(pos);
             } else {
                 view.onCellDeselect(pos);
-                delete me.position;
+                delete me.selection;
             }
 
             if (!suppressEvent) {
@@ -82188,16 +83721,17 @@ Ext.define('Ext.selection.CellModel', {
         }
     },
 
+    
     onKeyTab: function(e, t) {
         var me = this,
-            direction = e.shiftKey ? 'left' : 'right',
-            editingPlugin = me.view.editingPlugin,
-            position = me.move(direction, e);
+            editingPlugin = me.primaryView.editingPlugin;
 
-        if (editingPlugin && position && me.wasEditing) {
-            editingPlugin.startEditByPosition(position);
+        
+        if (editingPlugin && me.wasEditing) {
+            me.onEditorTab(editingPlugin, e)
+        } else {
+            me.move(e.shiftKey ? 'left' : 'right', e);
         }
-        delete me.wasEditing;
     },
 
     onEditorTab: function(editingPlugin, e) {
@@ -82205,9 +83739,20 @@ Ext.define('Ext.selection.CellModel', {
             direction = e.shiftKey ? 'left' : 'right',
             position  = me.move(direction, e);
 
+        
         if (position) {
-            editingPlugin.startEditByPosition(position);
-            me.wasEditing = true;
+            
+            if (editingPlugin.startEditByPosition(position)) {
+                me.wasEditing = false;
+            }
+            
+            
+            else {
+                me.wasEditing = true;
+                if (!position.columnHeader.dataIndex) {
+                    me.onEditorTab(editingPlugin, e);
+                }
+            }
         }
     },
 
@@ -82222,15 +83767,99 @@ Ext.define('Ext.selection.CellModel', {
     },
 
     onViewRefresh: function() {
-        var pos = this.getCurrentPosition();
+        var me = this,
+            pos = me.getCurrentPosition(),
+            view = me.primaryView,
+            headerCt = view.headerCt,
+            record, columnHeader;
+
+        
+        
         if (pos) {
-            this.onCellDeselect(pos);
-            this.setCurrentPosition(null);
+            record = pos.record;
+            columnHeader = pos.columnHeader;
+
+            
+            me.onCellDeselect(pos, true);
+
+            
+            if (!columnHeader.isDescendantOf(headerCt)) {
+                
+                
+                
+                columnHeader = headerCt.queryById(columnHeader.id) || 
+                               headerCt.down('[text="' + columnHeader.text + '"]') ||
+                               headerCt.down('[dataIndex="' + columnHeader.dataIndex + '"]');
+            }
+
+            
+            
+            
+            
+            if (columnHeader && (view.store.indexOfId(record.getId()) !== -1)) {
+                (me.selection = new me.Selection(me)).setPosition(record, columnHeader);
+                me.onCellSelect(me.selection, true);
+            }
+
         }
     },
 
     selectByPosition: function(position) {
         this.setCurrentPosition(position);
+    }
+}, function() {
+    
+    
+    
+    var Selection = this.prototype.Selection = function(model) {
+        this.model = model;
+    };
+    
+    Selection.prototype.setPosition = function(row, col) {
+        var me = this,
+            view = me.model.primaryView,
+            store;
+
+        
+        if (arguments.length === 1) {
+            
+            
+            
+            if (row.view) {
+                view = row.view;
+            }
+            col = row.column;
+            row = row.row;
+        }
+        store = view.store;
+
+        
+        if (typeof row === 'number') {
+            me.row = row;
+            me.record = store.getAt(row);
+        }
+        
+        else if (row.isModel) {
+            me.record = row;
+            me.row = view.indexOf(row);
+        }
+        
+        else if (row.tagName) {
+            me.record = view.getRecord(row);
+            me.row = view.indexOf(me.record);
+        }
+        
+        
+        if (typeof col === 'number') {
+            me.column = col;
+            me.columnHeader = view.getHeaderAtIndex(col);
+        }
+        
+        else {
+            me.columnHeader = col;
+            me.column = col.getIndex();
+        }
+        return me;
     }
 });
 
@@ -82246,9 +83875,9 @@ Ext.define('Ext.selection.RowModel', {
     enableKeyNav: true,
     
     
-    ignoreRightMouseSelection: true,
+    ignoreRightMouseSelection: false,
 
-    constructor: function(){
+    constructor: function() {
         this.addEvents(
             
             'beforedeselect',
@@ -82302,6 +83931,7 @@ Ext.define('Ext.selection.RowModel', {
             target: view,
             eventName: 'itemkeydown',
             processEvent: function(view, record, node, index, event) {
+                event.record = record;
                 event.recordIndex = index;
                 return event;
             },
@@ -82313,9 +83943,9 @@ Ext.define('Ext.selection.RowModel', {
             pageUp: me.onKeyPageUp,
             home: me.onKeyHome,
             end: me.onKeyEnd,
+            space: me.onKeySpace,
             scope: me
         });
-        view.el.on(Ext.EventManager.getKeyEvent(), me.onKeyPress, me);
     },
 
     
@@ -82376,8 +84006,7 @@ Ext.define('Ext.selection.RowModel', {
             rowsVisible = me.getRowsVisible(),
             selIdx,
             prevIdx,
-            prevRecord,
-            currRec;
+            prevRecord;
 
         if (rowsVisible) {
             selIdx = e.recordIndex;
@@ -82387,8 +84016,7 @@ Ext.define('Ext.selection.RowModel', {
             }
             prevRecord = me.store.getAt(prevIdx);
             if (e.shiftKey) {
-                currRec = me.store.getAt(selIdx);
-                me.selectRange(prevRecord, currRec, e.ctrlKey, 'up');
+                me.selectRange(prevRecord, e.record, e.ctrlKey, 'up');
                 me.setLastFocused(prevRecord);
             } else if (e.ctrlKey) {
                 e.preventDefault();
@@ -82406,8 +84034,7 @@ Ext.define('Ext.selection.RowModel', {
             rowsVisible = me.getRowsVisible(),
             selIdx,
             nextIdx,
-            nextRecord,
-            currRec;
+            nextRecord;
 
         if (rowsVisible) {
             selIdx = e.recordIndex;
@@ -82417,8 +84044,7 @@ Ext.define('Ext.selection.RowModel', {
             }
             nextRecord = me.store.getAt(nextIdx);
             if (e.shiftKey) {
-                currRec = me.store.getAt(selIdx);
-                me.selectRange(nextRecord, currRec, e.ctrlKey, 'down');
+                me.selectRange(nextRecord, e.record, e.ctrlKey, 'down');
                 me.setLastFocused(nextRecord);
             } else if (e.ctrlKey) {
                 
@@ -82433,18 +84059,15 @@ Ext.define('Ext.selection.RowModel', {
 
     
     
-    onKeyPress: function(e) {
-        if (e.getKey() === e.SPACE) {
-            e.stopEvent();
-            var me = this,
-                record = me.lastFocused;
+    onKeySpace: function(e) {
+        var me = this,
+            record = me.lastFocused;
 
-            if (record) {
-                if (me.isSelected(record)) {
-                    me.doDeselect(record, false);
-                } else {
-                    me.doSelect(record, true);
-                }
+        if (record) {
+            if (me.isSelected(record)) {
+                me.doDeselect(record, false);
+            } else {
+                me.doSelect(record, true);
             }
         }
     },
@@ -82454,7 +84077,6 @@ Ext.define('Ext.selection.RowModel', {
     
     onKeyUp: function(e) {
         var me = this,
-            view = me.views[0],
             idx  = me.store.indexOf(me.lastFocused),
             record;
 
@@ -82493,7 +84115,6 @@ Ext.define('Ext.selection.RowModel', {
     
     onKeyDown: function(e) {
         var me = this,
-            view = me.views[0],
             idx  = me.store.indexOf(me.lastFocused),
             record;
 
@@ -82548,11 +84169,13 @@ Ext.define('Ext.selection.RowModel', {
     
     
     onRowMouseDown: function(view, record, item, index, e) {
-        view.focus(false, Ext.isIE ? 200 : false);
         if (!this.allowRightMouseSelection(e)) {
             return;
         }
-        this.selectWithEvent(record, e);
+
+        if (e.button === 0 || !this.isSelected(record)) {
+            this.selectWithEvent(record, e);
+        }
     },
     
     
@@ -82670,7 +84293,7 @@ Ext.define('Ext.selection.RowModel', {
             index = me.store.indexOf(record) - 1,
             success;
 
-        if(index < 0) {
+        if (index < 0) {
             success = false;
         } else {
             me.doSelect(index, keepExisting, suppressEvent);
@@ -82678,7 +84301,6 @@ Ext.define('Ext.selection.RowModel', {
         }
         return success;
     }
-
 });
 
 Ext.define('Ext.selection.CheckboxModel', {
@@ -82707,9 +84329,12 @@ Ext.define('Ext.selection.CheckboxModel', {
 
         me.sortable = false;
         me.callParent(arguments);
+
+        
         if (!me.hasLockedHeader() || view.headerCt.lockedCt) {
-            
-            view.headerCt.on('headerclick', me.onHeaderClick, me);
+            if (me.showHeaderCheckbox !== false) {
+                view.headerCt.on('headerclick', me.onHeaderClick, me);
+            }
             me.addCheckbox(true);
             me.mon(view.ownerCt, 'reconfigure', me.onReconfigure, me);
         }
@@ -82735,13 +84360,16 @@ Ext.define('Ext.selection.CheckboxModel', {
             view = me.views[0],
             headerCt = view.headerCt;
 
+        
         if (checkbox !== false) {
             if (checkbox == 'first') {
                 checkbox = 0;
             } else if (checkbox == 'last') {
                 checkbox = headerCt.getColumnCount();
             }
+            Ext.suspendLayouts();
             headerCt.add(checkbox,  me.getHeaderConfig());
+            Ext.resumeLayouts();
         }
 
         if (initial !== true) {
@@ -83123,12 +84751,12 @@ Ext.define('Ext.tab.Tab', {
 
         if (me.closable) {
             if (!closeEl) {
-                me.closeEl = me.el.createChild({
+                me.closeEl = me.btnWrap.insertSibling({
                     tag: 'a',
                     cls: me.baseCls + '-close-btn',
                     href: '#',
                     title: me.closeText
-                });
+                }, 'after');
             }
         } else if (closeEl) {
             closeEl.remove();
@@ -83227,9 +84855,7 @@ Ext.define('Ext.tab.Bar', {
     alias: 'widget.tabbar',
     baseCls: Ext.baseCSSPrefix + 'tab-bar',
 
-    requires: [
-        'Ext.tab.Tab'
-    ],
+    requires: ['Ext.tab.Tab'],
 
     
     isTabBar: true,
@@ -83312,15 +84938,8 @@ Ext.define('Ext.tab.Bar', {
     },
 
     afterComponentLayout : function(width) {
-        var me = this,
-            tab = me.activeTab;
-            
-        me.callParent(arguments);
-        me.strip.setWidth(width);
-        
-        if (tab && me.rendered) {
-            me.layout.overflowHandler.scrollToItem(tab);
-        }
+        this.callParent(arguments);
+        this.strip.setWidth(width);
     },
 
     
@@ -83374,15 +84993,17 @@ Ext.define('Ext.tab.Bar', {
             
             
             delete toClose.ownerCt;
+            
+            
+            
+            card.fireEvent('close', card);
             tabPanel.remove(card);
+            
             
             if (!tabPanel.getComponent(card)) {
                 
                 toClose.fireClose();
                 me.remove(toClose);
-                if (card.hasListeners.close) {
-                    card.fireEvent('close', card);
-                }
             } else {
                 
                 toClose.ownerCt = me;
@@ -83431,7 +85052,19 @@ Ext.define('Ext.tab.Bar', {
 
             me.activeTab = tab;
             me.fireEvent('change', me, tab, tab.card);
+
+            
+            me.on({
+                afterlayout: me.afterTabActivate,
+                scope: me,
+                single: true
+            });
+            me.updateLayout();
         }
+    },
+
+    afterTabActivate: function() {
+        this.layout.overflowHandler.scrollToItem(this.activeTab);
     }
 });
 
@@ -83809,7 +85442,7 @@ Ext.define('Ext.layout.container.Box', {
 
     
     flex: undefined,
-    
+
     
     stretchMaxPartner: undefined,
 
@@ -83829,7 +85462,8 @@ Ext.define('Ext.layout.container.Box', {
     manageMargins: true,
 
     childEls: [
-        'innerCt'
+        'innerCt',
+        'targetEl'
     ],
 
     renderTpl: [
@@ -83838,7 +85472,24 @@ Ext.define('Ext.layout.container.Box', {
             'if(oc=oh.getPrefixConfig())dh.generateMarkup(oc, out)',
         '}%}',
         '<div id="{ownerId}-innerCt" class="{[l.innerCls]} {[oh.getOverflowCls()]}" role="presentation">',
-            '{%this.renderBody(out, values)%}',
+            '<div id="{ownerId}-targetEl" style="position:absolute;',
+                    
+                    
+                    
+                    
+                    
+                    'width:20000px;',
+                    
+                    
+                    
+                    
+                    
+                    'left:0px;top:0px;',
+                    
+                    
+                    'height:1px">',
+                '{%this.renderBody(out, values)%}',
+            '</div>',
         '</div>',
         '{%if (oh.getSuffixConfig!==Ext.emptyFn) {',
             'if(oc=oh.getSuffixConfig())dh.generateMarkup(oc, out)',
@@ -83872,10 +85523,21 @@ Ext.define('Ext.layout.container.Box', {
         return this.names;
     },
 
-    getItemSizePolicy: function (item) {
-        var policy = this.sizePolicy,
-            align = this.align,
-            key = (align == 'stretchmax' || align == 'stretch') ? align : '';
+    getItemSizePolicy: function (item, ownerSizeModel) {
+        var me = this,
+            policy = me.sizePolicy,
+            align = me.align,
+            key = align,
+            ownerHeightModel;
+            
+        if (align === 'stretch') {
+            ownerHeightModel = (ownerSizeModel || me.owner.getSizeModel())[me.names.height];
+            if (ownerHeightModel.shrinkWrap) {
+                key = 'stretchmax';
+            }
+        } else if (align !== 'stretchmax') {
+            key = '';
+        }
 
         if (item.flex) {
             policy = policy.flex;
@@ -83885,7 +85547,7 @@ Ext.define('Ext.layout.container.Box', {
     },
 
     flexSort: function (a, b) {
-        var maxWidthName = 'max' + this.getNames().widthCap,
+        var maxWidthName = this.getNames().maxWidth,
             infiniteValue = Infinity;
 
         a = a.target[maxWidthName] || infiniteValue;
@@ -83940,9 +85602,7 @@ Ext.define('Ext.layout.container.Box', {
         var me = this,
             smp = me.owner.stretchMaxPartner,
             style = me.innerCt.dom.style,
-            names = me.getNames(),
-            state = ownerContext.state,
-            plan = state.boxPlan || (state.boxPlan = {});
+            names = me.getNames();
 
         
         
@@ -83960,20 +85620,19 @@ Ext.define('Ext.layout.container.Box', {
         ownerContext.innerCtContext = ownerContext.getEl('innerCt', me);
 
         
-        plan.scrollParallel = (me.owner.autoScroll || me.owner['overflow' + names.x.toUpperCase()]);
+        me.scrollParallel = !!(me.owner.autoScroll || me.owner[names.overflowX]);
 
         
-        if (plan.scrollParallel) {
-            state.scrollPos = me.owner.getTargetEl().dom['scroll' + names.leftCap];
+        me.scrollPerpendicular = !!(me.owner.autoScroll || me.owner[names.overflowY]);
+
+        
+        if (me.scrollParallel) {
+            me.scrollPos = me.owner.getTargetEl().dom[names.scrollLeft];
         }
 
         
-        if (me.preserveParallel) {
-            state.innerCtScrollPos = me.innerCt.dom['scroll' + names.leftCap];
-        }
-
-        
-        style.width = style.height = '';
+        style.width = '';
+        style.height = '';
 
         me.cacheFlexes(ownerContext);
     },
@@ -83983,7 +85642,7 @@ Ext.define('Ext.layout.container.Box', {
             align = me.align,
             names = me.getNames(),
             pack = me.pack,
-            heightModelName = names.height + 'Model',
+            heightModelName = names.heightModel,
             childItems, childContext, i, length, shrinkWrap;
 
         
@@ -83995,7 +85654,7 @@ Ext.define('Ext.layout.container.Box', {
         
         
 
-        ownerContext.parallelSizeModel      = ownerContext[names.width + 'Model'];
+        ownerContext.parallelSizeModel      = ownerContext[names.widthModel];
         ownerContext.perpendicularSizeModel = ownerContext[heightModelName];
 
         ownerContext.boxOptions = {
@@ -84059,13 +85718,13 @@ Ext.define('Ext.layout.container.Box', {
     
     cacheFlexes: function (ownerContext) {
         var names = this.getNames(),
-            widthModelName = names.width + 'Model',
+            widthModelName = names.widthModel,
             totalFlex = 0,
             childItems = ownerContext.childItems,
             i = childItems.length,
             flexedItems = [],
             minWidth = 0,
-            minWidthName = 'min' + names.widthCap,
+            minWidthName = names.minWidth,
             child, childContext, flex;
 
         while (i--) {
@@ -84103,16 +85762,41 @@ Ext.define('Ext.layout.container.Box', {
             targetSize = me.getContainerSize(ownerContext),
             names = me.getNames(),
             state = ownerContext.state,
-            plan = state.boxPlan || (state.boxPlan = {});
+            plan = state.boxPlan || (state.boxPlan = {}),
+            extraWidth = Ext.getScrollbarSize()[names.width];
 
-        if (!ownerContext.parallelSizeModel.shrinkWrap && !targetSize['got' + names.widthCap]) {
+        plan.targetSize = targetSize;
+
+        
+        
+        
+        
+        
+        
+        
+        if (extraWidth &&
+            me.scrollPerpendicular &&
+            ownerContext.parallelSizeModel.shrinkWrap &&
+            !ownerContext.boxOptions.align.stretch &&
+            !ownerContext.perpendicularSizeModel.shrinkWrap) {
+
             
+            state.additionalScrollbarWidth = extraWidth;
+
             
+            if (!targetSize[names.gotHeight]) {
+                me.done = false;
+                return;
+            }
+        } else {
+            state.additionalScrollbarWidth = 0;
+        }
+
+        
+        if (!ownerContext.parallelSizeModel.shrinkWrap && !targetSize[names.gotWidth]) {
             me.done = false;
             return;
         }
-
-        plan.targetSize = targetSize;
 
         if (!state.parallelDone) {
             state.parallelDone = me.calculateParallel(ownerContext, names, plan);
@@ -84122,35 +85806,36 @@ Ext.define('Ext.layout.container.Box', {
             state.perpendicularDone = me.calculatePerpendicular(ownerContext, names, plan);
         }
 
-        
-        
-        
-        
-        if (me.owner.dock && (Ext.isIE6 || Ext.isIE7 || Ext.isIEQuirks) && !me.owner.width && !me.horizontal) {
-            plan.isIEVerticalDock = true;
-            plan.calculatedWidth = plan.maxSize + ownerContext.getPaddingInfo().width + ownerContext.getFrameInfo().width;
-        }
+        if (state.parallelDone && state.perpendicularDone) {
+            
+            
+            
+            
+            if (me.owner.dock && (Ext.isIE6 || Ext.isIE7 || Ext.isIEQuirks) && !me.owner.width && !me.horizontal) {
+                plan.isIEVerticalDock = true;
+                plan.calculatedWidth = plan.maxSize + ownerContext.getPaddingInfo().width + ownerContext.getFrameInfo().width;
+            }
 
-        if (!state.parallelDone || !state.perpendicularDone) {
-            me.done = false;
-        } else {
             me.publishInnerCtSize(ownerContext, me.reserveOffset ? me.availableSpaceOffset : 0);
 
-            if (me.done && ownerContext.boxOptions.align.stretchmax && !state.stretchMaxDone) {
+            
+            if (me.done && ownerContext.childItems.length > 1 && ownerContext.boxOptions.align.stretchmax && !state.stretchMaxDone) {
                 me.calculateStretchMax(ownerContext, names, plan);
                 state.stretchMaxDone = true;
             }
+        } else {
+            me.done = false;
         }
     },
 
     calculateParallel: function(ownerContext, names, plan) {
         var me = this,
+            widthShrinkWrap = ownerContext.parallelSizeModel.shrinkWrap,
             widthName = names.width,
-            widthNameCap = names.widthCap,
             childItems = ownerContext.childItems,
             leftName = names.left,
             rightName = names.right,
-            setWidthName = 'set' + widthNameCap,
+            setWidthName = names.setWidth,
             childItemsLength = childItems.length,
             flexedItems = ownerContext.flexedItems,
             flexedItemsLength = flexedItems.length,
@@ -84178,14 +85863,15 @@ Ext.define('Ext.layout.container.Box', {
         }
         
 
-        if (ownerContext.parallelSizeModel.shrinkWrap) {
+        if (widthShrinkWrap) {
             plan.availableSpace = 0;
             plan.tooNarrow = false;
         } else {
             plan.availableSpace = plan.targetSize[widthName] - nonFlexWidth;
+
             
-            
-            if ((plan.tooNarrow = plan.availableSpace < ownerContext.flexedMinSize) && plan.scrollParallel && ownerContext.state.perpendicularDone) {
+            plan.tooNarrow = plan.availableSpace < ownerContext.flexedMinSize;
+            if (plan.tooNarrow && Ext.getScrollbarSize()[names.height] && me.scrollParallel && ownerContext.state.perpendicularDone) {
                 ownerContext.state.perpendicularDone = false;
                 for (i = 0; i < childItemsLength; ++i) {
                     childItems[i].invalidate();
@@ -84224,8 +85910,6 @@ Ext.define('Ext.layout.container.Box', {
             left += remainingWidth;
         }
 
-        ownerContext['setContent' + widthNameCap](contentWidth + ownerContext.targetContext.getPaddingInfo()[widthName]);
-
         
         for (i = 0; i < childItemsLength; ++i) {
             childContext = childItems[i];
@@ -84242,6 +85926,15 @@ Ext.define('Ext.layout.container.Box', {
             left += childMargins[rightName] + childContext.props[widthName];
         }
 
+        
+        ownerContext.state.contentWidth = contentWidth + ownerContext.targetContext.getPaddingInfo()[widthName];
+
+        
+        
+        if (!ownerContext.state.additionalScrollbarWidth) {
+            ownerContext[names.setContentWidth](ownerContext.state.contentWidth);
+        }
+
         return true;
     },
 
@@ -84253,8 +85946,7 @@ Ext.define('Ext.layout.container.Box', {
             childItemsLength = childItems.length,
             mmax = Math.max,
             heightName = names.height,
-            heightNameCap = names.heightCap,
-            setHeightName = 'set' + heightNameCap,
+            setHeightName = names.setHeight,
             topName = names.top,
             topPositionName = names.y,
             padding = me.padding,
@@ -84278,7 +85970,7 @@ Ext.define('Ext.layout.container.Box', {
 
         
         
-        if (isStretch && plan.scrollParallel && plan.tooNarrow) {
+        if (isStretch && me.scrollParallel && plan.tooNarrow) {
             scrollbarHeight = Ext.getScrollbarSize().height;
             availHeight -= scrollbarHeight;
             plan.targetSize[heightName] -= scrollbarHeight;
@@ -84293,7 +85985,7 @@ Ext.define('Ext.layout.container.Box', {
                 childHeight  = childContext.getProp(heightName);
 
                 
-                if (isNaN(maxHeight = mmax(maxHeight, childHeight + childMargins[heightName], childContext.target['min' + heightNameCap]||0))) {
+                if (isNaN(maxHeight = mmax(maxHeight, childHeight + childMargins[heightName], childContext.target[names.minHeight]||0))) {
                     return false; 
                 }
             }
@@ -84314,7 +86006,7 @@ Ext.define('Ext.layout.container.Box', {
             }
 
             plan.maxSize = maxHeight;
-            ownerContext['setContent' + heightNameCap](maxHeight + me.padding[heightName] +
+            ownerContext[names.setContentHeight](maxHeight + me.padding[heightName] +
                 ownerContext.targetContext.getPaddingInfo()[heightName]);
 
             if (isStretchMax) {
@@ -84353,90 +86045,92 @@ Ext.define('Ext.layout.container.Box', {
 
     calculateStretchMax: function (ownerContext, names, plan) {
         var me = this,
-            calculated = me.sizeModels.calculated,
-            heightModelName = names.height + 'Model',
             heightName = names.height,
             widthName = names.width,
             childItems = ownerContext.childItems,
             length = childItems.length,
             height = plan.maxSize,
-            onInvalidateChild = me.onInvalidateChild,
+            onBeforeInvalidateChild = me.onBeforeInvalidateChild,
+            onAfterInvalidateChild = me.onAfterInvalidateChild,
             childContext, props, i, childHeight;
 
         for (i = 0; i < length; ++i) {
             childContext = childItems[i];
 
-            if (childContext[heightModelName].shrinkWrap) {
-                props = childContext.props;
-                childHeight = height - childContext.getMarginInfo()[heightName];
+            props = childContext.props;
+            childHeight = height - childContext.getMarginInfo()[heightName];
 
-                if (childHeight != props[heightName]) { 
+            if (childHeight != props[heightName] ||   
+                childContext[names.heightModel].constrained) { 
+                
+                
+                
+                
+                
+                
+                
+                childContext.invalidate({
+                    before: onBeforeInvalidateChild,
+                    after: onAfterInvalidateChild,
+                    layout: me,
                     
+                    childWidth: props[widthName],
                     
-                    
-                    
-                    childContext[heightModelName] = calculated;
-
-                    
-                    
-                    
-                    
-                    childContext.invalidate({
-                        callback: onInvalidateChild,
-                        layout: me,
-                        
-                        childWidth: props[widthName],
-                        
-                        childHeight: childHeight,
-                        childX: props.x,
-                        childY: props.y,
-                        names: names
-                    });
-                }
+                    childHeight: childHeight,
+                    childX: props.x,
+                    childY: props.y,
+                    names: names
+                });
             }
         }
     },
 
     completeLayout: function(ownerContext) {
-        var me = this,
-            state = ownerContext.state;
+        var me = this;
 
         me.overflowHandler.completeLayout(ownerContext);
 
         
-        if (state.boxPlan.scrollParallel) {
-            me.owner.getTargetEl().dom['scroll' + me.getNames().leftCap] = state.scrollPos;
+        if (me.scrollParallel) {
+            me.owner.getTargetEl().dom[me.getNames().scrollLeft] = me.scrollPos;
         }
-
     },
 
     finishedLayout: function(ownerContext) {
-        var me = this,
-            startScrollPos = ownerContext.state.innerCtScrollPos;
-
-        
-        if (me.preserveParallel && startScrollPos) {
-            me.innerCt.dom['scroll' + me.getNames().leftCap] = startScrollPos;
-        }
-        me.callParent(arguments);
+        this.overflowHandler.finishedLayout(ownerContext);
+        this.callParent(arguments);
     },
 
-    onInvalidateChild: function (options, childContext) {
+    onBeforeInvalidateChild: function (childContext, options) {
         
-        var names = options.names,
-            heightCapName = names.heightCap;
+        var heightModelName = options.names.heightModel;
+
+        
+        
+        
+        
+        if (!childContext[heightModelName].constrainedMax) {
+            
+            
+            childContext[heightModelName] = Ext.layout.SizeModel.calculated;
+        }
+    },
+
+    onAfterInvalidateChild: function (childContext, options) {
+        
+        var names = options.names;
 
         childContext.setProp('x', options.childX);
         childContext.setProp('y', options.childY);
 
-        if (childContext[names.height + 'Model'].calculated) {
+        if (childContext[names.heightModel].calculated) {
             
             
-            childContext['set' + heightCapName](options.childHeight);
+            childContext[names.setHeight](options.childHeight);
         }
 
-        if (childContext.flex) {
-            childContext['set' + names.widthCap](options.childWidth);
+        if (childContext[names.widthModel].calculated) {
+            childContext[names.setWidth](options.childWidth);
         }
     },
 
@@ -84452,24 +86146,42 @@ Ext.define('Ext.layout.container.Box', {
             targetSize = plan.targetSize,
             height = targetSize[heightName],
             innerCtContext = ownerContext.innerCtContext,
-            innerCtWidth = (ownerContext.parallelSizeModel.shrinkWrap || (plan.tooNarrow && plan.scrollParallel)
-                    ? ownerContext.props['content' + names.widthCap]
+            parallelContentDim = names.contentWidth,
+            innerCtWidth = (ownerContext.parallelSizeModel.shrinkWrap || (plan.tooNarrow && me.scrollParallel)
+                    ? ownerContext.state.contentWidth
                     : targetSize[widthName]) - (reservedSpace || 0),
             innerCtHeight;
 
         if (align.stretch) {
             innerCtHeight = height;
         } else {
-            innerCtHeight = plan.maxSize + padding[names.top] + padding[names.bottom] +
-                                    innerCtContext.getBorderInfo()[heightName];
+            innerCtHeight = plan.maxSize + padding[names.top] + padding[names.bottom] + innerCtContext.getBorderInfo()[heightName];
 
             if (!ownerContext.perpendicularSizeModel.shrinkWrap && align.center) {
                 innerCtHeight = Math.max(height, innerCtHeight);
             }
         }
 
-        innerCtContext['set' + names.widthCap](innerCtWidth);
-        innerCtContext['set' + names.heightCap](innerCtHeight);
+        innerCtContext[names.setWidth](innerCtWidth);
+        innerCtContext[names.setHeight](innerCtHeight);
+
+        
+        
+        
+        
+        
+        if (ownerContext.state.additionalScrollbarWidth) {
+            if (innerCtHeight > plan.targetSize[names.height]) {
+                ownerContext.setProp(parallelContentDim, ownerContext.state.contentWidth + ownerContext.state.additionalScrollbarWidth);
+
+                
+                if (Ext.isIE6 || Ext.isIE7 || Ext.isIEQuirks) {
+                    ownerContext[names.setWidth](ownerContext.props[parallelContentDim] + ownerContext.getPaddingInfo()[names.width] + ownerContext.getBorderInfo()[names.width]);
+                }
+            } else {
+                ownerContext.setProp(parallelContentDim, ownerContext.state.contentWidth);
+            }
+        }
 
         
         if (isNaN(innerCtWidth + innerCtHeight)) {
@@ -84525,16 +86237,14 @@ Ext.define('Ext.layout.container.Box', {
     },
 
     
-    isValidParent : function(item, target, position) {
-        
-        
-        var itemEl = item.el ? item.el.dom : Ext.getDom(item);
-        return (itemEl && this.innerCt && itemEl.parentNode === this.innerCt.dom) || false;
+    
+    getRenderTarget: function() {
+        return this.targetEl;
     },
 
     
     
-    getRenderTarget: function() {
+    getElementTarget: function() {
         return this.innerCt;
     },
 
@@ -84574,9 +86284,15 @@ Ext.define('Ext.layout.container.HBox', {
         right: 'right',
         position: 'left',
         width: 'width',
+        contentWidth: 'contentWidth',
+        minWidth: 'minWidth',
+        maxWidth: 'maxWidth',
         widthCap: 'Width',
+        widthModel: 'widthModel',
         widthIndex: 0,
         x: 'x',
+        scrollLeft: 'scrollLeft',
+        overflowX: 'overflowX',
 
         
         center: 'middle',
@@ -84584,9 +86300,25 @@ Ext.define('Ext.layout.container.HBox', {
         topPosition: 'top',
         bottom: 'bottom',
         height: 'height',
+        contentHeight: 'contentHeight',
+        minHeight: 'minHeight',
+        maxHeight: 'maxHeight',
         heightCap: 'Height',
+        heightModel: 'heightModel',
         heightIndex: 1,
-        y: 'y'
+        y: 'y',
+        scrollTop: 'scrollTop',
+        overflowY: 'overflowY',
+
+        
+        getWidth: 'getWidth',
+        getHeight: 'getHeight',
+        setWidth: 'setWidth',
+        setHeight: 'setHeight',
+        gotWidth: 'gotWidth',
+        gotHeight: 'gotHeight',
+        setContentWidth: 'setContentWidth',
+        setContentHeight: 'setContentHeight'
     },
 
     sizePolicy: {
@@ -84629,11 +86361,6 @@ Ext.define('Ext.grid.ColumnLayout', {
 
     reserveOffset: false,
 
-    shrinkToFit: false,
-
-    
-    preserveParallel: true,
-
     firstHeaderCls: Ext.baseCSSPrefix + 'column-header-first',
     lastHeaderCls: Ext.baseCSSPrefix + 'column-header-last',
 
@@ -84669,7 +86396,8 @@ Ext.define('Ext.grid.ColumnLayout', {
                 height: 'auto'
             });
             item.titleEl.setStyle({
-                height: 'auto'
+                height: 'auto',
+                paddingTop: ''  
             });
         }
 
@@ -84802,16 +86530,18 @@ Ext.define('Ext.grid.ColumnLayout', {
     publishInnerCtSize: function(ownerContext) {
         var me = this,
             plan = ownerContext.state.boxPlan,
-            size = plan.targetSize;
+            size = plan.targetSize,
+            cw = ownerContext.peek('contentWidth');
 
         
-        if (!me.owner.isHeader) {
-            size.width = ownerContext.getProp('contentWidth') + Ext.getScrollbarSize().width;
+        if ((cw != null) && !me.owner.isHeader) {
+            size.width = cw + Ext.getScrollbarSize().width;
         }
 
         return me.callParent(arguments);
     }
 });
+
 
 Ext.define('Ext.grid.header.Container', {
     extend: 'Ext.container.Container',
@@ -84875,6 +86605,7 @@ Ext.define('Ext.grid.header.Container', {
     initComponent: function() {
         var me = this;
 
+        me.headerCounter = 0;
         me.plugins = me.plugins || [];
 
         
@@ -84949,25 +86680,32 @@ Ext.define('Ext.grid.header.Container', {
         }
 
         var me     = this,
+            items  = me.items.items,
+            count  = items.length,
             i      = 0,
             length = columns.length,
-            c,
-            index, col, columnState;
+            c, col, columnState, index;
 
         for (c = 0; c < length; c++) {
-            columnState = columns[i];
+            columnState = columns[c];
 
-            col = me.down('gridcolumn[headerId=' + columnState.id + ']');
-            if (col) {
-                index = me.items.indexOf(col);
-                if (i !== index) {
-                    me.moveHeader(index, i);
-                }
+            for (index = count; index--; ) {
+                col = items[index];
+                if (col.getStateId && col.getStateId() == columnState.id) {
+                    
+                    
+                    
+                    
+                    if (i !== index) {
+                        me.moveHeader(index, i);
+                    }
 
-                if (col.applyColumnState) {
-                    col.applyColumnState(columnState);
+                    if (col.applyColumnState) {
+                        col.applyColumnState(columnState);
+                    }
+                    ++i;
+                    break;
                 }
-                ++i;
             }
         }
     },
@@ -84995,6 +86733,15 @@ Ext.define('Ext.grid.header.Container', {
         if (!c.headerId) {
             c.headerId = c.initialConfig.id || Ext.id(null, 'header-');
         }
+
+        if (!c.stateId) {
+            
+            
+            
+            
+            c.stateId = c.initialConfig.id || ('h' + (++me.headerCounter));
+        }
+
         me.callParent(arguments);
         me.purgeCache();
     },
@@ -85373,7 +87120,7 @@ Ext.define('Ext.grid.header.Container', {
         for (; i < itemsLn; i++) {
             item = items[i];
             menuItem = new Ext.menu.CheckItem({
-                text: item.text,
+                text: item.menuText || item.text,
                 checked: !item.hidden,
                 hideOnClick: false,
                 headerId: item.id,
@@ -85503,26 +87250,23 @@ Ext.define('Ext.grid.header.Container', {
 
     
     getHeaderIndex: function(header) {
-        var me = this,
-            columns = this.getGridColumns();
-
         
         if (header.isGroupHeader) {
             header = header.down(':not([isgroupHeader])');
         }
-        return Ext.Array.indexOf(columns, header);
+        return Ext.Array.indexOf(this.getGridColumns(), header);
     },
 
     
     getHeaderAtIndex: function(index) {
         var columns = this.getGridColumns();
-        return columns[index];
+        return columns.length ? columns[index] : null;
     },
 
     
     getVisibleHeaderClosestToIndex: function(index) {
         var result = this.getHeaderAtIndex(index);
-        if (result.hidden) {
+        if (result && result.hidden) {
             result = result.next(':not([hidden])') || result.next(':not([hidden])');
         }
         return result;
@@ -85625,10 +87369,15 @@ Ext.define('Ext.grid.column.Column', {
     
 
     
+
+    
     dataIndex: null,
 
     
     text: '&#160;',
+
+    
+    menuText: null,
 
     
     emptyCellText: '&#160;',
@@ -85692,13 +87441,6 @@ Ext.define('Ext.grid.column.Column', {
             delete me.header;
         }
 
-        
-        
-        
-        if (me.flex) {
-            me.minWidth = me.minWidth || Ext.grid.plugin.HeaderResizer.prototype.minColWidth;
-        }
-
         if (!me.triStateSort) {
             me.possibleSortStates.length = 2;
         }
@@ -85721,6 +87463,13 @@ Ext.define('Ext.grid.column.Column', {
             
             
             me.isContainer = false;
+
+            
+            
+            
+            if (me.flex) {
+                me.minWidth = me.minWidth || Ext.grid.plugin.HeaderResizer.prototype.minColWidth;
+            }
         }
         me.addCls(Ext.baseCSSPrefix + 'column-header-align-' + me.align);
         
@@ -85809,7 +87558,7 @@ Ext.define('Ext.grid.column.Column', {
             i,
             columns = [],
             state = {
-                id: me.headerId
+                id: me.getStateId()
             };
 
         me.savePropsToState(['hidden', 'sortable', 'locked', 'flex', 'width'], state);
@@ -85831,6 +87580,10 @@ Ext.define('Ext.grid.column.Column', {
             delete state.flex; 
         }
         return state;
+    },
+
+    getStateId: function () {
+        return this.stateId || this.headerId;
     },
 
     
@@ -85899,49 +87652,14 @@ Ext.define('Ext.grid.column.Column', {
         });
     },
 
-    
-    setWidth: function(width,  doLayout) {
-        var me = this,
-            headerCt = me.ownerCt,
-            siblings,
-            len, i,
-            oldWidth = me.getWidth(),
-            groupWidth = 0,
-            sibling;
-
-        if (width !== oldWidth) {
-            me.oldWidth = oldWidth;
-
-            
-            
-            me.minWidth = me.width = width;
-
-            
-            if (headerCt.isGroupHeader) {
-                siblings = headerCt.items.items;
-                len = siblings.length;
-
-                for (i = 0; i < len; i++) {
-                    sibling = siblings[i];
-                    if (!sibling.hidden) {
-                        groupWidth += (sibling === me) ? width : sibling.getWidth();
-                    }
-                }
-                headerCt.setWidth(groupWidth, doLayout);
-            } else if (doLayout !== false) {
-                
-                headerCt.doLayout();
-            }
-        }
-    },
-
+   
     afterComponentLayout: function(width, height, oldWidth, oldHeight) {
         var me = this,
             ownerHeaderCt = me.getOwnerHeaderCt();
 
         me.callParent(arguments);
 
-        if (ownerHeaderCt && (width !== oldWidth)) {
+        if (ownerHeaderCt && (oldWidth != null || me.flex) && width !== oldWidth) {
             ownerHeaderCt.onHeaderResize(me, width, true);
         }
         delete me.oldWidth;
@@ -85965,7 +87683,7 @@ Ext.define('Ext.grid.column.Column', {
                 
                 
                 
-                me.el.parent().setHeight(headerHeight);
+                me.ownerCt.layout.innerCt.setHeight(headerHeight);
             }
         }
         titleElHeight = titleEl.getViewSize().height;
@@ -86104,7 +87822,7 @@ Ext.define('Ext.grid.column.Column', {
             }
             me.sortState = state;
             
-            if (me.triStateSort || state !== null) {
+            if (me.triStateSort || state != null) {
                 ownerHeaderCt.fireEvent('sortchange', ownerHeaderCt, me, state);
             }
         }
@@ -86112,12 +87830,11 @@ Ext.define('Ext.grid.column.Column', {
 
     hide: function(fromOwner) {
         var me = this,
-            newWidth = 0,
             ownerHeaderCt = me.getOwnerHeaderCt(),
             owner = me.ownerCt,
             ownerIsGroup = owner.isGroupHeader,
             item, items, len, i;
-            
+
         
         if (ownerIsGroup && !fromOwner) {
             items = owner.query('>:not([hidden])');
@@ -86129,9 +87846,6 @@ Ext.define('Ext.grid.column.Column', {
         }
 
         Ext.suspendLayouts();
-
-        
-        me.oldWidth = me.getWidth();
 
         if (me.isGroupHeader) {
             items = me.items.items;
@@ -86147,24 +87861,12 @@ Ext.define('Ext.grid.column.Column', {
         
         ownerHeaderCt.onHeaderHide(me);
 
-        if (me.ownerCt.isGroupHeader) {
-            items = owner.query('>:not([hidden])');
-            if (items.length && !fromOwner) {
-                
-                
-                for (i = 0, len = items.length; i < len; i++) {
-                    newWidth += items[i].getWidth();
-                }
-                owner.setWidth(newWidth);
-            }
-        }
         Ext.resumeLayouts(true);
     },
 
     show: function(fromOwner, fromChild) {
         var me = this,
             ownerCt = me.ownerCt,
-            newWidth = 0,
             items,
             len, i,
             item;
@@ -86186,27 +87888,16 @@ Ext.define('Ext.grid.column.Column', {
                 if (item.hidden) {
                     item.show(true);
                 }
-                newWidth += item.getWidth();
             }
-            me.setWidth(newWidth);
         }
 
-        
-        if (ownerCt.isGroupHeader && !fromOwner) {
-            items = ownerCt.query('>:not([hidden])');
-            for (i = 0, len = items.length; i < len; i++) {
-                newWidth += items[i].getWidth();
-            }
-            ownerCt.minWidth = newWidth;
-            ownerCt.setWidth(newWidth);
-        }
+        Ext.resumeLayouts(true);
 
         
         ownerCt = me.getOwnerHeaderCt();
         if (ownerCt) {
             ownerCt.onHeaderShow(me);
         }
-        Ext.resumeLayouts(true);
     },
 
     getDesiredWidth: function() {
@@ -86327,6 +88018,9 @@ Ext.define('Ext.grid.column.Action', {
     
     altText: '',
 
+    
+    menuText: '<i>Actions</i>',
+
     sortable: false,
 
     constructor: function(config) {
@@ -86372,7 +88066,12 @@ Ext.define('Ext.grid.column.Action', {
         meta.tdCls += ' ' + Ext.baseCSSPrefix + 'action-col-cell';
         for (; i < len; i++) {
             item = items[i];
+            
+            
             if (!item.hasActionConfiguration) {
+                
+                
+                item.stopSelection = me.stopSelection;
                 item.disable = Ext.Function.bind(me.disableAction, me, [i], 0);
                 item.enable = Ext.Function.bind(me.enableAction, me, [i], 0);
                 item.hasActionConfiguration = true;
@@ -86427,13 +88126,23 @@ Ext.define('Ext.grid.column.Action', {
     
     processEvent : function(type, view, cell, recordIndex, cellIndex, e, record, row){
         var me = this,
-            match = e.getTarget().className.match(me.actionIdRe),
-            item, fn;
-            
-        if (match) {
+            target = e.getTarget(),
+            match,
+            item, fn,
+            key = type == 'keydown' && e.getKey();
+
+        
+        
+        
+        if (key && !Ext.fly(target).findParent(view.cellSelector)) {
+            target = Ext.fly(cell).down('.' + Ext.baseCSSPrefix + 'action-col-icon', true);
+        }
+
+        
+        if (target && (match = target.className.match(me.actionIdRe))) {
             item = me.items[parseInt(match[1], 10)];
             if (item) {
-                if (type == 'click') {
+                if (type == 'click' || (key == e.ENTER || key == e.SPACE)) {
                     fn = item.handler || me.handler;
                     if (fn && !item.disabled) {
                         fn.call(item.scope || me.scope || me, view, recordIndex, cellIndex, item, e, record, row);
@@ -86535,6 +88244,9 @@ Ext.define('Ext.grid.column.Template', {
     initComponent: function(){
         var me = this;
         me.tpl = (!Ext.isPrimitive(me.tpl) && me.tpl.compile) ? me.tpl : new Ext.XTemplate(me.tpl);
+        
+        
+        me.hasCustomRenderer = true;
         me.callParent(arguments);
     },
     
@@ -86761,13 +88473,22 @@ Ext.define('Ext.grid.plugin.Editing', {
             
             
             
-            view.onCellFocus = view.onRowFocus = Ext.emptyFn;
-            me.doFocusing = true;
+            if (view.selModel.isCellModel) {
+                view.onCellFocus = Ext.Function.bind(me.beforeViewCellFocus, me);
+            }
 
             
             me.mon(view, me.triggerEvent || ('cell' + (me.clicksToEdit === 1 ? 'click' : 'dblclick')), me.onCellClick, me);
         }
         view.on('render', me.addHeaderEvents, me, {single: true});
+    },
+
+    
+    beforeViewCellFocus: function(position) {
+        
+        if (this.view.selModel.keyNavigation || !this.isCellEditable || !this.isCellEditable(position.row, position.columnHeader)) {
+            this.view.focusCell.apply(this.view, arguments);
+        }
     },
 
     
@@ -86830,14 +88551,20 @@ Ext.define('Ext.grid.plugin.Editing', {
         
         if (selModel.getCurrentPosition) {
             pos = selModel.getCurrentPosition();
-            record = grid.store.getAt(pos.row);
-            columnHeader = grid.headerCt.getHeaderAtIndex(pos.column);
+            if (pos) {
+                record = grid.store.getAt(pos.row);
+                columnHeader = grid.headerCt.getHeaderAtIndex(pos.column);
+            }
         }
         
         else {
             record = selModel.getLastSelected();
         }
-        me.startEdit(record, columnHeader);
+
+        
+        if (record && columnHeader) {
+            me.startEdit(record, columnHeader);
+        }
     },
 
     
@@ -86853,18 +88580,15 @@ Ext.define('Ext.grid.plugin.Editing', {
         var me = this,
             context = me.getEditingContext(record, columnHeader);
 
-        if (me.beforeEdit(context) === false || me.fireEvent('beforeedit', me, context) === false || context.cancel) {
+        if (me.beforeEdit(context) === false || me.fireEvent('beforeedit', me, context) === false || context.cancel || !me.grid.view.isVisible(true)) {
             return false;
         }
 
-        
-        if (me.doFocusing) {
-            Ext.view.Table.prototype.onRowFocus.call(me.view, context.rowIdx, true);
-        }
         me.context = context;
         me.editing = true;
     },
 
+    
     
     getEditingContext: function(record, columnHeader) {
         var me = this,
@@ -86874,15 +88598,19 @@ Ext.define('Ext.grid.plugin.Editing', {
             rowIdx, colIdx;
 
         
-        columnHeader = grid.headerCt.getVisibleHeaderClosestToIndex(Ext.isNumber(columnHeader) ? columnHeader : columnHeader.getIndex());
-        colIdx = columnHeader.getIndex();
+        if (!node) {
+            return;
+        }
 
         
+        columnHeader = grid.headerCt.getVisibleHeaderClosestToIndex(Ext.isNumber(columnHeader) ? columnHeader : columnHeader.getIndex());
+
         
-        
-        if (grid.lockable) {
-            gridview = columnHeader.ownerCt.lockableInjected ? (columnHeader.locked ? view.lockedView : view.normalView) : view;
+        if (!columnHeader) {
+            return;
         }
+
+        colIdx = columnHeader.getIndex();
 
         if (Ext.isNumber(record)) {
             
@@ -86967,14 +88695,28 @@ Ext.define('Ext.grid.plugin.CellEditing', {
     },
     
     onBodyScroll: function() {
-        var ed = this.getActiveEditor();
-        if (ed && ed.field) {
-            if (ed.field.triggerBlur) {
-                ed.field.triggerBlur();
-            } else {
-                ed.field.blur();
+        var me = this,
+            ed = me.getActiveEditor(),
+            scroll = me.view.el.getScroll();
+
+        
+        if (ed && ed.editing) {
+            
+            if (scroll.top !== me.scroll.top) {
+                if (ed.field) {
+                    if (ed.field.triggerBlur) {
+                        ed.field.triggerBlur();
+                    } else {
+                        ed.field.blur();
+                    }
+                }
+            }
+            
+            else {
+                 ed.realign();
             }
         }
+        me.scroll = scroll;
     },
 
     
@@ -86993,38 +88735,57 @@ Ext.define('Ext.grid.plugin.CellEditing', {
         });
     },
 
+    isCellEditable: function(record, columnHeader) {
+        var me = this,
+            context = me.getEditingContext(record, columnHeader);
+
+        if (me.grid.view.isVisible(true) && context) {
+            columnHeader = context.column;
+            record = context.record;
+            if (columnHeader && me.getEditor(record, columnHeader)) {
+                return true;
+            }
+        }
+    },
+
+    
     startEdit: function(record, columnHeader) {
         var me = this,
             context = me.getEditingContext(record, columnHeader),
             value, ed;
-            
+
         
         
         
         me.completeEdit();
 
         
-        if (me.doFocusing) {
-            Ext.view.Table.prototype.onCellFocus.call(me.view, {row: context.rowIdx, column: context.colIdx});
+        if (!context || !me.grid.view.isVisible(true)) {
+            return false;
         }
-        
-        me.grid.view.cancelFocus();
 
         record = context.record;
         columnHeader = context.column;
-        value = record.get(columnHeader.dataIndex);
 
-        context.originalValue = context.value = value;
-        if (me.beforeEdit(context) === false || me.fireEvent('beforeedit', me, context) === false || context.cancel) {
-            return false;
-        }
-        
         
         if (columnHeader && !columnHeader.getEditor(record)) {
             return false;
         }
-        
+
+        value = record.get(columnHeader.dataIndex);
+        context.originalValue = context.value = value;
+        if (me.beforeEdit(context) === false || me.fireEvent('beforeedit', me, context) === false || context.cancel) {
+            return false;
+        }
+
         ed = me.getEditor(record, columnHeader);
+
+        
+        me.grid.view.cancelFocus();
+        me.view.focusCell({
+            row: context.row,
+            column: context.colIdx
+        });
         if (ed) {
             me.context = context;
             me.setActiveEditor(ed);
@@ -87034,7 +88795,10 @@ Ext.define('Ext.grid.plugin.CellEditing', {
             
             me.editTask.delay(15, ed.startEdit, ed, [me.getCell(record, columnHeader), value]);
             me.editing = true;
+            me.scroll = me.view.el.getScroll();
+            return true;
         }
+        return false;
     },
 
     completeEdit: function() {
@@ -87151,7 +88915,6 @@ Ext.define('Ext.grid.plugin.CellEditing', {
             me.setActiveEditor(null);
             me.setActiveColumn(null);
             me.setActiveRecord(null);
-            delete grid.getSelectionModel().wasEditing;
     
             if (!me.validateEdit()) {
                 return;
@@ -87194,7 +88957,7 @@ Ext.define('Ext.grid.plugin.CellEditing', {
         if (sm.selectByPosition) {
             sm.selectByPosition(position);
         }
-        this.startEdit(position.row, position.column);
+        return this.startEdit(position.row, position.column);
     }
 });
 
@@ -87301,663 +89064,6 @@ Ext.define('Ext.grid.property.HeaderContainer', {
     }
 });
 
-Ext.define('Ext.layout.container.CheckboxGroup', {
-    extend: 'Ext.layout.container.Container',
-    alias: ['layout.checkboxgroup'],
-    requires: ['Ext.layout.container.HBox'],
-
-    childGeneration: 0,
-
-    
-    autoFlex: true,
-
-    type: 'checkboxgroup',
-
-    childEls: [
-        'innerCt'
-    ],
-
-    renderTpl: [
-        '<table id="{ownerId}-innerCt" role="presentation" style="{tableStyle}"><tbody><tr>',
-            '<tpl for="columns">',
-                '<td class="{parent.colCls}" valign="top" style="{style}">',
-                    '{% this.renderColumn(out,parent,xindex-1) %}',
-                '</td>',
-            '</tpl>',
-        '</tr></tbody></table>'
-    ],
-
-    beginLayout: function(ownerContext) {
-        var me = this,
-            columns = me.columnEls,
-            numCols,
-            childItems,
-            i, width,
-            autoFlex = me.autoFlex,
-            percentWidthColumns = false;
-
-        me.callParent(arguments);
-        childItems = ownerContext.childItems;
-
-        
-        
-        if (me.lastChildGeneration != me.childGeneration) {
-            me.lastChildGeneration = me.childGeneration;
-            me.fixColumns();
-        }
-
-        ownerContext.innerCtContext = ownerContext.getEl('innerCt', me);
-
-        
-        Ext.layout.container.Box.prototype.cacheFlexes.call(me, ownerContext);
-
-        
-        if (!ownerContext.widthModel.shrinkWrap) {
-            numCols = columns.length;
-
-            
-            if (me.columnsArray) {
-                for (i = 0; i < numCols; i++) {
-                    width = me.owner.columns[i];
-                    columns[i].style.width = (percentWidthColumns |= (width < 1)) ? (width * 100) + '%' : width + 'px';
-                }
-            }
-
-            
-            else {
-                
-                for (i = 0; i < numCols; i++) {
-                    if (childItems[i].flex) {
-                        columns[i].style.width = (childItems[i].flex / ownerContext.totalFlex * 100) + '%';
-                        percentWidthColumns = true;
-                    } else if (childItems[i].width) {
-                        columns[i].style.width = childItems[i].width + 'px';
-                        autoFlex = false;
-                    } else if (me.evenColumns) {
-                        columns[i].style.width = (1 / numCols * 100) + '%';
-                        percentWidthColumns = true;
-                    }
-                }
-            }
-
-            
-            if (percentWidthColumns || autoFlex) {
-                me.innerCt.dom.style.tableLayout = 'fixed';
-                me.innerCt.dom.style.width = '100%';
-            } else {
-                me.innerCt.dom.style.tableLayout = 'auto';
-                me.innerCt.dom.style.width = 'auto';
-            }
-        } else {
-            me.innerCt.dom.style.tableLayout = 'auto';
-            me.innerCt.dom.style.width = '';
-        }
-    },
-
-    cacheElements: function () {
-        var me = this;
-
-        
-        me.callParent();
-
-        
-        me.columnEls = me.innerCt.query('td.' + me.owner.groupCls);
-
-        
-        me.lastChildGeneration = me.childGeneration;
-    },
-
-    
-    calculate: function(ownerContext) {
-        var me = this,
-            targetContext, widthShrinkWrap, heightShrinkWrap, shrinkWrap, table, targetPadding;
-
-        
-        
-        if (!ownerContext.getDomProp('containerChildrenDone')) {
-            me.done = false;
-        } else {
-            targetContext = ownerContext.innerCtContext;
-            widthShrinkWrap = ownerContext.widthModel.shrinkWrap;
-            heightShrinkWrap = ownerContext.heightModel.shrinkWrap;
-            shrinkWrap = heightShrinkWrap || widthShrinkWrap;
-            table = targetContext.el.dom;
-            targetPadding = shrinkWrap && targetContext.getPaddingInfo();
-
-            if (widthShrinkWrap) {
-                ownerContext.setContentWidth(table.offsetWidth + targetPadding.width, true);
-            }
-
-            if (heightShrinkWrap) {
-                ownerContext.setContentHeight(table.offsetHeight + targetPadding.height, true);
-            }
-        }
-    },
-
-    doRenderColumn: function (out, renderData, columnIndex) {
-        
-        
-
-        var me = renderData.$layout,
-            owner = me.owner,
-            columnCount = renderData.columnCount,
-            items = owner.items.items,
-            itemCount = items.length,
-            item, itemIndex, rowCount, increment, tree;
-
-        
-        
-        
-
-        if (owner.vertical) {
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-
-            rowCount = Math.ceil(itemCount / columnCount); 
-            itemIndex = columnIndex * rowCount;
-            itemCount = Math.min(itemCount, itemIndex + rowCount);
-            increment = 1;
-        } else {
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-
-            itemIndex = columnIndex;
-            increment = columnCount;
-        }
-
-        for ( ; itemIndex < itemCount; itemIndex += increment) {
-            item = items[itemIndex];
-            me.configureItem(item);
-            tree = item.getRenderTree();
-            Ext.DomHelper.generateMarkup(tree, out);
-        }
-    },
-
-    
-    
-    fixColumns: function () {
-        var me = this,
-            owner = me.owner,
-            columns = me.columns,
-            items = owner.items.items,
-            columnCount = columns.length,
-            itemCount = items.length,
-            columnIndex, i, rowCount;
-
-        if (owner.vertical) {
-            columnIndex = -1; 
-            rowCount = Math.ceil(itemCount / columnCount);
-
-            for (i = 0; i < itemCount; ++i) {
-                if (i % rowCount === 0) {
-                    ++columnIndex;
-                }
-                columns[columnIndex].appendChild(items[i].el.dom);
-            }
-        } else {
-            for (i = 0; i < itemCount; ++i) {
-                columnIndex = i % columnCount;
-                columns[columnIndex].appendChild(items[i].el.dom);
-            }
-        }
-    },
-
-    
-    getColumnCount: function() {
-        var me = this,
-            owner = me.owner,
-            ownerColumns = owner.columns;
-
-        
-        
-        if (me.columnsArray) {
-            return ownerColumns.length;
-        }
-
-        if (Ext.isNumber(ownerColumns)) {
-            return ownerColumns;
-        }
-        return owner.items.length;
-    },
-
-    getItemSizePolicy: function (item) {
-        return this.autoSizePolicy;
-    },
-
-    getRenderData: function () {
-        var me = this,
-            data = me.callParent(),
-            owner = me.owner,
-            i = 0, columns = me.getColumnCount(),
-            items = owner.items.items,
-            width,
-            childItem, column, totalFlex,
-            autoFlex = me.autoFlex,
-            percentWidthColumns = false;
-
-        
-        if (!me.columnsArray) {
-            for (; i < columns; i++) {
-                if (items[i].flex) {
-                    totalFlex += items[i].flex;
-                }
-            }
-        }
-
-        data.colCls = owner.groupCls;
-        data.columnCount = me.getColumnCount();
-
-        data.columns = [];
-        for (i = 0; i < columns; i++) {
-            column = (data.columns[i] = {});
-
-            if (me.columnsArray) {
-                width = me.owner.columns[i];
-                column.style = 'width:' + ((percentWidthColumns |= (width < 1)) ? (width * 100) + '%' : width + 'px');
-            } else {
-                childItem = items[i];
-                if (childItem.flex) {
-                    column.style = 'width:' + (childItem.flex / totalFlex * 100) + '%';
-                    percentWidthColumns = true;
-                } else if (childItem.width) {
-                    column.style = 'width:' + childItem.width + 'px';
-                    autoFlex = false;
-                } else if (me.evenColumns) {
-                    column.style = 'width:' + (1 / columns * 100) + '%';
-                    percentWidthColumns = true;
-                }
-            }
-        }
-
-        
-        data.tableStyle = percentWidthColumns || autoFlex ? 'table-layout:fixed;width:100%' : '';
-
-        return data;
-    },
-
-    
-    getRenderTarget: function() {
-        return this.innerCt;
-    },
-
-    initLayout: function () {
-        var me = this,
-            owner = me.owner;
-
-        me.columnsArray = Ext.isArray(owner.columns);
-        me.evenColumns = Ext.isNumber(owner.columns);
-
-        me.callParent();
-    },
-
-    
-    isValidParent: function() {
-        return true;
-    },
-
-    onAdd: function () {
-        this.callParent(arguments);
-        ++this.childGeneration;
-    },
-
-    onRemove: function () {
-        this.callParent(arguments);
-        ++this.childGeneration;
-    },
-
-    setupRenderTpl: function (renderTpl) {
-        this.callParent(arguments);
-
-        renderTpl.renderColumn = this.doRenderColumn;
-    }
-}, function() {
-    this.prototype.names = Ext.layout.container.HBox.prototype.names;
-    this.prototype.getNames = Ext.layout.container.HBox.prototype.getNames;
-});
-
-Ext.define('Ext.form.CheckboxGroup', {
-    extend:'Ext.form.FieldContainer',
-    mixins: {
-        field: 'Ext.form.field.Field'
-    },
-    alias: 'widget.checkboxgroup',
-    requires: ['Ext.layout.container.CheckboxGroup', 'Ext.form.field.Base'],
-
-    
-
-    
-
-    
-    columns : 'auto',
-
-    
-    vertical : false,
-
-    
-    allowBlank : true,
-
-    
-    
-    blankText : "You must select at least one item in this group",
-    
-
-    
-    defaultType : 'checkboxfield',
-
-    
-    groupCls : Ext.baseCSSPrefix + 'form-check-group',
-
-    
-    fieldBodyCls: Ext.baseCSSPrefix + 'form-checkboxgroup-body',
-
-    
-    layout: 'checkboxgroup',
-
-    initComponent: function() {
-        var me = this;
-        me.callParent();
-        me.initField();
-    },
-
-    
-    initValue: function() {
-        var me = this,
-            valueCfg = me.value;
-        me.originalValue = me.lastValue = valueCfg || me.getValue();
-        if (valueCfg) {
-            me.setValue(valueCfg);
-        }
-    },
-
-    
-    onFieldAdded: function(field) {
-        var me = this;
-        if (field.isCheckbox) {
-            me.mon(field, 'change', me.checkChange, me);
-        }
-        me.callParent(arguments);
-    },
-
-    onFieldRemoved: function(field) {
-        var me = this;
-        if (field.isCheckbox) {
-            me.mun(field, 'change', me.checkChange, me);
-        }
-        me.callParent(arguments);
-    },
-
-    
-    isEqual: function(value1, value2) {
-        var toQueryString = Ext.Object.toQueryString;
-        return toQueryString(value1) === toQueryString(value2);
-    },
-
-    
-    getErrors: function() {
-        var errors = [];
-        if (!this.allowBlank && Ext.isEmpty(this.getChecked())) {
-            errors.push(this.blankText);
-        }
-        return errors;
-    },
-
-    
-    getBoxes: function(query) {
-        return this.query('[isCheckbox]' + (query||''));
-    },
-
-    
-    eachBox: function(fn, scope) {
-        Ext.Array.forEach(this.getBoxes(), fn, scope || this);
-    },
-
-    
-    getChecked: function() {
-        return this.getBoxes('[checked]');
-    },
-
-    
-    isDirty: function(){
-        var boxes = this.getBoxes(),
-            b ,
-            bLen  = boxes.length;
-
-        for (b = 0; b < bLen; b++) {
-            if (boxes[b].isDirty()) {
-                return true;
-            }
-        }
-    },
-
-    
-    setReadOnly: function(readOnly) {
-        var boxes = this.getBoxes(),
-            b,
-            bLen  = boxes.length;
-
-        for (b = 0; b < bLen; b++) {
-            boxes[b].setReadOnly(readOnly);
-        }
-
-        this.readOnly = readOnly;
-    },
-
-    
-    reset: function() {
-        var me = this,
-            hadError = me.hasActiveError(),
-            preventMark = me.preventMark;
-        me.preventMark = true;
-        me.batchChanges(function() {
-            var boxes = me.getBoxes(),
-                b,
-                bLen  = boxes.length;
-
-            for (b = 0; b < bLen; b++) {
-                boxes[b].reset();
-            }
-        });
-        me.preventMark = preventMark;
-        me.unsetActiveError();
-        if (hadError) {
-            me.updateLayout();
-        }
-    },
-
-    resetOriginalValue: function(){
-        var me    = this,
-            boxes = me.getBoxes(),
-            b,
-            bLen  = boxes.length;
-
-        for (b = 0; b < bLen; b++) {
-            boxes[b].resetOriginalValue();
-        }
-
-        me.originalValue = me.getValue();
-        me.checkDirty();
-    },
-
-
-    
-    setValue: function(value) {
-        var me    = this,
-            boxes = me.getBoxes(),
-            b,
-            bLen  = boxes.length,
-            box, name,
-            cbValue;
-
-        me.batchChanges(function() {
-            for (b = 0; b < bLen; b++) {
-                box = boxes[b];
-                name = box.getName();
-                cbValue = false;
-
-                if (value && value.hasOwnProperty(name)) {
-                    if (Ext.isArray(value[name])) {
-                        cbValue = Ext.Array.contains(value[name], box.inputValue);
-                    } else {
-                        
-                        cbValue = value[name];
-                    }
-                }
-
-                box.setValue(cbValue);
-            }
-        });
-        return me;
-    },
-
-
-    
-    getValue: function() {
-        var values = {},
-            boxes  = this.getBoxes(),
-            b,
-            bLen   = boxes.length,
-            box, name, inputValue, bucket;
-
-        for (b = 0; b < bLen; b++) {
-            box        = boxes[b];
-            name       = box.getName();
-            inputValue = box.inputValue;
-
-            if (box.getValue()) {
-                if (values.hasOwnProperty(name)) {
-                    bucket = values[name];
-                    if (!Ext.isArray(bucket)) {
-                        bucket = values[name] = [bucket];
-                    }
-                    bucket.push(inputValue);
-                } else {
-                    values[name] = inputValue;
-                }
-            }
-        }
-
-        return values;
-    },
-
-    
-    getSubmitData: function() {
-        return null;
-    },
-
-    
-    getModelData: function() {
-        return null;
-    },
-
-    validate: function() {
-        var me = this,
-            errors,
-            isValid,
-            wasValid;
-
-        if (me.disabled) {
-            isValid = true;
-        } else {
-            errors = me.getErrors();
-            isValid = Ext.isEmpty(errors);
-            wasValid = !me.hasActiveError();
-            if (isValid) {
-                me.unsetActiveError();
-            } else {
-                me.setActiveError(errors);
-            }
-        }
-        if (isValid !== wasValid) {
-            me.fireEvent('validitychange', me, isValid);
-            me.updateLayout();
-        }
-
-        return isValid;
-    }
-
-}, function() {
-
-    this.borrow(Ext.form.field.Base, ['markInvalid', 'clearInvalid']);
-
-});
-
-
-
-Ext.define('Ext.form.RadioGroup', {
-    extend: 'Ext.form.CheckboxGroup',
-    alias: 'widget.radiogroup',
-
-    
-    
-    allowBlank : true,
-    
-    
-    blankText : 'You must select one item in this group',
-    
-
-    
-    defaultType : 'radiofield',
-
-    
-    groupCls : Ext.baseCSSPrefix + 'form-radio-group',
-
-    getBoxes: function(query) {
-        return this.query('[isRadio]' + (query||''));
-    },
-    
-    checkChange: function() {
-        var value = this.getValue(),
-            key = Ext.Object.getKeys(value)[0];
-            
-        
-        
-        if (Ext.isArray(value[key])) {
-            return;
-        }
-        this.callParent(arguments);    
-    },
-
-    
-    setValue: function(value) {
-        var cbValue, first, formId, radios,
-            i, len, name;
-
-        if (Ext.isObject(value)) {
-            for (name in value) {
-                if (value.hasOwnProperty(name)) {
-                    cbValue = value[name];
-                    first = this.items.first();
-                    formId = first ? first.getFormId() : null;
-                    radios = Ext.form.RadioManager.getWithValue(name, cbValue, formId).items;
-                    len = radios.length;
-
-                    for (i = 0; i < len; ++i) {
-                        radios[i].setValue(true);
-                    }
-                }
-            }
-        }
-        return this;
-    }
-});
-
-
 Ext.define('Ext.layout.container.VBox', {
 
     
@@ -87985,9 +89091,15 @@ Ext.define('Ext.layout.container.VBox', {
         right: 'bottom',
         position: 'top',
         width: 'height',
+        contentWidth: 'contentHeight',
+        minWidth: 'minHeight',
+        maxWidth: 'maxHeight',
         widthCap: 'Height',
+        widthModel: 'heightModel',
         widthIndex: 1,
         x: 'y',
+        scrollLeft: 'scrollTop',
+        overflowX: 'overflowY',
 
         
         center: 'center',
@@ -87995,9 +89107,25 @@ Ext.define('Ext.layout.container.VBox', {
         topPosition: 'left',
         bottom: 'right',
         height: 'width',
+        contentHeight: 'contentWidth',
+        minHeight: 'minWidth',
+        maxHeight: 'maxWidth',
         heightCap: 'Width',
+        heightModel: 'widthModel',
         heightIndex: 0,
-        y: 'x'
+        y: 'x',
+        scrollTop: 'scrollLeft',
+        overflowY: 'overflowX',
+
+        
+        getWidth: 'getHeight',
+        getHeight: 'getWidth',
+        setWidth: 'setHeight',
+        setHeight: 'setWidth',
+        gotWidth: 'gotHeight',
+        gotHeight: 'gotWidth',
+        setContentWidth: 'setContentHeight',
+        setContentHeight: 'setContentWidth'
     },
 
     sizePolicy: {
@@ -88258,7 +89386,7 @@ Ext.define('Ext.layout.container.Accordion', {
                     toExpand.expand();
                 }
 
-            } else {
+            } else if (toExpand) {
                 toExpand.expand();
             }
             owner.deferLayouts = previousValue;
@@ -88565,6 +89693,14 @@ Ext.define('Ext.panel.AbstractPanel', {
     renderTpl: [
         
         '{% this.renderDockedItems(out,values,0); %}',
+        
+        
+        
+        
+        
+        
+        
+        (Ext.isIE6 || Ext.isIE7 || Ext.isIEQuirks) ? '<div></div>' : '',
         '<div id="{id}-body" class="{baseCls}-body<tpl if="bodyCls"> {bodyCls}</tpl>',
             ' {baseCls}-body-{ui}<tpl if="uiCls">',
                 '<tpl for="uiCls"> {parent.baseCls}-body-{parent.ui}-{.}</tpl>',
@@ -88819,6 +89955,9 @@ Ext.define('Ext.panel.Panel', {
     
 
     
+    placeholderCollapseHideMode: Ext.Element.VISIBILITY,
+
+    
      preventHeader: false,
 
     
@@ -88839,6 +89978,9 @@ Ext.define('Ext.panel.Panel', {
 
     
     titleAlign: 'left',
+
+    
+    manageHeight: true,
 
     
     
@@ -88901,12 +90043,13 @@ Ext.define('Ext.panel.Panel', {
     },
 
     beforeDestroy: function() {
+        var me = this;
         Ext.destroy(
-            this.placeholder,
-            this.ghostPanel,
-            this.dd
+            me.placeholder,
+            me.ghostPanel,
+            me.dd
         );
-        this.callParent();
+        me.callParent();
     },
 
     initAria: function() {
@@ -88953,7 +90096,7 @@ Ext.define('Ext.panel.Panel', {
             reExpander.setTitle(newTitle);
         }
 
-        if (placeholder) {
+        if (placeholder && placeholder.setTitle) {
             placeholder.setTitle(newTitle);
         }
 
@@ -88964,9 +90107,11 @@ Ext.define('Ext.panel.Panel', {
     setIconCls: function(newIconCls) {
         var me = this,
             oldIconCls = me.iconCls,
-            header = me.header;
+            header = me.header,
+            placeholder = me.placeholder;
 
         me.iconCls = newIconCls;
+
         if (header) {
             if (header.isHeader) {
                 header.setIconCls(newIconCls);
@@ -88974,6 +90119,11 @@ Ext.define('Ext.panel.Panel', {
                 header.iconCls = newIconCls;
             }
         }
+
+        if (placeholder && placeholder.setIconCls) {
+            placeholder.setIconCls(newIconCls);
+        }
+
         me.fireEvent('iconclschange', me, newIconCls, oldIconCls);
     },
     
@@ -88981,9 +90131,11 @@ Ext.define('Ext.panel.Panel', {
     setIcon: function(newIcon) {
         var me = this,
             oldIcon = me.icon,
-            header = me.header;
+            header = me.header,
+            placeholder = me.placeholder;
 
         me.icon = newIcon;
+
         if (header) {
             if (header.isHeader) {
                 header.setIcon(newIcon);
@@ -88991,6 +90143,11 @@ Ext.define('Ext.panel.Panel', {
                 header.icon = newIcon;
             }
         }
+
+        if (placeholder && placeholder.setIcon) {
+            placeholder.setIcon(newIcon);
+        }
+
         me.fireEvent('iconchange', me, newIcon, oldIcon);
     },
 
@@ -89182,7 +90339,7 @@ Ext.define('Ext.panel.Panel', {
 
         
         if (me.collapseTool && !me.collapseFirst) {
-            me.tools.push(me.collapseTool);
+            me.addTool(me.collapseTool);
         }
     },
 
@@ -89267,7 +90424,8 @@ Ext.define('Ext.panel.Panel', {
     },
 
     getTargetEl: function() {
-        return this.body || this.frameBody || this.el;
+        var me = this;
+        return me.body || me.protoBody || me.frameBody || me.el;
     },
 
     
@@ -89425,6 +90583,11 @@ Ext.define('Ext.panel.Panel', {
             dockedItems = me.dockedItems.items,
             dockedItemCount = dockedItems.length,
             comp, i;
+            
+        
+        if (me.collapseMode == 'mini') {
+            return;
+        }
 
         switch (direction) {
             case c.DIRECTION_TOP:
@@ -89487,12 +90650,14 @@ Ext.define('Ext.panel.Panel', {
         var me = this,
             isLeft = direction == 'left',
             isRight = direction == 'right',
+            isVertical = isLeft || isRight,
             toolAtTop,
             result = Ext.apply({
                 hideMode: 'offsets',
                 title: me.title,
-                orientation: (isLeft || isRight) ? 'vertical' : 'horizontal',
+                orientation: isVertical ? 'vertical' : 'horizontal',
                 textCls: me.headerTextCls,
+                icon: me.icon,
                 iconCls: me.iconCls,
                 baseCls: me.baseCls + '-header',
                 ui: me.ui,
@@ -89500,6 +90665,16 @@ Ext.define('Ext.panel.Panel', {
                 ignoreParentFrame: me.frame || me.overlapHeader,
                 indicateDrag: me.draggable
             }, defaults);
+            
+            
+            
+            if (me.collapseMode == 'mini') {
+                if (isVertical) {
+                    result.width = 1;
+                } else {
+                    result.height = 1;
+                }
+            }
 
         
         
@@ -89665,6 +90840,8 @@ Ext.define('Ext.panel.Panel', {
         me.collapsed = collapseDir;
         me.beginCollapse();
 
+        me.fireHierarchyEvent('collapse');
+
         return me.doCollapseExpand(1, animate);
     },
 
@@ -89739,28 +90916,44 @@ Ext.define('Ext.panel.Panel', {
         toShow.clear();
     },
 
-    createPlaceholder: function(direction) {
+    getPlaceholder: function(direction) {
         var me = this,
             collapseDir = direction || me.collapseDirection,
-            listeners = null;
+            listeners = null,
+            placeholder = me.placeholder;
 
-        if (me.floatable || (me.collapsible && me.titleCollapse)) {
-            listeners = {
-                click: {
-                    fn: me.floatable ? me.floatCollapsedPanel : me.toggleCollapse,
-                    element: 'el',
-                    scope: me
-                }
-            };
+        if (!placeholder) {
+            if (me.floatable || (me.collapsible && me.titleCollapse)) {
+                listeners = {
+                    click: {
+                        fn: me.floatable ? me.floatCollapsedPanel : me.toggleCollapse,
+                        element: 'el',
+                        scope: me
+                    }
+                };
+            }
+
+            me.placeholder = placeholder = Ext.widget(me.createReExpander(collapseDir, {
+                id: me.id + '-placeholder',
+                listeners: listeners
+            }));
         }
 
-        return Ext.widget(me.createReExpander(collapseDir, {
-            id: me.id + '-placeholder',
-            placeholderFor: me,
-            margins: me.margins,
-            cls: Ext.baseCSSPrefix + 'region-collapsed-placeholder ' + Ext.baseCSSPrefix + 'region-collapsed-' + collapseDir + '-placeholder ' + me.collapsedCls,
-            listeners: listeners
-        }));
+        
+        if (!placeholder.placeholderFor) {
+            
+            if (!placeholder.isComponent) {
+                me.placeholder = placeholder = me.lookupComponent(placeholder);
+            }
+            Ext.applyIf(placeholder, {
+                margins: me.margins,
+                placeholderFor: me
+            });
+
+            placeholder.addCls([Ext.baseCSSPrefix + 'region-collapsed-placeholder', Ext.baseCSSPrefix + 'region-collapsed-' + collapseDir + '-placeholder', me.collapsedCls]);
+        }
+
+        return placeholder;
     },
 
     placeholderCollapse: function(direction, animate) {
@@ -89768,7 +90961,7 @@ Ext.define('Ext.panel.Panel', {
             ownerCt = me.ownerCt,
             collapseDir = direction || me.collapseDirection,
             floatCls = Ext.baseCSSPrefix + 'border-region-slide-in',
-            placeholder = me.placeholder;
+            placeholder = me.getPlaceholder(direction);
 
         me.isCollapsingOrExpanding = 1;
 
@@ -89776,8 +90969,7 @@ Ext.define('Ext.panel.Panel', {
         me.hidden = true;
         me.collapsed = collapseDir;
 
-        if (placeholder) {
-
+        if (placeholder.rendered) {
             
             if (placeholder.el.dom.parentNode !== me.el.dom.parentNode) {
                 me.el.dom.parentNode.insertBefore(placeholder.el.dom, me.el.dom);
@@ -89787,13 +90979,12 @@ Ext.define('Ext.panel.Panel', {
             placeholder.el.show();
             ownerCt.updateLayout();
         } else {
-            placeholder = me.placeholder = me.createPlaceholder(collapseDir);
-            ownerCt.insert(ownerCt.items.indexOf(me), me.placeholder);
+            ownerCt.insert(ownerCt.items.indexOf(me), placeholder);
         }
 
         if (me.rendered) {
             
-            me.el.setVisibilityMode(Ext.Element.VISIBILITY);
+            me.el.setVisibilityMode(me.placeholderCollapseHideMode);
             if (animate) {
                 me.el.addCls(floatCls);
                 placeholder.el.hide();
@@ -89844,10 +91035,11 @@ Ext.define('Ext.panel.Panel', {
 
         
         if (me.el.hasCls(floatCls)) {
-            return me.slideOutFloatedPanel();
+            me.slideOutFloatedPanel();
+            return;
         }
 
-        if(me.isSliding) {
+        if (me.isSliding) {
             return;
         }
         me.isSliding = true;
@@ -89909,6 +91101,11 @@ Ext.define('Ext.panel.Panel', {
                 break;
         }
 
+        
+        
+        me.floatedFromCollapse = me.collapsed;
+        me.collapsed = me.hidden = false;
+
         me.el.slideIn(slideDirection, {
             preserveScroll: true,
             listeners: {
@@ -89919,20 +91116,25 @@ Ext.define('Ext.panel.Panel', {
         });
     },
 
+    isLayoutRoot: function() {
+        if (this.floatedFromCollapse) {
+            return true;
+        }
+        return this.callParent();
+    },
+
     slideOutFloatedPanel: function() {
         var me = this,
             compEl = this.el,
-            floatCls = Ext.baseCSSPrefix + 'border-region-slide-in',
             collapseDirection;
 
-        if(me.isSliding) {
+        if (me.isSliding) {
             return;
         }
+
         me.isSliding = true;
 
-        
-        compEl.un(me.panelMouseMon);
-        me.placeholder.el.un(me.placeholderMouseMon);
+        me.slideOutFloatedPanelBegin();
 
         if (typeof me.collapsed == 'string') {
             collapseDirection = me.collapsed.charAt(0);
@@ -89942,16 +91144,35 @@ Ext.define('Ext.panel.Panel', {
             preserveScroll: true,
             listeners: {
                 afteranimate: function() {
-                    if (me.collapseTool) {
-                        me.collapseTool.el.show();
-                    }
-
+                    me.slideOutFloatedPanelEnd();
                     
-                    me.el.removeCls(floatCls);
+                    
+                    me.el.removeCls(Ext.baseCSSPrefix + 'border-region-slide-in');
                     me.isSliding = false;
                 }
             }
         });
+    },
+
+    
+    slideOutFloatedPanelBegin: function() {
+        var me = this,
+            compEl = this.el;
+
+        me.collapsed = me.floatedFromCollapse;
+        me.hidden = true;
+        me.floatedFromCollapse = null;
+
+        
+        compEl.un(me.panelMouseMon);
+        me.placeholder.el.un(me.placeholderMouseMon);
+    },
+
+    
+    slideOutFloatedPanelEnd: function() {
+        if (this.collapseTool) {
+            this.collapseTool.el.show();
+        }
     },
 
     
@@ -89966,7 +91187,11 @@ Ext.define('Ext.panel.Panel', {
             animate = me.animCollapse;
         }
 
-        if (!me.collapsed || me.fireEvent('beforeexpand', me, animate) === false) {
+        if (!me.collapsed && !me.floatedFromCollapse) {
+            return me;
+        }
+
+        if (me.fireEvent('beforeexpand', me, animate) === false) {
             return me;
         }
 
@@ -89977,6 +91202,8 @@ Ext.define('Ext.panel.Panel', {
         me.restoreHiddenDocked();
         me.beginExpand();
         me.collapsed = false;
+
+        me.fireHierarchyEvent('expand');
 
         return me.doCollapseExpand(2, animate);
     },
@@ -89989,19 +91216,14 @@ Ext.define('Ext.panel.Panel', {
             floatedPos,
             slideInDirection;
 
-        me.isCollapsingOrExpanding = 2;
-
-        
-        if (me.el.hasCls(floatCls)) {
-            
-            me.el.un(me.panelMouseMon);
-            me.placeholder.el.un(me.placeholderMouseMon);
-
+        if (me.floatedFromCollapse) {
             floatedPos = me.getPosition(true);
-            if (me.collapseTool) {
-                me.collapseTool.el.show();
-            }
+            
+            me.slideOutFloatedPanelBegin();
+            me.slideOutFloatedPanelEnd();
         }
+
+        me.isCollapsingOrExpanding = 2;
 
         
         me.placeholder.hidden = true;
@@ -90042,8 +91264,15 @@ Ext.define('Ext.panel.Panel', {
                     listeners: {
                         afteranimate: function() {
                             me.collapsed = false;
-                            me.placeholder.hide();
+
+                            
+                            
+                            
+                            
+                            
                             me.el.removeCls(floatCls);
+                            me.placeholder.hide();
+
                             me.isCollapsingOrExpanding = 0;
                             me.fireEvent('expand', me);
                         }
@@ -90110,7 +91339,7 @@ Ext.define('Ext.panel.Panel', {
 
     
     toggleCollapse: function() {
-        return this.collapsed ? this.expand() : this.collapse();
+        return (this.collapsed || this.floatedFromCollapse) ? this.expand() : this.collapse();
     },
 
     
@@ -90169,7 +91398,8 @@ Ext.define('Ext.panel.Panel', {
                 floating: {
                     shadow: false
                 },
-                frame: (Ext.supports.CSS3BorderRadius && !me.isWindow) ? me.frame : false,
+                frame: me.frame && !me.alwaysFramed,
+                alwaysFramed: me.alwaysFramed,
                 overlapHeader: me.overlapHeader,
                 headerPosition: me.headerPosition,
                 baseCls: me.baseCls,
@@ -90252,6 +91482,8 @@ Ext.define('Ext.container.ButtonGroup', {
     extend: 'Ext.panel.Panel',
     alias: 'widget.buttongroup',
     alternateClassName: 'Ext.ButtonGroup',
+
+    requires: ['Ext.layout.container.Table'],
 
     
 
@@ -90455,19 +91687,22 @@ Ext.define('Ext.menu.Menu', {
         }
     },
 
-    afterRender: function(ct) {
+    onBoxReady: function() {
         var me = this,
-            prefix = Ext.baseCSSPrefix,
-            space = '&#160;';
+            separatorSpec;
 
         me.callParent(arguments);
 
         
         if (me.showSeparator) {
-            me.iconSepEl = me.layout.getRenderTarget().insertFirst({
-                cls: prefix + 'menu-icon-separator',
-                html: space
-            });
+            separatorSpec = {
+                cls: Ext.baseCSSPrefix + 'menu-icon-separator',
+                html: '&#160;'
+            };
+            if ((!Ext.isStrict && Ext.isIE) || Ext.isIE6) {
+                separatorSpec.style = 'height:' + me.el.getHeight() + 'px';
+            }
+            me.iconSepEl = me.layout.getElementTarget().insertFirst(separatorSpec);
         }
 
         me.mon(me.el, {
@@ -90477,47 +91712,9 @@ Ext.define('Ext.menu.Menu', {
         });
         me.mouseMonitor = me.el.monitorMouseLeave(100, me.onMouseLeave, me);
 
-        if (me.showSeparator && ((!Ext.isStrict && Ext.isIE) || Ext.isIE6)) {
-            me.iconSepEl.setHeight(me.el.getHeight());
-        }
-
         me.keyNav = new Ext.menu.KeyNav(me);
     },
 
-    afterLayout: function() {
-        var me = this,
-            innerCt, innerCtWidth, dockedItems, len, i, dockedItem, newWidth;
-        me.callParent(arguments);
-
-        
-        
-        
-        
-        if ((!Ext.isStrict && Ext.isIE) || Ext.isIE6) {
-            innerCt = me.layout.getRenderTarget();
-            innerCtWidth = 0;
-            dockedItems = me.dockedItems;
-            len = dockedItems.length;
-            i = 0;
-
-            innerCtWidth = innerCt.getWidth();
-
-            newWidth = innerCtWidth + me.body.getBorderWidth('lr') + me.body.getPadding('lr');
-
-            
-            me.body.setWidth(newWidth);
-
-            
-            for (; i < len; i++) {
-                dockedItem = dockedItems.getAt(i);
-                if (dockedItem.dock == 'left' || dockedItem.dock == 'right') {
-                    newWidth += dockedItem.getWidth();
-                }
-            }
-            me.el.setWidth(newWidth);
-        }
-    },
-    
     getBubbleTarget: function() {
         
         
@@ -90531,22 +91728,23 @@ Ext.define('Ext.menu.Menu', {
     },
 
     
-    deactivateActiveItem: function() {
-        var me = this;
+    deactivateActiveItem: function(andBlurFocusedItem) {
+        var me = this,
+            activeItem = me.activeItem,
+            focusedItem = me.focusedItem;
 
-        if (me.activeItem) {
-            me.activeItem.deactivate();
-            if (!me.activeItem.activated) {
+        if (activeItem) {
+            activeItem.deactivate();
+            if (!activeItem.activated) {
                 delete me.activeItem;
             }
         }
 
         
-        if (me.focusedItem && !me.filtered) {
-            me.focusedItem.blur();
-            if (!me.focusedItem.hasFocus) {
-                delete me.focusedItem;
-            }
+        
+        if (focusedItem && andBlurFocusedItem) {
+            focusedItem.blur();
+            delete me.focusedItem;
         }
     },
 
@@ -90557,7 +91755,7 @@ Ext.define('Ext.menu.Menu', {
 
     
     hide: function() {
-        this.deactivateActiveItem();
+        this.deactivateActiveItem(true);
         this.callParent(arguments);
     },
 
@@ -90612,7 +91810,6 @@ Ext.define('Ext.menu.Menu', {
             } else {
                 cmp.cls = (cmp.cls ? cmp.cls : '') + ' ' + cls.join(' ');
             }
-            cmp.isMenuItem = true;
         }
         return cmp;
     },
@@ -90638,22 +91835,19 @@ Ext.define('Ext.menu.Menu', {
             return;
         }
 
-        if ((e.getTarget() == me.el.dom) || e.within(me.layout.getRenderTarget())) {
-            item = me.getItemFromEvent(e) || me.activeItem;
-
-            if (item) {
-                if (item.getXTypes().indexOf('menuitem') >= 0) {
-                    if (!item.menu || !me.ignoreParentClicks) {
-                        item.onClick(e);
-                    } else {
-                        e.stopEvent();
-                    }
-                }
-            }
-            if (!item.disabled) {
-                me.fireEvent('click', me, item, e);
+        item = (e.type === 'click') ? me.getItemFromEvent(e) : me.activeItem;
+        if (item && item.isMenuItem) {
+            if (!item.menu || !me.ignoreParentClicks) {
+                item.onClick(e);
+            } else {
+                e.stopEvent();
             }
         }
+        
+        if (!item || item.disabled) {
+            item = undefined;
+        }
+        me.fireEvent('click', me, item, e);
     },
 
     onDestroy: function() {
@@ -90700,7 +91894,8 @@ Ext.define('Ext.menu.Menu', {
             return;
         }
 
-        if (item) {
+        
+        if (item && !item.activated) {
             me.setActiveItem(item);
             if (item.activated && item.expandMenu) {
                 item.expandMenu();
@@ -90715,7 +91910,7 @@ Ext.define('Ext.menu.Menu', {
     setActiveItem: function(item) {
         var me = this;
 
-        if (item && (item != me.activeItem && item != me.focusedItem)) {
+        if (item && (item != me.activeItem)) {
             me.deactivateActiveItem();
             if (me.canActivateItem(item)) {
                 if (item.activate) {
@@ -90739,66 +91934,74 @@ Ext.define('Ext.menu.Menu', {
         var me = this;
 
         if (me.floating && cmp) {
-            
-            
-            if (!me.el) {
-                me.hidden = false;
-                me.doAutoRender();
-                me.el.hide();
-                me.hidden = true;
-            }
+            me.show();
 
             
             
+            
             me.setPagePosition(me.el.getAlignToXY(cmp.el || cmp, pos || me.defaultAlign, off));
-            me.show();
+            me.setVerticalPosition();
         }
         return me;
     },
 
-    doConstrain : function() {
+    show: function() {
         var me = this,
-            y = me.el.getY(),
-            max, full,
-            vector,
-            returnY = y, normalY, parentEl, scrollTop, viewHeight;
+            parentEl, viewHeight, result,
+            maxWas = me.maxHeight;
 
-        delete me.height;
-        me.updateLayout();
-        full = me.getHeight();
+        
+        if (!me.rendered){
+            me.doAutoRender();
+        }
+
+        
         if (me.floating) {
             
             parentEl = Ext.fly(me.el.getScopeParent());
-            scrollTop = parentEl.getScroll().top;
             viewHeight = parentEl.getViewSize().height;
-            
-            
-            normalY = y - scrollTop;
-            max = me.maxHeight ? me.maxHeight : viewHeight - normalY;
-            if (full > viewHeight) {
-                max = viewHeight;
-                
-                returnY = y - normalY;
-            } else if (max < full) {
-                returnY = y - (full - max);
-                max = full;
-            }
-        }else{
-            max = me.getHeight();
+            me.maxHeight  =  Math.min(maxWas || viewHeight, viewHeight);
         }
+
+        result = me.callParent(arguments);
+        me.maxHeight = maxWas;
+        return result;
+    },
+
+    afterComponentLayout: function(width, height, oldWidth, oldHeight){
+        var me = this;
+        me.callParent(arguments);
         
-        if (me.maxHeight){
-            max = Math.min(me.maxHeight, max);
+        if (me.showSeparator){
+            me.iconSepEl.setHeight(me.componentLayout.lastComponentSize.contentHeight);
         }
-        if (full > max && max > 0){
-            me.setHeight(max);
-            if (me.showSeparator){
-                me.iconSepEl.setHeight(me.layout.getRenderTarget().dom.scrollHeight);
+    },
+
+    
+    
+    
+    setVerticalPosition: function(){
+        var me = this,
+            max,
+            y = me.el.getY(),
+            returnY = y,
+            height = me.getHeight(),
+            viewportHeight = Ext.Element.getViewportHeight().height,
+            parentEl = Ext.fly(me.el.getScopeParent()),
+            viewHeight = parentEl.getViewSize().height,
+            normalY = y - parentEl.getScroll().top; 
+
+        parentEl = null;
+
+        if (me.floating) {
+            max = me.maxHeight ? me.maxHeight : viewHeight - normalY;
+            if (height > viewHeight) {
+                returnY = y - normalY;
+            } else if (max < height) {
+                returnY = y - (height - max);
+            } else if((y + height) > viewportHeight){ 
+                returnY = viewportHeight - height;
             }
-        }
-        vector = me.getConstrainVector(me.el.getScopeParent());
-        if (vector) {
-            me.setPosition(me.getPosition()[0] + vector[0]);
         }
         me.el.setY(returnY);
     }
@@ -90960,6 +92163,8 @@ Ext.define('Ext.panel.Table', {
 
     
 
+    
+
     deferRowRender: true,
      
     
@@ -90991,6 +92196,10 @@ Ext.define('Ext.panel.Table', {
 
     
 
+    
+
+    
+
     initComponent: function() {
 
         var me          = this,
@@ -91002,10 +92211,6 @@ Ext.define('Ext.panel.Table', {
             border = me.border,
             i, len;
 
-        if (me.hideHeaders) {
-            border = false;
-        }
-
         if (me.columnLines) {
             me.addCls(Ext.baseCSSPrefix + 'grid-with-col-lines');
         }
@@ -91013,10 +92218,10 @@ Ext.define('Ext.panel.Table', {
         if (me.rowLines) {
             me.addCls(Ext.baseCSSPrefix + 'grid-with-row-lines');
         }
-        
+
         
         me.store = Ext.data.StoreManager.lookup(me.store || 'ext-empty-store');
-        
+
 
         
         
@@ -91049,7 +92254,7 @@ Ext.define('Ext.panel.Table', {
                  me.injectLockable();
              }
         }
-        
+
         me.scrollTask = new Ext.util.DelayedTask(me.syncHorizontalScroll, me);
 
         me.addEvents(
@@ -91090,7 +92295,6 @@ Ext.define('Ext.panel.Table', {
 
             if (me.hideHeaders) {
                 me.headerCt.height = 0;
-                me.headerCt.border = false;
                 me.headerCt.addCls(Ext.baseCSSPrefix + 'grid-header-ct-hidden');
                 me.addCls(Ext.baseCSSPrefix + 'grid-header-hidden');
                 
@@ -91166,7 +92370,7 @@ Ext.define('Ext.panel.Table', {
             });
             me.mon(view, {
                 viewready: me.onViewReady,
-                refresh: me.onViewRefresh,
+                refresh: me.onRestoreHorzScroll,
                 scope: me
             });
         }
@@ -91241,6 +92445,10 @@ Ext.define('Ext.panel.Table', {
 
         me.callParent(arguments);
         me.addStateEvents(['columnresize', 'columnmove', 'columnhide', 'columnshow', 'sortchange']);
+
+        if (me.headerCt) {
+            me.headerCt.on('afterlayout', me.onRestoreHorzScroll, me);
+        }
     },
 
     relayHeaderCtEvents: function (headerCt) {
@@ -91318,6 +92526,9 @@ Ext.define('Ext.panel.Table', {
         if (!me.view) {
             sm = me.getSelectionModel();
             me.view = Ext.widget(Ext.apply({}, me.viewConfig, {
+
+                
+                grid: me,
                 deferInitialRefresh: me.deferRowRender !== false,
                 scroll: me.scroll,
                 xtype: me.viewType,
@@ -91325,7 +92536,8 @@ Ext.define('Ext.panel.Table', {
                 headerCt: me.headerCt,
                 selModel: sm,
                 features: me.features,
-                panel: me
+                panel: me,
+                emptyText : me.emptyText ? '<div class="' + Ext.baseCSSPrefix + 'grid-empty">' + me.emptyText + '</div>' : ''
             }));
             me.mon(me.view, {
                 uievent: me.processEvent,
@@ -91397,8 +92609,19 @@ Ext.define('Ext.panel.Table', {
 
     
     onHeaderMove: function(headerCt, header, colsToMove, fromIdx, toIdx) {
-        this.view.moveColumn(fromIdx, toIdx, colsToMove);
-        this.delayScroll();
+        var me = this;
+
+        
+        
+        if (me.optimizedColumnMove === false) {
+            me.view.refresh();
+        }
+
+        
+        else {
+            me.view.moveColumn(fromIdx, toIdx, colsToMove);
+        }
+        me.delayScroll();
     },
 
     
@@ -91423,7 +92646,7 @@ Ext.define('Ext.panel.Table', {
     },
 
     
-    onViewRefresh: function() {
+    onRestoreHorzScroll: function() {
         var left = this.scrollLeftPos;
         if (left) {
             this.syncHorizontalScroll(left);
@@ -91648,8 +92871,16 @@ Ext.define('Ext.tab.Panel', {
 
         
         me.activeTab = me.getComponent(activeTab);
+
+        
+        if (me.activeTab) {
+            me.activeTab.tab.activate(true);
+
+            
+            me.tabBar.activeTab = me.activeTab.tab;
+        }
     },
-   
+
     
     setActiveTab: function(card) {
         var me = this,
@@ -91659,26 +92890,65 @@ Ext.define('Ext.tab.Panel', {
         if (card) {
             previous = me.getActiveTab();
 
-            if (previous && previous !== card && me.fireEvent('beforetabchange', me, card, previous) === false) {
+            if (previous !== card && me.fireEvent('beforetabchange', me, card, previous) === false) {
                 return false;
             }
 
-            me.tabBar.setActiveTab(card.tab);
-            me.activeTab = card;
-            if (me.rendered) {
-                me.layout.setActiveItem(card);
+            
+            
+            if (!card.isComponent) {
+                Ext.suspendLayouts();
+                card = me.add(card);
+                Ext.resumeLayouts();
             }
 
             
-            if (previous !== card) {
-                me.fireEvent('tabchange', me, card, previous);
+            
+            me.activeTab = card;
+
+            
+            
+            
+            Ext.suspendLayouts();
+            me.layout.setActiveItem(card);
+
+            
+            card = me.activeTab = me.layout.getActiveItem();
+
+            
+            if (card && card !== previous) {
+
+                
+                me.tabBar.setActiveTab(card.tab);
+                Ext.resumeLayouts(true);
+
+                
+                if (previous !== card) {
+                    me.fireEvent('tabchange', me, card, previous);
+                }
             }
+            
+            else {
+                Ext.resumeLayouts(true);
+            }
+            return card;
         }
     },
 
     
     getActiveTab: function() {
-        return this.activeTab;
+        var me = this,
+            
+            result = me.getComponent(me.activeTab);
+
+        
+        if (result && me.items.indexOf(result) != -1) {
+            me.activeTab = result;
+        } else {
+            me.activeTab = null;
+        }
+
+        return me.activeTab;
     },
 
     
@@ -91703,16 +92973,8 @@ Ext.define('Ext.tab.Panel', {
 
         cfg = Ext.applyIf(cfg, defaultConfig);
 
+        
         item.tab = me.tabBar.insert(index, cfg);
-
-        
-        
-        if (!me.rendered && item === me.getComponent(me.activeTab)) {
-            item.tab.activate(true);
-
-            
-            me.tabBar.activeTab = item.tab;
-        }
 
         item.on({
             scope : me,
@@ -91847,16 +93109,16 @@ Ext.define('Ext.tip.Tip', {
 
     ariaRole: 'tooltip',
 
+    
+    alwaysFramed: true,
+
+    frameHeader: false,
+
     initComponent: function() {
         var me = this;
 
         me.floating = Ext.apply({}, {shadow: me.shadow}, me.self.prototype.floating);
         me.callParent(arguments);
-        
-        
-        
-        
-        me.frame = true;
 
         
         me.constrain = me.constrain || me.constrainPosition;
@@ -93762,33 +95024,80 @@ Ext.define('Ext.chart.series.Cartesian', {
         var me = this,
             axes = me.chart.axes,
             axis = [].concat(me.axis),
-            xAxis, yAxis;
+            yFields = {}, yFieldList = [].concat(me.yField),
+            xFields = {}, xFieldList = [].concat(me.xField),
+            fields, xAxis, yAxis, i, ln, flipXY;
 
+        
+        flipXY = me.type === 'bar' && me.column === false;
+        if(flipXY) {
+            fields = yFieldList;
+            yFieldList = xFieldList;
+            xFieldList = fields;
+        }
         if (Ext.Array.indexOf(axis, 'top') > -1) {
             xAxis = 'top';
         } else if (Ext.Array.indexOf(axis, 'bottom') > -1) {
             xAxis = 'bottom';
         } else {
-            if (axes.get('top')) {
+            if (axes.get('top') && axes.get('bottom')) {
+                for (i = 0, ln = xFieldList.length; i < ln; i++) {
+                    xFields[xFieldList[i]] = true;
+                }
+                fields = [].concat(axes.get('bottom').fields);
+                for (i = 0, ln = fields.length; i < ln; i++) {
+                    if (xFields[fields[i]]) {
+                        xAxis = 'bottom';
+                        break
+                    }
+                }
+                fields = [].concat(axes.get('top').fields);
+                for (i = 0, ln = fields.length; i < ln; i++) {
+                    if (xFields[fields[i]]) {
+                        xAxis = 'top';
+                        break
+                    }
+                }
+            } else if (axes.get('top')) {
                 xAxis = 'top';
             } else if (axes.get('bottom')) {
                 xAxis = 'bottom';
             }
         }
-
         if (Ext.Array.indexOf(axis, 'left') > -1) {
             yAxis = 'left';
         } else if (Ext.Array.indexOf(axis, 'right') > -1) {
             yAxis = 'right';
         } else {
-            if (axes.get('left')) {
+            if (axes.get('left') && axes.get('right')) {
+                for (i = 0, ln = yFieldList.length; i < ln; i++) {
+                    yFields[yFieldList[i]] = true;
+                }
+                fields = [].concat(axes.get('right').fields);
+                for (i = 0, ln = fields.length; i < ln; i++) {
+                    if (yFields[fields[i]]) {
+
+                        break
+                    }
+                }
+                fields = [].concat(axes.get('left').fields);
+                for (i = 0, ln = fields.length; i < ln; i++) {
+                    if (yFields[fields[i]]) {
+                        yAxis = 'left';
+                        break
+                    }
+                }
+            } else if (axes.get('left')) {
                 yAxis = 'left';
             } else if (axes.get('right')) {
                 yAxis = 'right';
             }
         }
 
-        return {
+        return flipXY ? {
+            xAxis: yAxis,
+            yAxis: xAxis
+        }: {
             xAxis: xAxis,
             yAxis: yAxis
         };
@@ -93862,9 +95171,9 @@ Ext.define('Ext.chart.series.Area', {
             ySum[j] = 0;
         }
         for (i = 0; i < len; ++i) {
-            xSum += xValues[i];
+            xSum += +xValues[i];
             for (j = 0; j < yCompLen; ++j) {
-                ySum[j] += yValues[i][j];
+                ySum[j] += +yValues[i][j];
             }
             if (i % ratio == 0) {
                 
@@ -93905,29 +95214,42 @@ Ext.define('Ext.chart.series.Area', {
             math = Math,
             mmin = math.min,
             mmax = math.max,
+            boundAxis = me.getAxesForXAndYFields(),
+            boundXAxis = boundAxis.xAxis,
+            boundYAxis = boundAxis.yAxis,
+            ends, allowDate,
             bbox, xScale, yScale, xValue, yValue, areaIndex, acumY, ln, sumValues, clipBox, areaElem, axis, out;
 
         me.setBBox();
         bbox = me.bbox;
 
-        
-        if (me.axis) {
-            axis = chart.axes.get(me.axis);
-            if (axis) {
-                out = axis.calcEnds();
-                minY = out.from || axis.prevMin;
-                maxY = mmax(out.to || axis.prevMax, 0);
+        if (axis = chart.axes.get(boundXAxis)) {
+            if (axis.type === 'Time') {
+                allowDate = true;
             }
+            ends = axis.applyData();
+            minX = ends.from;
+            maxX = ends.to;
+        }
+
+        if (axis = chart.axes.get(boundYAxis)) {
+            ends = axis.applyData();
+            minY = ends.from;
+            maxY = ends.to;
+        }
+
+        
+        if (me.xField && !Ext.isNumber(minX)) {
+            axis = me.getMinMaxXValues();
+            allowDate = true;
+            minX = axis[0];
+            maxX = axis[1];
         }
 
         if (me.yField && !Ext.isNumber(minY)) {
-            axis = new Ext.chart.axis.Axis({
-                chart: chart,
-                fields: [].concat(me.yField)
-            });
-            out = axis.calcEnds();
-            minY = out.from || axis.prevMin;
-            maxY = mmax(out.to || axis.prevMax, 0);
+            axis = me.getMinMaxYValues();
+            minY = axis[0];
+            maxY = axis[1];
         }
 
         if (!Ext.isNumber(minY)) {
@@ -93942,7 +95264,11 @@ Ext.define('Ext.chart.series.Area', {
             xValue = record.get(me.xField);
             yValue = [];
             if (typeof xValue != 'number') {
-                xValue = i;
+                if (allowDate) {
+                    xValue = +xValue;
+                } else {
+                    xValue = i;
+                }
             }
             xValues.push(xValue);
             acumY = 0;
@@ -94607,10 +95933,14 @@ Ext.define('Ext.chart.series.Bar', {
             yPadding = me.yPadding,
             stacked = me.stacked,
             barWidth = me.getBarGirth(),
+            barWidthProperty = column ? 'width' : 'height',
             math = Math,
+            mmin = math.min,
             mmax = math.max,
             mabs = math.abs,
-            groupBarWidth, bbox, minY, maxY, axis, out,
+            boundAxes = me.getAxesForXAndYFields(),
+            boundYAxis = boundAxes.yAxis,
+            ends, shrunkBarWidth, groupBarWidth, bbox, minY, maxY, axis, out,
             scale, zero, total, rec, j, plus, minus;
 
         me.setBBox(true);
@@ -94624,24 +95954,17 @@ Ext.define('Ext.chart.series.Bar', {
                 }
             }
         }
-
-        if (me.axis) {
-            axis = chart.axes.get(me.axis);
-            if (axis) {
-                out = axis.calcEnds();
-                minY = out.from;
-                maxY = out.to;
-            }
+        axis = chart.axes.get(boundYAxis);
+        if (axis) {
+            ends = axis.applyData();
+            minY = ends.from;
+            maxY = ends.to;
         }
 
         if (me.yField && !Ext.isNumber(minY)) {
-            axis = new Ext.chart.axis.Axis({
-                chart: chart,
-                fields: [].concat(me.yField)
-            });
-            out = axis.calcEnds();
-            minY = out.from;
-            maxY = out.to;
+            out = me.getMinMaxYValues();
+            minY = out[0];
+            maxY = out[1];
         }
 
         if (!Ext.isNumber(minY)) {
@@ -94651,7 +95974,13 @@ Ext.define('Ext.chart.series.Bar', {
             maxY = 0;
         }
         scale = (column ? bbox.height - yPadding * 2 : bbox.width - xPadding * 2) / (maxY - minY);
-        groupBarWidth = barWidth / ((stacked ? 1 : groupBarsLen) * (groupGutter + 1) - groupGutter);
+        shrunkBarWidth = barWidth;
+        groupBarWidth = (barWidth / ((stacked ? 1 : groupBarsLen) * (groupGutter + 1) - groupGutter));
+        
+        if (barWidthProperty in me.style) {
+            groupBarWidth = mmin(groupBarWidth, me.style[barWidthProperty]);
+            shrunkBarWidth = groupBarWidth * ((stacked ? 1 : groupBarsLen) * (groupGutter + 1) - groupGutter);
+        }
         zero = (column) ? bbox.y + bbox.height - yPadding : bbox.x + xPadding;
 
         if (stacked) {
@@ -94681,6 +96010,7 @@ Ext.define('Ext.chart.series.Bar', {
         return {
             bars: bars,
             bbox: bbox,
+            shrunkBarWidth: shrunkBarWidth,
             barsLen: barsLen,
             groupBarsLen: groupBarsLen,
             barWidth: barWidth,
@@ -94715,6 +96045,8 @@ Ext.define('Ext.chart.series.Bar', {
             shadowAttributes = me.shadowAttributes,
             shadowGroupsLn = shadowGroups.length,
             bbox = bounds.bbox,
+            barWidth = bounds.barWidth,
+            shrunkBarWidth = bounds.shrunkBarWidth,
             xPadding = me.xPadding,
             yPadding = me.yPadding,
             stacked = me.stacked,
@@ -94749,7 +96081,7 @@ Ext.define('Ext.chart.series.Bar', {
                     Ext.apply(barAttr, {
                         height: height,
                         width: mmax(bounds.groupBarWidth, 0),
-                        x: (bbox.x + xPadding + i * bounds.barWidth * (1 + gutter) + counter * bounds.groupBarWidth * (1 + groupGutter) * !stacked),
+                        x: (bbox.x + xPadding + (barWidth - shrunkBarWidth) * 0.5 + i * barWidth * (1 + gutter) + counter * bounds.groupBarWidth * (1 + groupGutter) * !stacked),
                         y: bottom - height
                     });
                 }
@@ -94760,7 +96092,7 @@ Ext.define('Ext.chart.series.Bar', {
                         height: mmax(bounds.groupBarWidth, 0),
                         width: height + (bottom == bounds.zero),
                         x: bottom + (bottom != bounds.zero),
-                        y: (bbox.y + yPadding + offset * bounds.barWidth * (1 + gutter) + counter * bounds.groupBarWidth * (1 + groupGutter) * !stacked + 1)
+                        y: (bbox.y + yPadding + (barWidth - shrunkBarWidth) * 0.5 + offset * barWidth * (1 + gutter) + counter * bounds.groupBarWidth * (1 + groupGutter) * !stacked + 1)
                     });
                 }
                 if (height < 0) {
@@ -94872,7 +96204,7 @@ Ext.define('Ext.chart.series.Bar', {
                     totalDim = items[i].totalDim;
                     totalNegDim = items[i].totalNegDim;
                     if (column) {
-                        shadowBarAttr.y = zero - totalNegDim;
+                        shadowBarAttr.y = zero + totalNegDim - totalDim - 1;
                         shadowBarAttr.height = totalDim;
                     }
                     else {
@@ -94880,18 +96212,13 @@ Ext.define('Ext.chart.series.Bar', {
                         shadowBarAttr.width = totalDim;
                     }
                 }
+                
+                rendererAttributes = me.renderer(shadow, store.getAt(j), shadowBarAttr, i, store);
+                rendererAttributes.hidden = !!barAttr.hidden;
                 if (animate) {
-                    if (!stacked) {
-                        rendererAttributes = me.renderer(shadow, store.getAt(j), shadowBarAttr, i, store);
-                        me.onAnimate(shadow, { to: rendererAttributes });
-                    }
-                    else {
-                        rendererAttributes = me.renderer(shadow, store.getAt(j), Ext.apply(shadowBarAttr, { hidden: true }), i, store);
-                        shadow.setAttributes(rendererAttributes, true);
-                    }
+                    me.onAnimate(shadow, { to: rendererAttributes });
                 }
                 else {
-                    rendererAttributes = me.renderer(shadow, store.getAt(j), Ext.apply(shadowBarAttr, { hidden: false }), i, store);
                     shadow.setAttributes(rendererAttributes, true);
                 }
                 shadows.push(shadow);
@@ -94924,8 +96251,13 @@ Ext.define('Ext.chart.series.Bar', {
         }
 
         
-        delete seriesStyle.fill;
-        endSeriesStyle = Ext.apply(seriesStyle, this.style);
+        endSeriesStyle = Ext.apply({}, this.style, seriesStyle);
+        delete endSeriesStyle.fill;
+        delete endSeriesStyle.x;
+        delete endSeriesStyle.y;
+        delete endSeriesStyle.width;
+        delete endSeriesStyle.height;
+        
         me.unHighlightItem();
         me.cleanHighlights();
         
@@ -94984,6 +96316,12 @@ Ext.define('Ext.chart.series.Bar', {
         for (j = i; j < ln; j++) {
             group.getAt(j).hide(true);
         }
+        
+        if (me.stacked) {
+            
+            i = store.getCount();    
+        }
+        
         
         if (enableShadows) {
             for (shadowIndex = 0; shadowIndex < shadowGroupsLn; shadowIndex++) {
@@ -95767,12 +97105,12 @@ Ext.define('Ext.chart.series.Line', {
             i = 1,
             xSum = 0,
             ySum = 0,
-            xRes = [xValues[0]],
-            yRes = [yValues[0]];
+            xRes = [+xValues[0]],
+            yRes = [+yValues[0]];
 
         for (; i < len; ++i) {
-            xSum += xValues[i] || 0;
-            ySum += yValues[i] || 0;
+            xSum += +xValues[i] || 0;
+            ySum += +yValues[i] || 0;
             if (i % ratio == 0) {
                 xRes.push(xSum/ratio);
                 yRes.push(ySum/ratio);
@@ -95830,7 +97168,7 @@ Ext.define('Ext.chart.series.Line', {
             shadows, shadow, shindex, fromPath, fill, fillPath, rendererAttributes,
             x, y, prevX, prevY, firstX, firstY, markerCount, i, j, ln, axis, ends, marker, markerAux, item, xValue,
             yValue, coords, xScale, yScale, minX, maxX, minY, maxY, line, animation, endMarkerStyle,
-            endLineStyle, type, count;
+            endLineStyle, type, count, opacity, lineOpacity, fillOpacity, fillDefaultValue;
 
         if (me.fireEvent('beforedraw', me) === false) {
             return;
@@ -95872,6 +97210,13 @@ Ext.define('Ext.chart.series.Line', {
         }
         
         
+        opacity = 'opacity' in endLineStyle ? endLineStyle.opacity : 1;
+        fillDefaultValue = 'opacity' in endLineStyle ? endLineStyle.opacity : 0.3;
+        lineOpacity = 'lineOpacity' in endLineStyle ? endLineStyle.lineOpacity : opacity;
+        fillOpacity = 'fillOpacity' in endLineStyle ? endLineStyle.fillOpacity : fillDefaultValue;
+
+        
+        
         if (markerIndex && markerGroup && markerGroup.getCount()) {
             for (i = 0; i < markerIndex; i++) {
                 marker = markerGroup.getAt(i);
@@ -95895,43 +97240,32 @@ Ext.define('Ext.chart.series.Line', {
         me.setBBox();
         bbox = me.bbox;
         me.clipRect = [bbox.x, bbox.y, bbox.width, bbox.height];
-        for (i = 0, ln = axes.length; i < ln; i++) {
-            axis = chartAxes.get(axes[i]);
-            if (axis) {
-                ends = axis.calcEnds();
-                if (axis.position == 'top' || axis.position == 'bottom') {
-                    minX = ends.from;
-                    maxX = ends.to;
-                }
-                else {
-                    minY = ends.from;
-                    maxY = ends.to;
-                }
-            }
+
+        if (axis = chartAxes.get(boundXAxis)) {
+            ends = axis.applyData();
+            minX = ends.from;
+            maxX = ends.to;
+        }
+
+        if (axis = chartAxes.get(boundYAxis)) {
+            ends = axis.applyData();
+            minY = ends.from;
+            maxY = ends.to;
+        }
+
+        
+        if (me.xField && !Ext.isNumber(minX)) {
+            axis = me.getMinMaxXValues();
+            minX = axis[0];
+            maxX = axis[1];
+        }
+
+        if (me.yField && !Ext.isNumber(minY)) {
+            axis = me.getMinMaxYValues();
+            minY = axis[0];
+            maxY = axis[1];
         }
         
-        
-        
-        if (me.xField && !isNumber(minX) &&
-            (boundXAxis == 'bottom' || boundXAxis == 'top') && 
-            !chartAxes.get(boundXAxis)) {
-            axis = Ext.create('Ext.chart.axis.Axis', {
-                chart: chart,
-                fields: [].concat(me.xField)
-            }).calcEnds();
-            minX = axis.from;
-            maxX = axis.to;
-        }
-        if (me.yField && !isNumber(minY) &&
-            (boundYAxis == 'right' || boundYAxis == 'left') &&
-            !chartAxes.get(boundYAxis)) {
-            axis = Ext.create('Ext.chart.axis.Axis', {
-                chart: chart,
-                fields: [].concat(me.yField)
-            }).calcEnds();
-            minY = axis.from;
-            maxY = axis.to;
-        }
         if (isNaN(minX)) {
             minX = 0;
             xScale = bbox.width / ((storeCount - 1) || 1);
@@ -95947,7 +97281,6 @@ Ext.define('Ext.chart.series.Line', {
         else {
             yScale = bbox.height / ((maxY - minY) || (storeCount - 1) || 1);
         }
-
         
         for (i = 0, ln = data.length; i < ln; i++) {
             record = data[i];
@@ -96023,12 +97356,13 @@ Ext.define('Ext.chart.series.Line', {
             
             if (chart.animate && chart.resizing && me.line) {
                 me.line.setAttributes({
-                    path: dummyPath
+                    path: dummyPath,
+                    opacity: lineOpacity
                 }, true);
                 if (me.fillPath) {
                     me.fillPath.setAttributes({
                         path: dummyPath,
-                        opacity: 0.2
+                        opacity: fillOpacity
                     }, true);
                 }
                 if (me.line.shadows) {
@@ -96115,6 +97449,11 @@ Ext.define('Ext.chart.series.Line', {
                 stroke: endLineStyle.stroke || endLineStyle.fill
             }, endLineStyle || {}));
 
+            
+            me.line.setAttributes({
+                opacity: lineOpacity
+            }, true);
+
             if (enableShadows) {
                 me.line.setAttributes(Ext.apply({}, me.shadowOptions), true);
             }
@@ -96153,7 +97492,6 @@ Ext.define('Ext.chart.series.Line', {
                 me.fillPath = surface.add({
                     group: group,
                     type: 'path',
-                    opacity: endLineStyle.opacity || 0.3,
                     fill: endLineStyle.fill || colorArrayStyle[seriesIdx % colorArrayLength],
                     path: dummyPath
                 });
@@ -96207,7 +97545,8 @@ Ext.define('Ext.chart.series.Line', {
                     to: Ext.apply({}, {
                         path: fillPath,
                         fill: endLineStyle.fill || colorArrayStyle[seriesIdx % colorArrayLength],
-                        'stroke-width': 0
+                        'stroke-width': 0,
+                        opacity: fillOpacity
                     }, endLineStyle || {})
                 });
             }
@@ -96243,6 +97582,9 @@ Ext.define('Ext.chart.series.Line', {
             
             delete rendererAttributes.fill;
             me.line.setAttributes(rendererAttributes, true);
+            me.line.setAttributes({
+                opacity: lineOpacity
+            }, true);
             
             if (enableShadows) {
                 shadows = me.line.shadows;
@@ -96256,7 +97598,8 @@ Ext.define('Ext.chart.series.Line', {
             if (me.fill) {
                 me.fillPath.setAttributes({
                     path: fillPath,
-                    hidden: false
+                    hidden: false,
+                    opacity: fillOpacity
                 }, true);
             }
             if (showMarkers) {
@@ -96923,7 +98266,7 @@ Ext.define('Ext.chart.series.Pie', {
                 maxLenField = Math.max(maxLenField, totalLenField);
             }
         }
-        
+
         totalField = totalField || 1;
         for (i = 0, ln = data.length; i < ln; i++) {
             record = data[i];
@@ -96954,13 +98297,17 @@ Ext.define('Ext.chart.series.Pie', {
                 storeItem: record
             };
             if (lenField[0]) {
-                lenValue = layerTotals[i];
-                slice.rho = me.radius * (lenValue / maxLenField);
+                lenValue = +layerTotals[i];
+                
+                slice.rho = Math.floor(me.radius / maxLenField * lenValue);
             } else {
                 slice.rho = me.radius;
             }
             slices[i] = slice;
-            angle = endAngle;
+            
+            (function () {
+                angle = endAngle;
+            })();
         }
 
         
@@ -97976,42 +99323,38 @@ Ext.define('Ext.chart.series.Scatter', {
         var me = this,
             chart = me.chart,
             store = chart.getChartStore(),
-            axes = [].concat(me.axis),
+            chartAxes = chart.axes,
+            boundAxes = me.getAxesForXAndYFields(),
+            boundXAxis = boundAxes.xAxis,
+            boundYAxis = boundAxes.yAxis,
             bbox, xScale, yScale, ln, minX, minY, maxX, maxY, i, axis, ends;
 
         me.setBBox();
         bbox = me.bbox;
 
-        for (i = 0, ln = axes.length; i < ln; i++) {
-            axis = chart.axes.get(axes[i]);
-            if (axis) {
-                ends = axis.calcEnds();
-                if (axis.position == 'top' || axis.position == 'bottom') {
-                    minX = ends.from;
-                    maxX = ends.to;
-                }
-                else {
-                    minY = ends.from;
-                    maxY = ends.to;
-                }
-            }
+        if (axis = chartAxes.get(boundXAxis)) {
+            ends = axis.applyData();
+            minX = ends.from;
+            maxX = ends.to;
         }
+
+        if (axis = chartAxes.get(boundYAxis)) {
+            ends = axis.applyData();
+            minY = ends.from;
+            maxY = ends.to;
+        }
+
         
         if (me.xField && !Ext.isNumber(minX)) {
-            axis = Ext.create('Ext.chart.axis.Axis', {
-                chart: chart,
-                fields: [].concat(me.xField)
-            }).calcEnds();
-            minX = axis.from;
-            maxX = axis.to;
+            axis = me.getMinMaxXValues();
+            minX = axis[0];
+            maxX = axis[1];
         }
+
         if (me.yField && !Ext.isNumber(minY)) {
-            axis = Ext.create('Ext.chart.axis.Axis', {
-                chart: chart,
-                fields: [].concat(me.yField)
-            }).calcEnds();
-            minY = axis.from;
-            maxY = axis.to;
+            axis = me.getMinMaxYValues();
+            minY = axis[0];
+            maxY = axis[1];
         }
 
         if (isNaN(minX)) {
@@ -98736,6 +100079,7 @@ Ext.define('Ext.tip.QuickTip', {
         }
 
         me.clearTimer('show');
+        delete me.activeTarget;
         if (me.autoHide !== false) {
             hasHideDelay = active && Ext.isDefined(active.hideDelay);
             if (hasHideDelay) {
@@ -98819,7 +100163,7 @@ Ext.define('Ext.tip.QuickTipManager', (function() {
             if (!tip) {
                 if (!Ext.isReady) {
                     Ext.onReady(function(){
-                        Ext.tip.QuickTipManager.init(autoRender);
+                        Ext.tip.QuickTipManager.init(autoRender, config);
                     });
                     return;
                 }
@@ -98925,7 +100269,7 @@ Ext.define('Ext.app.Application', {
     ],
 
     
-    
+
     
 
     
@@ -99027,14 +100371,19 @@ Ext.define('Ext.app.Application', {
         }
     },
 
-    getModuleClassName: function(name, type) {
-        var namespace = Ext.Loader.getPrefix(name);
-
-        if (namespace.length > 0 && namespace !== name) {
+    getModuleClassName: function(name, module) {
+        
+        
+        
+        
+        
+        
+        
+        if (name.indexOf('.') !== -1 && (Ext.ClassManager.isCreated(name) || Ext.Loader.isAClassNameWithAKnownPrefix(name))) {
             return name;
+        } else {
+            return this.name + '.' + module + '.' + name;
         }
-
-        return this.name + '.' + type + '.' + name;
     },
 
     getController: function(name) {
@@ -99847,7 +101196,7 @@ Ext.define('Ext.form.field.HtmlEditor', {
                 if (doc) {
                     Ext.EventManager.removeAll(doc);
                     for (prop in doc) {
-                        if (doc.hasOwnProperty(prop)) {
+                        if (doc.hasOwnProperty && doc.hasOwnProperty(prop)) {
                             delete doc[prop];
                         }
                     }
@@ -100072,25 +101421,31 @@ Ext.define('Ext.form.field.HtmlEditor', {
                 var me = this,
                     k = e.getKey(),
                     doc = me.getDoc(),
+                    readOnly = me.readOnly,
                     range, target;
+
                 if (k === e.TAB) {
                     e.stopEvent();
-                    range = doc.selection.createRange();
-                    if(range){
-                        range.collapse(true);
-                        range.pasteHTML('&nbsp;&nbsp;&nbsp;&nbsp;');
-                        me.deferFocus();
+                    if (!readOnly) {
+                        range = doc.selection.createRange();
+                        if(range){
+                            range.collapse(true);
+                            range.pasteHTML('&#160;&#160;&#160;&#160;');
+                            me.deferFocus();
+                        }
                     }
                 }
                 else if (k === e.ENTER) {
-                    range = doc.selection.createRange();
-                    if (range) {
-                        target = range.parentElement();
-                        if(!target || target.tagName.toLowerCase() !== 'li'){
-                            e.stopEvent();
-                            range.pasteHTML('<br />');
-                            range.collapse(false);
-                            range.select();
+                    if (!readOnly) {
+                        range = doc.selection.createRange();
+                        if (range) {
+                            target = range.parentElement();
+                            if(!target || target.tagName.toLowerCase() !== 'li'){
+                                e.stopEvent();
+                                range.pasteHTML('<br />');
+                                range.collapse(false);
+                                range.select();
+                            }
                         }
                     }
                 }
@@ -100102,9 +101457,11 @@ Ext.define('Ext.form.field.HtmlEditor', {
                 var me = this;
                 if (e.getKey() === e.TAB) {
                     e.stopEvent();
-                    me.win.focus();
-                    me.execCmd('InsertHTML','&nbsp;&nbsp;&nbsp;&nbsp;');
-                    me.deferFocus();
+                    if (!me.readOnly) {
+                        me.win.focus();
+                        me.execCmd('InsertHTML','&#160;&#160;&#160;&#160;');
+                        me.deferFocus();
+                    }
                 }
             };
         }
@@ -100112,16 +101469,22 @@ Ext.define('Ext.form.field.HtmlEditor', {
         if (Ext.isWebKit) {
             return function(e){
                 var me = this,
-                    k = e.getKey();
+                    k = e.getKey(),
+                    readOnly = me.readOnly;
+
                 if (k === e.TAB) {
                     e.stopEvent();
-                    me.execCmd('InsertText','\t');
-                    me.deferFocus();
+                    if (!readOnly) {
+                        me.execCmd('InsertText','\t');
+                        me.deferFocus();
+                    }
                 }
                 else if (k === e.ENTER) {
                     e.stopEvent();
-                    me.execCmd('InsertHtml','<br /><br />');
-                    me.deferFocus();
+                    if (!readOnly) {
+                        me.execCmd('InsertHtml','<br /><br />');
+                        me.deferFocus();
+                    }
                 }
             };
         }
@@ -100617,7 +101980,7 @@ Ext.define('Ext.toolbar.Paging', {
         me.child('#last').setDisabled(currPage === pageCount  || isEmpty);
         me.child('#refresh').enable();
         me.updateInfo();
-        Ext.resumeLayouts();
+        Ext.resumeLayouts(true);
 
         if (me.rendered) {
             me.fireEvent('change', me, pageData);
@@ -100933,20 +102296,16 @@ Ext.define('Ext.view.DragZone', {
 
     getDragData: function(e) {
         var view = this.view,
-            item = e.getTarget(view.getItemSelector()),
-            record, selectionModel, records;
+            item = e.getTarget(view.getItemSelector());
 
         if (item) {
-            record = view.getRecord(item);
-            selectionModel = view.getSelectionModel();
-            records = selectionModel.getSelection();
             return {
-                copy: this.view.copy || (this.view.allowCopy && e.ctrlKey),
+                copy: view.copy || (view.allowCopy && e.ctrlKey),
                 event: new Ext.EventObjectImpl(e),
                 view: view,
                 ddel: this.ddel,
                 item: item,
-                records: records,
+                records: view.getSelectionModel().getSelection(),
                 fromPosition: Ext.fly(item).getXY()
             };
         }
@@ -101583,7 +102942,7 @@ Ext.define('Ext.view.TableChunker', {
             '{[this.closeRows()]}',
             '</tbody>',
         '</table>',
-        '{%if (this.closeTableWrap)out.push(this.closeTableWrap())%}',
+        '{%if (this.closeTableWrap)out.push(this.closeTableWrap())%}'
     ],
 
     constructor: function() {
@@ -101631,9 +102990,9 @@ Ext.define('Ext.view.TableChunker', {
 
     firstOrLastCls: function(xindex, xcount) {
         if (xindex === 1) {
-            return Ext.baseCSSPrefix + 'grid-cell-first';
+            return Ext.view.Table.prototype.firstCls;
         } else if (xindex === xcount) {
-            return Ext.baseCSSPrefix + 'grid-cell-last';
+            return Ext.view.Table.prototype.lastCls;
         }
     },
     
@@ -101805,12 +103164,9 @@ Ext.define('Ext.view.View', {
 
     
     afterRender: function(){
-        var me = this,
-            listeners;
-
+        var me = this;
         me.callParent();
-
-        listeners = {
+        me.mon(me.getTargetEl(), {
             scope: me,
             
             freezeEvent: true,
@@ -101822,18 +103178,21 @@ Ext.define('Ext.view.View', {
             mouseover: me.handleEvent,
             mouseout: me.handleEvent,
             keydown: me.handleEvent
-        };
-
-        me.mon(me.getTargetEl(), listeners);
-
-        if (me.store) {
-            me.bindStore(me.store, true);
-        }
+        });
     },
 
     handleEvent: function(e) {
+        var key = e.type == 'keydown' && e.getKey();
+
         if (this.processUIEvent(e) !== false) {
             this.processSpecialEvent(e);
+        }
+
+        
+        
+        
+        if (key === e.SPACE) {
+            e.stopEvent();
         }
     },
 
@@ -101891,7 +103250,10 @@ Ext.define('Ext.view.View', {
                 record = me.getRecord(item);
             }
 
-            if (me.processItemEvent(record, item, index, e) === false) {
+            
+            
+            
+            if (!record || me.processItemEvent(record, item, index, e) === false) {
                 return false;
             }
 
@@ -102021,26 +103383,22 @@ Ext.define('Ext.view.View', {
         }
     },
     
-    onAdd: function() {
-        this.callParent(arguments);
-        this.refreshHeight();
-    },
-    
-    onRemove: function(){
-        this.callParent(arguments);
-        this.refreshHeight();
-    },
-    
     onUpdate: function(store, record){
         var me = this,
-            node = me.getNode(record),
-            newNode = me.callParent(arguments),
+            node,
+            newNode,
+            highlighted;
+        
+        if (me.rendered) {
+            node = me.getNode(record);
+            newNode = me.callParent(arguments);
             highlighted = me.highlightedItem;
             
-        if (highlighted && highlighted === node) {
-            delete me.highlightedItem;
-            if (newNode) {
-                me.highlightItem(newNode);
+            if (highlighted && highlighted === node) {
+                delete me.highlightedItem;
+                if (newNode) {
+                    me.highlightItem(newNode);
+                }
             }
         }
     },
@@ -102048,14 +103406,6 @@ Ext.define('Ext.view.View', {
     refresh: function() {
         this.clearHighlight();
         this.callParent(arguments);
-        this.refreshHeight();
-    },
-    
-    refreshHeight: function(){
-        var sizeModel = this.getSizeModel();
-        if (sizeModel.height.shrinkWrap) {
-            this.updateLayout();
-        }
     }
 });
 
@@ -102090,7 +103440,7 @@ Ext.define('Ext.view.BoundList', {
     ],
 
     renderTpl: [
-        '<div id="{id}-listEl" class="{baseCls}-list-ct" style="overflow:auto">' +
+        '<div id="{id}-listEl" class="{baseCls}-list-ct" style="overflow:auto"></div>',
         '{%',
             'var me=values.$comp, pagingToolbar=me.pagingToolbar;',
             'if (pagingToolbar) {',
@@ -102098,7 +103448,6 @@ Ext.define('Ext.view.BoundList', {
                 'Ext.DomHelper.generateMarkup(pagingToolbar.getRenderTree(), out);',
             '}',
         '%}',
-        '</div>',
         {
             disableFormats: true
         }
@@ -102411,7 +103760,7 @@ Ext.define('Ext.form.field.ComboBox', {
     
     fieldSubTpl: [
         '<div class="{hiddenDataCls}" role="presentation"></div>',
-        '<input id="{id}" type="{type}" {inputAttrTpl}',
+        '<input id="{id}" type="{type}" {inputAttrTpl} class="{fieldCls} {typeCls}" autocomplete="off"',
             '<tpl if="value"> value="{[Ext.util.Format.htmlEncode(values.value)]}"</tpl>',
             '<tpl if="name"> name="{name}"</tpl>',
             '<tpl if="placeholder"> placeholder="{placeholder}"</tpl>',
@@ -102421,7 +103770,7 @@ Ext.define('Ext.form.field.ComboBox', {
             '<tpl if="disabled"> disabled="disabled"</tpl>',
             '<tpl if="tabIdx"> tabIndex="{tabIdx}"</tpl>',
             '<tpl if="fieldStyle"> style="{fieldStyle}"</tpl>',
-            'class="{fieldCls} {typeCls}" autocomplete="off" />',
+            '/>',
         {
             compiled: true,
             disableFormats: true
@@ -103198,7 +104547,8 @@ Ext.define('Ext.form.field.ComboBox', {
             valueNotFoundText = me.valueNotFoundText,
             inputEl = me.inputEl,
             i, len, record,
-            models = [],
+            dataObj,
+            matchedRecords = [],
             displayTplData = [],
             processedValue = [];
 
@@ -103220,7 +104570,7 @@ Ext.define('Ext.form.field.ComboBox', {
             }
             
             if (record) {
-                models.push(record);
+                matchedRecords.push(record);
                 displayTplData.push(record.data);
                 processedValue.push(record.get(me.valueField));
             }
@@ -103228,9 +104578,13 @@ Ext.define('Ext.form.field.ComboBox', {
             
             else {
                 
+                
                 if (!me.forceSelection) {
-                    displayTplData.push(value[i]);
                     processedValue.push(value[i]);
+                    dataObj = {};
+                    dataObj[me.displayField] = value[i];
+                    displayTplData.push(dataObj);
+                    
                 }
                 
                 else if (Ext.isDefined(valueNotFoundText)) {
@@ -103246,7 +104600,7 @@ Ext.define('Ext.form.field.ComboBox', {
             me.value = null;
         }
         me.displayTplData = displayTplData; 
-        me.lastSelection = me.valueModels = models;
+        me.lastSelection = me.valueModels = matchedRecords;
 
         if (inputEl && me.emptyText && !Ext.isEmpty(value)) {
             inputEl.removeCls(me.emptyCls);
@@ -103451,6 +104805,9 @@ Ext.define('Ext.form.field.Time', {
 
     
     selectOnTab: true,
+    
+    
+    snapToIncrement: false,
 
     
     initDate: '1/1/2008',
@@ -103474,6 +104831,13 @@ Ext.define('Ext.form.field.Time', {
         if (max) {
             me.setMaxValue(max);
         }
+        me.displayTpl = new Ext.XTemplate(
+            '<tpl for=".">' +
+                '{[typeof values === "string" ? values : this.formatDate(values["' + me.displayField + '"])]}' +
+                '<tpl if="xindex < xcount">' + me.delimiter + '</tpl>' +
+            '</tpl>', {
+            formatDate: Ext.Function.bind(me.formatDate, me)
+        });
         this.callParent();
     },
 
@@ -103510,8 +104874,12 @@ Ext.define('Ext.form.field.Time', {
         if (d) {
             val = Ext.Date.clearTime(new Date(me.initDate));
             val.setHours(d.getHours(), d.getMinutes(), d.getSeconds(), d.getMilliseconds());
-            me[isMin ? 'minValue' : 'maxValue'] = val;
         }
+        
+        else {
+            val = null;
+        }
+        me[isMin ? 'minValue' : 'maxValue'] = val;
     },
 
     rawToValue: function(rawValue) {
@@ -103539,7 +104907,7 @@ Ext.define('Ext.form.field.Time', {
 
         date = me.parseDate(value);
         if (!date) {
-            errors.push(format(me.invalidText, value, me.format));
+            errors.push(format(me.invalidText, value, Ext.Date.unescapeFormat(me.format)));
             return errors;
         }
 
@@ -103560,23 +104928,28 @@ Ext.define('Ext.form.field.Time', {
 
     
     parseDate: function(value) {
-        if (!value || Ext.isDate(value)) {
-            return value;
-        }
-
         var me = this,
-            val = me.safeParse(value, me.format),
+            val = value,
             altFormats = me.altFormats,
             altFormatsArray = me.altFormatsArray,
             i = 0,
             len;
 
-        if (!val && altFormats) {
-            altFormatsArray = altFormatsArray || altFormats.split('|');
-            len = altFormatsArray.length;
-            for (; i < len && !val; ++i) {
-                val = me.safeParse(value, altFormatsArray[i]);
+        if (value && !Ext.isDate(value)) {
+            val = me.safeParse(value, me.format);
+
+            if (!val && altFormats) {
+                altFormatsArray = altFormatsArray || altFormats.split('|');
+                len = altFormatsArray.length;
+                for (; i < len && !val; ++i) {
+                    val = me.safeParse(value, altFormatsArray[i]);
+                }
             }
+        }
+
+        
+        if (val && me.snapToIncrement) {
+            val = new Date(Ext.Number.snap(val.getTime(), me.increment * 60 * 1000));
         }
         return val;
     },
@@ -103628,7 +105001,7 @@ Ext.define('Ext.form.field.Time', {
         }, me.listConfig);
         picker = me.callParent();
         me.store = picker.store;
-        return picker
+        return picker;
     },
     
     onItemClick: function(picker, record){
@@ -103641,17 +105014,6 @@ Ext.define('Ext.form.field.Time', {
             if (selected && Ext.Date.isEqual(record.get('date'), selected.get('date'))) {
                 me.collapse();
             }
-        }
-    },
-
-    
-    onChange: function() {
-        var me = this,
-            picker = me.picker;
-
-        me.callParent(arguments);
-        if(picker) {
-            picker.clearHighlight();
         }
     },
 
@@ -103716,6 +105078,14 @@ Ext.define('Ext.form.field.Time', {
         me.setRawValue(me.formatDate(me.getValue()));
     },
 
+    setValue: function(v) {
+
+        
+        this.getPicker();
+
+        this.callParent([this.parseDate(v)]);
+    },
+
     getValue: function() {
         var val = this.callParent(arguments);
         return this.parseDate(val);
@@ -103737,10 +105107,16 @@ Ext.define('Ext.view.Table', {
     itemSelector: 'tr.' + Ext.baseCSSPrefix + 'grid-row',
     
     cellSelector: 'td.' + Ext.baseCSSPrefix + 'grid-cell',
-    
+
     
     rowSelector: 'tr.' + Ext.baseCSSPrefix + 'grid-row',
+
     
+    firstCls: Ext.baseCSSPrefix + 'grid-cell-first',
+
+    
+    lastCls: Ext.baseCSSPrefix + 'grid-cell-last',
+
     headerRowSelector: 'tr.' + Ext.baseCSSPrefix + 'grid-header-row',
 
     selectedItemCls: Ext.baseCSSPrefix + 'grid-row-selected',
@@ -103748,7 +105124,7 @@ Ext.define('Ext.view.Table', {
     focusedItemCls: Ext.baseCSSPrefix + 'grid-row-focused',
     overItemCls: Ext.baseCSSPrefix + 'grid-row-over',
     altRowCls:   Ext.baseCSSPrefix + 'grid-row-alt',
-    rowClsRe: /(?:^|\s*)grid-row-(first|last|alt)(?:\s+|$)/g,
+    rowClsRe: new RegExp('(?:^|\\s*)' + Ext.baseCSSPrefix + 'grid-row-(first|last|alt)(?:\\s+|$)', 'g'),
     cellRe: new RegExp(Ext.baseCSSPrefix + 'grid-cell-([^\\s]+) ', ''),
 
     
@@ -103796,7 +105172,11 @@ Ext.define('Ext.view.Table', {
         me.selModel.view = me;
         me.headerCt.view = me;
         me.headerCt.markDirty = me.markDirty;
-        me.initFeatures();
+
+        
+        me.initFeatures(me.grid);
+        delete me.grid;
+
         me.tpl = '<div></div>';
         me.callParent();
     },
@@ -103804,33 +105184,60 @@ Ext.define('Ext.view.Table', {
     
     moveColumn: function(fromIdx, toIdx, colsToMove) {
         var me = this,
+            fragment = (colsToMove > 1) ? document.createDocumentFragment() : undefined,
+            destinationCellIdx = toIdx,
+            colCount = me.getGridColumns().length,
+            lastIdx = colCount - 1,
+            doFirstLastClasses = (me.firstCls || me.lastCls) && (toIdx == 0 || toIdx == colCount || fromIdx == 0 || fromIdx == lastIdx),
             i,
             j,
-            rows, len, tr,
-            fragment = (colsToMove > 1) ? document.createDocumentFragment() : undefined,
-            destinationCellIdx = toIdx;
-            
+            rows, len, tr, headerRows;
+
         if (me.rendered) {
-            tr = me.el.down(me.headerRowSelector, true);
+            
+            
+            headerRows = me.el.query(me.headerRowSelector);
             rows = me.el.query(me.rowSelector);
-            len = rows.length;
 
             if (toIdx > fromIdx && fragment) {
                 destinationCellIdx -= colsToMove;
             }
 
             
-            if (fragment) {
-                for (j = 0; j < colsToMove; j++) {
-                    fragment.appendChild(tr.cells[fromIdx]);
+            for (i = 0, len = headerRows.length; i < len; ++i) {
+                tr = headerRows[i];
+                if (fragment) {
+                    for (j = 0; j < colsToMove; j++) {
+                        fragment.appendChild(tr.cells[fromIdx]);
+                    }
+                    tr.insertBefore(fragment, tr.cells[destinationCellIdx] || null);
+                } else {
+                    tr.insertBefore(tr.cells[fromIdx], tr.cells[destinationCellIdx] || null);
                 }
-                tr.insertBefore(fragment, tr.cells[destinationCellIdx] || null);
-            } else {
-                tr.insertBefore(tr.cells[fromIdx], tr.cells[destinationCellIdx] || null);
             }
 
-            for (i = 0; i < len; i++) {
+            for (i = 0, len = rows.length; i < len; i++) {
                 tr = rows[i];
+
+                
+                if (doFirstLastClasses) {
+
+                    if (fromIdx === 0) {
+                        Ext.fly(tr.cells[0]).removeCls(me.firstCls);
+                        Ext.fly(tr.cells[1]).addCls(me.firstCls);
+                    } else if (fromIdx === lastIdx) {
+                        Ext.fly(tr.cells[lastIdx]).removeCls(me.lastCls);
+                        Ext.fly(tr.cells[lastIdx - 1]).addCls(me.lastCls);
+                    }
+                    if (toIdx === 0) {
+                        Ext.fly(tr.cells[0]).removeCls(me.firstCls);
+                        Ext.fly(tr.cells[fromIdx]).addCls(me.firstCls);
+                    } else if (toIdx === colCount) {
+                        Ext.fly(tr.cells[lastIdx]).removeCls(me.lastCls);
+                        Ext.fly(tr.cells[fromIdx]).addCls(me.lastCls);
+                    }
+                }
+
                 if (fragment) {
                     for (j = 0; j < colsToMove; j++) {
                         fragment.appendChild(tr.cells[fromIdx]);
@@ -103879,32 +105286,47 @@ Ext.define('Ext.view.Table', {
     },
 
     
-    initFeatures: function() {
+    initFeatures: function(grid) {
         var me = this,
             i,
             features,
             feature,
             len;
 
-        features = me.features;
-        me.features = [];
-        len = features.length;
-
         me.featuresMC = new Ext.util.MixedCollection();
+        features = me.features = me.prepareFeatures();
+        len = features ? features.length : 0;
         for (i = 0; i < len; i++) {
-            
             feature = features[i];
-
-            if (!feature.isFeature) {
-                feature = Ext.create('feature.' + feature.ftype, feature);
-            }
-            me.features[i] = feature;
 
             
             feature.view = me;
+            feature.grid = grid;
             me.featuresMC.add(feature);
             feature.init();
         }
+    },
+
+    
+    prepareFeatures: function() {
+        var me = this,
+            features = me.features,
+            feature,
+            result,
+            i = 0, len;
+        
+        if (features) {
+            result = [];
+            len = features.length;
+            for (; i < len; i++) {
+                feature = features[i];
+                if (!feature.isFeature) {
+                    feature = Ext.create('feature.' + feature.ftype, feature);
+                }
+                result[i] = feature;
+            }
+        }
+        return result;
     },
 
     
@@ -104042,6 +105464,8 @@ Ext.define('Ext.view.Table', {
         
         } else if (header.width && !header.flex) {
             me.onHeaderResize(header, header.width, suppressFocus);
+        } else if (header.el) {
+            me.onHeaderResize(header, header.el.getWidth(), suppressFocus);
         }
         delete me.ignoreTemplate;
         me.setNewTemplate();
@@ -104057,20 +105481,25 @@ Ext.define('Ext.view.Table', {
     
     
     
-    refreshHeight: function() {
-        var cmp = this.up('tablepanel');
+    refreshSize: function() {
+        var me = this,
+            cmp;
+            
+        if (!me.hasLoadingHeight) {
+            cmp = me.up('tablepanel');
 
-        
-        
-        Ext.suspendLayouts();
+            
+            
+            Ext.suspendLayouts();
 
-        this.callParent();
+            me.callParent();
 
-        if (cmp && Ext.getScrollbarSize().width) {
-            cmp.updateLayout();
+            if (cmp && Ext.getScrollbarSize().width) {
+                cmp.updateLayout();
+            }
+
+            Ext.resumeLayouts(true);
         }
-
-        Ext.resumeLayouts(true);
     },
 
     
@@ -104141,18 +105570,15 @@ Ext.define('Ext.view.Table', {
     },
 
     getCellByPosition: function(position) {
-        var row    = position.row,
-            column = position.column,
-            node   = this.getNode(row),
-            header = this.headerCt.getHeaderAtIndex(column),
-            cellSelector,
-            cell = false;
+        if (position) {
+            var node   = this.getNode(position.row),
+                header = this.headerCt.getHeaderAtIndex(position.column);
 
-        if (header && node) {
-            cellSelector = header.getCellSelector();
-            cell = Ext.fly(node).down(cellSelector);
+            if (header && node) {
+                return Ext.fly(node).down(header.getCellSelector());
+            }
         }
-        return cell;
+        return false;
     },
 
     
@@ -104260,41 +105686,49 @@ Ext.define('Ext.view.Table', {
     
     onUpdate : function(store, record, operation, changedFieldNames) {
         var me = this,
-            index = me.store.indexOf(record),
+            index,
             newRow, oldRow,
             oldCells, newCells, len, i,
-            columns = me.headerCt.getGridColumns(),
-            overItemCls = me.overItemCls,
+            columns, overItemCls,
             isHovered, row;
-
-        if (index > -1) {
-            newRow = me.bufferRender([record], index)[0];
-            oldRow = me.all.item(index);
-            isHovered = oldRow.hasCls(overItemCls);
-            oldRow.dom.className = newRow.className;
-            if(isHovered) {
-                oldRow.addCls(overItemCls);
-            }
+            
+        if (me.rendered) {
+            
+            index = me.store.indexOf(record);
+            columns = me.headerCt.getGridColumns();
+            overItemCls = me.overItemCls;
 
             
-            oldCells = oldRow.query(this.cellSelector);
-            newCells = Ext.fly(newRow).query(this.cellSelector);
-            len = newCells.length;
             
-            row = oldCells[0].parentNode;
-            for (i = 0; i < len; i++) {
-                
-                if (me.shouldUpdateCell(columns[i], changedFieldNames)) {
-                    row.insertBefore(newCells[i], oldCells[i]);
-                    row.removeChild(oldCells[i]);
+            if (columns.length && index > -1) {
+                newRow = me.bufferRender([record], index)[0];
+                oldRow = me.all.item(index);
+                isHovered = oldRow.hasCls(overItemCls);
+                oldRow.dom.className = newRow.className;
+                if(isHovered) {
+                    oldRow.addCls(overItemCls);
                 }
-            }
 
-            
-            
-            me.selModel.refresh();
-            me.doStripeRows(index, index);
-            me.fireEvent('itemupdate', record, index, newRow);
+                
+                oldCells = oldRow.query(this.cellSelector);
+                newCells = Ext.fly(newRow).query(this.cellSelector);
+                len = newCells.length;
+                
+                row = oldCells[0].parentNode;
+                for (i = 0; i < len; i++) {
+                    
+                    if (me.shouldUpdateCell(columns[i], changedFieldNames)) {
+                        row.insertBefore(newCells[i], oldCells[i]);
+                        row.removeChild(oldCells[i]);
+                    }
+                }
+
+                
+                
+                me.selModel.refresh();
+                me.doStripeRows(index, index);
+                me.fireEvent('itemupdate', record, index, newRow);
+            }
         }
 
     },
@@ -104466,6 +105900,13 @@ Ext.define('Ext.view.Table', {
 
     
     walkCells: function(pos, direction, e, preventWrap, verifierFn, scope) {
+
+        
+        
+        if (!pos) {
+            return;
+        }
+
         var me       = this,
             row      = pos.row,
             column   = pos.column,
@@ -104579,6 +106020,7 @@ Ext.define('Ext.view.Table', {
         return this.headerCt;
     },
 
+    
     getPosition: function(record, header) {
         var me = this,
             store = me.store,
@@ -104647,26 +106089,808 @@ Ext.define('Ext.view.Table', {
     
     
     doStripeRows: function(startRow, endRow) {
+        var me = this,
+            rows,
+            rowsLn,
+            i,
+            row;
+            
         
-        if (this.stripeRows) {
-            var rows   = this.getNodes(startRow, endRow),
-                rowsLn = rows.length,
-                i      = 0,
-                row;
+        if (me.rendered && me.stripeRows) {
+            rows = me.getNodes(startRow, endRow);
                 
-            for (; i < rowsLn; i++) {
+            for (i = 0, rowsLn = rows.length; i < rowsLn; i++) {
                 row = rows[i];
                 
-                row.className = row.className.replace(this.rowClsRe, ' ');
+                row.className = row.className.replace(me.rowClsRe, ' ');
                 startRow++;
                 
                 if (startRow % 2 === 0) {
-                    row.className += (' ' + this.altRowCls);
+                    row.className += (' ' + me.altRowCls);
                 }
             }
         }
     }
  
+});
+
+
+Ext.define('Ext.grid.Lockable', {
+
+    requires: [
+        'Ext.grid.LockingView',
+        'Ext.view.Table'
+    ],
+
+    
+    syncRowHeight: true,
+
+    
+
+    
+
+    
+
+    headerCounter: 0,
+
+    
+    scrollDelta: 40,
+    
+    
+    
+    
+
+    
+    
+    unlockText: 'Unlock',
+    
+    
+    lockText: 'Lock',
+    
+
+    determineXTypeToCreate: function() {
+        var me = this,
+            typeToCreate,
+            xtypes, xtypesLn, xtype, superxtype;
+
+        if (me.subGridXType) {
+            typeToCreate = me.subGridXType;
+        } else {
+            xtypes     = this.getXTypes().split('/');
+            xtypesLn   = xtypes.length;
+            xtype      = xtypes[xtypesLn - 1];
+            superxtype = xtypes[xtypesLn - 2];
+
+            if (superxtype !== 'tablepanel') {
+                typeToCreate = superxtype;
+            } else {
+                typeToCreate = xtype;
+            }
+        }
+
+        return typeToCreate;
+    },
+
+    
+    
+    injectLockable: function() {
+        
+        this.lockable = true;
+        
+        
+        this.hasView = true;
+
+        var me = this,
+            
+            scrollLocked = Ext.getScrollbarSize().width === 0,
+            store = me.store = Ext.StoreManager.lookup(me.store),
+            
+            
+            
+            xtype = me.determineXTypeToCreate(),
+            
+            selModel = me.getSelectionModel(),
+            lockedFeatures = me.prepareFeatures(),
+            normalFeatures = me.prepareFeatures(),
+            lockedGrid,
+            normalGrid,
+            i = 0, len,
+            columns,
+            lockedHeaderCt,
+            normalHeaderCt,
+            lockedView,
+            normalView,
+            listeners;
+
+        
+        for (i = 0, len = (lockedFeatures ? lockedFeatures.length : 0); i < len; i++) {
+            lockedFeatures[i].lockingPartner = normalFeatures[i];
+            normalFeatures[i].lockingPartner = lockedFeatures[i];
+        }
+
+        lockedGrid = Ext.apply({
+            xtype: xtype,
+            store: store,
+            scrollerOwner: false,
+            
+            enableAnimations: false,
+            scroll: scrollLocked ? 'vertical' : false,
+            selModel: selModel,
+            border: false,
+            cls: Ext.baseCSSPrefix + 'grid-inner-locked',
+            isLayoutRoot: function() {
+                return false;
+            },
+            features: lockedFeatures
+        }, me.lockedGridConfig);
+
+        normalGrid = Ext.apply({
+            xtype: xtype,
+            store: store,
+            scrollerOwner: false,
+            enableAnimations: false,
+            selModel: selModel,
+            border: false,
+            isLayoutRoot: function() {
+                return false;
+            },
+            features: normalFeatures
+        }, me.normalGridConfig);
+
+        me.addCls(Ext.baseCSSPrefix + 'grid-locked');
+
+        
+        
+        
+        Ext.copyTo(normalGrid, me, me.bothCfgCopy);
+        Ext.copyTo(lockedGrid, me, me.bothCfgCopy);
+        Ext.copyTo(normalGrid, me, me.normalCfgCopy);
+        Ext.copyTo(lockedGrid, me, me.lockedCfgCopy);
+        for (i = 0; i < me.normalCfgCopy.length; i++) {
+            delete me[me.normalCfgCopy[i]];
+        }
+        for (i = 0; i < me.lockedCfgCopy.length; i++) {
+            delete me[me.lockedCfgCopy[i]];
+        }
+
+        me.addEvents(
+            
+            'lockcolumn',
+
+            
+            'unlockcolumn'
+        );
+
+        me.addStateEvents(['lockcolumn', 'unlockcolumn']);
+
+        me.lockedHeights = [];
+        me.normalHeights = [];
+
+        columns = me.processColumns(me.columns);
+
+        lockedGrid.width = columns.lockedWidth + Ext.num(selModel.headerWidth, 0);
+        lockedGrid.columns = columns.locked;
+        normalGrid.columns = columns.normal;
+
+        
+        normalGrid.flex = 1;
+        lockedGrid.viewConfig = me.lockedViewConfig || {};
+        lockedGrid.viewConfig.loadingUseMsg = false;
+        normalGrid.viewConfig = me.normalViewConfig || {};
+
+        Ext.applyIf(lockedGrid.viewConfig, me.viewConfig);
+        Ext.applyIf(normalGrid.viewConfig, me.viewConfig);
+
+        me.normalGrid = Ext.ComponentManager.create(normalGrid);
+        me.lockedGrid = Ext.ComponentManager.create(lockedGrid);
+
+        me.view = new Ext.grid.LockingView({
+            locked: me.lockedGrid,
+            normal: me.normalGrid,
+            panel: me
+        });
+
+        lockedView = me.lockedGrid.getView();
+        normalView = me.normalGrid.getView();
+
+        
+        
+        
+        if (scrollLocked) {
+            listeners = {
+                scroll: {
+                    fn: me.onLockedViewScroll,
+                    element: 'el',
+                    scope: me
+                }
+            };
+        }
+        
+        else {
+            listeners = {
+                mousewheel: {
+                    fn: me.onLockedViewMouseWheel,
+                    element: 'el',
+                    scope: me
+                }
+            };
+        }
+        if (me.syncRowHeight) {
+            listeners.refresh = me.onLockedViewRefresh;
+            listeners.itemupdate = me.onLockedViewItemUpdate;
+            listeners.scope = me;
+        }
+        lockedView.on(listeners);
+
+        
+        listeners = {
+            scroll: {
+                fn: me.onNormalViewScroll,
+                element: 'el',
+                scope: me
+            },
+            refresh: me.syncRowHeight ? me.onNormalViewRefresh : me.updateSpacer,
+            scope: me
+        };
+        normalView.on(listeners);
+
+        lockedHeaderCt = me.lockedGrid.headerCt;
+        normalHeaderCt = me.normalGrid.headerCt;
+
+        lockedHeaderCt.lockedCt = true;
+        lockedHeaderCt.lockableInjected = true;
+        normalHeaderCt.lockableInjected = true;
+
+        lockedHeaderCt.on({
+            columnshow: me.onLockedHeaderShow,
+            columnhide: me.onLockedHeaderHide,
+            columnmove: me.onLockedHeaderMove,
+            sortchange: me.onLockedHeaderSortChange,
+            columnresize: me.onLockedHeaderResize,
+            scope: me
+        });
+
+        normalHeaderCt.on({
+            columnmove: me.onNormalHeaderMove,
+            sortchange: me.onNormalHeaderSortChange,
+            scope: me
+        });
+
+        me.modifyHeaderCt();
+        me.items = [me.lockedGrid, me.normalGrid];
+
+        me.relayHeaderCtEvents(lockedHeaderCt);
+        me.relayHeaderCtEvents(normalHeaderCt);
+
+        me.layout = {
+            type: 'hbox',
+            align: 'stretch'
+        };
+    },
+
+    processColumns: function(columns){
+        
+        var i = 0,
+            len = columns.length,
+            lockedWidth = 0,
+            lockedHeaders = [],
+            normalHeaders = [],
+            column;
+
+        for (; i < len; ++i) {
+            column = columns[i];
+            
+            
+            if (!column.isComponent) {
+                column = Ext.apply({}, columns[i]);
+            }
+
+            
+            
+            column.processed = true;
+            if (column.locked) {
+                if (!column.hidden) {
+                    lockedWidth += column.width || Ext.grid.header.Container.prototype.defaultWidth;
+                }
+                lockedHeaders.push(column);
+            } else {
+                normalHeaders.push(column);
+            }
+            if (!column.headerId) {
+                column.headerId = (column.initialConfig || column).id || ('L' + (++this.headerCounter));
+            }
+        }
+        return {
+            lockedWidth: lockedWidth,
+            locked: {
+                items: lockedHeaders,
+                itemId: 'lockedHeaderCt',
+                stretchMaxPartner: '^^>>#normalHeaderCt'
+            },
+            normal: {
+                items: normalHeaders,
+                itemId: 'normalHeaderCt',
+                stretchMaxPartner: '^^>>#lockedHeaderCt'
+            }
+        };
+    },
+
+    
+    onLockedViewMouseWheel: function(e) {
+        var me = this,
+            scrollDelta = -me.scrollDelta,
+            deltaY = scrollDelta * e.getWheelDeltas().y,
+            vertScrollerEl = me.lockedGrid.getView().el.dom,
+            verticalCanScrollDown, verticalCanScrollUp;
+
+        if (vertScrollerEl) {
+            verticalCanScrollDown = vertScrollerEl.scrollTop !== vertScrollerEl.scrollHeight - vertScrollerEl.clientHeight;
+            verticalCanScrollUp   = vertScrollerEl.scrollTop !== 0;
+        }
+
+        if ((deltaY < 0 && verticalCanScrollUp) || (deltaY > 0 && verticalCanScrollDown)) {
+            e.stopEvent();
+
+            
+            
+            
+            me.scrolling = true;
+            vertScrollerEl.scrollTop += deltaY;
+            me.normalGrid.getView().el.dom.scrollTop = vertScrollerEl.scrollTop;
+            me.scrolling = false;
+
+            
+            me.onNormalViewScroll();
+        }
+    },
+
+    onLockedViewScroll: function() {
+        var me = this,
+            lockedView = me.lockedGrid.getView(),
+            normalView = me.normalGrid.getView(),
+            normalTable,
+            lockedTable;
+
+        
+        if (!me.scrolling) {
+            me.scrolling = true;
+            normalView.el.dom.scrollTop = lockedView.el.dom.scrollTop;
+    
+            
+            if (me.store.buffered) {
+                lockedTable = lockedView.el.child('table', true);
+                normalTable = normalView.el.child('table', true);
+                lockedTable.style.position = 'absolute';
+            }
+            me.scrolling = false;
+        }
+    },
+    
+    onNormalViewScroll: function() {
+        var me = this,
+            lockedView = me.lockedGrid.getView(),
+            normalView = me.normalGrid.getView(),
+            normalTable,
+            lockedTable;
+
+        
+        if (!me.scrolling) {
+            me.scrolling = true;
+            lockedView.el.dom.scrollTop = normalView.el.dom.scrollTop;
+    
+            
+            if (me.store.buffered) {
+                lockedTable = lockedView.el.child('table', true);
+                normalTable = normalView.el.child('table', true);
+                lockedTable.style.position = 'absolute';
+                lockedTable.style.top = normalTable.style.top;
+            }
+            me.scrolling = false;
+        }
+    },
+
+    
+    onLockedHeaderMove: function() {
+        if (this.syncRowHeight) {
+            this.onNormalViewRefresh();
+        }
+    },
+
+    
+    onNormalHeaderMove: function() {
+        if (this.syncRowHeight) {
+            this.onLockedViewRefresh();
+        }
+    },
+    
+    
+    
+    
+    
+    updateSpacer: function() {
+        var me   = this,
+            
+            
+            lockedViewEl   = me.lockedGrid.getView().el,
+            normalViewEl = me.normalGrid.getView().el.dom,
+            spacerId = lockedViewEl.dom.id + '-spacer',
+            spacerHeight = (normalViewEl.offsetHeight - normalViewEl.clientHeight) + 'px';
+
+        me.spacerEl = Ext.getDom(spacerId);
+        if (me.spacerEl) {
+            me.spacerEl.style.height = spacerHeight;
+        } else {
+            Ext.core.DomHelper.append(lockedViewEl, {
+                id: spacerId,
+                style: 'height: ' + spacerHeight
+            });
+        }
+    },
+
+    
+    onLockedViewRefresh: function() {
+
+        
+        if (this.normalGrid.headerCt.getGridColumns().length) {
+            var me     = this,
+                view   = me.lockedGrid.getView(),
+                el     = view.el,
+                rowEls = el.query(view.getItemSelector()),
+                ln     = rowEls.length,
+                i = 0;
+    
+            
+            me.lockedHeights = [];
+
+            for (; i < ln; i++) {
+                me.lockedHeights[i] = rowEls[i].clientHeight;
+            }
+            me.syncRowHeights();
+        }
+    },
+
+    
+    onNormalViewRefresh: function() {
+
+        
+        if (this.lockedGrid.headerCt.getGridColumns().length) {
+            var me     = this,
+                view   = me.normalGrid.getView(),
+                el     = view.el,
+                rowEls = el.query(view.getItemSelector()),
+                ln     = rowEls.length,
+                i = 0;
+    
+            
+            me.normalHeights = [];
+    
+            for (; i < ln; i++) {
+                me.normalHeights[i] = rowEls[i].clientHeight;
+            }
+            me.syncRowHeights();
+            me.updateSpacer();
+        }
+    },
+
+    
+    onLockedViewItemUpdate: function(record, index, node) {
+
+        
+        if (this.normalGrid.headerCt.getGridColumns().length) {
+            this.lockedHeights[index] = node.clientHeight;
+            this.syncRowHeights();
+        }
+    },
+
+    
+    onNormalViewItemUpdate: function(record, index, node) {
+    
+        
+        if (this.lockedGrid.headerCt.getGridColumns().length) {
+            this.normalHeights[index] = node.clientHeight;
+            this.syncRowHeights();
+        }
+    },
+
+    
+    syncRowHeights: function() {
+        var me = this,
+            lockedHeights = me.lockedHeights,
+            normalHeights = me.normalHeights,
+            calcHeights   = [],
+            ln = lockedHeights.length,
+            i  = 0,
+            lockedView, normalView,
+            lockedRowEls, normalRowEls,
+            scrollTop;
+
+        
+        
+        if (lockedHeights.length && normalHeights.length) {
+            lockedView = me.lockedGrid.getView();
+            normalView = me.normalGrid.getView();
+            lockedRowEls = lockedView.el.query(lockedView.getItemSelector());
+            normalRowEls = normalView.el.query(normalView.getItemSelector());
+
+            
+            for (; i < ln; i++) {
+                
+                if (!isNaN(lockedHeights[i]) && !isNaN(normalHeights[i])) {
+                    if (lockedHeights[i] > normalHeights[i]) {
+                        Ext.fly(normalRowEls[i]).setHeight(lockedHeights[i]);
+                    } else if (lockedHeights[i] < normalHeights[i]) {
+                        Ext.fly(lockedRowEls[i]).setHeight(normalHeights[i]);
+                    }
+                }
+            }
+
+            
+            
+            
+            
+            scrollTop = normalView.el.dom.scrollTop;
+            normalView.el.dom.scrollTop = scrollTop;
+            lockedView.el.dom.scrollTop = scrollTop;
+            
+            
+            me.lockedHeights = [];
+            me.normalHeights = [];
+        }
+    },
+
+    
+    modifyHeaderCt: function() {
+        var me = this;
+        me.lockedGrid.headerCt.getMenuItems = me.getMenuItems(true);
+        me.normalGrid.headerCt.getMenuItems = me.getMenuItems(false);
+    },
+
+    onUnlockMenuClick: function() {
+        this.unlock();
+    },
+
+    onLockMenuClick: function() {
+        this.lock();
+    },
+
+    getMenuItems: function(locked) {
+        var me            = this,
+            unlockText    = me.unlockText,
+            lockText      = me.lockText,
+            unlockCls     = Ext.baseCSSPrefix + 'hmenu-unlock',
+            lockCls       = Ext.baseCSSPrefix + 'hmenu-lock',
+            unlockHandler = Ext.Function.bind(me.onUnlockMenuClick, me),
+            lockHandler   = Ext.Function.bind(me.onLockMenuClick, me);
+
+        
+        return function() {
+            var o = Ext.grid.header.Container.prototype.getMenuItems.call(this);
+            o.push('-',{
+                cls: unlockCls,
+                text: unlockText,
+                handler: unlockHandler,
+                disabled: !locked
+            });
+            o.push({
+                cls: lockCls,
+                text: lockText,
+                handler: lockHandler,
+                disabled: locked
+            });
+            return o;
+        };
+    },
+
+    
+    
+    lock: function(activeHd, toIdx) {
+        var me         = this,
+            normalGrid = me.normalGrid,
+            lockedGrid = me.lockedGrid,
+            normalHCt  = normalGrid.headerCt,
+            lockedHCt  = lockedGrid.headerCt;
+
+        activeHd = activeHd || normalHCt.getMenu().activeHeader;
+
+        
+        
+        if (activeHd.flex) {
+            activeHd.width = activeHd.getWidth();
+            delete activeHd.flex;
+        }
+
+        Ext.suspendLayouts();
+        normalHCt.remove(activeHd, false);
+        activeHd.locked = true;
+        if (Ext.isDefined(toIdx)) {
+            lockedHCt.insert(toIdx, activeHd);
+        } else {
+            lockedHCt.add(activeHd);
+        }
+        me.syncLockedSection();
+        Ext.resumeLayouts(true);
+        me.updateSpacer();
+
+        me.fireEvent('lockcolumn', me, activeHd);
+    },
+
+    syncLockedSection: function() {
+        var me = this;
+        me.syncLockedWidth();
+        me.lockedGrid.getView().refresh();
+        me.normalGrid.getView().refresh();
+    },
+
+    
+    
+    syncLockedWidth: function() {
+        var me = this,
+            locked = me.lockedGrid,
+            width = locked.headerCt.getFullWidth(true);
+            
+        Ext.suspendLayouts();
+        if (width > 0) {
+            locked.setWidth(width);
+            locked.show();
+        } else {
+            locked.hide();
+        }
+        Ext.resumeLayouts(true);
+        
+        return width > 0;
+    },
+
+    onLockedHeaderResize: function() {
+        this.syncLockedWidth();
+    },
+
+    onLockedHeaderHide: function() {
+        this.syncLockedWidth();
+    },
+
+    onLockedHeaderShow: function() {
+        this.syncLockedWidth();
+    },
+
+    onLockedHeaderSortChange: function(headerCt, header, sortState) {
+        if (sortState) {
+            
+            
+            this.normalGrid.headerCt.clearOtherSortStates(null, true);
+        }
+    },
+
+    onNormalHeaderSortChange: function(headerCt, header, sortState) {
+        if (sortState) {
+            
+            
+            this.lockedGrid.headerCt.clearOtherSortStates(null, true);
+        }
+    },
+
+    
+    
+    unlock: function(activeHd, toIdx) {
+        var me         = this,
+            normalGrid = me.normalGrid,
+            lockedGrid = me.lockedGrid,
+            normalHCt  = normalGrid.headerCt,
+            lockedHCt  = lockedGrid.headerCt,
+            refreshLocked = false;
+
+        if (!Ext.isDefined(toIdx)) {
+            toIdx = 0;
+        }
+        activeHd = activeHd || lockedHCt.getMenu().activeHeader;
+
+        Ext.suspendLayouts();
+        lockedHCt.remove(activeHd, false);
+        if (me.syncLockedWidth()) {
+            refreshLocked = true;
+        }
+        activeHd.locked = false;
+
+        
+        normalHCt.insert(toIdx, activeHd);
+        me.normalGrid.getView().refresh();
+
+        if (refreshLocked) {
+            me.lockedGrid.getView().refresh();
+        }
+        Ext.resumeLayouts(true);
+
+        me.fireEvent('unlockcolumn', me, activeHd);
+    },
+
+    applyColumnsState: function (columns) {
+        var me             = this,
+            lockedGrid     = me.lockedGrid,
+            lockedHeaderCt = lockedGrid.headerCt,
+            normalHeaderCt = me.normalGrid.headerCt,
+            lockedCols     = Ext.Array.toMap(lockedHeaderCt.items, 'headerId'),
+            normalCols     = Ext.Array.toMap(normalHeaderCt.items, 'headerId'),
+            locked         = [],
+            normal         = [],
+            lockedWidth    = 1,
+            length         = columns.length,
+            i, existing,
+            lockedDefault,
+            col;
+
+        for (i = 0; i < length; i++) {
+            col = columns[i];
+
+            lockedDefault = lockedCols[col.id];
+            existing = lockedDefault || normalCols[col.id];
+
+            if (existing) {
+                if (existing.applyColumnState) {
+                    existing.applyColumnState(col);
+                }
+                if (existing.locked === undefined) {
+                    existing.locked = !!lockedDefault;
+                }
+                if (existing.locked) {
+                    locked.push(existing);
+                    if (!existing.hidden && typeof existing.width == 'number') {
+                        lockedWidth += existing.width;
+                    }
+                } else {
+                    normal.push(existing);
+                }
+            }
+        }
+
+        
+        if (locked.length + normal.length == lockedHeaderCt.items.getCount() + normalHeaderCt.items.getCount()) {
+            lockedHeaderCt.removeAll(false);
+            normalHeaderCt.removeAll(false);
+
+            lockedHeaderCt.add(locked);
+            normalHeaderCt.add(normal);
+
+            lockedGrid.setWidth(lockedWidth);
+        }
+    },
+
+    getColumnsState: function () {
+        var me = this,
+            locked = me.lockedGrid.headerCt.getColumnsState(),
+            normal = me.normalGrid.headerCt.getColumnsState();
+
+        return locked.concat(normal);
+    },
+
+    
+    reconfigureLockable: function(store, columns) {
+        var me = this,
+            lockedGrid = me.lockedGrid,
+            normalGrid = me.normalGrid;
+
+        if (columns) {
+            Ext.suspendLayouts();
+            lockedGrid.headerCt.removeAll();
+            normalGrid.headerCt.removeAll();
+
+            columns = me.processColumns(columns);
+            lockedGrid.setWidth(columns.lockedWidth);
+            lockedGrid.headerCt.add(columns.locked.items);
+            normalGrid.headerCt.add(columns.normal.items);
+            Ext.resumeLayouts(true);
+        }
+
+        if (store) {
+            store = Ext.data.StoreManager.lookup(store);
+            me.store = store;
+            lockedGrid.bindStore(store);
+            normalGrid.bindStore(store);
+        } else {
+            lockedGrid.getView().refresh();
+            normalGrid.getView().refresh();
+        }
+    }
+}, function() {
+    this.borrow(Ext.view.Table, ['prepareFeatures']);
 });
 
 
@@ -104714,6 +106938,9 @@ Ext.define('Ext.grid.Panel', {
     
     
 
+    
+
+    
 });
 
 Ext.define('Ext.grid.property.Grid', {
@@ -104831,7 +107058,7 @@ Ext.define('Ext.grid.property.Grid', {
         var me = this,
             v, oldValue;
 
-        if (operation == Ext.data.Model.EDIT) {
+        if (me.rendered && operation == Ext.data.Model.EDIT) {
             v = record.get(me.valueField);
             oldValue = record.modified.value;
             if (me.fireEvent('beforepropertychange', me.source, record.getId(), v, oldValue) !== false) {
@@ -104966,22 +107193,22 @@ Ext.define('Ext.tree.View', {
 
     expandDuration: 250,
     collapseDuration: 250,
-    
+
     toggleOnDblClick: true,
 
     stripeRows: false,
-    
+
     
     uiFields: ['expanded', 'loaded', 'checked', 'expandable', 'leaf', 'icon', 'iconCls', 'loading'],
 
     initComponent: function() {
         var me = this,
             treeStore = me.panel.getStore();
-        
+
         if (me.initialConfig.animate === undefined) {
             me.animate = Ext.enableFx;
         }
-        
+
         me.store = new Ext.data.NodeStore({
             treeStore: treeStore,
             recursive: true,
@@ -104996,7 +107223,7 @@ Ext.define('Ext.tree.View', {
                 scope: me
             }
         });
-        
+
         if (me.node) {
             me.setRootNode(me.node);
         }
@@ -105023,7 +107250,7 @@ Ext.define('Ext.tree.View', {
             click: me.onCheckboxChange
         });
     },
-    
+
     afterComponentLayout: function(){
         this.callParent(arguments);
         var stretcher = this.stretcher;
@@ -105055,12 +107282,12 @@ Ext.define('Ext.tree.View', {
     onCheckboxChange: function(e, t) {
         var me = this,
             item = e.getTarget(me.getItemSelector(), me.getTargetEl());
-            
+
         if (item) {
             me.onCheckChange(me.getRecord(item));
         }
     },
-    
+
     onCheckChange: function(record){
         var checked = record.get('checked');
         if (Ext.isBoolean(checked)) {
@@ -105079,7 +107306,7 @@ Ext.define('Ext.tree.View', {
         });
         return checked;
     },
-    
+
     isItemChecked: function(rec){
         return rec.get('checked');
     },
@@ -105128,10 +107355,10 @@ Ext.define('Ext.tree.View', {
         if (!this.animate) {
             return null;
         }
-        
+
         var wraps = this.animWraps,
             wrap = wraps[parent.internalId];
-        
+
         if (bubble !== false) {
             while (!wrap && parent) {
                 parent = parent.parentNode;
@@ -105160,17 +107387,17 @@ Ext.define('Ext.tree.View', {
 
         
         parent = animWrap.record;
-        
+
         
         targetEl = animWrap.targetEl;
         children = targetEl.dom.childNodes;
-        
+
         
         len = children.length - 1;
-        
+
         
         relativeIndex = index - me.indexOf(parent) - 1;
-        
+
         
         
         if (!len || relativeIndex >= len) {
@@ -105185,40 +107412,42 @@ Ext.define('Ext.tree.View', {
 
         
         Ext.Array.insert(a, index, nodes);
-        
+
         
         
         if (animWrap.isAnimating) {
             me.onExpand(parent);
         }
     },
-    
+
     beginBulkUpdate: function(){
         this.bulkUpdate = true;
         this.ownerCt.changingScrollbars = true;  
     },
-    
+
     endBulkUpdate: function(){
         this.bulkUpdate = false;
         this.ownerCt.changingScrollbars = true;  
     },
-    
+
     onRemove : function(ds, record, index) {
         var me = this,
             bulk = me.bulkUpdate;
-
-        me.doRemove(record, index);
-        if (!bulk) {
-            me.updateIndexes(index);
-        }
-        if (me.store.getCount() === 0){
-            me.refresh();
-        }
-        if (!bulk) {
-            me.fireEvent('itemremove', record, index);
+            
+        if (me.rendered) {
+            me.doRemove(record, index);
+            if (!bulk) {
+                me.updateIndexes(index);
+            }
+            if (me.store.getCount() === 0){
+                me.refresh();
+            }
+            if (!bulk) {
+                me.fireEvent('itemremove', record, index);
+            }
         }
     },
-    
+
     doRemove: function(record, index) {
         
         
@@ -105238,7 +107467,7 @@ Ext.define('Ext.tree.View', {
     onBeforeExpand: function(parent, records, index) {
         var me = this,
             animWrap;
-            
+
         if (!me.rendered || !me.animate) {
             return;
         }
@@ -105268,23 +107497,24 @@ Ext.define('Ext.tree.View', {
             animWrap,
             animateEl, 
             targetEl;        
-        
+
         if (me.singleExpand) {
             me.ensureSingleExpand(parent);
         }
-        
+
         
         if (index === -1) {
             return;
         }
-        
+
         animWrap = me.getAnimWrap(parent, false);
 
         if (!animWrap) {
+            me.isExpandingOrCollapsing = false;
             me.fireEvent('afteritemexpand', parent, index, node);
             return;
         }
-        
+
         animateEl = animWrap.animateEl;
         targetEl = animWrap.targetEl;
 
@@ -105304,17 +107534,18 @@ Ext.define('Ext.tree.View', {
                 }
             },
             callback: function() {
+                me.isExpandingOrCollapsing = false;
                 me.fireEvent('afteritemexpand', parent, index, node);
             }
         });
-        
+
         animWrap.isAnimating = true;
     },
 
     onBeforeCollapse: function(parent, records, index) {
         var me = this,
             animWrap;
-            
+
         if (!me.rendered || !me.animate) {
             return;
         }
@@ -105333,7 +107564,7 @@ Ext.define('Ext.tree.View', {
             animWrap.collapsing = true;
         }
     },
-    
+
     onCollapse: function(parent) {
         var me = this,
             queue = me.animQueue,
@@ -105342,22 +107573,23 @@ Ext.define('Ext.tree.View', {
             index = node ? me.indexOf(node) : -1,
             animWrap = me.getAnimWrap(parent),
             animateEl, targetEl;
-            
+
         
         if (index === -1) {
             return;
         }
 
         if (!animWrap) {
+            me.isExpandingOrCollapsing = false;
             me.fireEvent('afteritemcollapse', parent, index, node);
             return;
         }
-        
+
         animateEl = animWrap.animateEl;
         targetEl = animWrap.targetEl;
 
         queue[id] = true;
-        
+
         
         animateEl.stopAnimation();
         animateEl.slideOut('t', {
@@ -105371,24 +107603,25 @@ Ext.define('Ext.tree.View', {
                 }             
             },
             callback: function() {
+                me.isExpandingOrCollapsing = false;
                 me.fireEvent('afteritemcollapse', parent, index, node);
             }
         });
         animWrap.isAnimating = true;
     },
-    
+
     
     isAnimating: function(node) {
         return !!this.animQueue[node.getId()];    
     },
-    
+
     collectData: function(records) {
         var data = this.callParent(arguments),
             rows = data.rows,
             len = rows.length,
             i = 0,
             row, record;
-            
+
         for (; i < len; i++) {
             row = rows[i];
             record = records[i];
@@ -105408,25 +107641,38 @@ Ext.define('Ext.tree.View', {
                 row.rowCls = (row.rowCls || '') + ' ' + this.loadingCls;
             }
         }
-        
+
         return data;
     },
-    
+
     
     expand: function(record, deep, callback, scope) {
         return record.expand(deep, callback, scope);
     },
-    
+
     
     collapse: function(record, deep, callback, scope) {
         return record.collapse(deep, callback, scope);
     },
+
     
-    
-    toggle: function(record, deep) {
-        this[record.isExpanded() ? 'collapse' : 'expand'](record, deep);
+    toggle: function(record, deep, callback, scope) {
+        var me = this,
+            doAnimate = !!this.animate;
+
+        
+        if (!doAnimate || !this.isExpandingOrCollapsing) {
+            if (!record.isLeaf()) {
+                this.isExpandingOrCollapsing = doAnimate;
+            }
+            if (record.isExpanded()) {
+                me.collapse(record, deep, callback, scope);
+            } else {
+                me.expand(record, deep, callback, scope);
+            }
+        }
     },
-    
+
     onItemDblClick: function(record, item, index) {
         var editingPlugin = this.editingPlugin;
         this.callParent(arguments);
@@ -105434,14 +107680,14 @@ Ext.define('Ext.tree.View', {
             this.toggle(record);
         }
     },
-    
+
     onBeforeItemMouseDown: function(record, item, index, e) {
         if (e.getTarget(this.expanderSelector, item)) {
             return false;
         }
         return this.callParent(arguments);
     },
-    
+
     onItemClick: function(record, item, index, e) {
         if (e.getTarget(this.expanderSelector, item)) {
             this.toggle(record, e.ctrlKey);
@@ -105449,20 +107695,20 @@ Ext.define('Ext.tree.View', {
         }
         return this.callParent(arguments);
     },
-    
+
     onExpanderMouseOver: function(e, t) {
         e.getTarget(this.cellSelector, 10, true).addCls(this.expanderIconOverCls);
     },
-    
+
     onExpanderMouseOut: function(e, t) {
         e.getTarget(this.cellSelector, 10, true).removeCls(this.expanderIconOverCls);
     },
-    
+
     
     getTreeStore: function() {
         return this.panel.store;
     },    
-    
+
     ensureSingleExpand: function(node) {
         var parent = node.parentNode;
         if (parent) {
@@ -105473,7 +107719,7 @@ Ext.define('Ext.tree.View', {
             });
         }
     },
-    
+
     shouldUpdateCell: function(column, changedFieldNames){
         return Ext.Array.contains(this.uiFields, column.dataIndex) || this.callParent(arguments);
     },
@@ -105902,7 +108148,7 @@ Ext.define('Ext.window.Window', {
     autoRender: true,
 
     
-    hideMode: 'visibility',
+    hideMode: 'offsets',
 
     
     floating: true,
@@ -105916,6 +108162,7 @@ Ext.define('Ext.window.Window', {
     ignoreHeaderBorderManagement: true,
 
     
+    alwaysFramed: true,
 
     
     isWindow: true,
@@ -105958,11 +108205,6 @@ Ext.define('Ext.window.Window', {
                 scope: me
             });
         }
-
-        
-        
-        
-        me.frame = true;
 
         me.addStateEvents(['maximize', 'restore', 'resize', 'dragend']);
     },
@@ -106033,11 +108275,8 @@ Ext.define('Ext.window.Window', {
         
         if (me.maximizable) {
             me.header.on({
-                dblclick: {
-                    fn: me.toggleMaximize,
-                    element: 'el',
-                    scope: me
-                }
+                scope: me,
+                dblclick: me.toggleMaximize
             });
         }
     },
@@ -106078,7 +108317,7 @@ Ext.define('Ext.window.Window', {
         if (me.header) {
             ddConfig = Ext.applyIf({
                 el: me.el,
-                delegate: '#' + me.header.id
+                delegate: '#' + Ext.escapeId(me.header.id)
             }, me.draggable);
 
             
@@ -107462,7 +109701,7 @@ Ext.define('Ext.form.Basic', {
                                 }
 
                                 if (isArray(val)) {
-                                    values[name] = bucket.concat(val);
+                                    values[name] = values[name] = bucket.concat(val);
                                 } else {
                                     bucket.push(val);
                                 }
@@ -107630,8 +109869,8 @@ Ext.define('Ext.form.Panel', {
     },
 
     
-    getValues: function() {
-        return this.getForm().getValues();
+    getValues: function(asString, dirtyOnly, includeEmptyText, useDataValues) {
+        return this.getForm().getValues(asString, dirtyOnly, includeEmptyText, useDataValues);
     },
 
     beforeDestroy: function() {
@@ -108351,7 +110590,7 @@ Ext.define('Ext.grid.RowEditor', {
 
         tip.setTarget(row);
         tip.showAt([-10000, -10000]);
-        tip.body.update(me.getErrors());
+        tip.update(me.getErrors());
         tip.mouseOffset = [viewEl.getWidth() - row.getWidth() + me.lastScrollLeft + 15, 0];
         me.repositionTip();
         tip.doLayout();
@@ -108453,14 +110692,11 @@ Ext.define('Ext.grid.plugin.RowEditing', {
         var me = this,
             editor = me.getEditor();
 
-        if (me.callParent(arguments) === false) {
-            return false;
-        }
-
-        
-        if (editor.beforeEdit() !== false) {
+        if ((me.callParent(arguments) !== false) && (editor.beforeEdit() !== false)) {
             editor.startEdit(me.context.record, me.context.column);
+            return true;
         }
+        return false;
     },
 
     
@@ -108678,4 +110914,11 @@ Ext.define('Ext.grid.plugin.RowEditing', {
         me.getEditor().setField(column);
     }
 });
+
+
+
+
 Ext._endTime = new Date().getTime();
+if (Ext._beforereadyhandler){
+    Ext._beforereadyhandler();
+}

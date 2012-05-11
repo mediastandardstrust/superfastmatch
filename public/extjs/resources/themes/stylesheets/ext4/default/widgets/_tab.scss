@@ -88,10 +88,6 @@
         }
     }
 
-    .#{$prefix}tab-disabled {
-        @include opacity(1);
-    }
-
     .#{$prefix}border-box {
         .#{$prefix}tab-default-top {
             height: $tab-height + top($tabbar-top-strip-border-width);
@@ -142,6 +138,14 @@
         .#{$prefix}tab-inner {
             height: $tab-height - $framepad * 2 - top($tab-top-border-width);
             line-height: $tab-height - $framepad * 2 - top($tab-top-border-width);
+        }
+    }
+
+    // corrects text being clipped at the bottom in safari4 & 5.0.5
+    .#{$prefix}safari4,
+    .#{$prefix}safari5_0 {
+        .#{$prefix}tab-default-top .#{$prefix}tab-inner {
+            line-height: $tab-height - $framepad * 2 - top($tab-top-border-width) - 2;
         }
     }
 
@@ -220,6 +224,14 @@
         bottom: 0;
         width: 18px;
         height: 18px;
+    }
+
+    // Stop icons being clipped by the bottom of the button element
+    .#{$prefix}strict {
+        .#{$prefix}ie8 .#{$prefix}tab button,
+        .#{$prefix}ie9 .#{$prefix}tab button {
+            overflow-y: visible;
+        }
     }
 
     .#{$prefix}tab-default-disabled .#{$prefix}tab-icon {
@@ -377,7 +389,7 @@
 
     /* Include the element name to raise the specificity to equal the :hover */
     .#{$prefix}tab-default-disabled a.#{$prefix}tab-close-btn {
-        @include opacity(.3);
+        @include opacity(0.3);
     }
 
     @if not $supports-border-radius or $compile-all {

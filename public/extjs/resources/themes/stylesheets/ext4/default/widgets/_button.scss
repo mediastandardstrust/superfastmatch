@@ -29,8 +29,11 @@
             // Styles for an anchor button.
             a {
                 text-decoration: none;
-                display: inline-block;
+                display: block;
                 color: inherit;
+
+                // 100% rather than auto for consistency with the button element
+                width: 100%;
 
                 // This is needed for IE7 in strict mode to ensure that the icon element has the correct opacity on a
                 // disabled link button. It seems only to be needed for buttons that are narrower than their icon
@@ -40,10 +43,13 @@
         }
 
         button {
+            // 100% rather than auto so that IE7 renders file upload and date picker buttons correctly
+            width: 100%;
+
+            display: block;
             margin: 0;
             padding: 0;      
-            border: 0;  
-            width: auto;    
+            border: 0;
             background: none;
             outline: 0 none;
             overflow: hidden;
@@ -62,6 +68,7 @@
             background-color: transparent;
             background-repeat: no-repeat;
             background-position: left center;
+            overflow: hidden;
         }
 
         .#{$prefix}btn-left .#{$prefix}btn-inner {
@@ -76,11 +83,7 @@
             text-align: right;
         }
     }
-    
-    .#{$prefix}btn-disabled {
-        @include opacity(1);
-    }
-    
+
     .#{$prefix}btn-disabled span {
         @include opacity(.5);
 
@@ -657,8 +660,12 @@
         button,
         a {
             padding: 0;
-            width: $icon-size !important;
-            height: $icon-size;
+        }
+
+        .#{$prefix}btn-inner {
+            /* even though there is no text we set a width and padding as buttons shrink-wrap around this element */
+            width: $icon-size;
+            padding: 0;
         }
 
         .#{$prefix}btn-icon {
