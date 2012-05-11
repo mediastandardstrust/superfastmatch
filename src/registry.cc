@@ -322,32 +322,37 @@ namespace superfastmatch{
   }
   
   void FlagsRegistry::fillStatusDictionary(TemplateDictionary* dict){
+    TemplateDictionary* statusDict=dict->AddIncludeDictionary("DATA");
+    statusDict->SetFilename(STATUS_JSON);
     // TODO: This section needs to be conditional on TCMALLOC being linked and present
     size_t memory=0;
     const int kBufferSize = 16 << 12;
     char* buffer = new char[kBufferSize];
     // MallocExtension::instance()->GetNumericProperty("generic.current_allocated_bytes",&memory);
     // MallocExtension::instance()->GetStats(buffer,kBufferSize);
-    dict->SetFormattedValue("MEMORY","%.4f",double(memory)/1024/1024/1024);
-    dict->SetValue("MEMORY_STATS",string(buffer));
+    statusDict->SetFormattedValue("MEMORY","%.4f",double(memory)/1024/1024/1024);
+    statusDict->SetValue("MEMORY_STATS",string(buffer));
     delete [] buffer;
     // End TCMALLOC section
-    dict->SetIntValue("WHITESPACE_HASH",getWhiteSpaceHash());
-    fillDbDictionary(dict,getQueueDB(),"Queue DB");
-    fillDbDictionary(dict,getPayloadDB(),"Payload DB");
-    fillDbDictionary(dict,getDocumentDB(),"Document DB");
-    fillDbDictionary(dict,getMetaDB(),"Meta DB");
-    fillDbDictionary(dict,getOrderedMetaDB(),"Ordered Meta DB");
-    fillDbDictionary(dict,getAssociationDB(),"Association DB");
-    fillDbDictionary(dict,getMiscDB(),"Misc DB");
+    getPostings()->fillStatusDictionary(statusDict);
+    fillDbDictionary(statusDict,getQueueDB(),"Queue DB");
+    fillDbDictionary(statusDict,getPayloadDB(),"Payload DB");
+    fillDbDictionary(statusDict,getDocumentDB(),"Document DB");
+    fillDbDictionary(statusDict,getMetaDB(),"Meta DB");
+    fillDbDictionary(statusDict,getOrderedMetaDB(),"Ordered Meta DB");
+    fillDbDictionary(statusDict,getAssociationDB(),"Association DB");
+    fillDbDictionary(statusDict,getMiscDB(),"Misc DB");
   }
 
   void FlagsRegistry::fillDbDictionary(TemplateDictionary* dict, kc::PolyDB* db, const string name){
-    stringstream s;
-    status(s,db);
-    TemplateDictionary* db_dict = dict->AddSectionDictionary("DB");
-    db_dict->SetValue("NAME",name);
-    db_dict->SetValue("STATS",s.str());       
+    set<string> metadata;
+    TemplateDictionary* dbDict = dict->AddSectionDictionary("DB");
+    fillMetaDictionary("name",name,dbDict,metadata);
+    map<string,string> status;
+    db->status(&status);
+    for (map<string,string>::const_iterator it=status.begin(),ite=status.end();it!=ite;++it){
+      fillMetaDictionary(it->first,it->second,dbDict,metadata);        
+    }
   }
   
   void FlagsRegistry::status(std::ostream& s, kc::PolyDB* db){

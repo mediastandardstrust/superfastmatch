@@ -438,8 +438,8 @@ namespace superfastmatch{
   
   void Api::GetIndex(const ApiParams& params,ApiResponse& response){
     uint64_t start = kc::atoi(params.query.find("start")->second.c_str());
-    // uint64_t limit = kc::atoi(params.query.find("limit")->second.c_str());
-    registry_->getPostings()->fillListDictionary(&response.dict,start);
+    uint64_t limit = kc::atoi(params.query.find("limit")->second.c_str());
+    registry_->getPostings()->fillListDictionary(&response.dict,start,limit);
     response.type=response_t(200,"application/json");
   }
   

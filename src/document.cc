@@ -281,19 +281,7 @@ namespace superfastmatch
     if (getMetaKeys(keys)){
       for (vector<string>::iterator it=keys.begin();it!=keys.end();it++){
         string value=getMeta(&(*it->c_str()));
-        if (value.length()>0){
-          TemplateDictionary* metaDict=dict->AddSectionDictionary("META");
-          bool isNumber=isNumeric(value);
-          TemplateDictionary* valDict;
-          if(isNumber){
-            valDict=metaDict->AddSectionDictionary("NUMBER");
-          }else{
-            valDict=metaDict->AddSectionDictionary("STRING");
-          }
-          metaDict->SetValue("KEY",*it);
-          valDict->SetValue("VALUE",value);
-          metadata.insert(*it);
-        }
+        fillMetaDictionary(*it,value,dict,metadata);
       }
     }
   }

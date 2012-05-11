@@ -175,7 +175,7 @@ namespace superfastmatch
     return queue_.count();
   }
   
-  uint32_t PostingSlot::fillListDictionary(TemplateDictionary* dict,uint32_t start){
+  uint32_t PostingSlot::fillListDictionary(TemplateDictionary* dict,const uint64_t start, const uint64_t limit){
     PostLine line(registry_->getMaxLineLength());
     index_lock_.lock_reader();
     uint32_t count=0;
@@ -191,14 +191,14 @@ namespace superfastmatch
     }
     // Scan non empty
     index_t::nonempty_iterator it=index_.get_iter(hash);
-    while (it!=index_.nonempty_end() && count<registry_->getPageSize()){
+    while (it!=index_.nonempty_end() && count<limit){
       count++;
       vector<PostLineHeader>* doc_types=line.load(*it);
       TemplateDictionary* hash_dict=dict->AddSectionDictionary("HASH");
-      TemplateDictionary* posting_dict=hash_dict->AddSectionDictionary("POSTING");
       hash_dict->SetIntValue("HASH",index_.get_pos(it)+offset_);
       hash_dict->SetIntValue("BYTES",line.getLength());
       for (size_t i=0;i<doc_types->size();i++){
+        TemplateDictionary* posting_dict=hash_dict->AddSectionDictionary("POSTING");
         posting_dict->SetIntValue("DOC_TYPE",(*doc_types)[i].doc_type);
         posting_dict->SetIntValue("BYTES",line.getLength((*doc_types)[i].doc_type));
         vector<uint32_t>* doc_ids=line.getDocIds((*doc_types)[i].doc_type);
@@ -424,36 +424,42 @@ namespace superfastmatch
   void Posting::fillStatusDictionary(TemplateDictionary* dict){
     size_t hash_count=0;
     for (size_t i=0;i<slots_.size();i++){
-      hash_count+=slots_[i]->getHashCount();
+      TemplateDictionary* slotDict=dict->AddSectionDictionary("SLOT");
+      size_t slot_hash_count=slots_[i]->getHashCount();
+      slotDict->SetIntValue("SLOT_NUMBER",i);
+      slotDict->SetIntValue("HASH_COUNT",slot_hash_count);
+      hash_count+=slot_hash_count;
     }
+    dict->SetIntValue("HASH_COUNT",hash_count);
+    dict->SetIntValue("DOC_COUNT",doc_count_);
+    dict->SetIntValue("AVERAGE_HASHES",(doc_count_>0)?total_doc_length_/hash_count:0);
+    dict->SetIntValue("AVERAGE_DOC_LENGTH",(doc_count_>0)?total_doc_length_/doc_count_:0);
     dict->SetIntValue("WINDOW_SIZE",registry_->getWindowSize());
     dict->SetIntValue("WHITE_SPACE_THRESHOLD",registry_->getWhiteSpaceThreshold());
     dict->SetIntValue("HASH_WIDTH",registry_->getHashWidth());
     dict->SetIntValue("SLOT_COUNT",registry_->getSlotCount());
-    dict->SetIntValue("DOC_COUNT",doc_count_);
-    dict->SetIntValue("HASH_COUNT",hash_count);
-    dict->SetIntValue("AVERAGE_HASHES",(doc_count_>0)?total_doc_length_/hash_count:0);
-    dict->SetIntValue("AVERAGE_DOC_LENGTH",(doc_count_>0)?total_doc_length_/doc_count_:0);
+    dict->SetIntValue("WHITE_SPACE_HASH",registry_->getWhiteSpaceHash());
   }
   
-  void Posting::fillListDictionary(TemplateDictionary* dict,uint32_t start){
+  void Posting::fillListDictionary(TemplateDictionary* dict,const uint64_t start,const uint64_t limit){
     TemplateDictionary* postingDict=dict->AddIncludeDictionary("DATA");
     postingDict->SetFilename(POSTING_JSON);
     uint32_t count=0;
     for (size_t i=0;i<slots_.size();i++){
-      count+=slots_[i]->fillListDictionary(postingDict,start);
-      if (count>=registry_->getPageSize()){
+      count+=slots_[i]->fillListDictionary(postingDict,start,limit);
+      if (count>=limit){
         break;
       }
     }
+    postingDict->SetIntValue("TOTAL",getHashCount());
     postingDict->SetIntValue("FIRST",0);
-    if (start>registry_->getPageSize()){
-      postingDict->SetIntValue("PREVIOUS",start-registry_->getPageSize()); 
+    if (start>limit){
+      postingDict->SetIntValue("PREVIOUS",start-limit); 
     }else{
       postingDict->SetIntValue("PREVIOUS",0); 
     }
-    postingDict->SetIntValue("NEXT",min(registry_->getMaxHashCount()-registry_->getPageSize(),start+registry_->getPageSize())); 
-    postingDict->SetIntValue("LAST",registry_->getMaxHashCount()-registry_->getPageSize()); 
+    postingDict->SetIntValue("NEXT",min(registry_->getMaxHashCount()-limit,start+limit)); 
+    postingDict->SetIntValue("LAST",registry_->getMaxHashCount()-limit); 
   }
 
   void Posting::fillHistogramDictionary(TemplateDictionary* dict){

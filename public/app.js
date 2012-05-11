@@ -17,7 +17,7 @@ Ext.Ajax.timeout = 60000; // 60 seconds
 Ext.application({
     name: 'Superfastmatch',
     models: ['Fragment','Search','Document'],
-    controllers: ['Searches','Documents','Compare','Queue'],
+    controllers: ['Searches','Documents','Compare','Index','Queue','Status'],
     requires: ['Superfastmatch.view.MainViewPort'],
     launch: function(){
         Ext.QuickTips.init();

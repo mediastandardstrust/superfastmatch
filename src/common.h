@@ -66,7 +66,7 @@ namespace superfastmatch{
   }
   
   //Global utility functions
-  
+    
   inline bool needsAllocation(const size_t incoming, const size_t outgoing, const size_t block_size, size_t& block){
     block=(((outgoing-1)/block_size)+1)*block_size;
     return block!=(((incoming-1)/block_size)+1)*block_size;
@@ -313,6 +313,22 @@ namespace superfastmatch{
     return input;
   }
   
+  inline void fillMetaDictionary(const string& key,const string& value,TemplateDictionary* dict,set<string>& metadata){
+    if (value.length()>0){
+      TemplateDictionary* metaDict=dict->AddSectionDictionary("META");
+      bool isNumber=isNumeric(value);
+      TemplateDictionary* valDict;
+      if(isNumber){
+        valDict=metaDict->AddSectionDictionary("NUMBER");
+      }else{
+        valDict=metaDict->AddSectionDictionary("STRING");
+      }
+      metaDict->SetValue("KEY",key);
+      valDict->SetValue("VALUE",value);
+      metadata.insert(key);
+    }
+  }
+    
   template <typename T, typename U>
   class create_map
   {

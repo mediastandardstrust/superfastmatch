@@ -2,7 +2,6 @@
 #define _SFMPOSTING_H
 
 #include <google/sparsetable>
-#include <boost/pool/pool_alloc.hpp>
 #include <common.h>
 #include <instrumentation.h>
 #include <postline.h>
@@ -48,7 +47,7 @@ namespace superfastmatch
     void lockSlotForReading();
     void unlockSlotForReading();
     
-    uint32_t fillListDictionary(TemplateDictionary* dict,uint32_t start);
+    uint32_t fillListDictionary(TemplateDictionary* dict,const uint64_t start, const uint64_t limit);
     void fillHistograms(histogram_t& hash_hist,histogram_t& gaps_hist);
   };
 
@@ -75,7 +74,7 @@ namespace superfastmatch
     bool isReady();
 
     void fillStatusDictionary(TemplateDictionary* dict);
-    void fillListDictionary(TemplateDictionary* dict,uint32_t start);
+    void fillListDictionary(TemplateDictionary* dict,const uint64_t start,const uint64_t limit);
     void fillHistogramDictionary(TemplateDictionary* dict);
   private:
     void lockSlotsForReading();
