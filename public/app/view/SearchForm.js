@@ -82,7 +82,7 @@ Ext.define('Superfastmatch.view.SearchForm', {
         var me=this,
             status=me.down('#SearchStatus');
         status.setStatus({
-            text: 'Search in '+record.get("responseTime"),
+            text: 'Search in '+operation.response.getResponseHeader('X-Response-Time'),
             iconCls: ''
         });
         me.getEl().unmask();

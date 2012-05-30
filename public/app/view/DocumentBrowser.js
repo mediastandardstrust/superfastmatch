@@ -56,7 +56,8 @@ Ext.define('Superfastmatch.view.DocumentBrowser', {
                   scope: me.store
                 },
                 '->',
-                'Documents:'
+                'Documents:',
+                {xtype: 'tbtext', itemId: 'documentCount'}
               ]
       });
     },
@@ -107,6 +108,7 @@ Ext.define('Superfastmatch.view.DocumentBrowser', {
     onLoad: function(store,records,success){
         var me=this;
         me.reconfigure(store,store.model.getColumns());
+        me.down('#documentCount').setText(store.getTotalCount());
         me.getView().refresh();
         if (records.length){
             me.getSelectionModel().select(0);

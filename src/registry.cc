@@ -14,47 +14,47 @@ namespace superfastmatch{
   
   DEFINE_bool(daemonize,false,"Run process in the background. File paths must be absolute if this is true.");
 
-  DEFINE_string(log_file,"-","File to write logs to (defaults to stdout)");
+  DEFINE_string(log_file,"-","File to write logs to (defaults to stdout).");
   
-  DEFINE_int32(port, 8080, "What port to listen on");
+  DEFINE_int32(port, 8080, "What port to listen on.");
   static const bool port_dummy = google::RegisterFlagValidator(&FLAGS_port, &ValidatePort);
 
-  DEFINE_string(address,"" , "What address to listen on (defaults to all addresses)");
+  DEFINE_string(address,"" , "What address to listen on (defaults to all addresses).");
   static const bool address_dummy = google::RegisterFlagValidator(&FLAGS_address, &ValidateAddress);
 
-  DEFINE_int32(thread_count,8,"Number of threads for serving requests");
+  DEFINE_int32(thread_count,8,"Number of threads for serving requests.");
   static const bool thread_count__dummy = google::RegisterFlagValidator(&FLAGS_thread_count, &ValidateThreads);
 
-  DEFINE_int32(slot_count,4,"Number of slots to divide the index into (one thread per slot)");
+  DEFINE_int32(slot_count,4,"Number of slots to divide the index into (one thread per slot).");
   static const bool slot_count_dummy = google::RegisterFlagValidator(&FLAGS_slot_count, &ValidateThreads);
 
-  DEFINE_int32(cache,2048,"Number of megabytes to use for caching");
+  DEFINE_int32(cache,2048,"Number of megabytes to use for caching.");
   static const bool cache_dummy = google::RegisterFlagValidator(&FLAGS_cache, &ValidateCache);
 
-  DEFINE_int32(hash_width,26,"Number of bits to use to hash windows of text");
+  DEFINE_int32(hash_width,26,"Number of bits to use to hash windows of text.");
   static const bool hash_width_dummy = google::RegisterFlagValidator(&FLAGS_hash_width, &ValidateHashWidth);
 
-  DEFINE_int32(window_size,30,"Number of characters to use as a window of text for hashing");
+  DEFINE_int32(window_size,30,"Number of characters to use as a window of text for hashing.");
   static const bool window_size_dummy = google::RegisterFlagValidator(&FLAGS_window_size, &ValidateWindowSize);
   
-  DEFINE_double(white_space_threshold,0.5,"Percentage of non alphanumeric characters in a window above which window is considered whitespace");
+  DEFINE_double(white_space_threshold,0.5,"Percentage of non alphanumeric characters in a window above which window is considered whitespace.");
   static const bool white_space_threshold_dummy = google::RegisterFlagValidator(&FLAGS_white_space_threshold,&ValidateWhiteSpaceThreshold);
     
-  DEFINE_int32(max_posting_threshold,100,"Number of entries for a hash above which are ignored for search");
+  DEFINE_int32(max_posting_threshold,100,"Number of entries for a hash above which are ignored for search.");
 
-  DEFINE_int32(num_results,10,"Minimum number of documents to associate with");
+  DEFINE_int32(num_results,10,"Maximum number of documents to associate with per search. A full association pass might yield more results when a document is much quoted.");
  
-  DEFINE_string(data_path,"data","Path to store data files");
+  DEFINE_string(data_path,"data","Path to store data files.");
 
-  DEFINE_string(public_path,"public","Path to store static files for web serving");
+  DEFINE_string(public_path,"public","Path to store static files for web serving.");
   
-  DEFINE_bool(reset,false,"Reset index and remove all documents");
+  DEFINE_bool(reset,false,"Reset index and remove all documents.");
 
-  DEFINE_string(template_path,"templates","Path where HTML/JSON templates are located");
+  DEFINE_string(template_path,"templates","Path where HTML/JSON templates are located.");
 
-  DEFINE_bool(debug_templates,false,"Forces template reload for every template file change");
+  DEFINE_bool(debug_templates,false,"Forces template reload for every template file change.");
   
-  DEFINE_bool(debug,false,"Outputs debug information to specified log_file");
+  DEFINE_bool(debug,false,"Outputs debug information to specified log_file.");
 
 
   uint32_t FlagsRegistry::getHashWidth() const{
