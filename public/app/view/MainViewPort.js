@@ -5,6 +5,7 @@ Ext.define('Superfastmatch.view.MainViewPort', {
         'Superfastmatch.view.DocumentPanel',
         'Superfastmatch.view.IndexPanel',
         'Superfastmatch.view.QueuePanel',
+        'Superfastmatch.view.PerformancePanel',
         'Superfastmatch.view.StatusPanel',
         'Ext.ux.panel.HTMLPanel',
         'Ext.ux.panel.StatefulTabPanel'
@@ -42,11 +43,7 @@ Ext.define('Superfastmatch.view.MainViewPort', {
                         title: 'Documentation'
                     },
                     {
-                        xtype: 'HTMLPanel',
-                        loader: {
-                            url: '/performance/'
-                        },
-                        title: 'Performance'
+                        xtype: 'performancepanel'
                     },
                     {
                         xtype: 'statuspanel'

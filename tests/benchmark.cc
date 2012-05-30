@@ -80,18 +80,18 @@ typedef struct{
 
 typedef unordered_set<DocPair,DocPairHash2,DocPairEq2> searchset_t;
 // typedef unordered_map<DocPair,DocTally,DocPairHash2,DocPairEq2> pooled_search_t;
-typedef unordered_map<DocPair,DocTally,DocPairHash2,DocPairEq2,boost::fast_pool_allocator<pair<DocPair,DocTally> > > pooled_search_t;
-
-TEST_F(SearchMapTest,SlowPooledSearchMapTest){
-  pooled_search_t results;
-  vector<uint32_t>::const_iterator it=SearchMapTest::input.begin(),ite=SearchMapTest::input.end();
-  DocTally* previous=&results[DocPair(*it++,*it++)];
-  for (;it!=ite;){
-    DocTally* current=previous;
-    previous=&results[DocPair(*it++,*it++)];
-    __builtin_prefetch (previous, 1, 3);
-    current->count++;
-  }
+// typedef unordered_map<DocPair,DocTally,DocPairHash2,DocPairEq2,boost::fast_pool_allocator<pair<DocPair,DocTally> > > pooled_search_t;
+// 
+// TEST_F(SearchMapTest,SlowPooledSearchMapTest){
+//   pooled_search_t results;
+//   vector<uint32_t>::const_iterator it=SearchMapTest::input.begin(),ite=SearchMapTest::input.end();
+//   DocTally* previous=&results[DocPair(*it++,*it++)];
+//   for (;it!=ite;){
+//     DocTally* current=previous;
+//     previous=&results[DocPair(*it++,*it++)];
+//     __builtin_prefetch (previous, 1, 3);
+//     current->count++;
+//   }
   // results.rehash(50000);
   // size_t count=0;
   // for (vector<uint32_t>::const_iterator it=SearchMapTest::input.begin(),ite=SearchMapTest::input.end();it!=ite;){
@@ -112,7 +112,7 @@ TEST_F(SearchMapTest,SlowPooledSearchMapTest){
   // for(vector<void*>::const_iterator it=addresses.begin(),ite=addresses.end();it!=ite;++it){
   //   cout << *it << endl;
   // }
-}
+// }
 
 class CodecBenchmarkTest : public TestWithParam<PostLineCodecPtr>{
 public:

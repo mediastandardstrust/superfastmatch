@@ -18,14 +18,14 @@ namespace superfastmatch{
   SearchPtr Search::createTemporarySearch(Registry* registry,const string& text,DocumentQueryPtr target){
     DocumentPtr doc=registry->getDocumentManager()->createTemporaryDocument(text);
     SearchPtr search=SearchPtr(new Search(registry,doc,target,"Create Temporary Search"));
-    search->execute();
+    search->execute(FlagsRegistry::WORKER);
     return search;
   }
 
   SearchPtr Search::createAnonymousSearch(Registry* registry,const string& text,DocumentQueryPtr target){
     DocumentPtr doc=registry->getDocumentManager()->createTemporaryDocument(text);
     SearchPtr search=SearchPtr(new Search(registry,doc,target,"Create Anonymous Search"));
-    search->execute();
+    search->execute(FlagsRegistry::WORKER);
     return search;
   }
   
@@ -34,7 +34,7 @@ namespace superfastmatch{
     DocumentPtr doc=registry->getDocumentManager()->getDocument(doctype,docid);
     if(doc){
       search=SearchPtr(new Search(registry,doc,target,"Create Permanent Search"));
-      search->execute();      
+      search->execute(FlagsRegistry::QUEUE);      
     }
     return search;
   }
@@ -50,7 +50,7 @@ namespace superfastmatch{
     return search;
   }
   
-  void Search::execute(){
+  void Search::execute(const int32_t group){
     size_t num_results=registry_->getNumResults();
     size_t count=0;
     registry_->getPostings()->searchIndex(*this);
@@ -66,6 +66,7 @@ namespace superfastmatch{
         count++;  
       }
     }
+    registry_->getInstrumentGroup(group)->merge(performance);
   }
   
   void Search::fillJSONDictionary(TemplateDictionary* dict,const bool includeDoc){

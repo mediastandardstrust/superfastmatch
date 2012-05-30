@@ -27,10 +27,11 @@ namespace superfastmatch
   
   PostingSlot::~PostingSlot(){
     queue_.finish();
-    for (index_t::nonempty_iterator it=index_.nonempty_begin(),ite=index_.nonempty_end();it!=ite;++it){
-      delete[] *it;
-    }
-    index_.clear();
+    // Valgrind appreciates the code below :-)
+    // for (index_t::nonempty_iterator it=index_.nonempty_begin(),ite=index_.nonempty_end();it!=ite;++it){
+    //   delete[] *it;
+    // }
+    // index_.clear();
   }
   
   void PostingSlot::finishTasks(){

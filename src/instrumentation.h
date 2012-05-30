@@ -47,6 +47,7 @@ namespace superfastmatch{
     void stopTimer(const int32_t timer);
     void setCounter(const int32_t counter,const uint64_t value);
     void incrementCounter(const int32_t counter,const uint64_t value=1);
+    void fillDictionary(TemplateDictionary* dict,set<string>& metadata);
     string getInstance() const;
     void getHeader(ostream& stream,columns_t& columns) const;
     void getRow(ostream& stream,columns_t& columns,const string& name="") const;
@@ -88,6 +89,7 @@ namespace superfastmatch{
     void add(InstrumentPtr instrument);
     void merge(InstrumentGroupPtr group);
     void clear();
+    void fillListDictionary(TemplateDictionary* dict,const string& group,const string& instrument,set<string>& metadata);
     friend std::ostream& operator<< (std::ostream& stream, InstrumentGroup& group);
   private:
     void getHistory(ostream& stream);

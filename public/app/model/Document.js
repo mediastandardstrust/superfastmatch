@@ -32,7 +32,7 @@ Ext.define('Superfastmatch.model.Document', {
         getColumns: function(){
             var columns=[{header:'Doc Type',dataIndex:'doctype',minWidth:60,maxWidth:60},{header:'Doc Id',dataIndex:'docid',minWidth:60,maxWidth:60},{header:'Characters',dataIndex:'characters',minWidth:70,maxWidth:70}];
             Ext.each(this.getFields(),function(field){
-                if ((field.name!='doctype')&&(field.name!='docid')&&(field.name!='characters')){
+                if (!Ext.Array.contains(['doctype','docid','characters','id'],field.name)){
                     if(field.name.search(/date$/)!=-1){
                       columns.push({header:field.name.humanize(),dataIndex:field.name,renderer: function(v){return v?Ext.util.Format.date(new Date(v),'m/d/Y'):'';}});
                     }else if(field.name.search(/url$/)!=-1){
@@ -40,7 +40,6 @@ Ext.define('Superfastmatch.model.Document', {
                     }else{
                       columns.push({header:field.name.humanize(),dataIndex:field.name});
                     }
-
                 }
             });
             return columns;

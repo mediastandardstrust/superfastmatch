@@ -7,7 +7,7 @@ Ext.define('Superfastmatch.view.IndexPanel', {
     forceFit: true,
     viewConfig: {
       stripeRows: false,
-      getRowClass : function(rec,index,params,store){ 
+      getRowClass : function(rec,row,params,store){ 
         return ((rec.getIndex().get('hash')%2)==0)?'x-grid-row-alt':''
       }
     },
@@ -16,7 +16,7 @@ Ext.define('Superfastmatch.view.IndexPanel', {
                 {text:"Bytes",flex: 1,renderer: function(v,m,rec,row,col,store){return this.isSame(rec,row,store)?'':'<b>'+rec.getIndex().get('bytes')+'</b>';}},
                 {text:"DocType",flex: 1,dataIndex:'doctype'},
                 {text:"Bytes",flex: 1,dataIndex:'bytes'},
-                {text:"Doc IDs",flex: 8,dataIndex:'docids'},
+                {text:"Doc IDs",flex: 8,dataIndex:'docids', renderer: function(v,m,rec){return Ext.Array.map(v,function(v){return '<a data-doctype="'+rec.get('doctype')+'" data-docid="'+v+'" href="#">'+v+'</a>';}).join(", ")}},
                 {text:"Deltas",flex: 8,dataIndex:'deltas'}
               ],
     

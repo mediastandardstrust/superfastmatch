@@ -151,7 +151,6 @@ namespace superfastmatch{
   private:
     bool openDatabases();
     void fillDbDictionary(TemplateDictionary* dict, kc::PolyDB* db, const string name);
-    void status(std::ostream& s, kc::PolyDB* db);
   };
 }
 #endif

@@ -17,13 +17,26 @@ Ext.Ajax.timeout = 60000; // 60 seconds
 Ext.application({
     name: 'Superfastmatch',
     models: ['Fragment','Search','Document'],
-    controllers: ['Searches','Documents','Compare','Index','Queue','Status'],
+    controllers: ['Searches','Documents','Compare','Index','Queue','Performance','Status'],
     requires: ['Superfastmatch.view.MainViewPort'],
+
+    showDocument: function(e,el){
+      this.down('#Results').fireEvent('showdocument',{
+        doctype:el.getAttribute("data-doctype"),
+        docid:el.getAttribute("data-docid")
+      });
+      e.stopEvent();
+    },
+    
     launch: function(){
         Ext.QuickTips.init();
         var cmp1 = Ext.create('Superfastmatch.view.MainViewPort', {
             renderTo: Ext.getBody()
         });
+        cmp1.getEl().on("click",this.showDocument,
+          cmp1,
+          {delegate: '[data-doctype]'}
+        );
         cmp1.show();
     }
 });

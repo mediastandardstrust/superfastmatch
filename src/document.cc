@@ -47,7 +47,7 @@ namespace superfastmatch
     getInstrument()->setCounter(DOC_TYPE,doctype);
     getInstrument()->setCounter(DOC_ID,docid);
     getInstrument()->setCounter(WINDOW_SIZE,registry->getWindowSize());
-    getInstrument()->setCounter(WINDOW_SIZE,registry->getHashWidth());
+    getInstrument()->setCounter(HASH_WIDTH,registry->getHashWidth());
     char key[8];
     uint32_t dt=kc::hton32(doctype_);
     uint32_t di=kc::hton32(docid_);
@@ -131,18 +131,21 @@ namespace superfastmatch
   
   bool Document::initMeta(){
     if (metadata_==0){
+      getInstrument()->startTimer(META);
       metadata_map* tempMap = new metadata_map();
       vector<string> meta_keys;
       string meta_value;
       registry_->getMetaDB()->match_prefix(getKey(),&meta_keys);
       for (vector<string>::const_iterator it=meta_keys.begin(),ite=meta_keys.end();it!=ite;++it){
         if (not registry_->getMetaDB()->get(*it,&meta_value)){
+          getInstrument()->stopTimer(META);
           return false;
         };
         (*tempMap)[(*it).substr(8)]=meta_value;
       }      
       metadata_=tempMap;
     }
+    getInstrument()->stopTimer(META);
     return true;
   }
   
@@ -168,37 +171,45 @@ namespace superfastmatch
   }
 
   bool Document::initText(){
+    bool success=true;
     if (text_==0){
+      getInstrument()->startTimer(TEXT);
       text_ = new string();
-      return registry_->getDocumentDB()->get(getKey(),text_);
+      success=registry_->getDocumentDB()->get(getKey(),text_);
+      getInstrument()->stopTimer(TEXT);
     }
-    return true;
+    return success;
   }
 
   bool Document::initHashes(){
     if (hashes_==0){
+      getInstrument()->startTimer(HASHES);
       hashes_vector* tempHashes = new hashes_vector();
       if(getText().size()>=registry_->getWindowSize()){
         UpperCaseRabinKarp(getText(),registry_->getWindowSize(),registry_->getWhiteSpaceThreshold(),*tempHashes);
       }
       hashes_=tempHashes;
+      getInstrument()->stopTimer(HASHES);
     }
     return true;
   }
 
   bool Document::initPostingHashes(){
     if (posting_hashes_==0){
+      getInstrument()->startTimer(POSTING_HASHES);
       hashes_vector* tempHashes = new hashes_vector();
       if(getText().size()>=registry_->getWindowSize()){
         UpperCaseRabinKarp(getText(),registry_->getPostingWindowSize(),registry_->getWhiteSpaceThreshold(),*tempHashes);
       }
       posting_hashes_=tempHashes;
+      getInstrument()->stopTimer(POSTING_HASHES);
     }
     return true;
   }
 
   bool Document::initBloom(){
     if (bloom_==0){
+      getInstrument()->startTimer(BLOOM);
       if (hashes_==0){
         throw runtime_error("Hashes not initialised, needed for Bloom");
       }
@@ -207,6 +218,7 @@ namespace superfastmatch
         tempBloom->set((*it)&0x3FFFFFF);
       }
       bloom_=tempBloom;
+      getInstrument()->stopTimer(BLOOM);
     }
     return true;
   }
@@ -353,16 +365,19 @@ namespace superfastmatch
   }
   
   bool DocumentManager::initDoc(const DocumentPtr doc,const int32_t state){
-    if ((state&META) && (not doc->initMeta()))
-      return false;
-    if ((state&TEXT) && (not doc->initText()))
-      return false;
-    if ((state&HASHES) && (not doc->initHashes()))
-      return false;
-    if ((state&POSTING_HASHES) && (not doc->initPostingHashes()))
-      return false;
-    if ((state&BLOOM) && (not doc->initBloom()))
-      return false;
-    return true;
+    bool success=true;
+    doc->getInstrument()->startTimer(INIT);
+    if (success && (state&META) && (not doc->initMeta()))
+      success=false;
+    if (success && (state&TEXT) && (not doc->initText()))
+      success=false;
+    if (success && (state&HASHES) && (not doc->initHashes()))
+      success=false;
+    if (success && (state&POSTING_HASHES) && (not doc->initPostingHashes()))
+      success=false;
+    if (success && (state&BLOOM) && (not doc->initBloom()))
+      success=false;
+    doc->getInstrument()->stopTimer(INIT);
+    return success;
   }
 }//namespace superfastmatch

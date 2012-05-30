@@ -41,6 +41,15 @@ namespace superfastmatch{
     counters_[counter]+=value;
   }
   
+  void Instrument::fillDictionary(TemplateDictionary* dict,set<string>& metadata){
+    for (headers_t::const_iterator it=definition_->timers.begin(),ite=definition_->timers.end();it!=ite;++it){
+      fillMetaDictionary(it->second,kc::strprintf("%.4f",timers_[it->first]),dict,metadata);
+    }
+    for (headers_t::const_iterator it=definition_->counters.begin(),ite=definition_->counters.end();it!=ite;++it){
+      fillMetaDictionary(it->second,kc::strprintf("%d",counters_[it->first]),dict,metadata);
+    }
+  }
+    
   string Instrument::getInstance() const{
     stringstream instance;
     instance << definition_->name << "(" << (void*)this << ")";
@@ -189,4 +198,24 @@ namespace superfastmatch{
     return stream;
   }
   
+  void InstrumentGroup::fillListDictionary(TemplateDictionary* dict,const string& group,const string& instrument,set<string>& metadata){
+    lock_.lock_reader();
+    for (instruments_t::iterator it=instruments_.begin(),ite=instruments_.end();it!=ite;++it){
+      for (set<InstrumentPtr>::const_iterator it2=it->second.slowest.begin(),ite2=it->second.slowest.end();it2!=ite2;++it2){
+        if((*it2)->getDefinition()->name.compare(instrument)==0){
+          TemplateDictionary* instrumentDict=dict->AddSectionDictionary("INSTRUMENT");
+          (*it2)->fillDictionary(instrumentDict,metadata);
+          fillMetaDictionary("Group","Slowest "+group,instrumentDict,metadata);
+        }
+      }
+      for (deque<InstrumentPtr>::const_iterator it2=it->second.recent.begin(),ite2=it->second.recent.end();it2!=ite2;++it2){
+        if((*it2)->getDefinition()->name.compare(instrument)==0){
+          TemplateDictionary* instrumentDict=dict->AddSectionDictionary("INSTRUMENT");
+          (*it2)->fillDictionary(instrumentDict,metadata);
+          fillMetaDictionary("Group","Recent "+group,instrumentDict,metadata);
+        }
+      }
+    }
+    lock_.unlock();
+  }
 }

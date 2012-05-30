@@ -226,52 +226,6 @@ namespace superfastmatch{
     return hash;
   }
   
-  //Totally ripped from kctreemgr.cc!	
-  inline void oprintf(std::ostream& s,const char* format, ...) {
-    std::string msg;
-    va_list ap;
-    va_start(ap, format);
-    kc::vstrprintf(&msg, format, ap);
-    va_end(ap);
-    s << msg;
-  }
-
-  inline std::string unitnumstr(int64_t num) {
-    if (num >= std::pow(1000.0, 6)) {
-      return kyotocabinet::strprintf("%.3Lf quintillion", (long double)num / std::pow(1000.0, 6));
-    } else if (num >= std::pow(1000.0, 5)) {
-      return kyotocabinet::strprintf("%.3Lf quadrillion", (long double)num / std::pow(1000.0, 5));
-    } else if (num >= std::pow(1000.0, 4)) {
-      return kyotocabinet::strprintf("%.3Lf trillion", (long double)num / std::pow(1000.0, 4));
-    } else if (num >= std::pow(1000.0, 3)) {
-      return kyotocabinet::strprintf("%.3Lf billion", (long double)num / std::pow(1000.0, 3));
-    } else if (num >= std::pow(1000.0, 2)) {
-      return kyotocabinet::strprintf("%.3Lf million", (long double)num / std::pow(1000.0, 2));
-    } else if (num >= std::pow(1000.0, 1)) {
-      return kyotocabinet::strprintf("%.3Lf thousand", (long double)num / std::pow(1000.0, 1));
-    }
-    return kyotocabinet::strprintf("%lld", (long long)num);
-  }
-
-
-  // convert a number into the string with the byte unit
-  inline std::string unitnumstrbyte(int64_t num) {
-    if ((unsigned long long)num >= 1ULL << 60) {
-      return kyotocabinet::strprintf("%.3Lf EiB", (long double)num / (1ULL << 60));
-    } else if ((unsigned long long)num >= 1ULL << 50) {
-      return kyotocabinet::strprintf("%.3Lf PiB", (long double)num / (1ULL << 50));
-    } else if ((unsigned long long)num >= 1ULL << 40) {
-      return kyotocabinet::strprintf("%.3Lf TiB", (long double)num / (1ULL << 40));
-    } else if ((unsigned long long)num >= 1ULL << 30) {
-      return kyotocabinet::strprintf("%.3Lf GiB", (long double)num / (1ULL << 30));
-    } else if ((unsigned long long)num >= 1ULL << 20) {
-      return kyotocabinet::strprintf("%.3Lf MiB", (long double)num / (1ULL << 20));
-    } else if ((unsigned long long)num >= 1ULL << 10) {
-      return kyotocabinet::strprintf("%.3Lf KiB", (long double)num / (1ULL << 10));
-    }
-    return kyotocabinet::strprintf("%lld B", (long long)num);
-  }
-
   template <class C> void FreeClear( C & cntr ) {
     for ( typename C::iterator it = cntr.begin(); it != cntr.end(); ++it ) {
       if (*it!=0){
@@ -284,7 +238,7 @@ namespace superfastmatch{
   
   inline bool isNumeric(const string& input)
   {
-  	const string base = "0123456789";
+  	const string base = "0123456789.";
   	return (input.length()>0 && ::strspn(input.c_str(), base.c_str()) == input.length());
   }
   
@@ -393,7 +347,6 @@ namespace superfastmatch{
   private:
       std::vector<T> vector;
   };
-  
 }
 
 #endif

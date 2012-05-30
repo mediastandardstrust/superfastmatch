@@ -8,7 +8,7 @@ Ext.define('Superfastmatch.view.StatusPanel', {
         align: 'stretch',
         type: 'vbox'
     },
-        
+    
     buildStore: function(root,fields){
       return Ext.create("Ext.data.Store",{
         fields: fields,
@@ -41,7 +41,7 @@ Ext.define('Superfastmatch.view.StatusPanel', {
                               forceFit: true,
                               columns: [
                                 {text:"Name",dataIndex: "name"},
-                                {text:"Count",dataIndex: "count"},
+                                {text:"Count",dataIndex: "count", renderer: Ext.util.Format.numberRenderer("0,000")},
                                 {text:"Size",dataIndex: "size", renderer: Ext.util.Format.fileSize},
                                 {text:"Path",dataIndex: "path"},
                               ],
@@ -79,7 +79,7 @@ Ext.define('Superfastmatch.view.StatusPanel', {
                     forceFit: true,
                     columns: [
                       {text:"Number",dataIndex:"slot_number"},
-                      {text:"Hash Count",dataIndex:"hash_count"}
+                      {text:"Hash Count",dataIndex:"hash_count",renderer: Ext.util.Format.numberRenderer("0,000")}
                     ],
                     store: this.buildStore("slots",["slot_number","hash_count"])
                   },

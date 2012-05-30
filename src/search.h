@@ -33,7 +33,7 @@ namespace superfastmatch{
   private:
     Registry* registry_;
     Search(Registry* registry_,DocumentPtr doc,DocumentQueryPtr target,const string& name);
-    void execute();
+    void execute(const int32_t group);
     DISALLOW_COPY_AND_ASSIGN(Search);
   public:
     DocumentPtr doc;
