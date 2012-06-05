@@ -5,6 +5,7 @@ if [ "$?" -eq 127 ]; then
 	exit
 fi
 
+rm -Rf external
 mkdir external
 unamestr=`uname`
 if [[ "$unamestr" == 'Linux' ]]; then
