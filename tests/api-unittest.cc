@@ -17,6 +17,16 @@ TestResponsePtr TestAPI(Api* api,const HTTPClient::Method method,const string& p
   return response;
 }
 
+TEST_F(BaseTest,DocumentAutoIdApiTest){
+  EXPECT_THAT(TestAPI(api_,HTTPClient::MPOST,"/document/4/","","text=testing+123",202)->body,HasSubstr("\"docid\"     : 1"));
+  EXPECT_THAT(TestAPI(api_,HTTPClient::MPOST,"/document/4/","","text=testing+123",202)->body,HasSubstr("\"docid\"     : 2"));
+  TestAPI(api_,HTTPClient::MPOST,"/document/5/","","",400);
+  TestAPI(api_,HTTPClient::MPOST,"/document/5/","","text=",400);
+  EXPECT_THAT(TestAPI(api_,HTTPClient::MPOST,"/document/5/","","text=testing+123",202)->body,HasSubstr("\"docid\"     : 3"));
+  EXPECT_THAT(TestAPI(api_,HTTPClient::MPOST,"/document/5/","","text=testing+123",202)->body,HasSubstr("\"docid\"     : 4"));
+  registry_.getQueueManager()->processQueue();
+}
+
 TEST_F(BaseTest,DocumentApiTest){
   TestAPI(api_,HTTPClient::MGET,"/document","","",200); 
   TestAPI(api_,HTTPClient::MGET,"/document/","","",200);
@@ -143,11 +153,6 @@ TEST_F(BaseTest,StatusApiTest){
   TestAPI(api_,HTTPClient::MGET,"/status","","",200);
   TestAPI(api_,HTTPClient::MGET,"/status/","","",200);
   TestAPI(api_,HTTPClient::MGET,"/STATUS/","","",200);
-}
-
-TEST_F(BaseTest,HistogramApiTest){
-  TestAPI(api_,HTTPClient::MGET,"/histogram","","",200);
-  TestAPI(api_,HTTPClient::MGET,"/histogram/","","",200);
 }
 
 TEST_F(BaseTest,AssociateNonExistentDocumentApiTest){

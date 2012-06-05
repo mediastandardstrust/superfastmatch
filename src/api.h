@@ -51,13 +51,15 @@ namespace superfastmatch{
     const set<string> queries;
     const string description;
     const ApiMethod method;
+    const bool autoDocId;
     
     ApiCall(const HTTPClient::Method verb,
             const char* match,
             const response_map& responses,
             const set<string>& queries,
             const char* description,
-            const ApiMethod method
+            const ApiMethod method,
+            const bool autoDocId
             );
   };
   

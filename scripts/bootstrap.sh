@@ -10,11 +10,11 @@ unamestr=`uname`
 if [[ "$unamestr" == 'Linux' ]]; then
 	curl -L http://download.savannah.gnu.org/releases/libunwind/libunwind-1.0.1.tar.gz -o external/libunwind-1.0.1.tar.gz
 fi
-curl http://ctemplate.googlecode.com/files/ctemplate-2.0.tar.gz -o external/ctemplate-2.0.tar.gz
+curl http://ctemplate.googlecode.com/files/ctemplate-2.2.tar.gz -o external/ctemplate-2.2.tar.gz
 curl http://gperftools.googlecode.com/files/google-perftools-2.0.tar.gz -o external/google-perftools-2.0.tar.gz
 curl http://gflags.googlecode.com/files/gflags-2.0.tar.gz -o external/gflags-2.0.tar.gz
-curl http://fallabs.com/kyotocabinet/pkg/kyotocabinet-1.2.74.tar.gz -o external/kyotocabinet-1.2.74.tar.gz
-curl http://fallabs.com/kyototycoon/pkg/kyototycoon-0.9.55.tar.gz -o external/kyototycoon-0.9.55.tar.gz
+curl http://fallabs.com/kyotocabinet/pkg/kyotocabinet-1.2.76.tar.gz -o external/kyotocabinet-1.2.76.tar.gz
+curl http://fallabs.com/kyototycoon/pkg/kyototycoon-0.9.56.tar.gz -o external/kyototycoon-0.9.56.tar.gz
 curl http://www.oberhumer.com/opensource/lzo/download/lzo-2.06.tar.gz -o external/lzo-2.06.tar.gz
 curl http://sparsehash.googlecode.com/files/sparsehash-2.0.2.tar.gz -o external/sparsehash-2.0.2.tar.gz
 hg clone https://code.google.com/p/re2/ external/re2

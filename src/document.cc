@@ -343,6 +343,26 @@ namespace superfastmatch
     return doc;
   }
   
+  const string DocumentManager::getDocId(const uint32_t doctype){
+    int64_t docid;
+    char key[8];
+    registry_->getMiscDB()->begin_transaction();
+    registry_->getDocumentDB()->begin_transaction();
+    while(true){
+      docid=registry_->getMiscDB()->increment("auto:"+toString(doctype),1,0);
+      uint32_t dt=kc::hton32(doctype);
+      uint32_t di=kc::hton32(docid);
+      memcpy(key,&dt,4);
+      memcpy(key+4,&di,4);
+      if (registry_->getDocumentDB()->check(key,8)==-1){
+        break;
+      }
+    }
+    registry_->getDocumentDB()->end_transaction();
+    registry_->getMiscDB()->end_transaction();
+    return toString(docid);
+  }
+  
   DocumentPtr DocumentManager::createDocument(const uint32_t doctype, const uint32_t docid,const string& content,const int32_t state,const bool permanent){
     DocumentPtr doc(new Document(doctype,docid,permanent,registry_));
     metadata_map content_map;
