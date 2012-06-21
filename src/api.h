@@ -116,6 +116,8 @@ namespace superfastmatch{
     void MatchQuery(const ApiCall* call,const string& query,ApiParams& params);
     
     void DoSearch(const ApiParams& params,ApiResponse& response);
+    void LoadDocuments(const ApiParams& params,ApiResponse& response);
+    void GetText(const ApiParams& params,ApiResponse& response);
     void GetDocument(const ApiParams& params,ApiResponse& response);
     void GetDocuments(const ApiParams& params,ApiResponse& response);
     void CreateDocument(const ApiParams& params,ApiResponse& response); 

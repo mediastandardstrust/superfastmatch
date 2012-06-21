@@ -5,6 +5,7 @@ namespace superfastmatch{
 	RegisterTemplateFilename(QUEUED_JSON, "JSON/queued.tpl");
 	RegisterTemplateFilename(FAILURE_JSON, "JSON/failure.tpl");
 	RegisterTemplateFilename(DESCRIPTION_HTML, "HTML/description.tpl");
+	RegisterTemplateFilename(TEXT, "TEXT/data.tpl");
 
   // -------------------  
   // QueryParameter members
@@ -184,14 +185,14 @@ namespace superfastmatch{
   // Api call definitions
   // --------------------
 
-  const size_t Api::API_COUNT=20;
+  const size_t Api::API_COUNT=22;
 
   const capture_map Api::captures_=create_map<string,capture_t >\
+                                   ("<url>",capture_t("(?P<url>(?i)\b((?:https?://|www\\d{0,3}[.]|[a-z0-9.\\-]+[.][a-z]{2,4}/)(?:[^\\s()<>]+|\\(([^\\s()<>]+|(\\([^\\s()<>]+\\)))*\\))+(?:\\(([^\\s()<>]+|(\\([^\\s()<>]+\\)))*\\)|[^\\s`!()\\[\\]{};:'\".,<>?«»“”‘’])))","A valid url"))\
                                    ("<doctype>",capture_t("(?P<doctype>\\d+)","A document type with a value between 1 and 4294967295"))\
                                    ("<docid>",capture_t("(?P<docid>\\d+)","A document id with a value between  1 and 4294967295"))\
                                    ("<source>",capture_t("(?P<source>(((\\d+-\\d+):?|(\\d+):?))+)","A range of doctypes. Eg. 1-2:5:7-9 which is equivalent to [1,2,5,7,8,9]"))\
-                                   ("<target>",capture_t("(?P<target>(((\\d+-\\d+):?|(\\d+):?))+)","A range of doctypes. Eg. 1-2:5:7-9 which is equivalent to [1,2,5,7,8,9]")); 
-
+                                   ("<target>",capture_t("(?P<target>(((\\d+-\\d+):?|(\\d+):?))+)","A range of doctypes. Eg. 1-2:5:7-9 which is equivalent to [1,2,5,7,8,9]"));
   const query_map Api::queries_=create_map<string,QueryParameterPtr>\
                                 ("cursor",QueryParameterPtr(new QueryParameter("cursor","The document cursor consists of three parts separated by a colon.The first is the url-encoded value of the metadata value to start from. The second is the <doctype> and the third is the <docid>. These are needed in case multiple documents have the same metadata value. The <doctype> and <docid> can be omitted if not known and you will get the first match with respect to the metadata value.","","^[^:]+(:\\d+)?(:\\d+)?$")))\
                                 ("start",QueryParameterPtr(new QueryParameter("start","The numeric id of the first result.","0","^\\d+$")))\
@@ -214,7 +215,23 @@ namespace superfastmatch{
             set<string>(),
             "Search for text in the specified target doctype range. There must be a form field with name text and <target> must be correctly formed, otherwise returns response code 400.",
             &Api::DoSearch,
-            false),                        
+            false),
+    ApiCall(HTTPClient::MGET,
+            "^/text/<doctype>/<docid>/?$",
+            create_map<response_t,string>(response_t(200,"text/plain; charset=utf-8"),TEXT)\
+                                         (response_t(400,"text/plain; charset=utf-8"),TEXT)\
+                                         (response_t(404,"text/plain; charset=utf-8"),TEXT),
+            set<string>(),
+            "Get text of existing document. If document does not exist returns 404.",
+            &Api::GetText,
+            false),
+   ApiCall(HTTPClient::MGET,
+           "^/load/<url>/<source>/?$",
+           create_map<response_t,string>(response_t(202,"application/json"),QUEUED_JSON),
+           set<string>(),
+           "Load documents with specified source doctype range from the superfastmatch instance with the given url asynchronously.",
+           &Api::LoadDocuments,
+           false),
     ApiCall(HTTPClient::MGET,
             "^/document/?$",
             create_map<response_t,string>(response_t(200,"application/json"),SUCCESS_JSON),
@@ -378,6 +395,24 @@ namespace superfastmatch{
     }
   }
 
+  void Api::GetText(const ApiParams& params,ApiResponse& response){
+    uint32_t doctype = kc::atoi(params.resource.find("doctype")->second.c_str());
+    uint32_t docid = kc::atoi(params.resource.find("docid")->second.c_str());
+    if(doctype==0 || docid==0){
+      response.type=response_t(400,"text/plain; charset=utf-8");   
+      response.dict.SetValue("MESSAGE","Doc Type and Doc Id must be non-zero");     
+    }else{
+      DocumentPtr doc=registry_->getDocumentManager()->getDocument(doctype,docid,DocumentManager::TEXT);
+      if (doc){
+        response.dict.SetValue("DATA",doc->getText());
+        response.type=response_t(200,"text/plain; charset=utf-8");
+      }else{
+        response.type=response_t(404,"text/plain; charset=utf-8");        
+        response.dict.SetValue("MESSAGE","Document not found.");
+      }
+    }
+  }
+
   void Api::GetDocument(const ApiParams& params,ApiResponse& response){
     uint32_t doctype = kc::atoi(params.resource.find("doctype")->second.c_str());
     uint32_t docid = kc::atoi(params.resource.find("docid")->second.c_str());
@@ -395,6 +430,26 @@ namespace superfastmatch{
       }
     }
   }
+
+  void Api::LoadDocuments(const ApiParams& params,ApiResponse& response){
+    cout << params.resource.find("url")->second.c_str() << endl;
+    // uint32_t doctype = kc::atoi(params.resource.find("doctype")->second.c_str());
+    // uint32_t docid = kc::atoi(params.resource.find("docid")->second.c_str());
+    // if(doctype==0 || docid==0){
+    //   response.type=response_t(400,"application/json");   
+    //   response.dict.SetValue("MESSAGE","Doc Type and Doc Id must be non-zero");     
+    // }else{
+    //   SearchPtr search=Search::getPermanentSearch(registry_,doctype,docid);
+    //   if (search){
+    //     search->fillJSONDictionary(&response.dict,true);
+    //     response.type=response_t(200,"application/json");
+    //   }else{
+    //     response.type=response_t(404,"application/json");        
+    //     response.dict.SetValue("MESSAGE","Document not found.");
+    //   }
+    // }
+  }
+
   
   void Api::GetDocuments(const ApiParams& params,ApiResponse& response){
     string source;
