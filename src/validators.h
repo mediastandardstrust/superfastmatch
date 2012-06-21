@@ -56,4 +56,10 @@ static bool ValidateWhiteSpaceThreshold(const char* flagname,double value){
   return false;
 }
 
+static bool ValidateSlotCount(const char* flagname,int32_t value){
+  if (value>0 && (uint32_t)value && !((uint32_t)value & ((uint32_t)value - 1)))
+    return true;
+  printf("Invalid value for --%s: %d\nMust be a power of 2\n", flagname, (int32_t)value);
+  return false;
+}
 #endif

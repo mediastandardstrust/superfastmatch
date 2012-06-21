@@ -25,8 +25,8 @@ namespace superfastmatch{
   DEFINE_int32(thread_count,8,"Number of threads for serving requests.");
   static const bool thread_count__dummy = google::RegisterFlagValidator(&FLAGS_thread_count, &ValidateThreads);
 
-  DEFINE_int32(slot_count,4,"Number of slots to divide the index into (one thread per slot).");
-  static const bool slot_count_dummy = google::RegisterFlagValidator(&FLAGS_slot_count, &ValidateThreads);
+  DEFINE_int32(slot_count,4,"Number of slots to divide the index into (one thread per slot, must be a power of 2).");
+  static const bool slot_count_dummy = google::RegisterFlagValidator(&FLAGS_slot_count, &ValidateSlotCount);
 
   DEFINE_int32(cache,2048,"Number of megabytes to use for caching.");
   static const bool cache_dummy = google::RegisterFlagValidator(&FLAGS_cache, &ValidateCache);
