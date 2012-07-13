@@ -21,17 +21,17 @@ TEST_F(CommandTest,PersistenceTest){
   EXPECT_EQ(Queued,addDoc->getStatus());
   EXPECT_EQ(1U,registry_.getQueueDB()->count());
   EXPECT_EQ(1U,registry_.getPayloadDB()->count());
-  EXPECT_STREQ("4|00000000000000000001|002|1|0000000001|0000000001||",addDoc->getKey().c_str());
+  EXPECT_STREQ("4|00000000000000000001|002|2|0000000001|0000000001||",addDoc->getKey().c_str());
   CommandPtr savedCommand = registry_.getQueueManager()->getQueuedCommand();
   EXPECT_TRUE(savedCommand);
-  EXPECT_STREQ("4|00000000000000000001|002|1|0000000001|0000000001||",savedCommand->getKey().c_str());
+  EXPECT_STREQ("4|00000000000000000001|002|2|0000000001|0000000001||",savedCommand->getKey().c_str());
   EXPECT_STREQ("text=This+is+a+test",savedCommand->getPayload().c_str());
   EXPECT_EQ(1U,savedCommand->getDocType());
   EXPECT_EQ(1U,savedCommand->getDocId());
   EXPECT_EQ(Queued,savedCommand->getStatus());
   EXPECT_TRUE(savedCommand->execute());
   EXPECT_EQ(Active,savedCommand->getStatus());
-  EXPECT_STREQ("3|00000000000000000001|002|1|0000000001|0000000001||",savedCommand->getKey().c_str());
+  EXPECT_STREQ("3|00000000000000000001|002|2|0000000001|0000000001||",savedCommand->getKey().c_str());
 }
 
 TEST_F(CommandTest,QueryTest){
