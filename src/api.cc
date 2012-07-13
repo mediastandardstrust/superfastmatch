@@ -93,6 +93,7 @@ namespace superfastmatch{
       assert(matcher->f.Add(match,matcher->options,&atom_id)==re2::RE2::NoError);
       matcher->atom_indices.push_back(atom_id);
       matcher->regexes[atom_id]=RE2Ptr(new re2::RE2(match));
+      assert(matcher->regexes[atom_id]->error_code()==0);
       matcher->calls[atom_id]=&calls_[i];
     }
     for(size_t i=0;i<METHOD_COUNT;i++){
@@ -188,7 +189,7 @@ namespace superfastmatch{
   const size_t Api::API_COUNT=22;
 
   const capture_map Api::captures_=create_map<string,capture_t >\
-                                   ("<url>",capture_t("(?P<url>(?i)\b((?:https?://|www\\d{0,3}[.]|[a-z0-9.\\-]+[.][a-z]{2,4}/)(?:[^\\s()<>]+|\\(([^\\s()<>]+|(\\([^\\s()<>]+\\)))*\\))+(?:\\(([^\\s()<>]+|(\\([^\\s()<>]+\\)))*\\)|[^\\s`!()\\[\\]{};:'\".,<>?«»“”‘’])))","A valid url"))\
+                                   ("<url>",capture_t("(?P<url>(?i)\\b((?:[a-z][\\w-]+:(?:/{1,3}|[a-z0-9%])|www\\d{0,3}[.]|[a-z0-9.\\-]+[.][a-z]{2,4}/)(?:[^\\s()<>]+|\\(([^\\s()<>]+|(\\([^\\s()<>]+\\)))*\\))+(?:\\(([^\\s()<>]+|(\\([^\\s()<>]+\\)))*\\)|[^\\s`!()\\[\\]{};:'\".,<>?«»“”‘’])))","A valid url"))\
                                    ("<doctype>",capture_t("(?P<doctype>\\d+)","A document type with a value between 1 and 4294967295"))\
                                    ("<docid>",capture_t("(?P<docid>\\d+)","A document id with a value between  1 and 4294967295"))\
                                    ("<source>",capture_t("(?P<source>(((\\d+-\\d+):?|(\\d+):?))+)","A range of doctypes. Eg. 1-2:5:7-9 which is equivalent to [1,2,5,7,8,9]"))\
@@ -225,11 +226,12 @@ namespace superfastmatch{
             "Get text of existing document. If document does not exist returns 404.",
             &Api::GetText,
             false),
-   ApiCall(HTTPClient::MGET,
+   ApiCall(HTTPClient::MPOST,
            "^/load/<url>/<source>/?$",
-           create_map<response_t,string>(response_t(202,"application/json"),QUEUED_JSON),
+           create_map<response_t,string>(response_t(202,"application/json"),QUEUED_JSON)\
+                                        (response_t(400,"application/json"),FAILURE_JSON),
            set<string>(),
-           "Load documents with specified source doctype range from the superfastmatch instance with the given url asynchronously.",
+           "Load documents with specified source doctype range from the superfastmatch instance with the given url asynchronously. If <source> is badly formed returns response code 400.",
            &Api::LoadDocuments,
            false),
     ApiCall(HTTPClient::MGET,
@@ -432,24 +434,18 @@ namespace superfastmatch{
   }
 
   void Api::LoadDocuments(const ApiParams& params,ApiResponse& response){
-    cout << params.resource.find("url")->second.c_str() << endl;
-    // uint32_t doctype = kc::atoi(params.resource.find("doctype")->second.c_str());
-    // uint32_t docid = kc::atoi(params.resource.find("docid")->second.c_str());
-    // if(doctype==0 || docid==0){
-    //   response.type=response_t(400,"application/json");   
-    //   response.dict.SetValue("MESSAGE","Doc Type and Doc Id must be non-zero");     
-    // }else{
-    //   SearchPtr search=Search::getPermanentSearch(registry_,doctype,docid);
-    //   if (search){
-    //     search->fillJSONDictionary(&response.dict,true);
-    //     response.type=response_t(200,"application/json");
-    //   }else{
-    //     response.type=response_t(404,"application/json");        
-    //     response.dict.SetValue("MESSAGE","Document not found.");
-    //   }
-    // }
+    string source=params.resource.find("source")->second;
+    string url=params.resource.find("url")->second;
+    DocumentQuery query(registry_,source,"",params.query);
+    if (query.isValid()){
+      CommandPtr loadCommand = registry_->getQueueManager()->createCommand(superfastmatch::LoadDocuments,0,0,source,"",url);
+      loadCommand->fillDictionary(&response.dict);
+      response.type=response_t(202,"application/json");
+    }else{
+      response.type=response_t(400,"application/json");        
+      response.dict.SetValue("MESSAGE","Source is invalid.");
+    }
   }
-
   
   void Api::GetDocuments(const ApiParams& params,ApiResponse& response){
     string source;

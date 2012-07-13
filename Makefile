@@ -12,13 +12,13 @@ DATA = ./data
 
 # Targets
 MYBINS = superfastmatch
-OBJS = src/worker.o src/api.o src/queue.o src/posting.o src/document.o src/logger.o src/registry.o src/command.o src/postline.o src/association.o src/query.o src/task.o src/codec.o src/instrumentation.o src/search.o
+OBJS = src/worker.o src/api.o src/queue.o src/posting.o src/document.o src/logger.o src/registry.o src/command.o src/postline.o src/association.o src/query.o src/task.o src/codec.o src/instrumentation.o src/search.o src/loader.o src/json/jsoncpp.o
 MAIN = src/superfastmatch.o
 
 # Building binaries
-INCLUDES = -Isrc -Itests -I/usr/local/ -Itests/utils/
+INCLUDES = -Isrc/ -I src/json/ -Itests -I/usr/local/ -Itests/utils/
 #LDFLAGS = -Wl,-no_pie
-CXXFLAGS = -Wall -Wextra -funsigned-char -m64 -mtune=native -g -O3
+CXXFLAGS = -Wall -Wextra -funsigned-char -m64 -mtune=native -g -O3 -DJSON_IS_AMALGAMATION
 PROFILEFLAGS = -O1
 LIBS = -lstdc++ -lz -lm -lc -lpthread -lkyototycoon -lkyotocabinet -lctemplate -lgflags -llzo2 -lre2
 CXX = g++ $(INCLUDES)
@@ -67,7 +67,7 @@ GTEST_DIR = tests/utils
 all : $(MYBINS) 
 
 clean :
-	rm -rf $(MYBINS) $(DATA) tests/*.o $(GTEST_DIR)/*.o $(GTEST_DIR)/*.a *.a *.o *.exe src/*.o src/*.d
+	rm -rf $(MYBINS) $(DATA) tests/*.o $(GTEST_DIR)/*.o $(GTEST_DIR)/*.a *.a *.o *.exe src/*.o src/*.d src/jsoncpp/*.o src/jsoncpp/*.d
 	mkdir -p $(DATA)
 
 run : all

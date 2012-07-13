@@ -6,13 +6,15 @@
 #include <search.h>
 #include <document.h>
 #include <task.h>
+#include <loader.h>
 
 namespace superfastmatch{
   // Forward declaration
   class QueueManager;
 
   enum CommandAction{
-     AddDocument=1,
+     LoadDocuments=1,
+     AddDocument,
      AddAssociation,
      AddAssociations,
      DropDocument,
@@ -67,6 +69,7 @@ namespace superfastmatch{
      bool addAssociation();
      bool addAssociations();
      bool dropDocument();
+     bool loadDocuments();
 
      bool save();
      bool changeStatus(CommandStatus status);

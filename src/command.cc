@@ -7,7 +7,8 @@ namespace superfastmatch{
   const Command::action_map Command::actions=create_map<CommandAction,ActionDetail>(DropDocument,Command::ActionDetail(1,&Command::dropDocument,"Drop Document"))\
                                                                                    (AddDocument,Command::ActionDetail(2,&Command::addDocument,"Add Document"))\
                                                                                    (AddAssociations,Command::ActionDetail(3,&Command::addAssociations,"Add Associations"))\
-                                                                                   (AddAssociation,Command::ActionDetail(4,&Command::addAssociation,"Add Association"));
+                                                                                   (AddAssociation,Command::ActionDetail(4,&Command::addAssociation,"Add Association"))\
+                                                                                   (LoadDocuments,Command::ActionDetail(5,&Command::loadDocuments,"Load Documents"));
 
   const Command::status_map Command::statuses=create_map<CommandStatus,string>(Queued,"Queued")(Active,"Active")(Finished,"Finished")(Failed,"Failed");
 
@@ -144,6 +145,21 @@ namespace superfastmatch{
     return true;
   }
   
+  bool Command::loadDocuments(){
+    string payload;
+    uint32_t doctype;
+    uint32_t docid;
+    Loader loader(registry_->getLogger(),getPayload(),source_);
+    bool more=true;
+    do{
+      more=loader.getNextPage();
+      while (loader.getNextDocument(payload,doctype,docid)){
+        registry_->getQueueManager()->createCommand(AddDocument,doctype,docid,"","",payload);
+      }      
+    }while(more);
+    return true;
+  }
+
   uint32_t Command::getDocType(){
     return doc_type_;
   }
