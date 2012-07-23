@@ -238,9 +238,11 @@ namespace superfastmatch{
   
   inline bool isNumeric(const string& input)
   {
-  	const string base = "0123456789.";
-  	return (input.length()>0 && ::strspn(input.c_str(), base.c_str()) == input.length());
+    char* end = 0;
+    std::strtod(input.c_str(), &end);
+    return end != 0 && *end == 0;
   }
+  
   
   inline string toString(uint64_t number){ 
     stringstream s;

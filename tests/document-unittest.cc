@@ -3,6 +3,16 @@
 typedef BaseTest DocumentTest;
 typedef DocumentTest DocumentDeathTest;
 
+TEST_F(DocumentTest,isNumericTest){
+  EXPECT_TRUE(isNumeric("123"));
+  EXPECT_TRUE(isNumeric("-123"));
+  EXPECT_TRUE(isNumeric("123.0"));
+  EXPECT_TRUE(isNumeric(".0"));
+  EXPECT_TRUE(isNumeric("1."));
+  EXPECT_FALSE(isNumeric("..0"));
+  EXPECT_FALSE(isNumeric("..."));
+}
+
 TEST_F(DocumentTest,ConstructorTest){
   DocumentPtr doc1=registry_.getDocumentManager()->createPermanentDocument(1,1,"text=This+is+a+test&title=Also+a+test&filename=test.txt");
   DocumentPtr doc2=registry_.getDocumentManager()->createPermanentDocument(1,2,"text=Another+test&title=Also+a+test&filename=test2.txt");
@@ -169,10 +179,14 @@ TEST_F(DocumentTest,InitTest){
 }
 
 TEST_F(DocumentTest,DocumentListTest){
-  DocumentPtr doc1=registry_.getDocumentManager()->createPermanentDocument(1,1,"text=This+is+a+test&title=Also+a+test&filename=test.txt");
+  DocumentPtr doc1=registry_.getDocumentManager()->createPermanentDocument(1,1,"text=This+is+a+test&title=...&filename=test.txt");
   DocumentPtr doc2=registry_.getDocumentManager()->createPermanentDocument(1,2,"text=Another+test&title=Also+a+test&filename=test2.txt");
   DocumentPtr doc3=registry_.getDocumentManager()->createPermanentDocument(2,1,"text=This+is+a+test&title=Also+a+test&filename=test.txt");
   DocumentPtr doc4=registry_.getDocumentManager()->createPermanentDocument(2,2,"text=Another+test&title=Also+a+test&filename=test2.txt");
-  // TemplateDictionary dict;
-  // registry_.getDocumentManager()->fillListDictionary(&dict,1,0);
+  set<string> metadata;
+  TemplateDictionary dict("test");
+  registry_.getDocumentManager()->getDocument(1,1)->fillJSONDictionary(&dict,metadata);
+  string output;
+  dict.DumpToString(&output);
+  EXPECT_THAT(output,ContainsRegex("\"...\""));
 }
