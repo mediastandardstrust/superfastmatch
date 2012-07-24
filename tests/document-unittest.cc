@@ -185,8 +185,11 @@ TEST_F(DocumentTest,DocumentListTest){
   DocumentPtr doc4=registry_.getDocumentManager()->createPermanentDocument(2,2,"text=Another+test&title=Also+a+test&filename=test2.txt");
   set<string> metadata;
   TemplateDictionary dict("test");
-  registry_.getDocumentManager()->getDocument(1,1)->fillJSONDictionary(&dict,metadata);
+  TemplateDictionary* sourceDict=dict.AddSectionDictionary("SOURCE");
+  // dict.SetFilename("templates/JSON/search.tpl");
+  registry_.getDocumentManager()->getDocument(1,1,DocumentManager::TEXT|DocumentManager::META)->fillJSONDictionary(sourceDict,metadata);
   string output;
-  dict.DumpToString(&output);
-  EXPECT_THAT(output,ContainsRegex("\"...\""));
+  EXPECT_GT(metadata.size(),0U);
+  EXPECT_TRUE(ctemplate::ExpandTemplate("templates/JSON/search.tpl",STRIP_WHITESPACE, &dict, &output));
+  EXPECT_THAT(output,HasSubstr("\"...\""));
 }
