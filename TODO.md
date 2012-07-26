@@ -8,7 +8,7 @@ TODO
 * Create a Fragment class. This would effectively invert the index, so that for every common phrase found, you could see in which documents it occurs. Visualisations would then be possible showing, for instance the longest common phrases in Wikipedia, or journalism itself. The API would be extended to allow for paging through the phrases.
 * Investigate k-means clustering. There are frequently clusters of phrases in two matching documents that are close together in each. These clusters can be grouped together in a block and give a clearer indication of the shuffling that has occurred between the two documents. This would be added to the results response with a "clusters" JSON object.
 * Use ```sparsetable<char[BLOCK]>``` rather than ```sparsetable<char*>```. This would allow for a vast reduction in the memory usage of the index and therefore allow wider hash widths to be used, thereby increasing search speed.
-* Full curl test of REST API using python-superfastmatch. Would be a good self-documenting example of how to quickly get up and running with SFM.
+* Full test of REST API using python-superfastmatch. Would be a good self-documenting example of how to quickly get up and running with SFM.
 * Implement unicode using ICU. Not sure this is necessary currently, but could be useful if non-English users ask for specific features.
 * Release Debian packages for easy deployment and stable versioning.
 * Improve Web UI:
