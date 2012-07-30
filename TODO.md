@@ -8,9 +8,9 @@ TODO
 * **Individual usage**
   * Release Debian packages for easy deployment and stable versioning.
   * Improve Web UI:
-    * [Juxta](http://www.juxtasoftware.org/) has a great UI for examining side by side comparisons and is open source. Perhaps this could be adopted for the side-by-side view in SFM.
-    * Scatter plots of associations per document (diagonals equals a cluster). 
-    * Implement histograms to give a better realtime feel for how full the index is and whether an optimal hash width has been selected.
+      * [Juxta](http://www.juxtasoftware.org/) has a great UI for examining side by side comparisons and is open source. Perhaps this could be adopted for the side-by-side view in SFM.
+      * Scatter plots of associations per document (diagonals equals a cluster). 
+      * Implement histograms to give a better realtime feel for how full the index is and whether an optimal hash width has been selected.
   * Create a walkthrough video of how to use SFM and explain what is being seen in the UI.
   * Full test of REST API using python-superfastmatch. Would be a good self-documenting example of how to quickly get up and running with SFM.
 * **New Features**
