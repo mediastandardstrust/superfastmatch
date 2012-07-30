@@ -2,17 +2,18 @@ TODO
 ----
 
 * **Performance/optimisation**
-  * Improve search speed. A lot of work went into implementing the instrumentation to measure search speed, but was never used for optimisation. There are plenty of things that can be done to speed things thing up, such as caching the hashing results of a document and putting in more shortcut escapes from the inner loops.
+  * Improve search speed. A lot of work went into implementing the instrumentation to measure search speed, but was never used for optimisation. There are plenty of things that can be done to speed things thing up, such as caching the document hashes and putting in more shortcut escapes from the inner loops.
   * Implement Result caching. A search text that comes up frequently, such as the first article on the NY Times home page, will be queried repeatedly. The Churnalism frontend caches this currently, but it might be better located in SFM itself, using a signature hash as a key to a cache.
   * Use ```sparsetable<char[BLOCK]>``` rather than ```sparsetable<char*>```. This would allow for a vast reduction in the memory usage of the index and therefore allow wider hash widths to be used, thereby increasing search speed.
 * **Individual usage**
   * Release Debian packages for easy deployment and stable versioning.
+  * Create a walkthrough video of how to use SFM and explain what is being seen in the UI. Host this with a text version of the walkthrough on [Superfastmatch.org](http://superfastmatch.org).
+  * Full test of REST API using python-superfastmatch. Would be a good self-documenting example of how to quickly get up and running with SFM.
   * Improve Web UI:
       * [Juxta](http://www.juxtasoftware.org/) has a great UI for examining side by side comparisons and is open source. Perhaps this could be adopted for the side-by-side view in SFM.
       * Scatter plots of associations per document (diagonals equals a cluster). 
-      * Implement histograms to give a better realtime feel for how full the index is and whether an optimal hash width has been selected.
-  * Create a walkthrough video of how to use SFM and explain what is being seen in the UI.
-  * Full test of REST API using python-superfastmatch. Would be a good self-documenting example of how to quickly get up and running with SFM.
+      * Implement histograms to give a better realtime feel for how full the index is and whether an optimal hash width has been selected. Will also help monitor progress of how much of the index has been loaded.
+      * Allow for flipping between differences and similarities. This is useful for analysing different editions of English literature and observing the edits.
 * **New Features**
   * Accurate total documents per doctype and filter. Will allow clients to accurately page through filtered sets of documents.
   * Additional automatic metadata, such as number of associated documents, longest fragment, average/median fragment length. Will allow documents with most significant "churn" to be found more quickly.
