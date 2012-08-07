@@ -67,8 +67,9 @@ namespace superfastmatch{
 
   uint32_t FlagsRegistry::getWhiteSpaceHash(bool posting) const{
     uint32_t hash= WhiteSpaceHash(posting?getPostingWindowSize():getWindowSize());
-    if (posting)
-      return((hash>>getHashWidth())^(hash&getHashMask()));
+    if (posting){
+      return((hash>>getHashWidth())^(hash&getHashMask())); 
+    }
     return hash;
   }
   

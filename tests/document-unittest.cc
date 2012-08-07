@@ -186,7 +186,6 @@ TEST_F(DocumentTest,DocumentListTest){
   set<string> metadata;
   TemplateDictionary dict("test");
   TemplateDictionary* sourceDict=dict.AddSectionDictionary("SOURCE");
-  // dict.SetFilename("templates/JSON/search.tpl");
   registry_.getDocumentManager()->getDocument(1,1,DocumentManager::TEXT|DocumentManager::META)->fillJSONDictionary(sourceDict,metadata);
   string output;
   EXPECT_GT(metadata.size(),0U);

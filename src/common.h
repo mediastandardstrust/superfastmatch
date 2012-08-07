@@ -147,7 +147,7 @@ namespace superfastmatch{
       highBase=(i==0)?1:highBase*base;
       uint64_t c=Normalise(text[window_size-i-1])&0xFF;
       hash+=c*highBase;
-      whitespaceHash+=32*highBase;
+      whitespaceHash+=WHITESPACE*highBase;
       whitespace+=(c==WHITESPACE);
     }
     const uint64_t high=highBase;
