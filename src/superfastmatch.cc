@@ -5,6 +5,8 @@
 #include <registry.h>
 #include <signal.h>
 #include <execinfo.h>
+#include <unistd.h>
+#include <sys/types.h>
 
 using namespace superfastmatch;
 
