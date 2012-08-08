@@ -235,12 +235,39 @@ namespace superfastmatch{
     }
     cntr.clear();
   }
-  
+
   inline bool isNumeric(const string& input)
   {
-    char* end = 0;
-    std::strtod(input.c_str(), &end);
-    return end != 0 && *end == 0;
+    // Checks whether a string conforms to the JSON definition of a number
+    const char *s = input.c_str();
+    const char *c = s;
+
+    // must begin with a digit or minus sign
+    if (*c > 0x39)
+        return false;
+    if ((*c < 0x30) && (*c != 0x2d))
+        return false;
+
+    // eat digits
+    c++;
+    while ((*c >= 0x30) && (*c <= 0x39))
+        c++;
+
+    if (*c == 0)
+        return true; // Is an integer
+
+    if (*c != 0x2e)
+        return false; // must be a period -- ignoring exponents
+
+    // eat digits
+    c++;
+    if (*c == 0)
+        return false; // Cannot end with a period
+
+    while ((*c >= 0x30) && (*c <= 0x39))
+        c++;
+
+    return (*c == 0);
   }
   
   
