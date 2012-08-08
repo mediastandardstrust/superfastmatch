@@ -9,8 +9,10 @@ TEST_F(DocumentTest,isNumericTest){
   EXPECT_TRUE(isNumeric("123.0"));
   EXPECT_TRUE(isNumeric(".0"));
   EXPECT_TRUE(isNumeric("1."));
+  EXPECT_FALSE(isNumeric("1.a"));
   EXPECT_FALSE(isNumeric("..0"));
   EXPECT_FALSE(isNumeric("..."));
+  EXPECT_FALSE(isNumeric("."));
 }
 
 TEST_F(DocumentTest,ConstructorTest){

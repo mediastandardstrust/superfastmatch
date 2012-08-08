@@ -67,7 +67,7 @@ GTEST_DIR = tests/utils
 all : $(MYBINS) 
 
 clean :
-	rm -rf $(MYBINS) $(DATA) tests/*.o $(GTEST_DIR)/*.o $(GTEST_DIR)/*.a *.a *.o *.exe src/*.o src/*.d src/jsoncpp/*.o src/jsoncpp/*.d
+	rm -rf $(MYBINS) tests/*.o $(GTEST_DIR)/*.o $(GTEST_DIR)/*.a *.a *.o *.exe src/*.o src/*.d src/jsoncpp/*.o src/jsoncpp/*.d
 	mkdir -p $(DATA)
 
 run : all
