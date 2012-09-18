@@ -203,16 +203,16 @@ namespace superfastmatch{
   const ApiCall Api::calls_[Api::API_COUNT]={
     ApiCall(HTTPClient::MPOST,
             "^/search/?$",
-            create_map<response_t,string>(response_t(200,"application/json"),SUCCESS_JSON)\
-                                         (response_t(400,"application/json"),FAILURE_JSON),
+            create_map<response_t,string>(response_t(200,"application/json; charset=utf-8"),SUCCESS_JSON)\
+                                         (response_t(400,"application/json; charset=utf-8"),FAILURE_JSON),
             set<string>(),
             "Search for text in all documents. There must be a form field with name text, otherwise returns response code 400.",
             &Api::DoSearch,
             false),
     ApiCall(HTTPClient::MPOST,
             "^/search/<target>/?$",
-            create_map<response_t,string>(response_t(200,"application/json"),SUCCESS_JSON)\
-                                         (response_t(400,"application/json"),FAILURE_JSON),  
+            create_map<response_t,string>(response_t(200,"application/json; charset=utf-8"),SUCCESS_JSON)\
+                                         (response_t(400,"application/json; charset=utf-8"),FAILURE_JSON),  
             set<string>(),
             "Search for text in the specified target doctype range. There must be a form field with name text and <target> must be correctly formed, otherwise returns response code 400.",
             &Api::DoSearch,
@@ -228,137 +228,137 @@ namespace superfastmatch{
             false),
    ApiCall(HTTPClient::MPOST,
            "^/load/<url>/<source>/?$",
-           create_map<response_t,string>(response_t(202,"application/json"),QUEUED_JSON)\
-                                        (response_t(400,"application/json"),FAILURE_JSON),
+           create_map<response_t,string>(response_t(202,"application/json; charset=utf-8"),QUEUED_JSON)\
+                                        (response_t(400,"application/json; charset=utf-8"),FAILURE_JSON),
            set<string>(),
            "Load documents with specified source doctype range from the superfastmatch instance with the given url asynchronously. If <source> is badly formed returns response code 400.",
            &Api::LoadDocuments,
            false),
     ApiCall(HTTPClient::MGET,
             "^/document/?$",
-            create_map<response_t,string>(response_t(200,"application/json"),SUCCESS_JSON),
+            create_map<response_t,string>(response_t(200,"application/json; charset=utf-8"),SUCCESS_JSON),
             create_set<string>("cursor")("order_by")("limit"),
             "Get metadata and text of all documents.",
             &Api::GetDocuments,
             false),
     ApiCall(HTTPClient::MGET,
             "^/document/<source>/?$",
-            create_map<response_t,string>(response_t(200,"application/json"),SUCCESS_JSON)\
-                                         (response_t(400,"application/json"),FAILURE_JSON),
+            create_map<response_t,string>(response_t(200,"application/json; charset=utf-8"),SUCCESS_JSON)\
+                                         (response_t(400,"application/json; charset=utf-8"),FAILURE_JSON),
             create_set<string>("cursor")("order_by")("limit"),
             "Get metadata and text of all documents with specified doctype. If <source> is badly formed returns response code 400.",
             &Api::GetDocuments,
             false),
     ApiCall(HTTPClient::MGET,
             "^/document/<doctype>/<docid>/?$",
-            create_map<response_t,string>(response_t(200,"application/json"),SUCCESS_JSON)\
-                                         (response_t(400,"application/json"),FAILURE_JSON)\
-                                         (response_t(404,"application/json"),FAILURE_JSON),
+            create_map<response_t,string>(response_t(200,"application/json; charset=utf-8"),SUCCESS_JSON)\
+                                         (response_t(400,"application/json; charset=utf-8"),FAILURE_JSON)\
+                                         (response_t(404,"application/json; charset=utf-8"),FAILURE_JSON),
             set<string>(),
             "Get metadata and text of existing document. If document does not exist returns 404.",
             &Api::GetDocument,
             false),
     ApiCall(HTTPClient::MPOST,
            "^/document/<doctype>/?$",
-           create_map<response_t,string>(response_t(202,"application/json"),QUEUED_JSON)\
-                                        (response_t(400,"application/json"),FAILURE_JSON),
+           create_map<response_t,string>(response_t(202,"application/json; charset=utf-8"),QUEUED_JSON)\
+                                        (response_t(400,"application/json; charset=utf-8"),FAILURE_JSON),
            set<string>(),
            "Create a new document asynchronously with an auto-assigned docid. There must be a form field with name text and a string of length greater than 0, otherwise returns response code 400.",
            &Api::CreateDocument,
            true),
     ApiCall(HTTPClient::MPUT,
            "^/document/<doctype>/?$",
-           create_map<response_t,string>(response_t(202,"application/json"),QUEUED_JSON)\
-                                        (response_t(400,"application/json"),FAILURE_JSON),
+           create_map<response_t,string>(response_t(202,"application/json; charset=utf-8"),QUEUED_JSON)\
+                                        (response_t(400,"application/json; charset=utf-8"),FAILURE_JSON),
            set<string>(),
            "Create and associate a new document asynchronously with an auto-assigned docid. There must be a form field with name text and a string of length greater than 0, otherwise returns response code 400.",
            &Api::CreateAndAssociateDocument,
            true),
     ApiCall(HTTPClient::MPOST,
            "^/document/<doctype>/<docid>/?$",
-           create_map<response_t,string>(response_t(202,"application/json"),QUEUED_JSON)\
-                                        (response_t(400,"application/json"),FAILURE_JSON),
+           create_map<response_t,string>(response_t(202,"application/json; charset=utf-8"),QUEUED_JSON)\
+                                        (response_t(400,"application/json; charset=utf-8"),FAILURE_JSON),
            set<string>(),
            "Create a new document asynchronously. There must be a form field with name text and a string of length greater than 0, otherwise returns response code 400.",
            &Api::CreateDocument,
            false),
     ApiCall(HTTPClient::MPUT,
            "^/document/<doctype>/<docid>/?$",
-           create_map<response_t,string>(response_t(202,"application/json"),QUEUED_JSON)\
-                                        (response_t(400,"application/json"),FAILURE_JSON),
+           create_map<response_t,string>(response_t(202,"application/json; charset=utf-8"),QUEUED_JSON)\
+                                        (response_t(400,"application/json; charset=utf-8"),FAILURE_JSON),
            set<string>(),
            "Create and associate a new document asynchronously. There must be a form field with name text and a string of length greater than 0, otherwise returns response code 400.",
            &Api::CreateAndAssociateDocument,
            false),
     ApiCall(HTTPClient::MDELETE,
            "^/document/<doctype>/<docid>/?$",
-           create_map<response_t,string>(response_t(202,"application/json"),QUEUED_JSON),
+           create_map<response_t,string>(response_t(202,"application/json; charset=utf-8"),QUEUED_JSON),
            set<string>(),
            "Delete a document asynchronously.",
            &Api::DeleteDocument,
            false),
     ApiCall(HTTPClient::MPOST,
           "^/association/<doctype>/<docid>/?$",
-          create_map<response_t,string>(response_t(202,"application/json"),QUEUED_JSON),
+          create_map<response_t,string>(response_t(202,"application/json; charset=utf-8"),QUEUED_JSON),
           set<string>(),
           "Associate a document asynchronously. If document does not exist, queued item marked as failed",
           &Api::AssociateDocument,
           false),
     ApiCall(HTTPClient::MPOST,
           "^/association/<doctype>/<docid>/<target>/?$",
-          create_map<response_t,string>(response_t(202,"application/json"),QUEUED_JSON)\
-                                       (response_t(400,"application/json"),FAILURE_JSON),                                                                                                                                                                 
+          create_map<response_t,string>(response_t(202,"application/json; charset=utf-8"),QUEUED_JSON)\
+                                       (response_t(400,"application/json; charset=utf-8"),FAILURE_JSON),                                                                                                                                                                 
           set<string>(),
           "Associate a document asynchronously with a set of documents that match the specified target doc type range. If <target> is badly formed returns response code 400.",
           &Api::AssociateDocument,
           false),
     ApiCall(HTTPClient::MPOST,
           "^/associations/?$",
-          create_map<response_t,string>(response_t(202,"application/json"),QUEUED_JSON),
+          create_map<response_t,string>(response_t(202,"application/json; charset=utf-8"),QUEUED_JSON),
           set<string>(),
           "Associate all documents asynchronously.",
           &Api::AssociateDocuments,
           false),   
     ApiCall(HTTPClient::MPOST,
           "^/associations/<source>/?$",
-          create_map<response_t,string>(response_t(202,"application/json"),QUEUED_JSON)\
-                                       (response_t(400,"application/json"),FAILURE_JSON),
+          create_map<response_t,string>(response_t(202,"application/json; charset=utf-8"),QUEUED_JSON)\
+                                       (response_t(400,"application/json; charset=utf-8"),FAILURE_JSON),
           set<string>(),
           "Associate a set of documents asynchronously which match the specified source doc type range. If <source> is badly formed returns response code 400.",
           &Api::AssociateDocuments,
           false),
     ApiCall(HTTPClient::MPOST,
           "^/associations/<source>/<target>/?$",
-          create_map<response_t,string>(response_t(202,"application/json"),QUEUED_JSON)\
-                                       (response_t(400,"application/json"),FAILURE_JSON),
+          create_map<response_t,string>(response_t(202,"application/json; charset=utf-8"),QUEUED_JSON)\
+                                       (response_t(400,"application/json; charset=utf-8"),FAILURE_JSON),
           set<string>(),
           "Associate a set of documents asynchronously which match the specified source doc type range with the target doc type range. If <source> or <target> are badly formed returns response code 400.",
           &Api::AssociateDocuments,
           false),
     ApiCall(HTTPClient::MGET,
            "^/index/?$",
-           create_map<response_t,string>(response_t(200,"application/json"),SUCCESS_JSON),
+           create_map<response_t,string>(response_t(200,"application/json; charset=utf-8"),SUCCESS_JSON),
            create_set<string>("start")("limit"),
            "Get the index data. Not fully implemented yet.",
            &Api::GetIndex,
            false),
     ApiCall(HTTPClient::MGET,
            "^/queue/?$",
-           create_map<response_t,string>(response_t(200,"application/json"),SUCCESS_JSON),
+           create_map<response_t,string>(response_t(200,"application/json; charset=utf-8"),SUCCESS_JSON),
            create_set<string>("start")("limit"),
            "Get the queue data. Not fully implemented yet.",
            &Api::GetQueue,
            false),
     ApiCall(HTTPClient::MGET,
            "^/performance/?$",
-           create_map<response_t,string>(response_t(200,"application/json"),SUCCESS_JSON),
+           create_map<response_t,string>(response_t(200,"application/json; charset=utf-8"),SUCCESS_JSON),
            set<string>(),
            "Get the performance data",
            &Api::GetPerformance,
            false),                                                                                                                                                                                                                                                                                 
     ApiCall(HTTPClient::MGET,
            "^/status/?$",
-           create_map<response_t,string>(response_t(200,"application/json"),SUCCESS_JSON),
+           create_map<response_t,string>(response_t(200,"application/json; charset=utf-8"),SUCCESS_JSON),
            set<string>(),
            "Get the status of the superfastmatch instance. Not fully implemented yet.",
            &Api::GetStatus,
@@ -384,16 +384,16 @@ namespace superfastmatch{
     }
     DocumentQueryPtr target(new DocumentQuery(registry_,"",t));
     if (text==params.form.end()){
-      response.type=response_t(400,"application/json");
+      response.type=response_t(400,"application/json; charset=utf-8");
       response.dict.SetValue("MESSAGE","No text field specified");    
     }  
     else if(!target->isValid()){
-      response.type=response_t(400,"application/json");
+      response.type=response_t(400,"application/json; charset=utf-8");
       response.dict.SetValue("MESSAGE","Target is invalid");    
     }else{
       SearchPtr search=Search::createTemporarySearch(registry_,params.body,target);
       search->fillJSONDictionary(&response.dict,false);
-      response.type=response_t(200,"application/json");
+      response.type=response_t(200,"application/json; charset=utf-8");
     }
   }
 
@@ -419,15 +419,15 @@ namespace superfastmatch{
     uint32_t doctype = kc::atoi(params.resource.find("doctype")->second.c_str());
     uint32_t docid = kc::atoi(params.resource.find("docid")->second.c_str());
     if(doctype==0 || docid==0){
-      response.type=response_t(400,"application/json");   
+      response.type=response_t(400,"application/json; charset=utf-8");   
       response.dict.SetValue("MESSAGE","Doc Type and Doc Id must be non-zero");     
     }else{
       SearchPtr search=Search::getPermanentSearch(registry_,doctype,docid);
       if (search){
         search->fillJSONDictionary(&response.dict,true);
-        response.type=response_t(200,"application/json");
+        response.type=response_t(200,"application/json; charset=utf-8");
       }else{
-        response.type=response_t(404,"application/json");        
+        response.type=response_t(404,"application/json; charset=utf-8");        
         response.dict.SetValue("MESSAGE","Document not found.");
       }
     }
@@ -440,9 +440,9 @@ namespace superfastmatch{
     if (query.isValid()){
       CommandPtr loadCommand = registry_->getQueueManager()->createCommand(superfastmatch::LoadDocuments,0,0,source,"",url);
       loadCommand->fillDictionary(&response.dict);
-      response.type=response_t(202,"application/json");
+      response.type=response_t(202,"application/json; charset=utf-8");
     }else{
-      response.type=response_t(400,"application/json");        
+      response.type=response_t(400,"application/json; charset=utf-8");        
       response.dict.SetValue("MESSAGE","Source is invalid.");
     }
   }
@@ -455,9 +455,9 @@ namespace superfastmatch{
     DocumentQuery query(registry_,source,"",params.query);
     if (query.isValid()){
       query.fillJSONDictionary(&response.dict);
-      response.type=response_t(200,"application/json");
+      response.type=response_t(200,"application/json; charset=utf-8");
     }else{
-      response.type=response_t(400,"application/json");        
+      response.type=response_t(400,"application/json; charset=utf-8");        
       response.dict.SetValue("MESSAGE","Source is invalid.");
     }
   }
@@ -467,14 +467,14 @@ namespace superfastmatch{
     uint32_t docid=kc::atoi(params.resource.find("docid")->second.c_str());      
     map<string,string>::const_iterator text=params.form.find("text");
     if(doctype==0 || docid==0){
-      response.type=response_t(400,"application/json");   
+      response.type=response_t(400,"application/json; charset=utf-8");   
       response.dict.SetValue("MESSAGE","Doc Type and Doc Id must be non-zero");     
     }else if (text!=params.form.end() && text->second.size()>0){
       CommandPtr addCommand = registry_->getQueueManager()->createCommand(AddDocument,doctype,docid,"","",params.body);
       addCommand->fillDictionary(&response.dict);
-      response.type=response_t(202,"application/json");        
+      response.type=response_t(202,"application/json; charset=utf-8");        
     }else{
-      response.type=response_t(400,"application/json");   
+      response.type=response_t(400,"application/json; charset=utf-8");   
       response.dict.SetValue("MESSAGE","No text field specified or is empty");     
     }
   }
@@ -491,7 +491,7 @@ namespace superfastmatch{
     uint32_t docid = kc::atoi(params.resource.find("docid")->second.c_str());
     CommandPtr deleteCommand = registry_->getQueueManager()->createCommand(DropDocument,doctype,docid,"","","");
     deleteCommand->fillDictionary(&response.dict);
-    response.type=response_t(202,"application/json");        
+    response.type=response_t(202,"application/json; charset=utf-8");        
   }
   
   void Api::AssociateDocument(const ApiParams& params,ApiResponse& response){
@@ -499,7 +499,7 @@ namespace superfastmatch{
     uint32_t docid = kc::atoi(params.resource.find("docid")->second.c_str());
     CommandPtr associateCommand = registry_->getQueueManager()->createCommand(AddAssociation,doctype,docid,"","","");
     associateCommand->fillDictionary(&response.dict);
-    response.type=response_t(202,"application/json");
+    response.type=response_t(202,"application/json; charset=utf-8");
   }
   
   void Api::AssociateDocuments(const ApiParams& params,ApiResponse& response){
@@ -515,9 +515,9 @@ namespace superfastmatch{
     if (query.isValid()){
       CommandPtr associateCommand = registry_->getQueueManager()->createCommand(AddAssociations,0,0,source,target,"");
       associateCommand->fillDictionary(&response.dict);
-      response.type=response_t(202,"application/json");      
+      response.type=response_t(202,"application/json; charset=utf-8");      
     }else{
-      response.type=response_t(400,"application/json");   
+      response.type=response_t(400,"application/json; charset=utf-8");   
       response.dict.SetValue("MESSAGE","Source or target is badly formed.");
     }
   }
@@ -526,30 +526,30 @@ namespace superfastmatch{
     uint64_t start = kc::atoi(params.query.find("start")->second.c_str());
     uint64_t limit = kc::atoi(params.query.find("limit")->second.c_str());
     registry_->getPostings()->fillListDictionary(&response.dict,start,limit);
-    response.type=response_t(200,"application/json");
+    response.type=response_t(200,"application/json; charset=utf-8");
   }
   
   void Api::GetQueue(const ApiParams& params,ApiResponse& response){
     uint64_t start = kc::atoi(params.query.find("start")->second.c_str());
     uint64_t limit = kc::atoi(params.query.find("limit")->second.c_str());
     registry_->getQueueManager()->fillDictionary(&response.dict,start,limit);
-    response.type=response_t(200,"application/json");    
+    response.type=response_t(200,"application/json; charset=utf-8");    
   }
   
   void Api::GetPerformance(const ApiParams& params,ApiResponse& response){
     registry_->fillPerformanceDictionary(&response.dict);
-    response.type=response_t(200,"application/json");    
+    response.type=response_t(200,"application/json; charset=utf-8");    
   }
   
   void Api::GetStatus(const ApiParams& params,ApiResponse& response){
     registry_->fillStatusDictionary(&response.dict);
     registry_->getPostings()->fillStatusDictionary(&response.dict);
-    response.type=response_t(200,"application/json");
+    response.type=response_t(200,"application/json; charset=utf-8");
   }
   
   void Api::GetHistogram(const ApiParams& params,ApiResponse& response){
     registry_->getPostings()->fillHistogramDictionary(&response.dict);
-    response.type=response_t(200,"application/json");
+    response.type=response_t(200,"application/json; charset=utf-8");
   }
   
   void Api::GetDescription(const ApiParams& params,ApiResponse& response){
