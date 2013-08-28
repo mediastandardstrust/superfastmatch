@@ -1,14 +1,3 @@
-diff -r 2d252384c5e8 libre2.symbols
---- a/libre2.symbols	Mon Mar 05 14:20:36 2012 -0500
-+++ b/libre2.symbols	Mon Mar 19 20:13:15 2012 +0000
-@@ -10,6 +10,7 @@
- 		_ZlsRSoRKN3re211StringPieceE;
- 		# re2::FilteredRE2*
- 		_ZN3re211FilteredRE2*;
-+		_ZNK3re211FilteredRE2*;
- 	local:
- 		*;
- };
 diff -r 2d252384c5e8 libre2.symbols.darwin
 --- a/libre2.symbols.darwin	Mon Mar 05 14:20:36 2012 -0500
 +++ b/libre2.symbols.darwin	Mon Mar 19 20:13:15 2012 +0000
