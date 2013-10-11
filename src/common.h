@@ -245,7 +245,7 @@ namespace superfastmatch{
     // must begin with a digit or minus sign
     if (*c > 0x39)
         return false;
-    if ((*c < 0x30) && (*c != 0x2d))
+    if ((*c < 0x31) && (*c != 0x2d)) //0x31 because a JSON number cannot begin with a zero.
         return false;
 
     // eat digits
